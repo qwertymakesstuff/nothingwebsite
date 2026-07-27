@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#090909" />
+  <meta name="description" content="stalkr — personal homepage" />
+  <title>stalkr — nothing.website</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="wordmark" href="#top">stalkr</a>
+    <nav aria-label="Primary navigation">
+      <a href="#about">about</a>
+      <a href="#games">games</a>
+      <a href="#links">links</a>
+    </nav>
+    <button id="audioToggle" class="audio-toggle" type="button" aria-label="Play Starting to Fall by Duster">
+      <span id="audioIcon">▶</span>
+      <span class="audio-label">Starting to Fall — Duster</span>
+    </button>
+  </header>
+
+  <main id="top" class="page-shell">
+    <aside class="profile-column">
+      <section class="profile-card panel">
+        <div class="avatar-wrap">
+          <img src="assets/profile.jpg" alt="stalkr profile picture" class="avatar" />
+          <span class="status-dot" title="online"></span>
+        </div>
+        <h1>stalkr</h1>
+        <p class="handle">nothing.website</p>
+        <p class="status">● online</p>
+      </section>
+
+      <section class="panel mini-player">
+        <p class="eyebrow">now playing</p>
+        <div class="track">
+          <div class="album-placeholder">D</div>
+          <div>
+            <strong>Starting to Fall</strong>
+            <span>Duster</span>
+          </div>
+        </div>
+        <div class="fake-progress"><span></span></div>
+        <p class="tiny-note">autoplay may need one tap because some browsers block sound</p>
+      </section>
+    </aside>
+
+    <div class="content-column">
+      <section id="about" class="panel hero-panel">
+        <p class="eyebrow">about me</p>
+        <h2>give me time to think about this</h2>
+        <p class="blink-line"><span class="cursor">_</span></p>
+      </section>
+
+      <section id="games" class="panel games-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">library</p>
+            <h2>favorite games</h2>
+          </div>
+          <p class="hint">move your cursor across the covers</p>
+        </div>
+
+        <div class="game-library" id="gameLibrary">
+          <a class="game-card" href="https://store.steampowered.com/app/4000/Garrys_Mod/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/4000/library_600x900_2x.jpg')">
+            <span>Garry's Mod</span>
+          </a>
+          <a class="game-card" href="https://store.steampowered.com/app/381210/Dead_by_Daylight/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/381210/library_600x900_2x.jpg')">
+            <span>Dead by Daylight</span>
+          </a>
+          <a class="game-card" href="https://store.steampowered.com/app/438740/Friday_the_13th_The_Game/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/438740/library_600x900_2x.jpg')">
+            <span>Friday the 13th</span>
+          </a>
+          <a class="game-card" href="https://store.steampowered.com/app/270880/American_Truck_Simulator/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/270880/library_600x900_2x.jpg')">
+            <span>American Truck Simulator</span>
+          </a>
+        </div>
+      </section>
+
+      <section id="links" class="panel links-panel">
+        <p class="eyebrow">contacting stalkr</p>
+        <h2>links</h2>
+        <div class="links-list">
+          <a href="https://steamcommunity.com/id/gangstalkrr/" target="_blank" rel="noreferrer"><span>steam</span><small>steamcommunity.com/id/gangstalkrr/</small><b>↗</b></a>
+          <a href="https://www.tiktok.com/@gangstalkerrr" target="_blank" rel="noreferrer"><span>tiktok</span><small>@gangstalkerrr</small><b>↗</b></a>
+          <a href="https://www.instagram.com/gangstalkrr/" target="_blank" rel="noreferrer"><span>instagram</span><small>@gangstalkrr</small><b>↗</b></a>
+        </div>
+      </section>
+
+      <footer>
+        <span>© <span id="year"></span> stalkr</span>
+        <span>nothing.website</span>
+      </footer>
+    </div>
+  </main>
+
+  <!-- Add a legally obtained copy at assets/starting-to-fall.mp3 -->
+  <audio id="siteAudio" preload="auto" loop autoplay src="assets/starting-to-fall.mp3"></audio>
+  <script src="script.js"></script>
+</body>
+</html>
