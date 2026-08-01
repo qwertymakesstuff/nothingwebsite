@@ -103,9 +103,14 @@ h1 { margin: 18px 0 4px; font-size: 1.7rem; letter-spacing: .04em; }
 .game-card:nth-child(4) { --rot: -8deg; }
 
 .links-list { margin-top: 18px; border-top:1px solid var(--line-soft); }
-.links-list a { display:grid; grid-template-columns:130px 1fr auto; gap:18px; align-items:center; padding:17px 4px; text-decoration:none; border-bottom:1px solid var(--line-soft); }
+.links-list a { display:grid; grid-template-columns:44px minmax(0,1fr) auto; gap:14px; align-items:center; padding:17px 4px; text-decoration:none; border-bottom:1px solid var(--line-soft); }
 .links-list a:hover { background:rgba(255,255,255,.025); padding-left:10px; }
-.links-list small { color:var(--muted); overflow-wrap:anywhere; }
+.social-icon { width:32px; height:32px; display:grid; place-items:center; opacity:.9; }
+.social-icon svg { width:24px; height:24px; fill:currentColor; display:block; }
+.steam-icon svg { width:26px; height:26px; }
+.social-copy { min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.social-copy strong { font-size:1rem; font-weight:400; }
+.social-copy small { color:var(--muted); overflow-wrap:anywhere; }
 .links-list b { font-weight:400; }
 footer { display:flex; justify-content:space-between; gap:20px; color:#655f5f; font-size:.8rem; padding:26px 4px 0; }
 
@@ -135,7 +140,12 @@ footer { display:flex; justify-content:space-between; gap:20px; color:#655f5f; f
   .game-card:hover { margin-right:0; margin-left:-42%; transform:translateY(-8px) scale(1.03); }
   .game-card:first-child:hover { margin-left:0; }
   .game-card:hover ~ .game-card, .game-card:has(~ .game-card:hover) { transform:none; }
-  .links-list a { grid-template-columns:1fr auto; }
-  .links-list small { grid-column:1 / -1; }
+  .links-list a { grid-template-columns:34px minmax(0,1fr) auto; gap:10px; padding:15px 2px; }
+  .social-icon { width:28px; height:28px; }
+  .social-icon svg { width:20px; height:20px; }
+  .steam-icon svg { width:22px; height:22px; }
+  .social-copy { display:block; }
+  .social-copy strong, .social-copy small { display:block; }
+  .social-copy small { margin-top:4px; font-size:.8rem; }
   footer { flex-direction:column; }
 }
