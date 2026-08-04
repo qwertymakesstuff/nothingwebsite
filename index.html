@@ -22,6 +22,7 @@
     <nav aria-label="Primary navigation">
       <a href="#about">about</a>
       <a href="#games">games</a>
+      <a href="#maps">maps</a>
       <a href="#links">links</a>
     </nav>
     <button id="audioToggle" class="audio-toggle" type="button" aria-label="Play Starting to Fall by Duster">
@@ -77,6 +78,47 @@
           <a class="game-card" href="https://store.steampowered.com/app/381210/Dead_by_Daylight/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/381210/library_600x900_2x.jpg')"><span>Dead by Daylight</span></a>
           <a class="game-card" href="https://store.steampowered.com/app/438740/Friday_the_13th_The_Game/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/438740/library_600x900_2x.jpg')"><span>Friday the 13th</span></a>
           <a class="game-card" href="https://store.steampowered.com/app/270880/American_Truck_Simulator/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/270880/library_600x900_2x.jpg')"><span>American Truck Simulator</span></a>
+        </div>
+      </section>
+
+      <section id="maps" class="panel maps-panel">
+        <div class="section-heading maps-heading">
+          <div>
+            <p class="eyebrow">workshop</p>
+            <h2>maps i've made</h2>
+          </div>
+          <p class="hint">projects, experiments, and releases</p>
+        </div>
+
+        <div class="map-tabs" role="tablist" aria-label="Map categories">
+          <button class="map-tab active" type="button" role="tab" aria-selected="true" aria-controls="gmod-maps" data-map-tab="gmod">garry's mod</button>
+          <button class="map-tab" type="button" role="tab" aria-selected="false" aria-controls="bonelab-maps" data-map-tab="bonelab">bonelab</button>
+        </div>
+
+        <div class="map-tab-panel active" id="gmod-maps" role="tabpanel" data-map-panel="gmod">
+          <div class="map-grid">
+            <article class="map-card map-placeholder">
+              <div class="map-thumb"><span>GMod</span></div>
+              <div class="map-info">
+                <p class="map-type">garry's mod</p>
+                <h3>map coming soon</h3>
+                <p>screenshots, descriptions, and workshop links can go here.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="map-tab-panel" id="bonelab-maps" role="tabpanel" data-map-panel="bonelab" hidden>
+          <div class="map-grid">
+            <article class="map-card map-placeholder">
+              <div class="map-thumb"><span>BONELAB</span></div>
+              <div class="map-info">
+                <p class="map-type">bonelab</p>
+                <h3>map coming soon</h3>
+                <p>screenshots, descriptions, and download links can go here.</p>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 
