@@ -20,7 +20,6 @@ async function startAudio() {
   syncIcon();
 }
 
-// Try immediately, again when the page is fully loaded, and again on the first interaction.
 startAudio();
 window.addEventListener('load', startAudio, { once: true });
 
@@ -44,3 +43,24 @@ toggle.addEventListener('click', async (event) => {
 audio.addEventListener('play', syncIcon);
 audio.addEventListener('pause', syncIcon);
 syncIcon();
+
+const mapTabs = document.querySelectorAll('[data-map-tab]');
+const mapPanels = document.querySelectorAll('[data-map-panel]');
+
+mapTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.mapTab;
+
+    mapTabs.forEach(otherTab => {
+      const isActive = otherTab === tab;
+      otherTab.classList.toggle('active', isActive);
+      otherTab.setAttribute('aria-selected', String(isActive));
+    });
+
+    mapPanels.forEach(panel => {
+      const isActive = panel.dataset.mapPanel === target;
+      panel.classList.toggle('active', isActive);
+      panel.hidden = !isActive;
+    });
+  });
+});
