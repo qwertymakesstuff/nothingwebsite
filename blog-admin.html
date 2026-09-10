@@ -11,16 +11,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="blog-extra.css?v=1" />
 </head>
 <body class="blog-admin-page">
   <div class="noise" aria-hidden="true"></div>
-
   <header class="topbar simple-topbar">
     <a class="wordmark" href="/">stalkr</a>
     <nav><a href="/blog.html">view blog</a></nav>
     <a class="top-link" href="/">← home</a>
   </header>
-
   <main class="admin-shell">
     <section class="panel admin-login" id="authPanel">
       <p class="eyebrow">owner access</p>
@@ -33,43 +32,29 @@
       </div>
       <p id="authStatus" class="editor-status" aria-live="polite"></p>
     </section>
-
     <section class="panel composer" id="composer" hidden>
       <div class="composer-head">
-        <div>
-          <p class="eyebrow">new post</p>
-          <h2>write something</h2>
-        </div>
+        <div><p class="eyebrow">new post</p><h2>write something</h2></div>
         <button id="logoutButton" class="text-button" type="button">forget token</button>
       </div>
-
       <label class="field-label" for="postTitle">title</label>
       <input id="postTitle" class="editor-input" type="text" maxlength="160" placeholder="post title" />
-
       <label class="field-label" for="postBody">post</label>
       <textarea id="postBody" class="editor-textarea" rows="12" placeholder="write whatever you want..."></textarea>
-
       <label class="field-label" for="postAttachments">attachments</label>
-      <label class="file-picker" for="postAttachments">
-        <span>+ add images, videos, or audio</span>
-        <small>up to 20 MB per file</small>
-      </label>
+      <label class="file-picker" for="postAttachments"><span>+ add images, videos, or audio</span><small>up to 20 MB per file</small></label>
       <input id="postAttachments" type="file" multiple accept="image/*,video/*,audio/*" hidden />
       <div id="attachmentList" class="attachment-list"></div>
-
       <div class="composer-actions">
         <button id="previewButton" type="button" class="editor-button secondary">preview</button>
         <button id="publishButton" type="button" class="editor-button">publish</button>
       </div>
       <p id="publishStatus" class="editor-status" aria-live="polite"></p>
     </section>
-
     <section class="panel preview-panel" id="previewPanel" hidden>
-      <p class="eyebrow">preview</p>
-      <div id="previewMount"></div>
+      <p class="eyebrow">preview</p><div id="previewMount"></div>
     </section>
   </main>
-
   <script src="blog-admin.js?v=1"></script>
 </body>
 </html>
