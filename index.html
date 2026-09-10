@@ -12,7 +12,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="blog-extra.css?v=1" />
 </head>
 <body>
   <div class="noise" aria-hidden="true"></div>
@@ -23,6 +24,7 @@
       <a href="#about">about</a>
       <a href="#games">games</a>
       <a href="#maps">maps</a>
+      <a href="/blog.html">blog</a>
       <a href="#links">links</a>
     </nav>
     <button id="audioToggle" class="audio-toggle" type="button" aria-label="Play Starting to Fall by Duster">
@@ -47,10 +49,7 @@
         <p class="eyebrow">now playing</p>
         <div class="track">
           <div class="album-placeholder">D</div>
-          <div>
-            <strong>Starting to Fall</strong>
-            <span>Duster</span>
-          </div>
+          <div><strong>Starting to Fall</strong><span>Duster</span></div>
         </div>
         <div class="fake-progress"><span></span></div>
         <p class="tiny-note">autoplay may need one tap because some browsers block sound</p>
@@ -66,10 +65,7 @@
 
       <section id="games" class="panel games-panel">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">library</p>
-            <h2>favorite games</h2>
-          </div>
+          <div><p class="eyebrow">library</p><h2>favorite games</h2></div>
           <p class="hint">swipe through the covers</p>
         </div>
         <div class="game-library" id="gameLibrary">
@@ -82,51 +78,30 @@
 
       <section id="maps" class="panel maps-panel">
         <div class="section-heading maps-heading">
-          <div>
-            <p class="eyebrow">workshop</p>
-            <h2>maps i've made</h2>
-          </div>
+          <div><p class="eyebrow">workshop</p><h2>maps i've made</h2></div>
           <p class="hint">projects, experiments, and releases</p>
         </div>
-
         <div class="map-tabs" role="tablist" aria-label="Map categories">
           <button class="map-tab active" type="button" role="tab" aria-selected="true" aria-controls="gmod-maps" data-map-tab="gmod">garry's mod</button>
           <button class="map-tab" type="button" role="tab" aria-selected="false" aria-controls="bonelab-maps" data-map-tab="bonelab">bonelab</button>
         </div>
-
         <div class="map-tab-panel active" id="gmod-maps" role="tabpanel" data-map-panel="gmod">
           <div class="map-grid">
             <article class="map-card map-placeholder">
               <div class="map-thumb"><span>GMod</span></div>
-              <div class="map-info">
-                <p class="map-type">garry's mod</p>
-                <h3>map coming soon</h3>
-                <p>screenshots, descriptions, and workshop links can go here.</p>
-              </div>
+              <div class="map-info"><p class="map-type">garry's mod</p><h3>map coming soon</h3><p>screenshots, descriptions, and workshop links can go here.</p></div>
             </article>
           </div>
         </div>
-
         <div class="map-tab-panel" id="bonelab-maps" role="tabpanel" data-map-panel="bonelab" hidden>
           <div class="map-grid">
             <a class="map-card" href="https://mod.io/g/bonelab/m/gm-manhattanmegamallnightv1#description" target="_blank" rel="noreferrer">
-              <div class="map-thumb">
-                <img src="https://images.steamusercontent.com/ugc/7414005913059112/673AB8163D57F042567DE4BD18EDD64D2474D78B/?ima=fit&amp;imcolor=%23000000&amp;imh=720&amp;impolicy=Letterbox&amp;imw=1280&amp;letterbox=true" alt="gm_ManhattanMegaMallNightV1 thumbnail" loading="lazy" />
-              </div>
-              <div class="map-info">
-                <p class="map-type">bonelab</p>
-                <h3>gm_ManhattanMegaMallNightV1</h3>
-                <p>open on mod.io ↗</p>
-              </div>
+              <div class="map-thumb"><img src="https://images.steamusercontent.com/ugc/7414005913059112/673AB8163D57F042567DE4BD18EDD64D2474D78B/?ima=fit&amp;imcolor=%23000000&amp;imh=720&amp;impolicy=Letterbox&amp;imw=1280&amp;letterbox=true" alt="gm_ManhattanMegaMallNightV1 thumbnail" loading="lazy" /></div>
+              <div class="map-info"><p class="map-type">bonelab</p><h3>gm_ManhattanMegaMallNightV1</h3><p>open on mod.io ↗</p></div>
             </a>
-
             <a class="map-card" href="https://mod.io/g/bonelab/m/stalkerconstruction#discussion" target="_blank" rel="noreferrer">
               <div class="map-thumb"><span>STKR</span></div>
-              <div class="map-info">
-                <p class="map-type">bonelab</p>
-                <h3>stkr_Constructor</h3>
-                <p>open on mod.io ↗</p>
-              </div>
+              <div class="map-info"><p class="map-type">bonelab</p><h3>stkr_Constructor</h3><p>open on mod.io ↗</p></div>
             </a>
           </div>
         </div>
@@ -151,11 +126,21 @@
         </div>
       </section>
 
+      <section id="latestBlog" class="panel latest-blog-panel">
+        <div class="latest-blog-top">
+          <div><p class="eyebrow">latest entry</p><h2>blog</h2></div>
+          <a class="blog-link-button" href="/blog.html">all posts →</a>
+        </div>
+        <div id="latestBlogMount" class="latest-blog-card" aria-live="polite">
+          <p>loading latest post...</p>
+        </div>
+      </section>
+
       <footer><span>© <span id="year"></span> stalkr</span><span>missing.website</span></footer>
     </div>
   </main>
 
   <audio id="siteAudio" preload="auto" loop autoplay playsinline src="assets/starting-to-fall.mp3"></audio>
-  <script src="script-clean.js?v=1"></script>
+  <script src="script-clean.js?v=2"></script>
 </body>
 </html>
