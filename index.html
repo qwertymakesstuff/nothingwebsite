@@ -12,50 +12,30 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
   <link rel="stylesheet" href="blog-extra.css?v=1" />
 </head>
 <body>
   <div class="noise" aria-hidden="true"></div>
-  <header class="topbar">
-    <a class="wordmark" href="#top">stalkr</a>
-    <nav aria-label="Primary navigation">
-      <a href="#about">about</a><a href="#games">games</a><a href="/maps.html">maps</a><a href="/blog.html">blog</a><a href="#links">links</a>
-    </nav>
-    <button id="audioToggle" class="audio-toggle" type="button" aria-label="Play The Feeling by Steve Lacy"><span id="audioIcon">▶</span><span class="audio-label">The Feeling — Steve Lacy</span></button>
-  </header>
+  <header class="topbar"><a class="wordmark" href="#top">stalkr</a><nav aria-label="Primary navigation"><a href="#about">about</a><a href="#games">games</a><a href="/maps.html">maps</a><a href="/blog.html">blog</a><a href="#links">links</a></nav><button id="audioToggle" class="audio-toggle" type="button" aria-label="Play The Feeling by Steve Lacy"><span id="audioIcon">▶</span><span class="audio-label">The Feeling — Steve Lacy</span></button></header>
   <main id="top" class="page-shell">
     <aside class="profile-column">
       <section class="profile-card panel"><div class="avatar-wrap"><img src="assets/profile.jpg" alt="stalkr profile picture" class="avatar" /><span class="status-dot" title="online"></span></div><h1>stalkr</h1><p class="handle">missing.website</p><p class="status">● online</p></section>
-      <section class="panel mini-player">
-        <p class="eyebrow">now playing</p>
-        <div class="track"><img class="album-cover" src="assets/the-feeling-cover.jpg" alt="The Feeling album cover" onerror="this.style.display='none';document.getElementById('albumFallback').style.display='grid'" /><div id="albumFallback" class="album-placeholder">SL</div><div><strong>The Feeling</strong><span>Steve Lacy</span></div></div>
-        <div class="real-progress" id="audioSeek" role="slider" tabindex="0" aria-label="Song progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="audioProgress"></span></div>
-        <div class="time-row"><span id="audioCurrent">0:00</span><span id="audioDuration">0:00</span></div>
-        <p class="tiny-note">autoplay may need one tap because some browsers block sound</p>
-      </section>
+      <section class="panel mini-player"><p class="eyebrow">now playing</p><div class="track"><img class="album-cover" src="assets/the-feeling-cover.jpg" alt="The Feeling album cover" onerror="this.style.display='none';document.getElementById('albumFallback').style.display='grid'" /><div id="albumFallback" class="album-placeholder">SL</div><div><strong>The Feeling</strong><span>Steve Lacy</span></div></div><div class="real-progress" id="audioSeek" role="slider" tabindex="0" aria-label="Song progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="audioProgress"></span></div><div class="time-row"><span id="audioCurrent">0:00</span><span id="audioDuration">0:00</span></div><p class="tiny-note">autoplay may need one tap because some browsers block sound</p></section>
     </aside>
     <div class="content-column">
       <section id="about" class="panel hero-panel"><p class="eyebrow">about me</p><h2 class="about-title">roblox karaoke singer and ted counterpart.</h2><p class="about-subtitle">birthdays can be scheduled by quitting eating shrimps with wimps and eating lobster with a monster</p><p class="blink-line"><span class="cursor">_</span></p></section>
-      <section id="games" class="panel games-panel">
-        <div class="section-heading"><div><p class="eyebrow">library</p><h2>favorite games</h2></div><p class="hint">swipe through the covers</p></div>
-        <div class="game-library" id="gameLibrary">
-          <a class="game-card" href="https://store.steampowered.com/app/4000/Garrys_Mod/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/4000/library_600x900_2x.jpg')"><span>Garry's Mod</span></a>
-          <a class="game-card" href="https://store.steampowered.com/app/381210/Dead_by_Daylight/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/381210/library_600x900_2x.jpg')"><span>Dead by Daylight</span></a>
-          <a class="game-card" href="https://store.steampowered.com/app/3219630/Halloween_The_Game/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/3219630/library_600x900_2x.jpg')"><span>Halloween: The Game</span></a>
-          <a class="game-card roblox-card" href="https://www.roblox.com/" target="_blank" rel="noreferrer"><div class="roblox-mark">◇</div><span>Roblox</span></a>
-        </div>
-      </section>
-      <section id="links" class="panel links-panel"><p class="eyebrow">contacting stalkr</p><h2>links</h2><div class="links-list">
-        <a href="https://steamcommunity.com/id/gangstalkrr/" target="_blank" rel="noreferrer"><span class="social-icon steam-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M11.98 2C6.56 2 2.16 6.3 2 11.68l5.36 2.22c.45-.31 1-.49 1.58-.49.1 0 .2.01.3.02l2.39-3.46v-.05a3.71 3.71 0 1 1 3.71 3.71h-.08l-3.41 2.43c.01.1.02.2.02.31A2.94 2.94 0 0 1 6.2 17.5L2.37 15.9A10 10 0 1 0 11.98 2Zm-3.05 15.76a2.24 2.24 0 0 1-2.14-1.58l1.29.53a1.67 1.67 0 1 0 1.29-3.08l-1.31-.54a2.24 2.24 0 1 1 .87 4.67Zm6.4-5.38a2.47 2.47 0 1 1 0-4.94 2.47 2.47 0 0 1 0 4.94Zm0-.62a1.85 1.85 0 1 0 0-3.7 1.85 1.85 0 0 0 0 3.7Z"/></svg></span><span class="social-copy"><strong>steam</strong><small>steamcommunity.com/id/gangstalkrr/</small></span><b>↗</b></a>
-        <a href="https://www.tiktok.com/@gangstalkerrr" target="_blank" rel="noreferrer"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.2 3c.41 2.3 1.77 3.67 4.04 4.05v3.1a8.15 8.15 0 0 1-4.02-1.22v6.17a6.1 6.1 0 1 1-5.27-6.04v3.15a3 3 0 1 0 2.14 2.88V3h3.11Z"/></svg></span><span class="social-copy"><strong>tiktok</strong><small>@gangstalkerrr</small></span><b>↗</b></a>
-        <a href="https://www.instagram.com/gangstalkrr/" target="_blank" rel="noreferrer"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm11.25 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg></span><span class="social-copy"><strong>instagram</strong><small>@gangstalkrr</small></span><b>↗</b></a>
+      <section id="games" class="panel games-panel"><div class="section-heading"><div><p class="eyebrow">library</p><h2>favorite games</h2></div><p class="hint">swipe through the covers</p></div><div class="game-library" id="gameLibrary">
+        <a class="game-card" href="https://store.steampowered.com/app/4000/Garrys_Mod/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/4000/library_600x900_2x.jpg')"><span>Garry's Mod</span></a>
+        <a class="game-card" href="https://store.steampowered.com/app/381210/Dead_by_Daylight/" target="_blank" rel="noreferrer" style="--cover:url('https://cdn.cloudflare.steamstatic.com/steam/apps/381210/library_600x900_2x.jpg')"><span>Dead by Daylight</span></a>
+        <a class="game-card" href="https://store.steampowered.com/app/3219630/Halloween_The_Game/" target="_blank" rel="noreferrer" style="--cover:url('https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3219630/library_600x900_2x.jpg')"><span>Halloween: The Game</span></a>
+        <a class="game-card roblox-card" href="https://www.roblox.com/" target="_blank" rel="noreferrer" style="--cover:url('https://images.rbxcdn.com/7bba321f4d8328683d6e59487ce514eb')"><div class="roblox-mark">ROBLOX</div><span>Roblox</span></a>
       </div></section>
+      <section id="links" class="panel links-panel"><p class="eyebrow">contacting stalkr</p><h2>links</h2><div class="links-list"><a href="https://steamcommunity.com/id/gangstalkrr/" target="_blank" rel="noreferrer"><span class="social-copy"><strong>steam</strong><small>steamcommunity.com/id/gangstalkrr/</small></span><b>↗</b></a><a href="https://www.tiktok.com/@gangstalkerrr" target="_blank" rel="noreferrer"><span class="social-copy"><strong>tiktok</strong><small>@gangstalkerrr</small></span><b>↗</b></a><a href="https://www.instagram.com/gangstalkrr/" target="_blank" rel="noreferrer"><span class="social-copy"><strong>instagram</strong><small>@gangstalkrr</small></span><b>↗</b></a></div></section>
       <section id="latestBlog" class="panel latest-blog-panel"><div class="latest-blog-top"><div><p class="eyebrow">latest entry</p><h2>blog</h2></div><a class="blog-link-button" href="/blog.html">all posts →</a></div><div id="latestBlogMount" class="latest-blog-card" aria-live="polite"><p>loading latest post...</p></div></section>
       <footer><span>© <span id="year"></span> stalkr</span><span>missing.website</span></footer>
     </div>
   </main>
-  <audio id="siteAudio" preload="auto" loop autoplay playsinline src="assets/the-feeling.mp3"></audio>
-  <script src="script-clean.js?v=3"></script>
+  <audio id="siteAudio" preload="auto" loop autoplay playsinline src="assets/the-feeling.mp3"></audio><script src="script-clean.js?v=3"></script>
 </body>
 </html>
