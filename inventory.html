@@ -4,23 +4,21 @@
 document.getElementById('year').textContent=new Date().getFullYear();
 const status=document.getElementById('inventoryStatus'),grid=document.getElementById('inventoryGrid');
 const vanity='gangstalkrr';
-async function getSteamId(){
- const urls=['https://steamcommunity.com/id/'+vanity+'/?xml=1','https://corsproxy.io/?url='+encodeURIComponent('https://steamcommunity.com/id/'+vanity+'/?xml=1')];
- for(const u of urls){try{const t=await fetch(u).then(r=>{if(!r.ok)throw 0;return r.text()});const m=t.match(/<steamID64>(\d+)<\/steamID64>/);if(m)return m[1]}catch(e){}}
- throw new Error('id');
-}
+const INVENTORY_API='https://REPLACE-ME.workers.dev/inventory';
+async function getSteamId(){ return null; }
 async function load(){
  try{
-  const id=await getSteamId(), base='https://steamcommunity.com/inventory/'+id+'/730/2?l=english&count=2000';
-  let data;
-  for(const u of ['https://corsproxy.io/?url='+encodeURIComponent(base)]){try{const r=await fetch(u);if(!r.ok)throw 0;data=await r.json();if(data&&data.success)break}catch(e){}}
+  if(INVENTORY_API.includes('REPLACE-ME')) throw new Error('worker-not-configured');
+  const r=await fetch(INVENTORY_API,{headers:{Accept:'application/json'}});
+  if(!r.ok) throw new Error('inventory');
+  const data=await r.json();
   if(!data||!data.success)throw new Error('inventory');
   const desc=new Map((data.descriptions||[]).map(d=>[d.classid+'_'+d.instanceid,d]));
   const items=(data.assets||[]).map(a=>desc.get(a.classid+'_'+a.instanceid)).filter(Boolean);
   status.style.display='none';
   if(!items.length){status.style.display='block';status.textContent='no public Counter-Strike items found.';return}
   grid.innerHTML=items.map(d=>{const name=d.market_hash_name||d.name||'Counter-Strike item';const type=d.type||'';const img=d.icon_url?'https://community.cloudflare.steamstatic.com/economy/image/'+d.icon_url+'/256fx256f':'';return '<article class="inv-item">'+(img?'<img loading="lazy" src="'+img+'" alt="">':'')+'<div><strong>'+esc(name)+'</strong><small>'+esc(type)+'</small></div></article>'}).join('');
- }catch(e){status.innerHTML='Steam would not provide the public inventory data right now. <a href="https://steamcommunity.com/id/gangstalkrr/inventory/#730" target="_blank" rel="noreferrer">open it on Steam ↗</a>'}
+ }catch(e){status.innerHTML=e.message==='worker-not-configured'?'inventory proxy is ready to connect — deploy the included Cloudflare Worker, then add its URL here.':'inventory is temporarily unavailable. <a href="https://steamcommunity.com/id/gangstalkrr/inventory/#730" target="_blank" rel="noreferrer">open it on Steam ↗</a>'}
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))} load();
 </script></body></html>
