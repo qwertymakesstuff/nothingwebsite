@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=12" />
   <link rel="stylesheet" href="blog-extra.css?v=1" />
 </head>
 <body class="blog-admin-page">
@@ -19,7 +19,7 @@
     <a class="wordmark" href="/">stalkr</a>
     <nav aria-label="Primary navigation"><a href="/#about">about</a><a href="/#games">games</a><a href="/maps.html">maps</a><a href="/blog.html">blog</a><a href="/inventory.html">inventory</a><a href="/#links">links</a></nav>
     <a class="top-link" href="/">← home</a>
-  </header>
+  <button class="mobile-nav-toggle" id="mobileNavToggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button></header><div class="mobile-nav-backdrop" id="mobileNavBackdrop"></div>
   <main class="admin-shell">
     <section class="panel admin-login" id="authPanel">
       <p class="eyebrow">owner access</p>
@@ -56,5 +56,5 @@
     </section>
   </main>
   <script src="blog-admin.js?v=1"></script>
-</body>
+<script>(function(){const b=document.getElementById('mobileNavToggle'),d=document.getElementById('mobileNavBackdrop'),n=document.querySelector('.topbar nav');if(!b||!n)return;function set(open){document.body.classList.toggle('mobile-nav-open',open);b.textContent=open?'×':'☰';b.setAttribute('aria-expanded',String(open));b.setAttribute('aria-label',open?'Close navigation':'Open navigation')}b.addEventListener('click',()=>set(!document.body.classList.contains('mobile-nav-open')));if(d)d.addEventListener('click',()=>set(false));n.addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)})})();</script></body>
 </html>
