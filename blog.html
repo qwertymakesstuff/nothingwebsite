@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=12" />
+  <link rel="stylesheet" href="style.css?v=13" />
   <link rel="stylesheet" href="blog-extra.css?v=1" />
 </head>
 <body class="blog-page">
@@ -36,5 +36,5 @@
   </main>
 
   <script src="blog.js?v=1"></script>
-<script>(function(){const b=document.getElementById('mobileNavToggle'),d=document.getElementById('mobileNavBackdrop'),n=document.querySelector('.topbar nav');if(!b||!n)return;function set(open){document.body.classList.toggle('mobile-nav-open',open);b.textContent=open?'×':'☰';b.setAttribute('aria-expanded',String(open));b.setAttribute('aria-label',open?'Close navigation':'Open navigation')}b.addEventListener('click',()=>set(!document.body.classList.contains('mobile-nav-open')));if(d)d.addEventListener('click',()=>set(false));n.addEventListener('click',e=>{if(e.target.closest('a'))set(false)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)})})();</script></body>
+<script>(function(){const b=document.getElementById('mobileNavToggle'),d=document.getElementById('mobileNavBackdrop'),n=document.querySelector('.topbar nav');if(!b||!n)return;function set(open){document.body.classList.toggle('mobile-nav-open',open);b.textContent=open?'×':'☰';b.setAttribute('aria-expanded',String(open));b.setAttribute('aria-label',open?'Close navigation':'Open navigation')}b.addEventListener('click',()=>set(!document.body.classList.contains('mobile-nav-open')));if(d)d.addEventListener('click',()=>set(false));n.addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;e.preventDefault();const href=a.getAttribute('href');set(false);setTimeout(()=>{window.location.href=href},30)});document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)})})();</script></body>
 </html>
