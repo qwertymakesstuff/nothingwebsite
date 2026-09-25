@@ -1,6 +1,6 @@
-const STEAM_ID64 = "76561199578116138";
+const VANITY = "gangstalkrr";
 const ALLOWED_ORIGIN = "https://missing.website";
-const STEAM_URL = `https://steamcommunity.com/inventory/${STEAM_ID64}/730/2?l=english&count=2000`;
+
 
 function headers(origin) {
   return {
@@ -26,12 +26,21 @@ export default {
     const cached = await cache.match(cacheKey);
     if (cached) return cached;
 
-    const upstream = await fetch(STEAM_URL, {
-      headers: {
-        "Accept": "application/json,text/plain,*/*",
-        "User-Agent": "Mozilla/5.0 (compatible; missing.website inventory)"
-      }
-    });
+    const commonHeaders = {
+      "Accept": "application/json,text/plain,*/*",
+      "User-Agent": "Mozilla/5.0 (compatible; missing.website inventory)"
+    };
+
+    // Resolve the vanity name at runtime so the Worker never depends on a
+    // guessed/hard-coded SteamID64.
+    const profile = await fetch(`https://steamcommunity.com/id/${VANITY}/?xml=1`, { headers: commonHeaders });
+    if (!profile.ok) return new Response(JSON.stringify({ error: "steam profile upstream", status: profile.status }), { status: 502, headers: headers(origin) });
+    const xml = await profile.text();
+    const idMatch = xml.match(/<steamID64>(\d+)<\/steamID64>/);
+    if (!idMatch) return new Response(JSON.stringify({ error: "could not resolve steam id" }), { status: 502, headers: headers(origin) });
+
+    const steamUrl = `https://steamcommunity.com/inventory/${idMatch[1]}/730/2?l=english&count=2000`;
+    const upstream = await fetch(steamUrl, { headers: commonHeaders });
     if (!upstream.ok) return new Response(JSON.stringify({ error: "steam upstream", status: upstream.status }), { status: 502, headers: headers(origin) });
 
     const body = await upstream.text();
