@@ -1,237 +1,634 @@
-<!DOCTYPE html>
-
-
-<!-- Ultimate Game Stash file--> 
-<!-- For the regularly updating doc go to https://docs.google.com/document/d/1_FmH3BlSBQI7FGgAQL59-ZPe8eCxs35wel6JUyVaG8Q/ -->
-
-
-<html lang="en-us">
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Granny Original</title>
-    <meta charset="utf-8">
-    <meta name="robots" content="noindex, nofollow">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bubbls/granny@212c543a85b243c4a0b92211f557e760d83d2292/TemplateData/style.css">
-    <script src="https://cdn.jsdelivr.net/gh/bubbls/granny@212c543a85b243c4a0b92211f557e760d83d2292/sdk.js"></script>
-    <!-- GameMonetize SDK Entegrasyonu -->
-    <script type="text/javascript">
-        window.SDK_OPTIONS = {
-            gameId: "jp112o3o4hzgrnc7zaewjkrfk282pul8",
-            onEvent: function (a) {
-                switch (a.name) {
-                    case "SDK_GAME_PAUSE":
-                        console.log("Oyun duraklatıldı, ses kapatılıyor...");
-                        if (typeof myGameInstance !== 'undefined' && myGameInstance) {
-                            myGameInstance.SendMessage('AudioManager', 'MuteAudio');
-                        }
-                        break;
-                    case "SDK_GAME_START":
-                        console.log("Reklam bitti, oyun devam ediyor...");
-                        if (typeof myGameInstance !== 'undefined' && myGameInstance) {
-                            myGameInstance.SendMessage('AudioManager', 'UnmuteAudio');
-                        }
-                        break;
-                    case "SDK_READY":
-                        console.log("SDK hazır.");
-                        break;
-                }
-            }
-        };
-        (function (a, b, c) {
-            var d = a.getElementsByTagName(b)[0];
-            a.getElementById(c) || (a = a.createElement(b), a.id = c, a.src = "https://cdn.jsdelivr.net/gh/testamalame/sef@main/sedk.js", d.parentNode.insertBefore(a, d));
-        })(document, "script", "gamemonetize-sdk");
-    </script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: url('https://cdn.jsdelivr.net/gh/gru6nny/ohd@main/background.png') no-repeat center center fixed;
-            background-size: cover;
-        }
-        #unity-container {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            left: 0;
-            top: 0;
-        }
-        #unity-loading-bar {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            height: 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid #ffffff;
-            border-radius: 10px;
-            display: block;
-        }
-        #unity-logo {
-            position: absolute;
-            top: calc(50% - 100px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: auto;
-        }
-        #unity-logo img {
-            max-width: 100%;
-            height: auto;
-        }
-        #unity-progress-bar-empty {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        #unity-progress-bar-full {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 0%;
-            height: 100%;
-            background: #4caf50;
-            border-radius: 8px;
-            transition: width 0.3s ease;
-        }
-        #unity-warning {
-            position: absolute;
-            left: 50%;
-            top: 5%;
-            transform: translate(-50%);
-            background: white;
-            padding: 10px;
-            display: none;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#050303">
+<meta name="robots" content="noindex, nofollow">
+<title>Granny — missing.website</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png?v=4">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#050303;color:#d5cccc;font-family:"Special Elite",ui-monospace,monospace;user-select:none;-webkit-user-select:none;touch-action:none}
+canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
+.overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:rgba(5,3,3,.9)}
+.overlay[hidden]{display:none}
+.overlay h1{margin:0 0 6px;font:400 clamp(3.4rem,13vw,7rem)/1 "VT323",monospace;letter-spacing:.2em;color:#b83a3a;text-shadow:0 0 22px rgba(184,58,58,.45)}
+.overlay h2{margin:0 0 10px;font:400 clamp(2.2rem,8vw,4rem)/1 "VT323",monospace;letter-spacing:.14em}
+.overlay p{margin:6px 0;color:#8e8585;max-width:520px;line-height:1.5}
+.btn{margin-top:22px;border:1px solid #665b5b;background:#0b0b0b;color:#d5cccc;font:inherit;font-size:1.05rem;padding:13px 30px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{border-color:#b8a1a1;background:#141010}
+.keys-help{display:grid;grid-template-columns:auto auto;gap:4px 18px;margin:18px 0 0;text-align:left;font-size:.9rem;color:#8e8585}
+.keys-help b{color:#d5cccc;font-weight:400}
+.back{margin-top:16px;color:#665b5b;font-size:.85rem}
+.back a{color:#8e8585}
+#hud{position:fixed;inset:0;z-index:5;pointer-events:none}
+#hud[hidden]{display:none}
+#slots{position:absolute;top:14px;left:16px;display:flex;gap:8px;align-items:center;font-size:.8rem;color:#8e8585}
+.slot{width:34px;height:34px;border:1px solid #4a4242;background:rgba(0,0,0,.55);display:grid;place-items:center;font-size:1.2rem;filter:grayscale(1) brightness(.35)}
+.slot.got{filter:none;border-color:#b8a1a1}
+#lives{position:absolute;top:14px;right:16px;font:1.7rem "VT323",monospace;color:#b83a3a;letter-spacing:.1em}
+#stam{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);width:min(220px,50vw);height:4px;background:rgba(255,255,255,.1)}
+#stam i{display:block;height:100%;width:100%;background:#b8a1a1}
+#msg{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);width:90%;text-align:center;font-size:1.05rem;text-shadow:0 0 6px #000,0 0 3px #000;opacity:0;transition:opacity .25s}
+#msg.on{opacity:1}
+#cross{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:rgba(255,255,255,.45)}
+#flash{position:fixed;inset:0;z-index:6;background:#a00;opacity:0;pointer-events:none;transition:opacity .6s}
+#vig{position:fixed;inset:0;z-index:4;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.75) 100%)}
+#hide{position:fixed;inset:0;z-index:7;pointer-events:none;opacity:0;transition:opacity .2s;background:linear-gradient(#000 0 44%,transparent 44% 56%,#000 56%)}
+#hide.on{opacity:1}
+#alert{position:absolute;top:14%;left:50%;transform:translateX(-50%);font:2rem "VT323",monospace;letter-spacing:.2em;color:#b83a3a;opacity:0;transition:opacity .3s}
+#alert.on{opacity:1}
+#touch{position:fixed;inset:0;z-index:8;display:none}
+.touch #touch{display:block;pointer-events:none}
+.tbtn{position:absolute;pointer-events:auto;width:64px;height:64px;border-radius:50%;border:1px solid #665b5b;background:rgba(0,0,0,.5);color:#d5cccc;display:grid;place-items:center;font-size:.8rem}
+.tbtn.on{background:rgba(184,161,161,.35)}
+#stick{position:absolute;pointer-events:none;width:100px;height:100px;border:1px solid #665b5b;border-radius:50%;display:none}
+#stick i{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px;border-radius:50%;background:rgba(184,161,161,.35)}
+</style>
 </head>
 <body>
-    <div id="unity-container">
-        <canvas id="unity-canvas" style="position: absolute; width: 100%; height: 100%"></canvas>
-        <div id="unity-loading-bar">
-            <div id="unity-logo">
-            </div>
-            <div id="unity-progress-bar-empty">
-                <div id="unity-progress-bar-full"></div>
-            </div>
-        </div>
-        <div id="unity-warning"></div>
-    </div>
-    <script>
-        async function mergeUnityWebFiles(baseUrl, filePrefix, totalParts, extension) {
-            const partUrls = [];
-            for (let i = 1; i <= totalParts; i++) {
-                partUrls.push(`${baseUrl}/${filePrefix}_part${i}.${extension}`);
-            }
+<canvas id="view"></canvas>
+<div id="vig"></div><div id="hide"></div><div id="flash"></div>
+<div id="hud" hidden>
+  <div id="slots"><span>keys</span><div class="slot" data-k="0" title="red key">🔑</div><div class="slot" data-k="1" title="blue key">🗝️</div><div class="slot" data-k="2" title="green key">🔑</div></div>
+  <div id="lives"></div>
+  <div id="alert">SHE SEES YOU</div>
+  <div id="cross"></div>
+  <div id="msg"></div>
+  <div id="stam"><i></i></div>
+</div>
+<div id="touch">
+  <div id="stick"><i></i></div>
+  <div class="tbtn" id="tUse" style="right:18px;bottom:110px">USE</div>
+  <div class="tbtn" id="tRun" style="right:18px;bottom:30px">RUN</div>
+  <div class="tbtn" id="tTorch" style="right:98px;bottom:70px">TORCH</div>
+</div>
 
-            const buffers = [];
-            for (let i = 0; i < totalParts; i++) {
-                const response = await fetch(partUrls[i]);
-                if (!response.ok) {
-                    throw new Error(`Failed to load part: ${partUrls[i]}`);
-                }
-                const buffer = await response.arrayBuffer();
-                buffers.push(buffer);
+<div class="overlay" id="start">
+  <h1>GRANNY</h1>
+  <p>You woke up in her house. Find the three keys, unlock the front door and get out. She hears everything.</p>
+  <div class="keys-help" id="help">
+    <b>W A S D</b><span>move</span>
+    <b>mouse</b><span>look</span>
+    <b>shift</b><span>run (makes noise)</span>
+    <b>E</b><span>hide in wardrobes / use door</span>
+    <b>F</b><span>flashlight</span>
+  </div>
+  <button class="btn" id="go">enter the house</button>
+  <p class="back"><a href="/">← back to missing.website</a></p>
+</div>
+<div class="overlay" id="pause" hidden>
+  <h2>paused</h2>
+  <button class="btn" id="resume">resume</button>
+  <p class="back"><a href="/">← back to missing.website</a></p>
+</div>
+<div class="overlay" id="over" hidden>
+  <h2 style="color:#b83a3a">she got you</h2>
+  <p>Granny doesn't forgive. Try again.</p>
+  <button class="btn" onclick="location.reload()">try again</button>
+  <p class="back"><a href="/">← back to missing.website</a></p>
+</div>
+<div class="overlay" id="win" hidden>
+  <h2 style="color:#6b996b">you escaped</h2>
+  <p id="winText"></p>
+  <button class="btn" onclick="location.reload()">play again</button>
+  <p class="back"><a href="/">← back to missing.website</a></p>
+</div>
 
-                const progress = ((i + 1) / totalParts) * 100;
-                document.querySelector("#unity-progress-bar-full").style.width = `${progress}%`;
-            }
+<script src="three.min.js"></script>
+<script>
+(function () {
+'use strict';
 
-            const totalLength = buffers.reduce((acc, buffer) => acc + buffer.byteLength, 0);
-            const combinedBuffer = new Uint8Array(totalLength);
-            let offset = 0;
+/* ---------- map ---------- */
+// # wall  . floor  P player  G granny  K key spot  H wardrobe  T table  E exit door
+const MAP = [
+  '#####################',
+  '#H....#K...H#.....K.#',
+  '#..T..#..T..#G..T...#',
+  '#...................#',
+  '#....K#.....#H......#',
+  '##.####.#####.#######',
+  '#...................#',
+  '#...................E',
+  '#######.####.########',
+  '#H........#........H#',
+  '#.P...T...K.......K.#',
+  '#.........#....T....#',
+  '#####################'
+];
+const CELL = 3, WALL_H = 3.2;
+const ROWS = MAP.length, COLS = MAP[0].length;
+const grid = MAP.map(r => r.split(''));
+const solid = (c, r) => c < 0 || r < 0 || c >= COLS || r >= ROWS || '#HETX'.includes(grid[r][c]);
+const opaque = (c, r) => c < 0 || r < 0 || c >= COLS || r >= ROWS || '#HE'.includes(grid[r][c]);
+const toCell = v => Math.floor(v / CELL);
+const center = (c, r) => [(c + .5) * CELL, (r + .5) * CELL];
 
-            buffers.forEach((buffer) => {
-                combinedBuffer.set(new Uint8Array(buffer), offset);
-                offset += buffer.byteLength;
-            });
+let playerStart = [0, 0], grannyStart = [0, 0];
+const keySpots = [], wardrobes = [];
+let exitCell = null;
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  const ch = grid[r][c];
+  if (ch === 'P') { playerStart = center(c, r); grid[r][c] = '.'; }
+  else if (ch === 'G') { grannyStart = center(c, r); grid[r][c] = '.'; }
+  else if (ch === 'K') { keySpots.push(center(c, r)); grid[r][c] = '.'; }
+  else if (ch === 'H') wardrobes.push({ c, r, pos: center(c, r) });
+  else if (ch === 'E') exitCell = { c, r, pos: center(c, r) };
+}
 
-            return combinedBuffer;
-        }
+/* ---------- three setup ---------- */
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setClearColor(0x050303);
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x050303, 0.07);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 80);
+camera.rotation.order = 'YXZ';
+scene.add(camera);
+function resize() {
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize); resize();
 
-        var container = document.querySelector("#unity-container");
-        var canvas = document.querySelector("#unity-canvas");
-        var loadingBar = document.querySelector("#unity-loading-bar");
-        var progressBarFull = document.querySelector("#unity-progress-bar-full");
-        var warningBanner = document.querySelector("#unity-warning");
+scene.add(new THREE.AmbientLight(0x6a5a5a, 0.9));
+const torch = new THREE.SpotLight(0xfff0cf, 2.6, 28, 0.5, 0.55, 1.4);
+torch.position.set(0, 0, 0.1);
+torch.target.position.set(0, 0, -1);
+camera.add(torch); camera.add(torch.target);
+const glow = new THREE.PointLight(0xffd9a0, 0.6, 7, 2);
+camera.add(glow);
 
-        let myGameInstance = null;
-        let isAdShown = false;
+function makeTex(w, h, rx, ry, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
+  return t;
+}
+function speckle(g, w, h, n, a) {
+  for (let i = 0; i < n; i++) { g.fillStyle = 'rgba(0,0,0,' + Math.random() * a + ')'; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1 + Math.random() * 3); }
+}
+const wallTex = makeTex(256, 256, 1, 1, (g, w, h) => {
+  g.fillStyle = '#4b4a38'; g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 32) { g.fillStyle = '#41402f'; g.fillRect(x, 0, 16, h); }
+  speckle(g, w, h, 900, .25);
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(0,0,0,.35)'); gr.addColorStop(.25, 'rgba(0,0,0,0)'); gr.addColorStop(.85, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(30,18,10,.7)');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+});
+const floorTex = makeTex(256, 256, COLS, ROWS, (g, w, h) => {
+  for (let y = 0; y < h; y += 32) {
+    g.fillStyle = 'hsl(24,' + (28 + Math.random() * 8) + '%,' + (15 + Math.random() * 6) + '%)'; g.fillRect(0, y, w, 31);
+    g.fillStyle = '#0d0805'; g.fillRect(0, y + 31, w, 1);
+    const o = Math.random() * w; g.fillRect(o, y, 1, 32);
+  }
+  speckle(g, w, h, 700, .3);
+});
+const ceilTex = makeTex(128, 128, COLS, ROWS, (g, w, h) => { g.fillStyle = '#2a2622'; g.fillRect(0, 0, w, h); speckle(g, w, h, 400, .3); });
+const wallMat = new THREE.MeshLambertMaterial({ map: wallTex });
+const woodMat = new THREE.MeshLambertMaterial({ color: 0x3a2515 });
+const darkWood = new THREE.MeshLambertMaterial({ color: 0x24150c });
 
-        function unityShowBanner(msg, type) {
-            function updateBannerVisibility() {
-                warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-            }
-            var div = document.createElement('div');
-            div.innerHTML = msg;
-            warningBanner.appendChild(div);
-            if (type == 'error') div.style = 'background: red; padding: 10px;';
-            else {
-                if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-                setTimeout(function() {
-                    warningBanner.removeChild(div);
-                    updateBannerVisibility();
-                }, 5000);
-            }
-            updateBannerVisibility();
-        }
+const W = COLS * CELL, D = ROWS * CELL;
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({ map: floorTex }));
+floor.rotation.x = -Math.PI / 2; floor.position.set(W / 2, 0, D / 2); scene.add(floor);
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({ map: ceilTex }));
+ceil.rotation.x = Math.PI / 2; ceil.position.set(W / 2, WALL_H, D / 2); scene.add(ceil);
 
-        function showAdOnClick() {
-            if (!isAdShown && typeof sdk !== 'undefined' && typeof sdk.showBanner !== 'undefined') {
-                sdk.showBanner();
-                isAdShown = true;
-            }
-        }
+const wallGeo = new THREE.BoxGeometry(CELL, WALL_H, CELL);
+const tableGeo = new THREE.BoxGeometry(1.7, .9, 1.7);
+for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+  const ch = grid[r][c], [x, z] = center(c, r);
+  if (ch === '#' || ch === 'E') {
+    const m = new THREE.Mesh(wallGeo, wallMat); m.position.set(x, WALL_H / 2, z); scene.add(m);
+  } else if (ch === 'T') {
+    const m = new THREE.Mesh(tableGeo, woodMat); m.position.set(x, .45, z); scene.add(m);
+  } else if (ch === '.') {
+    // dark lintel over doorways so openings read as doors
+    const open = (a, b) => !solid(c + a, r + b);
+    if ((solid(c - 1, r) && solid(c + 1, r) && (open(0, -1) || open(0, 1))) || (solid(c, r - 1) && solid(c, r + 1) && (open(-1, 0) || open(1, 0)))) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(CELL, .5, CELL), darkWood); m.position.set(x, WALL_H - .25, z); scene.add(m);
+    }
+  }
+}
+// wardrobes
+wardrobes.forEach(w => {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2, 2.7, 1.5), darkWood); body.position.y = 1.35; g.add(body);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(.04, 2.3, 1.2), woodMat); g.add(door); door.position.y = 1.35;
+  g.position.set(w.pos[0], 0, w.pos[1]);
+  // face toward the open neighbour
+  const dirs = [[0, 1, 0], [0, -1, Math.PI], [1, 0, Math.PI / 2], [-1, 0, -Math.PI / 2]];
+  for (const [dc, dr, ry] of dirs) if (!solid(w.c + dc, w.r + dr)) { w.out = [w.c + dc, w.r + dr]; g.rotation.y = ry; break; }
+  scene.add(g);
+});
+// exit door (on the inner face of the right wall)
+const exitGroup = new THREE.Group();
+const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(.2, 2.8, 2.2), new THREE.MeshLambertMaterial({ color: 0x4a1a1a }));
+doorMesh.position.set(exitCell.c * CELL - .1, 1.4, exitCell.pos[1]); exitGroup.add(doorMesh);
+const locks = [0xcc3333, 0x3366cc, 0x33aa55].map((col, i) => {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(.18, .28, .28), new THREE.MeshBasicMaterial({ color: 0x222222 }));
+  m.position.set(exitCell.c * CELL - .25, 1.9 - i * .5, exitCell.pos[1] + .6); m.userData.col = col; exitGroup.add(m); return m;
+});
+const signTex = makeTex(128, 48, 1, 1, (g, w, h) => { g.fillStyle = '#0c2a12'; g.fillRect(0, 0, w, h); g.fillStyle = '#5dff7a'; g.font = '34px monospace'; g.textAlign = 'center'; g.fillText('EXIT', w / 2, 36); });
+const sign = new THREE.Mesh(new THREE.PlaneGeometry(1, .38), new THREE.MeshBasicMaterial({ map: signTex }));
+sign.rotation.y = -Math.PI / 2; sign.position.set(exitCell.c * CELL - .05, 2.95, exitCell.pos[1]); exitGroup.add(sign);
+scene.add(exitGroup);
 
-        var buildUrl = "https://cdn.jsdelivr.net/gh/gru6nny/ohd@main/Build";
-        var loaderUrl = buildUrl + "/Granny.loader.js";
+/* ---------- keys ---------- */
+const KEY_COLORS = [0xe03a3a, 0x3a6ee0, 0x3ac26a];
+const KEY_NAMES = ['red', 'blue', 'green'];
+const pool = keySpots.slice().sort(() => Math.random() - .5);
+const keys = KEY_COLORS.map((col, i) => {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: col });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.12, .035, 8, 16), mat);
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(.05, .4, .05), mat); shaft.position.y = -.28;
+  const tooth = new THREE.Mesh(new THREE.BoxGeometry(.14, .05, .05), mat); tooth.position.set(.07, -.4, 0);
+  g.add(ring, shaft, tooth);
+  const p = pool[i]; g.position.set(p[0], 1.1, p[1]);
+  const l = new THREE.PointLight(col, .6, 4, 2); g.add(l);
+  scene.add(g);
+  return { mesh: g, got: false, i, x: p[0], z: p[1] };
+});
 
-        async function initializeGame() {
-            try {
-                const dataBuffer = await mergeUnityWebFiles(buildUrl, "Granny", 2, "data");
-                const wasmBuffer = await mergeUnityWebFiles(buildUrl, "Granny", 2, "wasm");
+/* ---------- granny ---------- */
+const gm = new THREE.Group();
+const skin = new THREE.MeshLambertMaterial({ color: 0xc4b39a });
+const dressMat = new THREE.MeshLambertMaterial({ color: 0x3b2b45 });
+const hairMat = new THREE.MeshLambertMaterial({ color: 0xbdbdc4 });
+const dress = new THREE.Mesh(new THREE.CylinderGeometry(.26, .55, 1.25, 12), dressMat); dress.position.y = .75; gm.add(dress);
+const apron = new THREE.Mesh(new THREE.BoxGeometry(.5, .8, .06), new THREE.MeshLambertMaterial({ color: 0x8a8070 })); apron.position.set(0, .8, .3); gm.add(apron);
+const upper = new THREE.Group(); upper.position.y = 1.35; upper.rotation.x = .25; gm.add(upper);
+const torso = new THREE.Mesh(new THREE.CylinderGeometry(.22, .27, .5, 10), dressMat); torso.position.y = .1; upper.add(torso);
+const head = new THREE.Mesh(new THREE.SphereGeometry(.2, 14, 12), skin); head.position.set(0, .5, .06); upper.add(head);
+const hair = new THREE.Mesh(new THREE.SphereGeometry(.23, 14, 12, 0, Math.PI * 2, 0, Math.PI * .62), hairMat); hair.position.set(0, .54, -.02); hair.rotation.x = -.3; upper.add(hair);
+const bun = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 8), hairMat); bun.position.set(0, .66, -.17); upper.add(bun);
+const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
+[-.07, .07].forEach(x => { const e = new THREE.Mesh(new THREE.SphereGeometry(.028, 6, 6), eyeMat); e.position.set(x, .53, .24); upper.add(e); });
+const nose = new THREE.Mesh(new THREE.ConeGeometry(.03, .1, 6), skin); nose.rotation.x = Math.PI / 2; nose.position.set(0, .47, .27); upper.add(nose);
+const armL = new THREE.Mesh(new THREE.CylinderGeometry(.05, .04, .7, 6), skin); armL.position.set(-.3, -.05, .12); armL.rotation.x = -.5; upper.add(armL);
+const armR = new THREE.Mesh(new THREE.CylinderGeometry(.05, .04, .7, 6), skin); armR.position.set(.3, -.05, .12); armR.rotation.x = -.9; upper.add(armR);
+const bat = new THREE.Mesh(new THREE.CylinderGeometry(.04, .07, .9, 8), new THREE.MeshLambertMaterial({ color: 0x5a3a1c })); bat.position.set(.3, .2, .45); bat.rotation.x = .5; upper.add(bat);
+const rage = new THREE.PointLight(0xff2020, 0, 7, 2); rage.position.y = 1.6; gm.add(rage);
+scene.add(gm);
 
-                const dataBlobUrl = URL.createObjectURL(new Blob([dataBuffer], { type: "application/octet-stream" }));
-                const wasmBlobUrl = URL.createObjectURL(new Blob([wasmBuffer], { type: "application/octet-stream" }));
+const granny = { x: grannyStart[0], z: grannyStart[1], yaw: 0, state: 'patrol', path: null, timer: 1, lostTimer: 0, lastKnown: null, arrived: false, repath: 0, checkIdx: -1, cool: 0, stepT: 0, moving: false };
 
-                var config = {
-                    dataUrl: dataBlobUrl,
-                    frameworkUrl: buildUrl + "/Granny.framework.js",
-                    codeUrl: wasmBlobUrl,
-                    streamingAssetsUrl: "https://cdn.jsdelivr.net/gh/gru6nny/ohd@main/StreamingAssets",
-                    companyName: "Anastasia Kazantseva",
-                    productName: "Granny",
-                    productVersion: "1.0",
-                    showBanner: unityShowBanner,
-                };
+/* ---------- player ---------- */
+const player = { x: playerStart[0], z: playerStart[1], yaw: -Math.PI / 2, pitch: 0, hidden: false, hideIdx: -1, sprinting: false, moving: false, stamina: 100, exhausted: false, lives: 3, keys: 0, bob: 0, stepT: 0, shake: 0 };
+const state = { running: false, over: false, t0: 0, time: 0, torchOn: true };
 
-                var script = document.createElement("script");
-                script.src = loaderUrl;
-                script.onload = () => {
-                    createUnityInstance(canvas, config, (progress) => {
-                        progressBarFull.style.width = 100 * progress + "%";
-                    }).then((unityInstance) => {
-                        myGameInstance = unityInstance;
-                        loadingBar.style.display = "none";
-                        // Oyun yüklendiğinde tıklama olayını ekle
-                        canvas.addEventListener('pointerdown', showAdOnClick);
-                        canvas.addEventListener('touchstart', showAdOnClick);
-                    }).catch((message) => {
-                        alert(message);
-                    });
-                };
+/* ---------- pathfinding ---------- */
+function findPath(sc, sr, goal) {
+  const key = (c, r) => r * COLS + c, prev = new Map([[key(sc, sr), null]]), q = [[sc, sr]];
+  while (q.length) {
+    const [c, r] = q.shift();
+    if (goal(c, r) && !(c === sc && r === sr)) {
+      const out = []; let k = key(c, r);
+      while (prev.get(k) !== null) { out.push([k % COLS, Math.floor(k / COLS)]); k = prev.get(k); }
+      return out.reverse();
+    }
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nc = c + dc, nr = r + dr, k = key(nc, nr);
+      if (solid(nc, nr) || prev.has(k)) continue;
+      prev.set(k, key(c, r)); q.push([nc, nr]);
+    }
+  }
+  return [];
+}
+function hasLOS(ax, az, bx, bz) {
+  const d = Math.hypot(bx - ax, bz - az), n = Math.ceil(d / .4);
+  for (let i = 1; i < n; i++) { const t = i / n; if (opaque(toCell(ax + (bx - ax) * t), toCell(az + (bz - az) * t))) return false; }
+  return true;
+}
+function pathTo(tx, tz) { granny.path = findPath(toCell(granny.x), toCell(granny.z), (c, r) => c === toCell(tx) && r === toCell(tz)); }
+function followPath(speed, dt) {
+  const g = granny;
+  if (!g.path || !g.path.length) return true;
+  const [tx, tz] = center(g.path[0][0], g.path[0][1]);
+  const dx = tx - g.x, dz = tz - g.z, d = Math.hypot(dx, dz);
+  if (d < .25) { g.path.shift(); return !g.path.length; }
+  g.x += dx / d * speed * dt; g.z += dz / d * speed * dt;
+  turnTo(Math.atan2(dx, dz), dt); g.moving = true;
+  return false;
+}
+function turnTo(yaw, dt) {
+  let d = yaw - granny.yaw; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+  granny.yaw += d * Math.min(1, dt * 8);
+}
+function randomPatrol() {
+  for (let i = 0; i < 40; i++) {
+    const c = 1 + Math.floor(Math.random() * (COLS - 2)), r = 1 + Math.floor(Math.random() * (ROWS - 2));
+    if (solid(c, r)) continue;
+    const [x, z] = center(c, r);
+    if (Math.hypot(x - granny.x, z - granny.z) < 8) continue;
+    pathTo(x, z); if (granny.path.length) return;
+  }
+}
 
-                document.body.appendChild(script);
-            } catch (error) {
-                console.error("Game initialization failed:", error);
-            }
-        }
+/* ---------- audio ---------- */
+let ac = null, noiseBuf = null, master = null;
+function initAudio() {
+  if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+  try {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = .8; master.connect(ac.destination);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    [48, 50.5].forEach(f => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = f; g.gain.value = .045; o.connect(g); g.connect(master); o.start(); });
+  } catch (e) { ac = null; }
+}
+function tone(f, d, type, v, slide) {
+  if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, slide), t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g); g.connect(master); o.start(t); o.stop(t + d + .05);
+}
+function noise(d, v, cutoff) {
+  if (!ac) return; const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), t = ac.currentTime;
+  s.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.value = cutoff || 600; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random() * .5, d + .05);
+}
+const step = v => { noise(.12, v, 420); tone(70, .1, 'sine', v * .8, 40); };
+const creak = () => tone(260 + Math.random() * 120, .7 + Math.random() * .6, 'sawtooth', .025, 120 + Math.random() * 60);
+const heart = v => { tone(58, .16, 'sine', v, 38); setTimeout(() => tone(52, .18, 'sine', v * .8, 34), 170); };
+function scream() { noise(1.4, .5, 5000); tone(900, 1.1, 'sawtooth', .22, 200); tone(1350, 1.1, 'square', .1, 300); }
+function sting() { tone(440, .5, 'sawtooth', .12, 120); tone(466, .5, 'sawtooth', .12, 120); }
 
-        initializeGame();
-    </script>
+/* ---------- input ---------- */
+const keysDown = {};
+let isTouch = false;
+window.addEventListener('keydown', e => {
+  keysDown[e.code] = true;
+  if (!state.running) return;
+  if (e.code === 'KeyE') interact();
+  if (e.code === 'KeyF') { state.torchOn = !state.torchOn; torch.visible = state.torchOn; glow.intensity = state.torchOn ? .6 : .2; }
+});
+window.addEventListener('keyup', e => { keysDown[e.code] = false; });
+document.addEventListener('mousemove', e => {
+  if (!state.running || document.pointerLockElement !== canvas || player.hidden && false) return;
+  player.yaw -= e.movementX * .0023; player.pitch = Math.max(-1.3, Math.min(1.3, player.pitch - e.movementY * .0023));
+});
+document.addEventListener('pointerlockchange', () => {
+  if (isTouch || state.over) return;
+  if (document.pointerLockElement !== canvas && state.running) pause(true);
+});
+function lock() { if (!isTouch && canvas.requestPointerLock) { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} } }
+
+// touch controls
+const touch = { moveId: null, lookId: null, ox: 0, oy: 0, mx: 0, my: 0, lx: 0, ly: 0, run: false };
+const stickEl = document.getElementById('stick');
+function enableTouch() {
+  isTouch = true; document.body.classList.add('touch');
+  document.getElementById('help').innerHTML = '<b>left side</b><span>move</span><b>right side</b><span>look</span><b>buttons</b><span>use / run / torch</span>';
+  const t = id => document.getElementById(id);
+  t('tUse').addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); interact(); }, { passive: false });
+  t('tTorch').addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); keysDown.KeyF = false; state.torchOn = !state.torchOn; torch.visible = state.torchOn; glow.intensity = state.torchOn ? .6 : .2; }, { passive: false });
+  t('tRun').addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); touch.run = !touch.run; t('tRun').classList.toggle('on', touch.run); }, { passive: false });
+  window.addEventListener('touchstart', e => {
+    if (!state.running) return;
+    for (const tc of e.changedTouches) {
+      if (tc.target.closest && tc.target.closest('.tbtn')) continue;
+      if (tc.clientX < window.innerWidth / 2 && touch.moveId === null) { touch.moveId = tc.identifier; touch.ox = touch.mx = tc.clientX; touch.oy = touch.my = tc.clientY; stickEl.style.display = 'block'; stickEl.style.left = (tc.clientX - 50) + 'px'; stickEl.style.top = (tc.clientY - 50) + 'px'; }
+      else if (touch.lookId === null) { touch.lookId = tc.identifier; touch.lx = tc.clientX; touch.ly = tc.clientY; }
+    }
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
+    for (const tc of e.changedTouches) {
+      if (tc.identifier === touch.moveId) { touch.mx = tc.clientX; touch.my = tc.clientY; const dx = Math.max(-40, Math.min(40, touch.mx - touch.ox)), dy = Math.max(-40, Math.min(40, touch.my - touch.oy)); stickEl.firstElementChild.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; }
+      else if (tc.identifier === touch.lookId) { player.yaw -= (tc.clientX - touch.lx) * .006; player.pitch = Math.max(-1.3, Math.min(1.3, player.pitch - (tc.clientY - touch.ly) * .006)); touch.lx = tc.clientX; touch.ly = tc.clientY; }
+    }
+  }, { passive: true });
+  const end = e => { for (const tc of e.changedTouches) { if (tc.identifier === touch.moveId) { touch.moveId = null; stickEl.style.display = 'none'; stickEl.firstElementChild.style.transform = ''; } if (tc.identifier === touch.lookId) touch.lookId = null; } };
+  window.addEventListener('touchend', end); window.addEventListener('touchcancel', end);
+}
+if ('ontouchstart' in window && matchMedia('(pointer:coarse)').matches) enableTouch();
+
+/* ---------- hud ---------- */
+const $ = id => document.getElementById(id);
+const msgEl = $('msg'), alertEl = $('alert');
+let msgTimer = 0, sticky = '';
+function say(text, secs) { msgEl.textContent = text; msgEl.classList.add('on'); msgTimer = secs || 2.5; }
+function refreshHud() {
+  document.querySelectorAll('.slot').forEach((s, i) => s.classList.toggle('got', keys[i].got));
+  $('lives').textContent = '♥'.repeat(player.lives) + '♡'.repeat(3 - player.lives);
+}
+
+/* ---------- interaction ---------- */
+function nearestWardrobe() {
+  let best = -1, bd = 2.6;
+  wardrobes.forEach((w, i) => { const d = Math.hypot(w.pos[0] - player.x, w.pos[1] - player.z); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+function nearExit() { return Math.hypot(exitCell.pos[0] - player.x, exitCell.pos[1] - player.z) < 3.4; }
+function interact() {
+  if (state.over) return;
+  if (player.hidden) {
+    const w = wardrobes[player.hideIdx], [oc, or] = w.out, p = center(oc, or);
+    player.x = p[0]; player.z = p[1]; player.hidden = false; $('hide').classList.remove('on'); return;
+  }
+  const wi = nearestWardrobe();
+  if (wi >= 0 && !nearExit()) {
+    const w = wardrobes[wi];
+    const g = granny, seen = g.state === 'chase' && hasLOS(g.x, g.z, player.x, player.z) && Math.hypot(g.x - player.x, g.z - player.z) < 14;
+    player.hidden = true; player.hideIdx = wi; player.x = w.pos[0]; player.z = w.pos[1];
+    player.yaw = Math.atan2(-(w.out[0] - w.c), -(w.out[1] - w.r)); player.pitch = 0;
+    $('hide').classList.add('on'); noise(.25, .15, 900);
+    if (seen) { g.state = 'check'; g.checkIdx = wi; g.path = findPath(toCell(g.x), toCell(g.z), (c, r) => c === w.out[0] && r === w.out[1]); g.arrived = false; }
+    return;
+  }
+  if (nearExit()) {
+    if (player.keys >= 3) win();
+    else say('the door is locked — ' + player.keys + '/3 keys', 3);
+  }
+}
+function win() {
+  state.over = true; state.running = false; document.exitPointerLock && document.exitPointerLock();
+  const s = Math.round(state.time); $('winText').textContent = 'Out in ' + Math.floor(s / 60) + 'm ' + (s % 60) + 's with ' + player.lives + (player.lives === 1 ? ' life' : ' lives') + ' left.';
+  $('win').hidden = false; $('hud').hidden = true; tone(523, .6, 'sine', .2); setTimeout(() => tone(659, .6, 'sine', .2), 200); setTimeout(() => tone(784, .9, 'sine', .2), 400);
+}
+function caught() {
+  const g = granny;
+  scream(); player.shake = 1; player.lives--; refreshHud();
+  const f = $('flash'); f.style.transition = 'none'; f.style.opacity = '.85'; requestAnimationFrame(() => requestAnimationFrame(() => { f.style.transition = 'opacity .8s'; f.style.opacity = '0'; }));
+  if (player.lives <= 0) {
+    state.over = true; state.running = false; document.exitPointerLock && document.exitPointerLock();
+    setTimeout(() => { $('over').hidden = false; $('hud').hidden = true; }, 700); return;
+  }
+  player.hidden = false; $('hide').classList.remove('on');
+  player.x = playerStart[0]; player.z = playerStart[1]; player.yaw = -Math.PI / 2; player.pitch = 0;
+  // send granny to the far side of the house
+  g.x = grannyStart[0]; g.z = grannyStart[1]; g.state = 'patrol'; g.path = null; g.timer = 4; g.cool = 4;
+  say('she dragged you back to bed…', 3);
+}
+
+/* ---------- granny ai ---------- */
+function updateGranny(dt) {
+  const g = granny; g.moving = false; g.timer -= dt; g.cool -= dt; g.repath -= dt;
+  const dx = player.x - g.x, dz = player.z - g.z, dist = Math.hypot(dx, dz) || .001;
+  const los = hasLOS(g.x, g.z, player.x, player.z);
+  const dot = (dx * Math.sin(g.yaw) + dz * Math.cos(g.yaw)) / dist;
+  const sees = !player.hidden && los && dist < 14 && (dist < 5 || dot > .25);
+  const noiseR = player.sprinting ? 10 : player.moving ? 3.5 : 0;
+  const hears = !player.hidden && dist < noiseR;
+
+  if (sees) {
+    g.lastKnown = [player.x, player.z]; g.lostTimer = 0;
+    if (g.state !== 'chase') { g.state = 'chase'; g.path = null; sting(); alertEl.classList.add('on'); }
+  } else if (g.state === 'chase') {
+    g.lostTimer += dt;
+    if (g.lostTimer > 3.5) { g.state = 'search'; g.arrived = false; g.path = null; alertEl.classList.remove('on'); }
+  }
+  if (hears && g.state !== 'chase') { g.state = 'search'; g.lastKnown = [player.x, player.z]; g.arrived = false; g.path = null; }
+
+  let speed = 2;
+  if (g.state === 'chase') {
+    speed = 3.7;
+    if (los && !player.hidden) { g.x += dx / dist * speed * dt; g.z += dz / dist * speed * dt; turnTo(Math.atan2(dx, dz), dt); g.moving = true; }
+    else if (g.lastKnown) {
+      if (g.repath <= 0 || !g.path) { pathTo(g.lastKnown[0], g.lastKnown[1]); g.repath = .4; }
+      followPath(speed, dt);
+    }
+  } else if (g.state === 'search') {
+    speed = 2.6;
+    if (!g.arrived) {
+      if (!g.path) pathTo(g.lastKnown[0], g.lastKnown[1]);
+      if (followPath(speed, dt)) { g.arrived = true; g.timer = 4; }
+    } else { g.yaw += dt * 1.6; if (g.timer <= 0) { g.state = 'patrol'; g.path = null; g.timer = 0; } }
+  } else if (g.state === 'check') {
+    speed = 2.6;
+    if (!g.arrived) { if (followPath(speed, dt) || !g.path.length) { g.arrived = true; g.timer = 1.4; } }
+    else {
+      const w = wardrobes[g.checkIdx]; turnTo(Math.atan2(w.pos[0] - g.x, w.pos[1] - g.z), dt);
+      if (g.timer <= 0) {
+        if (player.hidden && player.hideIdx === g.checkIdx && Math.random() < .5) { caught(); return; }
+        g.state = 'patrol'; g.path = null; g.timer = 0;
+        alertEl.classList.remove('on');
+      }
+    }
+  } else { // patrol
+    if (g.timer <= 0) {
+      if (!g.path || !g.path.length) { randomPatrol(); if (!g.path || !g.path.length) g.timer = 1; }
+      if (g.path && g.path.length && followPath(speed, dt)) g.timer = 1 + Math.random() * 1.5;
+    }
+  }
+
+  if (g.state !== 'chase') alertEl.classList.remove('on');
+  if (!player.hidden && dist < 1.15 && g.cool <= 0) { caught(); return; }
+
+  // footsteps
+  g.stepT -= dt;
+  if (g.moving && g.stepT <= 0 && dist < 16) { step(Math.max(0, (1 - dist / 16)) * .55); g.stepT = g.state === 'chase' ? .33 : .6; }
+
+  gm.position.set(g.x, 0, g.z); gm.rotation.y = g.yaw;
+  const t = performance.now() / 1000;
+  upper.rotation.z = Math.sin(t * (g.moving ? 6 : 1.5)) * .05;
+  gm.position.y = g.moving ? Math.abs(Math.sin(t * 6)) * .04 : 0;
+  rage.intensity = g.state === 'chase' ? 1.2 : 0;
+}
+
+/* ---------- main loop ---------- */
+function blocked(x, z) {
+  const r = .32;
+  return solid(toCell(x - r), toCell(z - r)) || solid(toCell(x + r), toCell(z - r)) || solid(toCell(x - r), toCell(z + r)) || solid(toCell(x + r), toCell(z + r));
+}
+let heartT = 0, creakT = 6;
+function updatePlayer(dt) {
+  let fwd = 0, side = 0;
+  if (keysDown.KeyW || keysDown.ArrowUp) fwd += 1; if (keysDown.KeyS || keysDown.ArrowDown) fwd -= 1;
+  if (keysDown.KeyD || keysDown.ArrowRight) side += 1; if (keysDown.KeyA || keysDown.ArrowLeft) side -= 1;
+  if (touch.moveId !== null) { side += Math.max(-1, Math.min(1, (touch.mx - touch.ox) / 40)); fwd -= Math.max(-1, Math.min(1, (touch.my - touch.oy) / 40)); }
+  if (player.hidden) { fwd = side = 0; }
+  const len = Math.hypot(fwd, side); if (len > 1) { fwd /= len; side /= len; }
+  player.moving = len > .1;
+  const wantRun = (keysDown.ShiftLeft || keysDown.ShiftRight || touch.run) && player.moving;
+  if (player.exhausted && player.stamina > 25) player.exhausted = false;
+  player.sprinting = wantRun && !player.exhausted && player.stamina > 0;
+  player.stamina = Math.max(0, Math.min(100, player.stamina + (player.sprinting ? -22 : 14) * dt));
+  if (player.stamina <= 0) player.exhausted = true;
+  const speed = player.sprinting ? 5.2 : 3.2;
+  const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw);
+  const vx = (-sy * fwd + cy * side) * speed * dt, vz = (-cy * fwd - sy * side) * speed * dt;
+  if (!blocked(player.x + vx, player.z)) player.x += vx;
+  if (!blocked(player.x, player.z + vz)) player.z += vz;
+  if (player.moving) {
+    player.bob += dt * (player.sprinting ? 12 : 8);
+    player.stepT -= dt; if (player.stepT <= 0) { step(.12); player.stepT = player.sprinting ? .3 : .48; }
+  }
+  $('stam').firstElementChild.style.width = player.stamina + '%';
+  $('stam').firstElementChild.style.background = player.exhausted ? '#b83a3a' : '#b8a1a1';
+}
+function updateCamera(dt) {
+  const bobY = player.moving ? Math.sin(player.bob) * .045 : 0;
+  camera.position.set(player.x, (player.hidden ? 1.5 : 1.6) + bobY, player.z);
+  let ox = 0, oy = 0;
+  if (player.shake > 0) { player.shake = Math.max(0, player.shake - dt * 1.4); ox = (Math.random() - .5) * player.shake * .15; oy = (Math.random() - .5) * player.shake * .15; }
+  camera.rotation.set(player.pitch + oy, player.yaw + ox, 0);
+}
+function updateWorld(dt) {
+  const t = performance.now() / 1000;
+  keys.forEach(k => {
+    if (k.got) return;
+    k.mesh.rotation.y = t * 1.6; k.mesh.position.y = 1.05 + Math.sin(t * 2 + k.i) * .08;
+    if (!player.hidden && Math.hypot(k.x - player.x, k.z - player.z) < 1.4) {
+      k.got = true; scene.remove(k.mesh); player.keys++; refreshHud();
+      locks[k.i].material.color.setHex(KEY_COLORS[k.i]); tone(880, .35, 'sine', .15); setTimeout(() => tone(1320, .5, 'sine', .12), 120);
+      say('picked up the ' + KEY_NAMES[k.i] + ' key (' + player.keys + '/3)', 3);
+    }
+  });
+  // context prompt
+  if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) msgEl.classList.remove('on'); }
+  else {
+    let p = '';
+    if (player.hidden) p = 'press E to leave the wardrobe';
+    else if (nearExit()) p = player.keys >= 3 ? 'press E to unlock the door' : 'locked — find all 3 keys (' + player.keys + '/3)';
+    else if (nearestWardrobe() >= 0) p = 'press E to hide';
+    if (isTouch) p = p.replace('press E', 'tap USE');
+    if (p) { msgEl.textContent = p; msgEl.classList.add('on'); } else msgEl.classList.remove('on');
+  }
+  // heartbeat + ambient
+  const d = Math.hypot(granny.x - player.x, granny.z - player.z);
+  heartT -= dt;
+  if (d < 12 && heartT <= 0) { heart(.35 * (1 - d / 12) + .08); heartT = .5 + d / 12 * .7; }
+  creakT -= dt; if (creakT <= 0) { creak(); creakT = 6 + Math.random() * 10; }
+}
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (state.running) {
+    state.time = (now - state.t0) / 1000;
+    updatePlayer(dt); updateGranny(dt); updateWorld(dt);
+  }
+  updateCamera(dt);
+  renderer.render(scene, camera);
+}
+
+/* ---------- flow ---------- */
+function begin() {
+  initAudio(); lock();
+  $('start').hidden = true; $('hud').hidden = false; refreshHud();
+  state.running = true; state.t0 = performance.now();
+  say('find 3 keys. get out. don\'t make noise.', 5);
+}
+function pause(on) {
+  if (state.over) return;
+  if (on) { state.running = false; $('pause').hidden = false; }
+  else { $('pause').hidden = true; state.running = true; state.t0 = performance.now() - state.time * 1000; lock(); if (ac && ac.state === 'suspended') ac.resume(); last = performance.now(); }
+}
+$('go').addEventListener('click', begin);
+$('resume').addEventListener('click', () => pause(false));
+document.addEventListener('visibilitychange', () => { if (document.hidden && state.running) pause(true); });
+requestAnimationFrame(frame);
+
+window.__granny = { player, granny, keys, state, wardrobes, exitCell, interact };
+})();
+</script>
 </body>
 </html>
