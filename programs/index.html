@@ -7,7 +7,7 @@
   <title>programs — missing.website</title>
   <link rel="icon" type="image/png" href="/assets/favicon.png?v=4" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&family=Nosifer&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css?v=13" />
   <style>
     .programs-shell{width:min(1260px,calc(100% - 34px));margin:38px auto 70px}
@@ -18,7 +18,7 @@
     .program{position:relative;display:block;width:100%;aspect-ratio:1260/320;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:#0b0b0b;text-decoration:none;color:#fff;isolation:isolate}
     .program-img{position:absolute;inset:0;background:var(--img,linear-gradient(135deg,#2a2424,#121010)) center/cover no-repeat;transition:filter .3s ease,transform .3s ease}
     .program:hover .program-img,.program:focus-visible .program-img{filter:blur(4px);transform:scale(1.03)}
-    .program-name{opacity:0;transition:opacity .3s ease;position:absolute;left:clamp(18px,4vw,48px);top:50%;transform:translateY(-50%);z-index:1;max-width:60%;font-size:clamp(1.2rem,3.6vw,2.6rem);line-height:1.15;text-shadow:0 2px 12px rgba(0,0,0,.85)}
+    .program-name{font-family:"Nosifer","Special Elite",cursive;font-weight:400;color:#7dff3a;letter-spacing:.02em;text-shadow:0 0 14px rgba(94,255,40,.55),0 3px 0 #1c5a0a,0 6px 12px rgba(0,0,0,.9);opacity:0;transition:opacity .3s ease;position:absolute;left:clamp(18px,4vw,48px);top:50%;transform:translateY(-50%);z-index:1;max-width:60%;font-size:clamp(1rem,3vw,2.1rem);line-height:1.25}
     .program:hover .program-name,.program:focus-visible .program-name{opacity:1}
     .programs-empty{color:var(--muted)}
     @media(max-width:520px){.programs-shell{width:calc(100% - 16px)}.program{border-radius:16px}}

@@ -160,7 +160,7 @@ function failStart(detail) {
     ['chrome', 'Chrome', '<ol><li>Open ' + url('chrome://settings/system') + ' (click it to copy, then paste into a new tab).</li><li>Turn on <b>Use graphics acceleration when available</b>.</li><li>Click <b>Relaunch</b>.</li><li>Still blank? Open ' + url('chrome://gpu') + ' and check that WebGL says "Hardware accelerated".</li></ol>'],
     ['edge', 'Edge', '<ol><li>Open ' + url('edge://settings/system') + '.</li><li>Turn on <b>Use graphics acceleration when available</b>.</li><li>Click <b>Restart</b>.</li></ol>'],
     ['firefox', 'Firefox', '<ol><li>Open ' + url('about:preferences') + ', scroll to <b>Performance</b>.</li><li>Untick <b>Use recommended performance settings</b>, then tick <b>Use hardware acceleration when available</b>.</li><li>Restart Firefox.</li><li>If it still fails, open ' + url('about:config') + ' and make sure <b>webgl.disabled</b> is <b>false</b>.</li></ol>'],
-    ['safari', 'Safari', '<p>Safari has no hardware-acceleration switch &mdash; WebGL is normally always on. Try:</p><ol><li><b>Lockdown Mode</b> turns WebGL off. Check System Settings &rarr; Privacy &amp; Security &rarr; Lockdown Mode.</li><li>Safari &rarr; Settings &rarr; Advanced &rarr; tick <b>Show features for web developers</b>, then in the <b>Develop</b> menu open <b>Feature Flags</b> and make sure no WebGL flags are turned off.</li><li>Turn off content blockers / extensions for this site, and update macOS &amp; Safari.</li><li>Still stuck? Try Chrome or Firefox instead.</li></ol>'],
+    ['safari', 'Safari', '<p>Safari has no hardware-acceleration switch &mdash; WebGL is normally always on. Try:</p><ol><li><b>Lockdown Mode</b> turns WebGL off. Check System Settings &rarr; Privacy &amp; Security &rarr; Lockdown Mode.</li><li>Safari &rarr; Settings &rarr; Advanced &rarr; tick <b>Show features for web developers</b>, then in the <b>Develop</b> menu open <b>Feature Flags</b> and reset any flags you changed back to their defaults, then restart Safari.</li><li>Turn off content blockers / extensions for this site, and update macOS &amp; Safari.</li><li>Still stuck? Try Chrome or Firefox instead.</li></ol>'],
     ['opera', 'Opera / Brave / others', '<ol><li>Open the browser settings and search for <b>hardware acceleration</b> (or <b>graphics acceleration</b>).</li><li>Turn it on and restart the browser. Brave: <code class="cp" data-copy="brave://settings/system">brave://settings/system</code></li></ol>']
   ];
   const box = document.createElement('div'); box.className = 'wgl';
@@ -175,15 +175,18 @@ function failStart(detail) {
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { c.textContent = 'copied! paste into a new tab'; setTimeout(() => c.textContent = t, 1800); }).catch(() => {});
   });
 }
-let renderer;
-try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
-catch (e1) {
-  try {
-    const c2 = document.createElement('canvas'); c2.id = 'view';
-    renderer = new THREE.WebGLRenderer({ canvas: c2, antialias: false });
-    canvas.replaceWith(c2); canvas = c2;
-  } catch (e2) { failStart((e2 && e2.message) || (e1 && e1.message)); return; }
+const ctxErr = [];
+let renderer = null;
+for (const [type, attrs] of [['webgl2', { antialias: true }], ['webgl', { antialias: true }], ['webgl', { antialias: false }], ['webgl', { antialias: false, powerPreference: 'default', failIfMajorPerformanceCaveat: false }], ['experimental-webgl', {}]]) {
+  const c = document.createElement('canvas'); c.id = 'view';
+  c.addEventListener('webglcontextcreationerror', e => ctxErr.push(type + ': ' + (e.statusMessage || 'refused')));
+  let gl = null;
+  try { gl = c.getContext(type, attrs); } catch (e) { ctxErr.push(type + ': ' + e.message); }
+  if (!gl) continue;
+  try { renderer = new THREE.WebGLRenderer({ canvas: c, context: gl, antialias: !!attrs.antialias }); canvas.replaceWith(c); canvas = c; break; }
+  catch (e) { ctxErr.push('three on ' + type + ': ' + e.message); }
 }
+if (!renderer) { failStart(ctxErr.join(' | ') || 'no WebGL context available'); return; }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setClearColor(0x050303);
 const scene = new THREE.Scene();
