@@ -2,15 +2,13 @@
   {
     "name": "Infinite Enhancements",
     "image": "infinite-enhancements.jpg",
-    "url": "",
-    "showName": false
+    "url": ""
   },
   {
-    "_note": "TEMPLATE for new programs (hidden). Copy this block, remove \"hidden\", and fill it in. image = 1260x320 banner. Set showName to false if the banner already has the title baked in.",
+    "_note": "TEMPLATE for new programs (hidden). Copy this block, remove \"hidden\", and fill it in. image = 1260x320 banner. The name shows when the banner is hovered.",
     "hidden": true,
     "name": "Example Program",
     "image": "",
-    "url": "",
-    "showName": true
+    "url": ""
   }
 ]
