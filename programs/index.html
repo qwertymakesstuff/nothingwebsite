@@ -34,17 +34,23 @@ fetch('programs.json').then(r => r.json()).then(items => {
   const list = document.getElementById('list');
   list.innerHTML = '';
   if (!items.length) { list.innerHTML = '<p class="programs-empty">nothing here yet.</p>'; return; }
+  items = items.filter(p => !p.hidden);
+  if (!items.length) { list.innerHTML = '<p class="programs-empty">nothing here yet.</p>'; return; }
   items.forEach(p => {
     const a = document.createElement('a');
     a.className = 'program';
     if (p.url) { a.href = p.url; } else { a.removeAttribute('href'); }
     const img = document.createElement('div');
     img.className = 'program-img';
-    if (p.image) img.style.setProperty('--img', 'url("' + p.image.replace(/"/g, '%22') + '")');
-    const name = document.createElement('span');
-    name.className = 'program-name';
-    name.textContent = p.name;
-    a.append(img, name);
+    if (p.image) img.style.setProperty('--img', 'url("' + new URL(p.image, location.href).href.replace(/"/g, '%22') + '")');
+    a.setAttribute('aria-label', p.name);
+    a.append(img);
+    if (p.showName !== false) {
+      const name = document.createElement('span');
+      name.className = 'program-name';
+      name.textContent = p.name;
+      a.append(name);
+    }
     list.appendChild(a);
   });
 }).catch(() => { document.getElementById('list').innerHTML = '<p class="programs-empty">couldn\'t load programs.</p>'; });

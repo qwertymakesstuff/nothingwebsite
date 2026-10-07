@@ -22,6 +22,14 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 .btn:hover{border-color:#b8a1a1;background:#141010}
 .keys-help{display:grid;grid-template-columns:auto auto;gap:4px 18px;margin:18px 0 0;text-align:left;font-size:.9rem;color:#8e8585}
 .keys-help b{color:#d5cccc;font-weight:400}
+.wgl{max-width:560px;margin:14px 0 0;text-align:left}
+.wgl-t{display:block;width:100%;background:none;border:0;color:#b83a3a;font:inherit;text-align:center;line-height:1.5;cursor:pointer;padding:6px}
+.wgl-b{border:1px solid #4a4242;background:#0b0b0b;padding:8px 14px;font-size:.9rem;color:#8e8585}
+.wgl-b details{border-bottom:1px solid #2a2525;padding:6px 0}
+.wgl-b summary{cursor:pointer;color:#d5cccc}
+.wgl-b ol{margin:8px 0 6px;padding-left:20px;line-height:1.6}
+.wgl-b code{color:#d5cccc;background:#1a1616;padding:1px 5px;cursor:pointer;word-break:break-all}
+.wgl-d{font-size:.72rem;color:#665b5b;margin:8px 0 2px}
 .back{margin-top:16px;color:#665b5b;font-size:.85rem}
 .back a{color:#8e8585}
 #hud{position:fixed;inset:0;z-index:5;pointer-events:none}
@@ -142,11 +150,30 @@ for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
 
 /* ---------- three setup ---------- */
 let canvas = document.getElementById('view');
-function failStart(msg) {
+function failStart(detail) {
   const b = document.getElementById('go');
   b.textContent = 'can\'t start'; b.disabled = true; b.style.opacity = .5; b.style.cursor = 'default';
-  const p = document.createElement('p'); p.style.color = '#b83a3a'; p.textContent = msg;
-  b.parentNode.insertBefore(p, b);
+  const ua = navigator.userAgent;
+  const mine = /Edg\//.test(ua) ? 'edge' : /OPR\/|Opera/.test(ua) ? 'opera' : /Firefox\//.test(ua) ? 'firefox' : /Chrome\/|CriOS/.test(ua) ? 'chrome' : /Safari\//.test(ua) ? 'safari' : '';
+  const url = (u) => '<code class="cp" data-copy="' + u + '" title="click to copy">' + u + '</code>';
+  const guides = [
+    ['chrome', 'Chrome', '<ol><li>Open ' + url('chrome://settings/system') + ' (click it to copy, then paste into a new tab).</li><li>Turn on <b>Use graphics acceleration when available</b>.</li><li>Click <b>Relaunch</b>.</li><li>Still blank? Open ' + url('chrome://gpu') + ' and check that WebGL says "Hardware accelerated".</li></ol>'],
+    ['edge', 'Edge', '<ol><li>Open ' + url('edge://settings/system') + '.</li><li>Turn on <b>Use graphics acceleration when available</b>.</li><li>Click <b>Restart</b>.</li></ol>'],
+    ['firefox', 'Firefox', '<ol><li>Open ' + url('about:preferences') + ', scroll to <b>Performance</b>.</li><li>Untick <b>Use recommended performance settings</b>, then tick <b>Use hardware acceleration when available</b>.</li><li>Restart Firefox.</li><li>If it still fails, open ' + url('about:config') + ' and make sure <b>webgl.disabled</b> is <b>false</b>.</li></ol>'],
+    ['safari', 'Safari', '<p>Safari has no hardware-acceleration switch &mdash; WebGL is normally always on. Try:</p><ol><li><b>Lockdown Mode</b> turns WebGL off. Check System Settings &rarr; Privacy &amp; Security &rarr; Lockdown Mode.</li><li>Safari &rarr; Settings &rarr; Advanced &rarr; tick <b>Show features for web developers</b>, then in the <b>Develop</b> menu open <b>Feature Flags</b> and make sure no WebGL flags are turned off.</li><li>Turn off content blockers / extensions for this site, and update macOS &amp; Safari.</li><li>Still stuck? Try Chrome or Firefox instead.</li></ol>'],
+    ['opera', 'Opera / Brave / others', '<ol><li>Open the browser settings and search for <b>hardware acceleration</b> (or <b>graphics acceleration</b>).</li><li>Turn it on and restart the browser. Brave: <code class="cp" data-copy="brave://settings/system">brave://settings/system</code></li></ol>']
+  ];
+  const box = document.createElement('div'); box.className = 'wgl';
+  box.innerHTML = '<button type="button" class="wgl-t">Your browser has WebGL turned off or unsupported, so the game can\'t run. <u>Tap here to see how to turn it on.</u></button><div class="wgl-b" hidden>' +
+    guides.map(g => '<details' + (g[0] === mine ? ' open' : '') + '><summary>' + g[1] + (g[0] === mine ? ' (your browser)' : '') + '</summary>' + g[2] + '</details>').join('') +
+    '<p class="wgl-d">Technical detail: ' + String(detail || 'unknown').replace(/[<>&]/g, '') + '</p></div>';
+  b.parentNode.insertBefore(box, b);
+  box.querySelector('.wgl-t').addEventListener('click', () => { const x = box.querySelector('.wgl-b'); x.hidden = !x.hidden; });
+  box.addEventListener('click', e => {
+    const c = e.target.closest('.cp'); if (!c) return;
+    const t = c.dataset.copy;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { c.textContent = 'copied! paste into a new tab'; setTimeout(() => c.textContent = t, 1800); }).catch(() => {});
+  });
 }
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
@@ -155,7 +182,7 @@ catch (e1) {
     const c2 = document.createElement('canvas'); c2.id = 'view';
     renderer = new THREE.WebGLRenderer({ canvas: c2, antialias: false });
     canvas.replaceWith(c2); canvas = c2;
-  } catch (e2) { failStart('Your browser has WebGL turned off or unsupported, so the game can\'t run. Enable hardware acceleration in your browser settings, then reload.'); return; }
+  } catch (e2) { failStart((e2 && e2.message) || (e1 && e1.message)); return; }
 }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setClearColor(0x050303);
