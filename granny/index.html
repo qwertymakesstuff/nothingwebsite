@@ -183,6 +183,10 @@ for (const [type, attrs] of [['webgl2', { antialias: true }], ['webgl', { antial
   let gl = null;
   try { gl = c.getContext(type, attrs); } catch (e) { ctxErr.push(type + ': ' + e.message); }
   if (!gl) continue;
+  if (gl.isContextLost && gl.isContextLost()) ctxErr.push(type + ': context lost right after creation');
+  // some Safari setups return null here, which makes three.js crash; fall back to typical values
+  const spf = gl.getShaderPrecisionFormat ? gl.getShaderPrecisionFormat.bind(gl) : null;
+  gl.getShaderPrecisionFormat = (a, b) => (spf && spf(a, b)) || { rangeMin: 127, rangeMax: 127, precision: 23 };
   try { renderer = new THREE.WebGLRenderer({ canvas: c, context: gl, antialias: !!attrs.antialias }); canvas.replaceWith(c); canvas = c; break; }
   catch (e) { ctxErr.push('three on ' + type + ': ' + e.message); }
 }
