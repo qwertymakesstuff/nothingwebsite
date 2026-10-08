@@ -114,10 +114,20 @@ Android devices - hardware-specific behaviour (safe areas, address-bar collapse,
 Playback uses YouTube's **official embedded player** (IFrame Player API, privacy host `youtube-nocookie.com`).
 We only send it commands (load, play, pause, seek, volume); we never touch, download or extract the audio.
 
-- **The player stays visible.** YouTube's rules require the embedded player to stay visible while it plays, so it
-  is never hidden. It shows at the top of the queue panel (wide desktop), in place of the artwork in the
-  full-screen player (phones), or as a small floating box in the corner otherwise. It is one element that follows
-  placeholder slots (re-parenting an iframe would reload it and stop the music).
+- **Cover by default, video on request.** Normally you see the cover art. Click the cover in the bottom-left of the
+  player bar to open the expanded player (big cover, Up next, and a *Cover | Video* switch); the cover turns into an
+  arrow that closes it again. On phones the same switch is the button in the full-screen player's header. The choice
+  is saved. The YouTube player is never removed: when hidden it keeps its size and keeps playing, it is just
+  transparent and behind everything.
+- **YouTube's rules.** YouTube's embedded-player policies ask for the player to stay visible. Hiding it by default
+  is a site-owner decision and a policy risk to the API project (not a technical limit). It is always shown when it
+  has to be: when the browser needs a tap on the video to start (see below) and while an ad plays.
+- **Ads.** Ads are served inside YouTube's own player and cannot be blocked from the page (and circumventing
+  them is against YouTube's terms), so there is no ad blocker. Instead the engine *detects* an ad (best effort:
+  `getAdState()`, a different video id, or a length that doesn't match the song) and then shows the video, pauses
+  the song's clock, and tells you, so the ad can be seen and skipped. This heuristic has not been tested against a
+  real ad. Real ad-free options: a YouTube Premium account signed in on the standard `youtube.com` embed host (this
+  site uses the privacy host `youtube-nocookie.com`, where sign-in does not apply).
 - **Autoplay rules.** Browsers may refuse scripted playback. If nothing starts, the player shows "Tap the video to
   start playback" and the video becomes tappable. iPhone/iPad usually need this on the *first* play of a session, so
   the prompt appears after about 1.5s there (6s elsewhere).
@@ -127,7 +137,7 @@ We only send it commands (load, play, pause, seek, volume); we never touch, down
   resumes at the saved position.
 - `?engine=sim` swaps in a silent simulated engine (and the "Load demo tracks" card) for UI testing without network.
 
-Known platform limits: iOS ignores programmatic volume (use the hardware buttons); embedded videos can show ads
-that YouTube controls; the first YouTube script load happens about 1.5s after the page opens (or on the first play).
+Known platform limits: iOS ignores programmatic volume, so the volume slider is hidden there (use the hardware
+buttons); embedded videos can show ads that YouTube controls; the first YouTube script load happens about 1.5s after the page opens (or on the first play).
 Background / screen-off playback and lock-screen controls are Phase 5 and depend on the browser; iOS is the most
 restrictive.

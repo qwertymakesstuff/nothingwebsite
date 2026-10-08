@@ -4,6 +4,7 @@ import { createStore, shallowEqual } from '../../music/js/core/store.js';
 import * as Q from '../../music/js/player/queueManager.js';
 import { createPlayer, initialPlayerState } from '../../music/js/player/player.js';
 import { createPersistence, fromSnapshot, toSnapshot } from '../../music/js/storage/persistence.js';
+import { createPrefs } from '../../music/js/storage/prefs.js';
 import { formatTime, clamp, hueFrom, formatCount } from '../../music/js/utils/format.js';
 
 const T = (id, extra = {}) => ({ id, title: 't' + id, artist: 'a', duration: 100, ...extra });
@@ -223,4 +224,30 @@ test('player: blocked autoplay asks for a tap, and playing clears it', () => {
   assert.equal(store.getState().needsTap, false, 'loading another track resets the flag');
   engine.emit('blocked'); player.restore({ volume: 0.5, muted: false, shuffle: false, repeat: 'off', position: 0, queue: Q.setItems(tracks(1), 0) });
   assert.equal(store.getState().needsTap, false);
+});
+
+test('player: ad state is tracked and cleared on the next load', () => {
+  const { store, engine, player, notes } = setup();
+  player.playTracks(tracks(2), 0);
+  assert.equal(store.getState().adPlaying, false);
+  engine.emit('ad', true);
+  assert.equal(store.getState().adPlaying, true);
+  assert.match(notes.at(-1)[0], /ad is playing/i);
+  engine.emit('ad', false);
+  assert.equal(store.getState().adPlaying, false);
+  engine.emit('ad', true); player.next();
+  assert.equal(store.getState().adPlaying, false, 'a new load resets the ad flag');
+});
+
+test('prefs: video choice defaults to cover, persists, survives bad data and failing storage', () => {
+  const mem = new Map();
+  const storage = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v), removeItem: (k) => mem.delete(k) };
+  const prefs = createPrefs(storage);
+  assert.deepEqual(prefs.get(), { videoVisible: false });
+  assert.deepEqual(prefs.set({ videoVisible: true }), { videoVisible: true });
+  assert.equal(createPrefs(storage).get().videoVisible, true);
+  storage.setItem('mm:v1:prefs', '{nope'); assert.equal(prefs.get().videoVisible, false);
+  storage.setItem('mm:v1:prefs', JSON.stringify({ videoVisible: 'yes' })); assert.equal(prefs.get().videoVisible, false);
+  const boom = { getItem() { throw new Error('x'); }, setItem() { throw new Error('x'); } };
+  const safe = createPrefs(boom); assert.equal(safe.get().videoVisible, false); assert.equal(safe.set({ videoVisible: true }).videoVisible, true);
 });

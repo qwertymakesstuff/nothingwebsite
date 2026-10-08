@@ -9,6 +9,7 @@ import { SearchBox } from './components/searchBox.js';
 import { PlayerBar } from './components/playerBar.js';
 import { MiniPlayer } from './components/miniPlayer.js';
 import { NowPlaying } from './components/nowPlaying.js';
+import { ExpandedPlayer } from './components/expandedPlayer.js';
 import { QueueList } from './components/queueList.js';
 import { Toaster } from './components/toast.js';
 import { HomeView } from './views/home.js';
@@ -21,11 +22,11 @@ import { selectCurrent } from '../player/player.js';
 const VIEWS = { home: HomeView, search: SearchView, library: LibraryView, queue: QueueView, channel: ChannelView };
 const TITLES = { home: 'Home', search: 'Search', library: 'Library', queue: 'Queue', channel: 'Channel' };
 
-export function mountApp(root, { player, store, ui, services }) {
+export function mountApp(root, { player, store, ui, services, prefs }) {
   const d = disposer();
   let router;
   const routerProxy = { navigate: (...a) => router.navigate(...a) };
-  const ctx = { player, store, ui, services, router: routerProxy };
+  const ctx = { player, store, ui, services, prefs, router: routerProxy };
 
   const sidebar = Sidebar();
   const bottomNav = BottomNav();
@@ -33,9 +34,10 @@ export function mountApp(root, { player, store, ui, services }) {
   const playerBar = PlayerBar(ctx);
   const mini = MiniPlayer(ctx);
   const nowPlaying = NowPlaying(ctx);
+  const expanded = ExpandedPlayer(ctx);
   const panelQueue = QueueList({ player, store });
   const toaster = Toaster({ ui });
-  [playerBar, mini, nowPlaying, panelQueue, toaster].forEach((c) => d.add(c.destroy));
+  [playerBar, mini, nowPlaying, expanded, panelQueue, toaster].forEach((c) => d.add(c.destroy));
 
   const view = h('main', { class: 'view', id: 'view', tabindex: '-1' });
   const topbar = h('header', { class: 'topbar' },
@@ -44,17 +46,25 @@ export function mountApp(root, { player, store, ui, services }) {
     h('a', { class: 'icon-btn topbar__search-btn', href: '#/search', 'aria-label': 'Search' }, icon('search', 24)));
 
   const panel = h('aside', { class: 'queue-panel', 'aria-label': 'Queue' },
-    h('div', { class: 'panel__video-slot', 'aria-hidden': 'true' }),
     h('div', { class: 'queue-panel__head' }, h('h2', null, 'Queue')),
     panelQueue.el);
 
   const app = h('div', { class: 'app' },
     sidebar.el,
     h('div', { class: 'main-col' }, topbar, view),
-    panel, playerBar.el, mini.el, bottomNav.el, nowPlaying.el, toaster.el);
+    panel, expanded.el, playerBar.el, mini.el, bottomNav.el, nowPlaying.el, toaster.el);
   root.replaceChildren(app);
 
   d.add(store.subscribe((s) => !!selectCurrent(s), (has) => app.classList.toggle('has-track', has)));
+
+  // The expanded player is a desktop feature: close it with Esc, or when the window shrinks to the phone layout.
+  const narrow = window.matchMedia('(max-width: 899px)');
+  const closeExpanded = () => { if (ui.getState().expandedOpen) ui.setState({ expandedOpen: false }); };
+  const onKey = (e) => { if (e.key === 'Escape') closeExpanded(); };
+  const onNarrow = () => { if (narrow.matches) closeExpanded(); };
+  window.addEventListener('keydown', onKey);
+  narrow.addEventListener?.('change', onNarrow);
+  d.add(() => { window.removeEventListener('keydown', onKey); narrow.removeEventListener?.('change', onNarrow); });
 
   // On-screen keyboard (Android resizes the viewport): hide the bottom bars so they don't float
   // above the keyboard and squeeze the page.
