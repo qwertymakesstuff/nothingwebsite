@@ -33,7 +33,7 @@ afterEach(() => { while (engines.length) engines.pop().stop(); }); // no timers 
 
 function setup(opts = {}) {
   const { YT, made } = fakeYT(opts.yt);
-  const engine = new YouTubeEngine({ container: {}, loadApi: opts.loadApi ?? (async () => YT), pollMs: 10, blockedAfterMs: 60, firstBlockedAfterMs: opts.first ?? 60, origin: 'https://music.test', isHidden: () => !!opts.hidden?.v, resumeDelaysMs: [20, 50, 90], log: (...a) => opts.logs?.push(a.join(' ')) });
+  const engine = new YouTubeEngine({ container: {}, loadApi: opts.loadApi ?? (async () => YT), pollMs: 10, blockedAfterMs: 60, firstBlockedAfterMs: opts.first ?? 60, origin: 'https://music.test', isHidden: () => !!opts.hidden?.v, resumeDelaysMs: [20, 50, 90], stallDelaysMs: opts.stall ?? [],  log: (...a) => opts.logs?.push(a.join(' ')) });
   engines.push(engine);
   const events = [];
   for (const ev of ['state', 'time', 'ended', 'error', 'blocked', 'ad']) engine.on(ev, (...a) => events.push([ev, ...a]));
@@ -297,6 +297,40 @@ test('hidden notice does nothing when the user paused or nothing is paused', asy
   engine.notifyVisibility(true); await wait(140);
   engine.pause(); engine.notifyVisibility(true); made.players[0].state(2); await wait(140);
   assert.equal(made.players[0].calls.filter((c) => c[0] === 'play').length, 0);
+});
+test('stuck buffering: nudges play, then reloads the same video at the same second, at most twice', async () => {
+  const logs = [];
+  const { engine, made } = setup({ logs, first: 5000, stall: [30, 70] });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  const p = made.players[0];
+  p.state(1); p.state(3);                       // playing, then stuck buffering (screen locked)
+  const plays = () => p.calls.filter((c) => c[0] === 'play').length;
+  const loads = () => p.calls.filter((c) => c[0] === 'load').length;
+  const loads0 = loads();
+  await wait(50);
+  assert.equal(plays(), 1, 'first a plain play nudge');
+  await wait(60);
+  assert.equal(loads(), loads0 + 1, 'then one reload');
+  assert.ok(logs.some((l) => /reloading the video at/.test(l)));
+  p.state(-1); p.state(3);                      // still stuck after the reload
+  await wait(120);
+  assert.equal(loads(), loads0 + 2, 'a second and last reload');
+  p.state(-1); p.state(3);
+  await wait(120);
+  assert.equal(loads(), loads0 + 2, 'never a third');
+  assert.ok(logs.some((l) => /giving up/.test(l)));
+});
+test('buffering that ends in time, a pause, or a new song never triggers recovery', async () => {
+  const { engine, made } = setup({ first: 5000, stall: [30, 70] });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  const p = made.players[0]; const base = () => p.calls.filter((c) => c[0] === 'load' || c[0] === 'play').length;
+  const b0 = base();
+  p.state(3); await wait(10); p.state(1); await wait(120);
+  assert.equal(base(), b0, 'recovered by itself');
+  p.state(3); await wait(10); engine.pause(); p.state(2); await wait(120);
+  assert.equal(base(), b0, 'the user paused');
+  p.state(3); engine.stop(); await wait(120);
+  assert.equal(base(), b0, 'stopped');
 });
 test('a pause while the page is visible is left alone (calls, user using the YouTube UI)', async () => {
   const hidden = { v: false };
