@@ -55,13 +55,17 @@ export class YouTubeEngine {
    * @param {{ container: Element, loadApi?: () => Promise<any>, pollMs?: number, blockedAfterMs?: number,
    *           origin?: string }} opts
    */
-  constructor({ container, loadApi = loadYouTubeApi, pollMs = 250, blockedAfterMs = 6000, firstBlockedAfterMs = isIosLike() ? 1500 : 6000, origin } = {}) {
+  constructor({ container, loadApi = loadYouTubeApi, pollMs = 250, blockedAfterMs = 6000, firstBlockedAfterMs = isIosLike() ? 1500 : 6000, origin, isHidden = () => typeof document !== 'undefined' && document.hidden, resumeDelaysMs = [300, 1200, 3500], log = () => {} } = {}) {
     this.container = container;
     this.loadApi = loadApi;
     this.pollMs = pollMs;
     this.blockedAfterMs = blockedAfterMs;
     this.firstBlockedAfterMs = firstBlockedAfterMs; // iPhone/iPad usually need a tap on the video for the first play: ask sooner
     this.hasPlayed = false;
+    this.isHidden = isHidden;
+    this.resumeDelaysMs = resumeDelaysMs; // retry schedule after the system pauses us while in the background
+    this.log = log;
+    this._resumeTimers = [];
     this.origin = origin ?? (typeof location !== 'undefined' ? location.origin : undefined);
     this.handlers = {};
     this.player = null;
@@ -139,6 +143,7 @@ export class YouTubeEngine {
 
   pause() {
     this.wantPlay = false;
+    this._cancelResume();
     clearTimeout(this._watchdog);
     this.player?.pauseVideo();
     this._emit('state', 'paused');
@@ -217,7 +222,25 @@ export class YouTubeEngine {
     this._poll = setInterval(() => this._tick(), this.pollMs);
   }
   _stopPoll() { if (this._poll) { clearInterval(this._poll); this._poll = null; } }
-  _clearTimers() { this._stopPoll(); clearTimeout(this._watchdog); this._watchdog = null; }
+  _clearTimers() { this._stopPoll(); clearTimeout(this._watchdog); this._watchdog = null; this._cancelResume(); }
+
+  _cancelResume() { this._resumeTimers.forEach(clearTimeout); this._resumeTimers = []; }
+
+  /**
+   * The screen locked or the app went to the background and the player paused itself, but the user did not
+   * ask for a pause (wantPlay is still true). Try to start it again a few times. Whether the browser or
+   * YouTube allows playback to continue in the background is up to them; we only ask.
+   */
+  _scheduleResume() {
+    this._cancelResume();
+    this.resumeDelaysMs.forEach((delay, i) => {
+      this._resumeTimers.push(setTimeout(() => {
+        if (!this.wantPlay || this._lastState === S.PLAYING || this._lastState === S.BUFFERING) return;
+        this.log(`engine: auto-resume attempt ${i + 1} (page hidden: ${this.isHidden()})`);
+        try { this.player?.playVideo(); } catch { /* ignore */ }
+      }, delay));
+    });
+  }
 
   /** If we asked to autoplay but nothing started, the browser blocked it: tell the UI to ask for a tap. */
   _armWatchdog(seq) {
@@ -237,6 +260,7 @@ export class YouTubeEngine {
     this._lastState = code;
     switch (code) {
       case S.PLAYING:
+        this._cancelResume();
         this.hasPlayed = true;
         clearTimeout(this._watchdog);
         this._startPoll();
@@ -251,6 +275,7 @@ export class YouTubeEngine {
         this._stopPoll();
         this._tick();
         this._emit('state', 'paused'); // our own pause, or a system interruption (call, another tab)
+        if (this.wantPlay && this.isHidden()) { this.log('engine: paused by the system while hidden'); this._scheduleResume(); }
         break;
       case S.ENDED:
         this._stopPoll();

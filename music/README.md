@@ -2,9 +2,9 @@
 
 A web music player, built in phases. No build step: plain ES modules, served as static files.
 
-**Status: Phase 4 complete, Phase 3 (real playback) now done.** Search, channels/artists, the mobile
+**Status: Phases 1-5 done (Phase 5 = lock screen / background).** Search, channels/artists, the mobile
 player and real playback through YouTube's official embedded player all work. Media Session / lock-screen
-controls are Phase 5 and are not built yet.
+controls (Phase 5) are built too; see below for what is and is not verified.
 
 ## Run locally
 
@@ -30,7 +30,8 @@ js/
     player.js             Player facade - the ONLY thing that changes playback state
     playbackEngine.js     engine contract + SimulatedEngine (silent, for UI tests: ?engine=sim)
     youtubeEngine.js      real playback through YouTube's official IFrame Player API
-    mediaSession.js       reserved seam: lock-screen controls (later phase)
+    mediaSession.js       Media Session: lock screen / headset / Bluetooth / media-key metadata and buttons
+    audioAnchor.js        silent looping <audio> the page owns (gives it a media session + background privilege)
   services/youtube.js     client for OUR /api/search (timeout, abort, cache, friendly errors)
   storage/persistence.js  validated save/restore of player state (never throws)
   storage/recentSearches.js   last 10 search terms
@@ -141,3 +142,39 @@ Known platform limits: iOS ignores programmatic volume, so the volume slider is 
 buttons); embedded videos can show ads that YouTube controls; the first YouTube script load happens about 1.5s after the page opens (or on the first play).
 Background / screen-off playback and lock-screen controls are Phase 5 and depend on the browser; iOS is the most
 restrictive.
+
+## Lock screen and background playback (Phase 5)
+
+**What is built**
+
+- **Media Session** (`player/mediaSession.js`): the phone lock screen / notification shade, headset and Bluetooth
+  buttons, and keyboard media keys show the song's **title, artist and artwork** and control it:
+  play, pause, previous, next, seek bar (`seekto`), seek back/forward, stop. "Next" is withdrawn on the last song
+  (unless repeat-all). The scrubber position is only sent to the OS when it jumps or drifts, not every tick.
+  Everything is wrapped so an unsupported action never breaks playback.
+- **Silent audio anchor** (`player/audioAnchor.js`): the music plays inside YouTube's iframe, which the page cannot
+  control, so the page also loops a few seconds of silence in its own `<audio>` element while the player plays.
+  That is what lets browsers attach the lock-screen controls to *this page* and keep it running in the background.
+  It makes no sound and pauses when the music pauses. `?anchor=off` turns it off.
+- **Auto-resume** (`player/youtubeEngine.js`): if the system pauses the YouTube player while the page is hidden
+  (screen locked / app switched) and the user did not pause, it asks YouTube to play again up to 3 times.
+  A pause from the lock screen or the app is never overridden.
+- **`?debug=1`** shows a log panel (start-up report, player state, visibility changes, lock-screen actions, anchor
+  and auto-resume events) with a Copy button, so behaviour on a real phone can be reported without dev tools.
+
+**What is verified, and what is not**
+
+- Verified in Chromium: metadata, artwork list, playback state, every action handler, scrubber updates, the
+  anchor starting/stopping with the music, and the auto-resume logic (against a mock of YouTube's player).
+- **NOT verified on real devices.** Whether music keeps playing with the screen off is decided by the browser, the OS
+  and YouTube, and cannot be tested from here:
+  - *Android Chrome*: usually continues in the background and shows the controls.
+  - *iPhone / iPad (Safari)*: the most restrictive. YouTube's embedded player often pauses when the app is
+    backgrounded; the anchor and auto-resume are best-effort and may not be enough. Installing as a Home Screen app
+    (Phase 8) can help but is not a guarantee. If it does not work, there is no web-only fix that complies with
+    YouTube's rules.
+  - Lock-screen artwork comes from YouTube thumbnails; some devices crop or ignore it.
+
+**How to test on a phone:** open `https://music.missing.website/?debug=1`, play a song, lock the screen (or switch
+app) for 30+ seconds, then check: did the music continue? did the lock screen show title/artwork and working
+buttons? Return to the page, tap **Copy** in the debug panel and send the log.
