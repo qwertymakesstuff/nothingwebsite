@@ -5,6 +5,7 @@ import { TrackText } from './trackInfo.js';
 import { TransportControls } from './transportControls.js';
 import { SeekBar } from './seekBar.js';
 import { QueueList } from './queueList.js';
+import { MediaToggleIcon } from './mediaToggle.js';
 import { trackSwipe } from '../../utils/gestures.js';
 import { dragX, settle, slideIn } from '../swipeFx.js';
 import { selectCurrent } from '../../player/player.js';
@@ -19,14 +20,15 @@ const BEHIND = '.main-col, .bottom-nav, .mini-player'; // made inert while the s
  *   back gesture / Esc / chevron         close
  * Reuses the same text / seek / transport / queue components as the desktop bar.
  */
-export function NowPlaying({ player, store, ui }) {
+export function NowPlaying({ player, store, ui, prefs }) {
   const d = disposer();
   const art = Artwork('np__art');
   const text = TrackText({ store, className: 'track-text--large' });
   const seek = SeekBar({ player, store });
   const transport = TransportControls({ player, store });
   const queue = QueueList({ player, store });
-  [text, seek, transport, queue].forEach((c) => d.add(c.destroy));
+  const mediaToggle = MediaToggleIcon({ ui, prefs });
+  [text, seek, transport, queue, mediaToggle].forEach((c) => d.add(c.destroy));
 
   const el = h('section', { class: 'nowplaying', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Player', 'aria-hidden': 'true' });
   const closeBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close player', onclick: () => requestClose() }, icon('chevron-down', 28));
@@ -38,7 +40,7 @@ export function NowPlaying({ player, store, ui }) {
   }, name === 'player' ? 'Now playing' : 'Up next'));
   const tablist = h('div', { class: 'np__tabs', role: 'tablist' }, tabs);
 
-  // With real playback the YouTube player is shown here (it must stay visible); see videoDock.js.
+  // Cover art by default; the user can switch to the YouTube video (shown here, see videoDock.js).
   const artWrap = h('div', { class: 'np__art-wrap' }, art.el, h('div', { class: 'np__video-slot', 'aria-hidden': 'true' }));
   const playerView = h('div', { class: 'np__body', role: 'tabpanel' }, artWrap, text.el, seek.el, transport.el);
   const clearBtn = h('button', { class: 'btn btn--ghost btn--small', type: 'button', onclick: () => player.clearQueue() }, 'Clear');
@@ -46,7 +48,7 @@ export function NowPlaying({ player, store, ui }) {
   const queueView = h('div', { class: 'np__queue', role: 'tabpanel', hidden: true },
     h('div', { class: 'np__queue-head' }, h('h2', null, 'Up next'), clearBtn), queue.el, queueEmpty);
 
-  const header = h('div', { class: 'np__header' }, closeBtn, tablist, h('span', { class: 'np__header-spacer', 'aria-hidden': 'true' }));
+  const header = h('div', { class: 'np__header' }, closeBtn, tablist, h('span', { class: 'np__header-end' }, mediaToggle.el));
   el.append(header, playerView, queueView);
 
   function setView(name) {
@@ -56,6 +58,7 @@ export function NowPlaying({ player, store, ui }) {
     el.classList.toggle('is-queue', name === 'queue');
   }
 
+  d.add(ui.subscribe((s) => s.videoVisible, (on) => el.classList.toggle('show-video', on)));
   d.add(store.subscribe(selectCurrent, (t) => {
     art.update(t);
     // Placeholder artwork is tinted from the track id, so match it; real artwork keeps the brand purple.

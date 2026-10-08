@@ -2,6 +2,7 @@
 // Implements the engine contract documented in playbackEngine.js:
 //   load / play / pause / stop / seek / setVolume   and events  state / time / ended / error
 // plus one extra event, 'blocked', fired when the browser refused to autoplay (the user must tap play).
+//   'ad' (isAd: boolean)  best-effort: an ad seems to be playing instead of the song (see _isAd)
 //
 // It never touches the audio or video streams: it only sends commands to YouTube's own player, which
 // must stay visible on the page (see videoDock.js).
@@ -72,6 +73,7 @@ export class YouTubeEngine {
     this._poll = null;
     this._watchdog = null;
     this._lastState = null;
+    this._ad = false;
   }
 
   on(event, handler) { this.handlers[event] = handler; }
@@ -108,6 +110,7 @@ export class YouTubeEngine {
     this.track = track;
     this.wantPlay = autoplay;
     this._lastState = null;
+    this._setAd(false);
     if (!track?.videoId) { this._emit('error', "This track can't be played."); return; }
     if (autoplay) this._emit('state', 'loading');
 
@@ -144,6 +147,7 @@ export class YouTubeEngine {
   stop() {
     this._seq++;
     this._clearTimers();
+    this._setAd(false);
     this.wantPlay = false;
     this.track = null;
     try { this.player?.stopVideo(); } catch { /* player may be mid-load */ }
@@ -176,8 +180,36 @@ export class YouTubeEngine {
 
   _tick() {
     if (!this.player) return;
+    this._setAd(this._isAd());
+    if (this._ad) return; // an ad's clock is not the song's: keep the song's position untouched
     const t = Number(this.player.getCurrentTime?.());
     if (Number.isFinite(t)) this._emit('time', t, this._duration());
+  }
+
+  _setAd(on) {
+    if (on === this._ad) return;
+    this._ad = on;
+    this._emit('ad', on);
+  }
+
+  /**
+   * Best-effort ad detection (the IFrame API has no documented ad flag). Signals, any of which counts:
+   *  - getAdState() === 1 (undocumented but present in YouTube's player)
+   *  - the video id the player reports is not the one we asked for
+   *  - the reported length differs from the song's known length by more than 5 seconds
+   * We cannot test this against a real ad from here, so treat it as a heuristic.
+   */
+  _isAd() {
+    const p = this.player;
+    try {
+      if (p.getAdState?.() === 1) return true;
+      const id = p.getVideoData?.()?.video_id;
+      if (id && this.track?.videoId && id !== this.track.videoId) return true;
+      const d = Number(p.getDuration?.());
+      const known = this.track?.duration;
+      if (d > 0 && known > 0 && Math.abs(d - known) > 5) return true;
+    } catch { /* player mid-transition */ }
+    return false;
   }
 
   _startPoll() {

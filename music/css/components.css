@@ -230,23 +230,44 @@ button, a, [role="tab"], .row__main, .chip__label { touch-action: manipulation; 
   .btn--small { min-height: 44px; }
 }
 
-/* ---------- YouTube player area (real playback) ---------- */
+/* ---------- YouTube player element ---------- */
 .video-host { position: fixed; z-index: 35; background: #000; border-radius: 12px; overflow: hidden; pointer-events: none; box-shadow: 0 10px 40px rgba(0, 0, 0, .55); }
 .video-host.is-empty { visibility: hidden; }
 .video-host iframe { display: block; width: 100%; height: 100%; border: 0; }
 .video-host.on-sheet { z-index: 61; }
+/* hidden by default: keeps its size and keeps playing, but is transparent and behind everything */
+.video-host.is-hidden { opacity: 0; z-index: -1; pointer-events: none; box-shadow: none; }
 .video-host.needs-tap { pointer-events: auto; outline: 3px solid var(--accent); }
+.video-host.is-ad { outline: 3px solid #ffb02e; pointer-events: auto; }   /* so an ad can be skipped */
 .video-host.is-dock { right: 12px; bottom: calc(var(--player-h) + 12px); width: 320px; height: 180px; }
-.panel__video-slot, .np__video-slot { display: none; }
-body.engine-yt .np__art { display: none; }
-body.engine-yt .np__video-slot { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius); background: rgba(255, 255, 255, .04); }
-@media (min-width: 1200px) {
-  body.engine-yt .app.has-track .panel__video-slot { display: block; aspect-ratio: 16 / 9; margin: 0 4px 14px; border-radius: 12px; background: rgba(255, 255, 255, .04); }
-}
+.np__video-slot, .expanded__video-slot { display: none; }
 @media (max-width: 899px) {
   .video-host.is-dock { right: calc(8px + var(--sar)); bottom: calc(var(--nav-h) + var(--mini-h) + var(--sab) + 16px); width: 224px; height: 126px; }
   .video-host.is-dock.on-sheet { bottom: calc(16px + var(--sab)); }
 }
+.nowplaying.show-video .np__video-slot { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius); background: rgba(255, 255, 255, .04); }
+.nowplaying.show-video .np__art { display: none; }
 @media (max-width: 899px) and (orientation: landscape) and (max-height: 520px) {
-  body.engine-yt .np__video-slot { width: min(46vw, 62vh); }
+  .nowplaying.show-video .np__video-slot { width: min(46vw, 62vh); }
 }
+/* volume cannot be set by a web page on iPhone/iPad */
+.ios .volume { display: none; }
+
+/* ---------- cover button in the player bar ---------- */
+.bar-art { position: relative; flex: none; width: 56px; height: 56px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--text); cursor: pointer; }
+.bar-art:disabled { cursor: default; }
+.bar-art .artwork { width: 56px; transition: transform .15s var(--ease), filter .15s; }
+.bar-art:hover:not(:disabled) .artwork { transform: scale(1.04); filter: brightness(1.1); }
+.bar-art__arrow { display: none; position: absolute; inset: 0; place-items: center; border-radius: 8px; background: var(--bg-elev-2); border: 1px solid var(--line); }
+.bar-art.is-open .artwork { visibility: hidden; }
+.bar-art.is-open .bar-art__arrow { display: grid; }
+.bar-art:hover .bar-art__arrow { background: #24242e; }
+
+/* ---------- Cover | Video switch ---------- */
+.media-toggle { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: rgba(255, 255, 255, .08); }
+.media-toggle__btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: transparent; color: var(--text-2); font-weight: 600; font-size: 14px; }
+.media-toggle__btn:hover { color: var(--text); }
+.media-toggle__btn[aria-pressed="true"] { background: rgba(255, 255, 255, .16); color: var(--text); }
+.media-toggle-icon .icon { color: var(--text-2); }
+.media-toggle-icon[aria-pressed="true"] .icon { color: var(--accent); }
+.np__header-end { display: grid; place-items: center; }

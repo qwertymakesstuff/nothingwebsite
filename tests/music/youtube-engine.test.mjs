@@ -36,7 +36,7 @@ function setup(opts = {}) {
   const engine = new YouTubeEngine({ container: {}, loadApi: opts.loadApi ?? (async () => YT), pollMs: 10, blockedAfterMs: 60, firstBlockedAfterMs: opts.first ?? 60, origin: 'https://music.test' });
   engines.push(engine);
   const events = [];
-  for (const ev of ['state', 'time', 'ended', 'error', 'blocked']) engine.on(ev, (...a) => events.push([ev, ...a]));
+  for (const ev of ['state', 'time', 'ended', 'error', 'blocked', 'ad']) engine.on(ev, (...a) => events.push([ev, ...a]));
   return { engine, made, events, last: (n) => made.players.at(-1).calls.filter((c) => c[0] === n) };
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -198,4 +198,50 @@ test('first play asks for a tap sooner than later plays (iPhone needs a tap on t
   assert.equal(events.filter((e) => e[0] === 'blocked').length, 1, 'later play: still within the longer delay, not blocked yet');
   await wait(40);
   assert.equal(events.filter((e) => e[0] === 'blocked').length, 2);
+});
+
+// ---------- ad detection (best effort) ----------
+function adSetup(extra = {}) {
+  const s = setup({ first: 5000 });
+  const p0 = () => s.made.players[0];
+  return { ...s, p0 };
+}
+test('ad detection: undocumented getAdState() === 1 means an ad', async () => {
+  const { engine, events, p0 } = adSetup();
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  p0().getAdState = () => 1; p0().state(1); await wait(30);
+  assert.deepEqual(events.filter((e) => e[0] === 'ad'), [['ad', true]]);
+  const before = events.filter((e) => e[0] === 'time').length; await wait(40);
+  assert.equal(events.filter((e) => e[0] === 'time').length, before, "an ad's clock is never reported as the song's position");
+  p0().getAdState = () => 0; await wait(30);
+  assert.deepEqual(events.filter((e) => e[0] === 'ad').at(-1), ['ad', false]);
+  assert.ok(events.filter((e) => e[0] === 'time').length > before, 'time reporting resumes after the ad');
+});
+test('ad detection: a different video id, or a very different length, means an ad', async () => {
+  const a = adSetup();
+  a.engine.load(TRACK, { autoplay: true }); await wait(20);
+  a.p0().getVideoData = () => ({ video_id: 'SOMEADVID' }); a.p0().state(1); await wait(30);
+  assert.deepEqual(a.events.filter((e) => e[0] === 'ad'), [['ad', true]]);
+  const b = adSetup();
+  b.engine.load(TRACK, { autoplay: true }); await wait(20);
+  b.p0().d = 30; b.p0().state(1); await wait(30); // song is 200s, player says 30s
+  assert.deepEqual(b.events.filter((e) => e[0] === 'ad'), [['ad', true]]);
+});
+test('ad detection: no false alarms for the normal song', async () => {
+  const { engine, events, p0 } = adSetup();
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  p0().getVideoData = () => ({ video_id: 'VID1' }); p0().getAdState = () => 0; p0().d = 201.4;
+  p0().state(1); await wait(60);
+  assert.equal(events.filter((e) => e[0] === 'ad').length, 0);
+  const c = adSetup();
+  c.engine.load({ id: 'x', videoId: 'XX', title: 'no known length' }, { autoplay: true }); await wait(20);
+  c.p0().d = 9999; c.p0().state(1); await wait(40);
+  assert.equal(c.events.filter((e) => e[0] === 'ad').length, 0, 'unknown song length cannot trigger the length signal');
+});
+test('ad flag is cleared when a new song loads or playback stops', async () => {
+  const { engine, events, p0 } = adSetup();
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  p0().getAdState = () => 1; p0().state(1); await wait(30);
+  engine.load({ ...TRACK, id: 'b', videoId: 'VID2' }, { autoplay: true });
+  assert.deepEqual(events.filter((e) => e[0] === 'ad').at(-1), ['ad', false]);
 });

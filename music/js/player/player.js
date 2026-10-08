@@ -14,6 +14,7 @@ export const initialPlayerState = () => ({
   shuffle: false,
   repeat: 'off',       // off | all | one
   error: null,
+  adPlaying: false,    // an ad (not the song) seems to be playing: the video is shown so it can be seen/skipped
   needsTap: false,     // the browser refused to autoplay: the user must tap the video itself (common on iPhone)
 });
 
@@ -30,6 +31,10 @@ export function createPlayer({ store, engine, notify = () => {} }) {
   engine.on('state', (status) => {
     if (status === 'playing') errorStreak = 0;
     store.setState({ status, ...(status === 'playing' ? { error: null, needsTap: false } : {}) });
+  });
+  engine.on('ad', (on) => {
+    store.setState({ adPlaying: on });
+    if (on) notify('An ad is playing. The video is shown so you can skip it.', 'info');
   });
   engine.on('blocked', () => {
     store.setState({ status: 'paused', needsTap: true });
@@ -56,7 +61,7 @@ export function createPlayer({ store, engine, notify = () => {} }) {
       return;
     }
     loadedId = track.id;
-    store.setState({ status: autoplay ? 'loading' : 'paused', position: startAt, duration: track.duration || 0, error: null, needsTap: false });
+    store.setState({ status: autoplay ? 'loading' : 'paused', position: startAt, duration: track.duration || 0, error: null, needsTap: false, adPlaying: false });
     engine.load(track, { autoplay, startAt });
   }
 
@@ -199,6 +204,7 @@ export function createPlayer({ store, engine, notify = () => {} }) {
       status: Q.currentItem(saved.queue) ? 'paused' : 'idle',
       error: null,
       needsTap: false,
+      adPlaying: false,
     });
     applyVolume();
   }

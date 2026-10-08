@@ -3,7 +3,7 @@
 import { createStore, shallowEqual } from './core/store.js';
 import { createPlayer, initialPlayerState } from './player/player.js';
 import { SimulatedEngine } from './player/playbackEngine.js';
-import { YouTubeEngine } from './player/youtubeEngine.js';
+import { YouTubeEngine, isIosLike } from './player/youtubeEngine.js';
 import { VideoDock } from './ui/components/videoDock.js';
 import { createPersistence } from './storage/persistence.js';
 import { createUiStore, showToast } from './ui/uiStore.js';
@@ -11,12 +11,16 @@ import { mountApp } from './ui/shell.js';
 import { registerShortcuts } from './ui/keyboard.js';
 import { youtubeService } from './services/youtube.js';
 import { createRecentSearches } from './storage/recentSearches.js';
+import { createPrefs } from './storage/prefs.js';
 
 const root = document.getElementById('app');
 
 try {
   const store = createStore(initialPlayerState());
-  const ui = createUiStore();
+  const prefs = createPrefs();
+  const ui = createUiStore({ videoVisible: prefs.get().videoVisible });
+  // iPhone/iPad ignore volume set by a web page, so the volume slider is hidden there.
+  if (isIosLike()) document.body.classList.add('ios');
   const persistence = createPersistence();
   // Real playback uses YouTube's official embedded player. ?engine=sim swaps in a silent simulated
   // engine (no network needed) for UI testing.
@@ -46,7 +50,7 @@ try {
   setInterval(() => { if (store.getState().status === 'playing') persistence.save(store.getState()); }, 5000);
   window.addEventListener('pagehide', () => persistence.save(store.getState()));
 
-  mountApp(root, { player, store, ui, services: { youtube: youtubeService, recent: createRecentSearches(), simulated } });
+  mountApp(root, { player, store, ui, prefs, services: { youtube: youtubeService, recent: createRecentSearches(), simulated } });
   registerShortcuts({ player, store });
   // Warm up YouTube's player in the background so the first tap on a song starts instantly.
   if (!simulated) setTimeout(() => engine.preload(), 1500);

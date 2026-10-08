@@ -1,9 +1,11 @@
 import { createStore } from '../core/store.js';
 
 // UI-only state (not playback). Kept separate so the player never depends on the UI.
-export function createUiStore() {
+export function createUiStore({ videoVisible = false } = {}) {
   return createStore({
     nowPlayingOpen: false,   // mobile full-screen player
+    expandedOpen: false,     // desktop expanded player (big cover / video)
+    videoVisible,            // user's choice: show the YouTube video instead of the cover (default: cover)
     queuePanelOpen: true,    // desktop side panel
     toast: null,             // { id, message, kind }
   });
