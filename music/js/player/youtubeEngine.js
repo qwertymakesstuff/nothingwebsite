@@ -66,6 +66,8 @@ export class YouTubeEngine {
     this.resumeDelaysMs = resumeDelaysMs; // retry schedule after the system pauses us while in the background
     this.log = log;
     this._resumeTimers = [];
+    this._hiddenAt = -Infinity; // when the page last became hidden (the browser reports it a moment after the system pauses us)
+    this.now = () => Date.now();
     this.origin = origin ?? (typeof location !== 'undefined' ? location.origin : undefined);
     this.handlers = {};
     this.player = null;
@@ -81,6 +83,19 @@ export class YouTubeEngine {
   }
 
   on(event, handler) { this.handlers[event] = handler; }
+
+  /**
+   * Call when the page's visibility changes. Locking the phone pauses YouTube a moment BEFORE the page is
+   * reported hidden, so if we are already paused against the user's wish, start the resume attempts now.
+   */
+  notifyVisibility(hidden) {
+    if (!hidden) return;
+    this._hiddenAt = this.now();
+    if (this.wantPlay && this._lastState === S.PAUSED) {
+      this.log('engine: page hidden right after a system pause, trying to resume');
+      this._scheduleResume();
+    }
+  }
   _emit(event, ...args) { try { this.handlers[event]?.(...args); } catch (e) { console.error(e); } }
 
   /** Start loading the API/player early so the first tap is instant (the tap must stay "fresh"). */
@@ -280,6 +295,7 @@ export class YouTubeEngine {
         this._tick();
         this._emit('state', 'paused'); // our own pause, or a system interruption (call, another tab)
         if (this.wantPlay && this.isHidden()) { this.log('engine: paused by the system while hidden'); this._scheduleResume(); }
+        else if (this.wantPlay) this.log('engine: paused while we wanted to play (waiting to see if the page is hidden)');
         break;
       case S.ENDED:
         this._stopPoll();
