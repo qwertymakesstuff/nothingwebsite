@@ -12,11 +12,17 @@ import { registerShortcuts } from './ui/keyboard.js';
 import { youtubeService } from './services/youtube.js';
 import { createRecentSearches } from './storage/recentSearches.js';
 import { createPrefs } from './storage/prefs.js';
+import { createMediaSession } from './player/mediaSession.js';
+import { createAudioAnchor } from './player/audioAnchor.js';
+import { createDebugLog } from './utils/debugLog.js';
+import { DebugPanel } from './ui/debugPanel.js';
 
 const root = document.getElementById('app');
 
 try {
   const store = createStore(initialPlayerState());
+  const params = new URLSearchParams(location.search);
+  const dbg = createDebugLog({ enabled: params.get('debug') === '1' }); // ?debug=1 shows a log panel (see README)
   const prefs = createPrefs();
   const ui = createUiStore({ videoVisible: prefs.get().videoVisible });
   // iPhone/iPad ignore volume set by a web page, so the volume slider is hidden there.
@@ -24,7 +30,7 @@ try {
   const persistence = createPersistence();
   // Real playback uses YouTube's official embedded player. ?engine=sim swaps in a silent simulated
   // engine (no network needed) for UI testing.
-  const simulated = new URLSearchParams(location.search).get('engine') === 'sim';
+  const simulated = params.get('engine') === 'sim';
   let engine;
   let dock = null;
   if (simulated) {
@@ -33,7 +39,7 @@ try {
     document.body.classList.add('engine-yt');
     dock = VideoDock({ store, ui });
     document.body.append(dock.el);
-    engine = new YouTubeEngine({ container: dock.container });
+    engine = new YouTubeEngine({ container: dock.container, log: dbg.log });
   }
   const player = createPlayer({ store, engine, notify: (message, kind) => showToast(ui, message, kind) });
 
@@ -52,9 +58,23 @@ try {
 
   mountApp(root, { player, store, ui, prefs, services: { youtube: youtubeService, recent: createRecentSearches(), simulated } });
   registerShortcuts({ player, store });
+
+  // Phase 5: lock screen / headset / media-key controls and background behaviour.
+  const mediaSession = createMediaSession({ player, store, log: dbg.log });
+  const anchor = createAudioAnchor({ store, enabled: params.get('anchor') !== 'off', log: dbg.log }); // ?anchor=off disables it
+  if (dbg.enabled) {
+    document.body.append(DebugPanel({ debug: dbg }).el);
+    dbg.log('start', { ua: navigator.userAgent, mediaSession: mediaSession.supported, anchor: !!anchor.el, engine: simulated ? 'sim' : 'youtube', visibility: document.visibilityState });
+    store.subscribe((s) => `${s.status}${s.needsTap ? ' needsTap' : ''}${s.adPlaying ? ' ad' : ''}`, (v) => dbg.log('player:', v), { immediate: false });
+    document.addEventListener('visibilitychange', () => dbg.log('visibility:', document.visibilityState));
+    window.addEventListener('pagehide', () => dbg.log('pagehide'));
+    window.addEventListener('pageshow', () => dbg.log('pageshow'));
+    document.addEventListener('freeze', () => dbg.log('page frozen by the browser'));
+    document.addEventListener('resume', () => dbg.log('page resumed'));
+  }
   // Warm up YouTube's player in the background so the first tap on a song starts instantly.
   if (!simulated) setTimeout(() => engine.preload(), 1500);
-  window.__music = { store, ui, player }; // handy for debugging and tests
+  window.__music = { store, ui, player, debug: dbg }; // handy for debugging and tests
 } catch (err) {
   console.error(err);
   root.replaceChildren(Object.assign(document.createElement('p'), {

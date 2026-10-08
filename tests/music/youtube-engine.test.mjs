@@ -33,7 +33,7 @@ afterEach(() => { while (engines.length) engines.pop().stop(); }); // no timers 
 
 function setup(opts = {}) {
   const { YT, made } = fakeYT(opts.yt);
-  const engine = new YouTubeEngine({ container: {}, loadApi: opts.loadApi ?? (async () => YT), pollMs: 10, blockedAfterMs: 60, firstBlockedAfterMs: opts.first ?? 60, origin: 'https://music.test' });
+  const engine = new YouTubeEngine({ container: {}, loadApi: opts.loadApi ?? (async () => YT), pollMs: 10, blockedAfterMs: 60, firstBlockedAfterMs: opts.first ?? 60, origin: 'https://music.test', isHidden: () => !!opts.hidden?.v, resumeDelaysMs: [20, 50, 90], log: (...a) => opts.logs?.push(a.join(' ')) });
   engines.push(engine);
   const events = [];
   for (const ev of ['state', 'time', 'ended', 'error', 'blocked', 'ad']) engine.on(ev, (...a) => events.push([ev, ...a]));
@@ -244,4 +244,54 @@ test('ad flag is cleared when a new song loads or playback stops', async () => {
   p0().getAdState = () => 1; p0().state(1); await wait(30);
   engine.load({ ...TRACK, id: 'b', videoId: 'VID2' }, { autoplay: true });
   assert.deepEqual(events.filter((e) => e[0] === 'ad').at(-1), ['ad', false]);
+});
+
+// ---------- background / lock screen resume ----------
+test('system pauses playback while the page is hidden -> tries to resume (screen locked)', async () => {
+  const hidden = { v: false }; const logs = [];
+  const { engine, made, events } = setup({ hidden, logs, first: 5000 });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  const p = made.players[0];
+  p.state(1);                                  // playing
+  hidden.v = true;                             // user locks the screen
+  p.state(2);                                  // YouTube/iOS pauses the player
+  assert.deepEqual(events.filter((e) => e[0] === 'state').at(-1), ['state', 'paused']);
+  await wait(140);
+  assert.ok(p.calls.filter((c) => c[0] === 'play').length >= 1, 'asked the player to play again');
+  assert.ok(logs.some((l) => /paused by the system while hidden/.test(l)) && logs.some((l) => /auto-resume attempt 1/.test(l)));
+});
+test('resume stops as soon as playback is back, and never fights the user', async () => {
+  const hidden = { v: true };
+  const a = setup({ hidden, first: 5000 });
+  a.engine.load(TRACK, { autoplay: true }); await wait(20);
+  a.made.players[0].state(1); a.made.players[0].state(2);
+  await wait(30); a.made.players[0].state(1);   // it resumed on its own after the first attempt
+  const plays = a.made.players[0].calls.filter((c) => c[0] === 'play').length;
+  await wait(120);
+  assert.equal(a.made.players[0].calls.filter((c) => c[0] === 'play').length, plays, 'no further attempts once playing again');
+  const b = setup({ hidden, first: 5000 });
+  b.engine.load(TRACK, { autoplay: true }); await wait(20);
+  b.made.players[0].state(1);
+  b.engine.pause();                              // the USER pauses (lock-screen pause button)
+  b.made.players[0].state(2); await wait(140);
+  assert.equal(b.made.players[0].calls.filter((c) => c[0] === 'play').length, 0, 'a user pause is never overridden');
+});
+test('a pause while the page is visible is left alone (calls, user using the YouTube UI)', async () => {
+  const hidden = { v: false };
+  const { engine, made } = setup({ hidden, first: 5000 });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  made.players[0].state(1); made.players[0].state(2); await wait(140);
+  assert.equal(made.players[0].calls.filter((c) => c[0] === 'play').length, 0);
+});
+test('resume attempts are cancelled by a new load and by stop', async () => {
+  const hidden = { v: true };
+  const { engine, made } = setup({ hidden, first: 5000 });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  made.players[0].state(1); made.players[0].state(2);
+  engine.load({ ...TRACK, id: 'b', videoId: 'VID2' }, { autoplay: true }); await wait(10);
+  const playsAfterLoad = made.players[0].calls.filter((c) => c[0] === 'play').length;
+  await wait(140);
+  assert.equal(made.players[0].calls.filter((c) => c[0] === 'play').length, playsAfterLoad, 'old attempts did not fire for the new song');
+  made.players[0].state(1); made.players[0].state(2); engine.stop(); await wait(140);
+  assert.equal(made.players[0].calls.filter((c) => c[0] === 'play').length, playsAfterLoad);
 });

@@ -271,3 +271,11 @@ button, a, [role="tab"], .row__main, .chip__label { touch-action: manipulation; 
 .media-toggle-icon .icon { color: var(--text-2); }
 .media-toggle-icon[aria-pressed="true"] .icon { color: var(--accent); }
 .np__header-end { display: grid; place-items: center; }
+
+/* ---------- ?debug=1 panel ---------- */
+.debug { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 300; max-height: 42vh; display: flex; flex-direction: column; background: rgba(0, 0, 0, .88); border: 1px solid #444; border-radius: 10px; font: 11px/1.4 ui-monospace, Menlo, monospace; color: #cfc; }
+.debug__bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid #333; }
+.debug__bar strong { flex: 1; color: #fff; }
+.debug__btn { min-height: 32px; padding: 0 12px; border: 1px solid #555; border-radius: 6px; background: #222; color: #fff; font: inherit; }
+.debug__body[hidden] { display: none; }
+.debug__log { margin: 0; padding: 8px; overflow: auto; max-height: calc(42vh - 48px); white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text; }
