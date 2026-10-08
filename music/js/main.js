@@ -63,13 +63,13 @@ try {
   registerShortcuts({ player, store });
 
   // Phase 5: lock screen / headset / media-key controls and background behaviour.
-  const mediaSession = createMediaSession({ player, store, log: dbg.log });
   // The silent audio element only helps phones keep playing with the screen off. On desktop it is off by
   // default: in Safari on Mac it overlapped with YouTube starting and blocked the whole tab for over a minute.
   // ?anchor=on / ?anchor=off override either way.
   const anchorParam = params.get('anchor');
   const phoneLike = isIosLike() || /Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && matchMedia('(pointer: coarse)').matches);
   const anchor = createAudioAnchor({ store, enabled: anchorParam ? anchorParam !== 'off' : phoneLike, log: dbg.log });
+  const mediaSession = createMediaSession({ player, store, log: dbg.log, onPlay: () => anchor.kick() });
   if (dbg.enabled) {
     document.body.append(DebugPanel({ debug: dbg }).el);
     dbg.log('start', { ua: navigator.userAgent, mediaSession: mediaSession.supported, anchor: !!anchor.el, engine: simulated ? 'sim' : 'youtube', visibility: document.visibilityState });

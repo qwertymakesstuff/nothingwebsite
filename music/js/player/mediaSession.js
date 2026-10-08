@@ -39,7 +39,7 @@ const hasNext = (s) => Q.next(s.queue, { repeat: s.repeat, shuffle: s.shuffle })
  * @param {{ player: object, store: object, nav?: Navigator, MetadataCtor?: Function,
  *           now?: () => number, log?: (...a: any[]) => void }} deps
  */
-export function createMediaSession({ player, store, nav = globalThis.navigator, MetadataCtor = globalThis.MediaMetadata, now = () => performance.now(), log = () => {} }) {
+export function createMediaSession({ player, store, nav = globalThis.navigator, MetadataCtor = globalThis.MediaMetadata, now = () => performance.now(), log = () => {}, onPlay = () => {} }) {
   if (!isMediaSessionSupported(nav) || typeof MetadataCtor !== 'function') {
     log('media session: not supported in this browser');
     return { supported: false, destroy() {} };
@@ -53,10 +53,10 @@ export function createMediaSession({ player, store, nav = globalThis.navigator, 
   let last = null; // last position pushed to the OS; declared before the subscriptions below, which fire immediately
 
   // ---- actions (lock screen, headset, Bluetooth, media keys) ----
-  setHandler('play', act('play', () => player.play()));
+  setHandler('play', act('play', () => { onPlay(); player.play(); })); // onPlay runs inside the lock-screen gesture
   setHandler('pause', act('pause', () => player.pause()));
   setHandler('stop', act('stop', () => player.pause()));
-  setHandler('previoustrack', act('previoustrack', () => player.previous()));
+  setHandler('previoustrack', act('previoustrack', () => { onPlay(); player.previous(); }));
   setHandler('seekto', act('seekto', (d) => { if (Number.isFinite(d?.seekTime)) player.seek(d.seekTime); }));
   setHandler('seekbackward', act('seekbackward', (d) => player.seek(state().position - (d?.seekOffset || 10))));
   setHandler('seekforward', act('seekforward', (d) => player.seek(state().position + (d?.seekOffset || 10))));
@@ -66,7 +66,7 @@ export function createMediaSession({ player, store, nav = globalThis.navigator, 
   subs.push(store.subscribe((s) => hasNext(s) && !!selectCurrent(s), (on) => {
     if (on === nextEnabled) return;
     nextEnabled = on;
-    setHandler('nexttrack', on ? act('nexttrack', () => player.next()) : null);
+    setHandler('nexttrack', on ? act('nexttrack', () => { onPlay(); player.next(); }) : null);
   }));
 
   // ---- what is playing ----
