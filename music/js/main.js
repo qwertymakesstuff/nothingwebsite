@@ -70,6 +70,7 @@ try {
   const phoneLike = isIosLike() || /Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && matchMedia('(pointer: coarse)').matches);
   const anchor = createAudioAnchor({ store, enabled: anchorParam ? anchorParam !== 'off' : phoneLike, log: dbg.log });
   const mediaSession = createMediaSession({ player, store, log: dbg.log, onPlay: () => anchor.kick() });
+  document.addEventListener('visibilitychange', () => engine.notifyVisibility?.(document.hidden));
   if (dbg.enabled) {
     document.body.append(DebugPanel({ debug: dbg }).el);
     dbg.log('start', { ua: navigator.userAgent, mediaSession: mediaSession.supported, anchor: !!anchor.el, engine: simulated ? 'sim' : 'youtube', visibility: document.visibilityState });

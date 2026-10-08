@@ -276,6 +276,28 @@ test('resume stops as soon as playback is back, and never fights the user', asyn
   b.made.players[0].state(2); await wait(140);
   assert.equal(b.made.players[0].calls.filter((c) => c[0] === 'play').length, 0, 'a user pause is never overridden');
 });
+test('iPhone lock order: YouTube pauses first, the page is reported hidden a moment later -> still resumes', async () => {
+  const hidden = { v: false }; const logs = [];
+  const { engine, made } = setup({ hidden, logs, first: 5000 });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  const p = made.players[0];
+  p.state(1); p.state(2);                         // paused while the page still looks visible
+  await wait(140);
+  assert.equal(p.calls.filter((c) => c[0] === 'play').length, 0, 'nothing yet: could just be the user');
+  hidden.v = true; engine.notifyVisibility(true); // ...then the browser says the page is hidden
+  await wait(140);
+  assert.ok(p.calls.filter((c) => c[0] === 'play').length >= 1, 'resume attempts start once hidden is reported');
+  assert.ok(logs.some((l) => /hidden right after a system pause/.test(l)));
+});
+test('hidden notice does nothing when the user paused or nothing is paused', async () => {
+  const hidden = { v: true };
+  const { engine, made } = setup({ hidden, first: 5000 });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  made.players[0].state(1);
+  engine.notifyVisibility(true); await wait(140);
+  engine.pause(); engine.notifyVisibility(true); made.players[0].state(2); await wait(140);
+  assert.equal(made.players[0].calls.filter((c) => c[0] === 'play').length, 0);
+});
 test('a pause while the page is visible is left alone (calls, user using the YouTube UI)', async () => {
   const hidden = { v: false };
   const { engine, made } = setup({ hidden, first: 5000 });
