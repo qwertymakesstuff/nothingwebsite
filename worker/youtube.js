@@ -70,7 +70,7 @@ export function normalizeVideos(items, order) {
   return (order || [...byId.keys()]).map((id) => byId.get(id)).filter(Boolean);
 }
 
-async function getJson(fetchImpl, url) {
+async function getJson(fetchImpl, url, { allow404 = false } = {}) {
   let res;
   try {
     res = await fetchImpl(url.toString(), { headers: { accept: 'application/json' } });
@@ -80,6 +80,7 @@ async function getJson(fetchImpl, url) {
   let body = null;
   try { body = await res.json(); } catch { /* handled below */ }
   if (res.ok && body) return body;
+  if (allow404 && res.status === 404) return null;
 
   const reason = body?.error?.errors?.[0]?.reason || body?.error?.status || '';
   if (/quota|dailyLimit|rateLimit/i.test(reason)) throw new YouTubeError('quota', 'The daily search limit has been reached. Try again tomorrow.', 429);
@@ -118,4 +119,109 @@ export async function searchYouTube(query, { apiKey, fetchImpl = fetch, maxResul
   }).toString();
   const details = await getJson(fetchImpl, v);
   return normalizeVideos(details.items, ids);
+}
+
+// ---------------------------------------------------------------------------
+// Channels / artists
+// ---------------------------------------------------------------------------
+
+const CHANNEL_ID = /^UC[\w-]{22}$/;
+export const isChannelId = (id) => CHANNEL_ID.test(String(id ?? ''));
+
+function shorten(text, max = 200) {
+  const t = decodeEntities(text).replace(/\s+/g, ' ').trim();
+  return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
+}
+
+/** channels.list item -> Channel. */
+export function normalizeChannel(item) {
+  const id = item?.id;
+  const sn = item?.snippet;
+  if (typeof id !== 'string' || !isChannelId(id) || !sn) return null;
+  const title = cleanArtist(sn.title);
+  if (!title) return null;
+  const thumb = (sn.thumbnails?.medium || sn.thumbnails?.high || sn.thumbnails?.default || {}).url || null;
+  const hidden = item.statistics?.hiddenSubscriberCount === true;
+  const subs = Number(item.statistics?.subscriberCount);
+  return {
+    id,
+    channelId: id,
+    title,
+    artwork: thumb && thumb.startsWith('https://') ? thumb : null,
+    description: shorten(sn.description),
+    subscribers: !hidden && Number.isFinite(subs) && subs > 0 ? subs : null,
+  };
+}
+
+/** Normalise + keep search order + drop duplicates (e.g. "Artist" and "Artist - Topic"). */
+export function normalizeChannels(items, order) {
+  const byId = new Map();
+  for (const it of items || []) {
+    const c = normalizeChannel(it);
+    if (c) byId.set(c.id, c);
+  }
+  const seen = new Set();
+  const out = [];
+  for (const id of order || [...byId.keys()]) {
+    const c = byId.get(id);
+    if (!c) continue;
+    const key = c.title.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
+}
+
+/** Find channels / artists by name (search.list type=channel + channels.list for details). */
+export async function searchChannels(query, { apiKey, fetchImpl = fetch, maxResults = 3 } = {}) {
+  if (!apiKey) throw new YouTubeError('not_configured', 'Search is not set up yet.', 503);
+  const s = new URL(`${API}/search`);
+  s.search = new URLSearchParams({ part: 'snippet', type: 'channel', q: query, maxResults: String(maxResults), key: apiKey }).toString();
+  const found = await getJson(fetchImpl, s);
+  const ids = (found.items || []).map((i) => i?.id?.channelId).filter(isChannelId);
+  if (!ids.length) return [];
+  const c = new URL(`${API}/channels`);
+  c.search = new URLSearchParams({ part: 'snippet,statistics', id: ids.join(','), key: apiKey }).toString();
+  const details = await getJson(fetchImpl, c);
+  return normalizeChannels(details.items, ids);
+}
+
+/**
+ * Songs + channels for one query. Songs are required; if only the channel half fails
+ * (for example quota) we still return the songs.
+ */
+export async function searchAll(query, opts = {}) {
+  const [songs, channels] = await Promise.allSettled([searchYouTube(query, opts), searchChannels(query, opts)]);
+  if (songs.status === 'rejected') throw songs.reason;
+  return { tracks: songs.value, channels: channels.status === 'fulfilled' ? channels.value : [] };
+}
+
+/** A channel's profile plus its recent uploads (cheap: playlistItems costs 1 unit). */
+export async function getChannelPage(channelId, { apiKey, fetchImpl = fetch, maxItems = 30 } = {}) {
+  if (!apiKey) throw new YouTubeError('not_configured', 'Search is not set up yet.', 503);
+  if (!isChannelId(channelId)) throw new YouTubeError('not_found', 'Channel not found.', 404);
+
+  const c = new URL(`${API}/channels`);
+  c.search = new URLSearchParams({ part: 'snippet,statistics,contentDetails', id: channelId, key: apiKey }).toString();
+  const details = await getJson(fetchImpl, c);
+  const item = details.items?.[0];
+  const channel = normalizeChannel(item);
+  if (!channel) throw new YouTubeError('not_found', 'Channel not found.', 404);
+
+  const uploads = item.contentDetails?.relatedPlaylists?.uploads;
+  let tracks = [];
+  if (uploads) {
+    const pl = new URL(`${API}/playlistItems`);
+    pl.search = new URLSearchParams({ part: 'contentDetails', playlistId: uploads, maxResults: String(maxItems), key: apiKey }).toString();
+    const list = await getJson(fetchImpl, pl, { allow404: true });
+    const ids = (list?.items || []).map((i) => i?.contentDetails?.videoId).filter((x) => typeof x === 'string');
+    if (ids.length) {
+      const v = new URL(`${API}/videos`);
+      v.search = new URLSearchParams({ part: 'snippet,contentDetails,status', id: ids.join(','), key: apiKey }).toString();
+      const vids = await getJson(fetchImpl, v);
+      tracks = normalizeVideos(vids.items, ids);
+    }
+  }
+  return { channel, tracks };
 }

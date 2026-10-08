@@ -2,9 +2,12 @@ import { h } from '../../utils/dom.js';
 import { icon } from '../icons.js';
 import { hueFrom } from '../../utils/format.js';
 
-/** Square artwork with a generated gradient placeholder for missing or broken images. */
-export function Artwork(className = '') {
-  const el = h('div', { class: `artwork ${className}`.trim() }, h('div', { class: 'artwork__fallback' }, icon('note', '42%')));
+/**
+ * Square artwork with a generated gradient placeholder for missing or broken images.
+ * `round` makes it a circle (used for channels/artists so they read differently from songs).
+ */
+export function Artwork(className = '', { icon: fallbackIcon = 'note', round = false } = {}) {
+  const el = h('div', { class: `artwork${round ? ' artwork--round' : ''} ${className}`.trim() }, h('div', { class: 'artwork__fallback' }, icon(fallbackIcon, '48%')));
   let img = null;
   let currentSrc = null;
 
