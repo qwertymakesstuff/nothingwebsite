@@ -44,6 +44,7 @@ export function mountApp(root, { player, store, ui, services }) {
     h('a', { class: 'icon-btn topbar__search-btn', href: '#/search', 'aria-label': 'Search' }, icon('search', 24)));
 
   const panel = h('aside', { class: 'queue-panel', 'aria-label': 'Queue' },
+    h('div', { class: 'panel__video-slot', 'aria-hidden': 'true' }),
     h('div', { class: 'queue-panel__head' }, h('h2', null, 'Queue')),
     panelQueue.el);
 

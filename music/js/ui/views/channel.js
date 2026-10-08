@@ -20,7 +20,7 @@ export function ChannelView({ router, params, player, store, ui, services }) {
   let destroyed = false;
 
   const clearLists = () => { lists.forEach((l) => l.destroy()); lists = []; };
-  const show = (...nodes) => { clearLists(); body.replaceChildren(...nodes); body.removeAttribute('aria-busy'); };
+  const show = (...nodes) => { clearLists(); body.replaceChildren(...nodes.filter(Boolean)); body.removeAttribute('aria-busy'); };
   const stateBlock = (iconName, title, text, ...extra) => h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon(iconName, 32)), h('h2', null, title), text ? h('p', null, text) : null, ...extra);
 
@@ -79,7 +79,7 @@ export function ChannelView({ router, params, player, store, ui, services }) {
       sections.push(h('section', { class: 'results-section' }, h('div', { class: 'results-head' }, h('h2', null, popular.length ? 'Latest uploads' : 'Songs')), l.el));
     }
     show(hero(channel, all), ...sections,
-      h('p', { class: 'notice' }, 'Playback is simulated for now — real audio arrives in the next phase.'));
+      services.simulated ? h('p', { class: 'notice' }, 'Simulated playback (?engine=sim): no real audio.') : null);
   }
 
   run();

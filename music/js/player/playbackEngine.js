@@ -12,10 +12,10 @@
 //       'time'   (positionSeconds, durationSeconds)
 //       'ended'  ()
 //       'error'  (message: string)
+//       'blocked' ()   optional: the browser refused to autoplay; the user has to tap the video
 //
-// Phase 1 ships only SimulatedEngine (no audio, just a clock) so the whole app can
-// be exercised end to end. A YouTube engine implementing this same contract is a
-// later phase.
+// Two implementations: YouTubeEngine (real playback via YouTube's official embedded player) and
+// SimulatedEngine below (no audio, just a clock), used for UI testing with ?engine=sim.
 
 export class SimulatedEngine {
   constructor() {

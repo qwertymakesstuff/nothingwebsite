@@ -74,7 +74,7 @@ export function SearchView({ router, params, player, store, ui, services }) {
         h('div', { class: 'results-head' }, h('h2', null, 'Songs'), playAllButton(() => player.playTracks(tracks, 0))),
         list.el));
     }
-    body.replaceChildren(...sections, h('p', { class: 'notice' }, 'Playback is simulated for now — real audio arrives in the next phase.'));
+    body.replaceChildren(...sections, ...(services.simulated ? [h('p', { class: 'notice' }, 'Simulated playback (?engine=sim): no real audio.')] : []));
     body.removeAttribute('aria-busy');
   }
 
