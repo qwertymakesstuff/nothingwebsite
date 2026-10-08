@@ -97,7 +97,7 @@ export class YouTubeEngine {
           host: 'https://www.youtube-nocookie.com',
           playerVars: { autoplay: 0, controls: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1, playsinline: 1, rel: 0, origin: this.origin },
           events: {
-            onReady: () => { this.player = player; player.setVolume?.(Math.round(this.volume * 100)); resolve(player); },
+            onReady: () => { this.log('engine: youtube player ready'); this.player = player; player.setVolume?.(Math.round(this.volume * 100)); resolve(player); },
             onStateChange: (e) => this._onState(e.data),
             onError: (e) => this._onError(e.data),
           },
@@ -115,6 +115,7 @@ export class YouTubeEngine {
     this.wantPlay = autoplay;
     this._lastState = null;
     this._setAd(false);
+    this.log(`engine: load ${track?.videoId} autoplay=${autoplay} startAt=${startAt}`);
     if (!track?.videoId) { this._emit('error', "This track can't be played."); return; }
     if (autoplay) this._emit('state', 'loading');
 
@@ -185,7 +186,9 @@ export class YouTubeEngine {
 
   _tick() {
     if (!this.player) return;
-    this._setAd(this._isAd());
+    const ad = this._isAd();
+    if (ad !== this._ad) this.log(`engine: ad detection -> ${ad}`);
+    this._setAd(ad);
     if (this._ad) return; // an ad's clock is not the song's: keep the song's position untouched
     const t = Number(this.player.getCurrentTime?.());
     if (Number.isFinite(t)) this._emit('time', t, this._duration());
@@ -257,6 +260,7 @@ export class YouTubeEngine {
   }
 
   _onState(code) {
+    this.log(`engine: youtube state ${code}`);
     this._lastState = code;
     switch (code) {
       case S.PLAYING:
@@ -290,6 +294,7 @@ export class YouTubeEngine {
   }
 
   _onError(code) {
+    this.log(`engine: youtube error ${code}`);
     this._clearTimers();
     this.wantPlay = false;
     this._emit('error', ERROR_MESSAGES[code] || 'Playback failed.');
