@@ -2,7 +2,7 @@
 
 A web music player, built in phases. No build step: plain ES modules, served as static files.
 
-**Status: Phases 1-5 done (Phase 5 = lock screen / background).** Search, channels/artists, the mobile
+**Status: Phases 1-6 done (Phase 6 = queue system).** Search, channels/artists, the mobile
 player and real playback through YouTube's official embedded player all work. Media Session / lock-screen
 controls (Phase 5) are built too; see below for what is and is not verified.
 
@@ -178,3 +178,20 @@ restrictive.
 **How to test on a phone:** open `https://music.missing.website/?debug=1`, play a song, lock the screen (or switch
 app) for 30+ seconds, then check: did the music continue? did the lock screen show title/artwork and working
 buttons? Return to the page, tap **Copy** in the debug panel and send the log.
+
+## Queue (Phase 6)
+
+- **Add**: "Play next" and "Add to queue" on every song row; "Add to queue" for a whole result list or channel.
+  The queue holds up to 500 songs (a toast says so when more are added).
+- **Reorder**: drag the grip on the left of a queue row (mouse, touch or pen), or focus the grip and press
+  Up / Down. Escape cancels a drag. Dragging never interrupts playback, and the current song stays current.
+  In a queue list, "Play next" moves a song to right after the current one.
+- **Remove / clear**: each shows a toast with **Undo** (7 s). Undo is refused if the queue changed again meanwhile.
+  An undone current song returns paused at the position it had.
+- **Shuffle**: keeps the current song first; reordering while shuffled only changes the play order, so turning
+  shuffle off still restores the order the songs were added in.
+- **Repeat**: off / all / one. With shuffle + repeat all, each new round is reshuffled and never starts with the
+  song that just played.
+- The queue view header shows the song count and total time. The queue is saved between visits (Phase 3 storage).
+
+Tests: `tests/music/queue-edit.test.mjs` (logic, undo, cap) plus browser checks for mouse/touch/keyboard reorder.

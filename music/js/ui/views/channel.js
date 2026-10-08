@@ -1,7 +1,8 @@
 import { h, disposer } from '../../utils/dom.js';
 import { icon } from '../icons.js';
 import { Artwork } from '../components/artwork.js';
-import { TrackList, playAllButton } from '../components/trackList.js';
+import { TrackList, playAllButton, addAllButton } from '../components/trackList.js';
+import { showToast } from '../uiStore.js';
 import { formatCount } from '../../utils/format.js';
 
 const RETRYABLE = new Set(['network', 'timeout', 'upstream', 'unavailable']);
@@ -44,7 +45,8 @@ export function ChannelView({ router, params, player, store, ui, services }) {
         h('h1', null, channel.title),
         h('div', { class: 'channel-hero__meta' }, subs),
         channel.description ? h('p', { class: 'channel-hero__desc' }, channel.description) : null,
-        tracks.length ? h('div', { class: 'channel-hero__actions' }, playAllButton(() => player.playTracks(tracks, 0))) : null));
+        tracks.length ? h('div', { class: 'channel-hero__actions' }, playAllButton(() => player.playTracks(tracks, 0)),
+          addAllButton(() => { player.enqueue(tracks); showToast(ui, `Added ${tracks.length} songs to queue`); })) : null));
   }
 
   async function run() {

@@ -40,3 +40,6 @@ export function TrackList({ tracks, player, store, ui, label, queueTracks = trac
 
 export const playAllButton = (onClick, text = 'Play all') =>
   h('button', { class: 'btn btn--primary btn--small', type: 'button', onclick: onClick }, icon('play', 18), text);
+
+export const addAllButton = (onClick, text = 'Add to queue') =>
+  h('button', { class: 'btn btn--ghost btn--small', type: 'button', onclick: onClick }, icon('queue-add', 18), text);
