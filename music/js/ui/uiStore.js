@@ -14,8 +14,15 @@ export function createUiStore({ videoVisible = false } = {}) {
 let toastTimer = null;
 let toastId = 0;
 
-export function showToast(ui, message, kind = 'info') {
+/** `action` ({ label, onClick }) adds a button to the toast (e.g. Undo) and keeps it up a bit longer. */
+export function showToast(ui, message, kind = 'info', action = null) {
   clearTimeout(toastTimer);
-  ui.setState({ toast: { id: ++toastId, message, kind } });
-  toastTimer = setTimeout(() => ui.setState({ toast: null }), 3500);
+  const id = ++toastId;
+  ui.setState({ toast: { id, message, kind, action } });
+  toastTimer = setTimeout(() => ui.setState({ toast: null }), action ? 7000 : 3500);
+}
+
+export function dismissToast(ui) {
+  clearTimeout(toastTimer);
+  ui.setState({ toast: null });
 }

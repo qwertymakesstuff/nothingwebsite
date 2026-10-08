@@ -116,7 +116,7 @@ export function createPlayer({ store, engine, notify = () => {} }) {
 
   function next({ auto = false } = {}) {
     const s = state();
-    const res = Q.next(s.queue, { repeat: s.repeat });
+    const res = Q.next(s.queue, { repeat: s.repeat, shuffle: s.shuffle });
     if (res.moved) {
       store.setState({ queue: res.queue });
       loadCurrent(true);
@@ -165,13 +165,24 @@ export function createPlayer({ store, engine, notify = () => {} }) {
     store.setState({ repeat: order[(order.indexOf(state().repeat) + 1) % order.length] });
   }
 
+  /** Room left in the queue; tells the user when songs were dropped. */
+  function fit(tracks) {
+    const room = Q.MAX_QUEUE - state().queue.items.length;
+    if (tracks.length <= room) return tracks;
+    notify(`The queue holds up to ${Q.MAX_QUEUE} songs.`, 'info');
+    return tracks.slice(0, Math.max(0, room));
+  }
+
   function enqueue(tracks) {
+    const add = fit(tracks);
+    if (!add.length) return;
     const was = state().queue.items.length;
-    store.setState({ queue: Q.append(state().queue, tracks) });
-    if (!was && tracks.length) loadCurrent(false);
+    store.setState({ queue: Q.append(state().queue, add) });
+    if (!was) loadCurrent(false);
   }
 
   function playNext(track) {
+    if (!fit([track]).length) return;
     const was = state().queue.items.length;
     store.setState({ queue: Q.playNext(state().queue, track) });
     if (!was) loadCurrent(false);
@@ -183,15 +194,52 @@ export function createPlayer({ store, engine, notify = () => {} }) {
     loadCurrent(true);
   }
 
+  /** Reorder: the song at list position `from` goes to `to`. Never interrupts playback. */
+  function moveInQueue(from, to) {
+    store.setState({ queue: Q.move(state().queue, from, to) });
+  }
+
+  /** Make a queued song play right after the current one. */
+  function moveNext(orderPos) {
+    store.setState({ queue: Q.moveToNext(state().queue, orderPos) });
+  }
+
+  /**
+   * Returns a function that undoes the destructive change that is about to happen, as long as the queue
+   * has not been changed again in the meantime (moving to another song does not count as a change).
+   * If the song that was playing comes back, it is loaded paused at the position it had.
+   */
+  function undoer(before) {
+    return function undoLast() {
+      const now = state().queue;
+      if (now.items !== undoLast.after.items || now.order !== undoLast.after.order) return false;
+      const cur = Q.currentItem(before.queue);
+      store.setState({ queue: before.queue });
+      if (!cur) loadCurrent(false);
+      else if (cur.id !== loadedId) loadCurrent(false, before.position);
+      return true;
+    };
+  }
+
   function removeFromQueue(orderPos) {
-    const res = Q.removeAt(state().queue, orderPos);
+    const before = { queue: state().queue, position: state().position };
+    const res = Q.removeAt(before.queue, orderPos);
+    if (res.queue === before.queue) return () => false;
     store.setState({ queue: res.queue });
     if (res.removedCurrent) loadCurrent(state().status === 'playing' || state().status === 'loading');
+    const undo = undoer(before);
+    undo.after = state().queue;
+    return undo;
   }
 
   function clearQueue() {
+    const before = { queue: state().queue, position: state().position };
+    if (!before.queue.items.length) return () => false;
     store.setState({ queue: Q.emptyQueue() });
     loadCurrent(false);
+    const undo = undoer(before);
+    undo.after = state().queue;
+    return undo;
   }
 
   /** Restore a previously saved state without starting playback. */
@@ -214,6 +262,6 @@ export function createPlayer({ store, engine, notify = () => {} }) {
   return {
     playTracks, play, pause, togglePlay, next, previous, seek,
     setVolume, toggleMute, toggleShuffle, cycleRepeat,
-    enqueue, playNext, jumpTo, removeFromQueue, clearQueue, restore,
+    enqueue, playNext, moveInQueue, moveNext, jumpTo, removeFromQueue, clearQueue, restore,
   };
 }

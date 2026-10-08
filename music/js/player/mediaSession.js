@@ -33,7 +33,7 @@ export function buildArtwork(track) {
   return out;
 }
 
-const hasNext = (s) => Q.next(s.queue, { repeat: s.repeat }).moved;
+const hasNext = (s) => Q.next(s.queue, { repeat: s.repeat, shuffle: s.shuffle }).moved;
 
 /**
  * @param {{ player: object, store: object, nav?: Navigator, MetadataCtor?: Function,

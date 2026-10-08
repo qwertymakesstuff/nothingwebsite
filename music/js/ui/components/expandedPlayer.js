@@ -17,7 +17,7 @@ export function ExpandedPlayer({ player, store, ui, prefs }) {
   const art = Artwork('expanded__art');
   const text = TrackText({ store, className: 'track-text--large' });
   const toggle = MediaToggle({ ui, prefs });
-  const queue = QueueList({ player, store });
+  const queue = QueueList({ player, store, ui });
   [text, toggle, queue].forEach((c) => d.add(c.destroy));
 
   const stage = h('div', { class: 'expanded__stage' }, art.el, h('div', { class: 'expanded__video-slot', 'aria-hidden': 'true' }));

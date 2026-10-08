@@ -7,6 +7,8 @@
 // Keeping play order separate from items lets shuffle, "play next" and removal
 // all work without losing track of what is currently playing.
 
+export const MAX_QUEUE = 500; // also the most the saved queue keeps
+
 export const emptyQueue = () => ({ items: [], order: [], pos: -1 });
 
 const identity = (n) => Array.from({ length: n }, (_, i) => i);
@@ -52,10 +54,20 @@ export function rebuildOrder(q, shuffle, rng) {
   return { ...q, order: identity(n), pos: cur };
 }
 
-export function next(q, { repeat = 'off' } = {}) {
+export function next(q, { repeat = 'off', shuffle = false, rng } = {}) {
   if (!q.items.length) return { queue: q, moved: false, ended: true };
   if (q.pos < q.order.length - 1) return { queue: { ...q, pos: q.pos + 1 }, moved: true, ended: false };
-  if (repeat === 'all') return { queue: { ...q, pos: 0 }, moved: true, ended: false, wrapped: true };
+  if (repeat === 'all') {
+    // Looping a shuffled queue: shuffle again (and never start the new round with the song that just played).
+    if (shuffle && q.items.length > 1) {
+      const lastIdx = q.order[q.order.length - 1];
+      const random = rng ?? Math.random;
+      let first = Math.floor(random() * (q.items.length - 1));
+      if (first >= lastIdx) first += 1;
+      return { queue: { ...q, order: shuffleOrder(q.items.length, first, rng), pos: 0 }, moved: true, ended: false, wrapped: true };
+    }
+    return { queue: { ...q, pos: 0 }, moved: true, ended: false, wrapped: true };
+  }
   return { queue: q, moved: false, ended: true };
 }
 
@@ -104,4 +116,42 @@ export function removeAt(q, orderPos) {
   if (orderPos < q.pos) pos -= 1;
   if (pos >= order.length) pos = order.length - 1;
   return { queue: { items, order, pos }, removedCurrent };
+}
+
+const isIdentityOrder = (q) => q.order.every((v, i) => v === i);
+
+/** Where the current position ends up after moving the entry at `from` to `to`. */
+function posAfterMove(cur, from, to) {
+  if (cur === from) return to;
+  if (from < cur && to >= cur) return cur - 1;
+  if (from > cur && to <= cur) return cur + 1;
+  return cur;
+}
+
+/**
+ * Move the song at play-order position `from` to position `to` (both as the list shows them).
+ * The current song stays the current song, wherever it ends up.
+ * Unshuffled queue: the song order itself changes. Shuffled queue: only the play order changes, so
+ * turning shuffle off still restores the order the songs were added in.
+ */
+export function move(q, from, to) {
+  const n = q.order.length;
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from >= n || to >= n || from === to) return q;
+  const pos = posAfterMove(q.pos, from, to);
+  if (isIdentityOrder(q)) {
+    const items = [...q.items];
+    const [it] = items.splice(from, 1);
+    items.splice(to, 0, it);
+    return { items, order: identity(n), pos };
+  }
+  const order = [...q.order];
+  const [v] = order.splice(from, 1);
+  order.splice(to, 0, v);
+  return { ...q, order, pos };
+}
+
+/** Make the song at `from` play right after the current one. */
+export function moveToNext(q, from) {
+  if (q.pos < 0 || from === q.pos) return q;
+  return move(q, from, from < q.pos ? q.pos : q.pos + 1);
 }

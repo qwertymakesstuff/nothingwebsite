@@ -35,7 +35,7 @@ export function mountApp(root, { player, store, ui, services, prefs }) {
   const mini = MiniPlayer(ctx);
   const nowPlaying = NowPlaying(ctx);
   const expanded = ExpandedPlayer(ctx);
-  const panelQueue = QueueList({ player, store });
+  const panelQueue = QueueList({ player, store, ui });
   const toaster = Toaster({ ui });
   [playerBar, mini, nowPlaying, expanded, panelQueue, toaster].forEach((c) => d.add(c.destroy));
 

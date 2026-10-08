@@ -10,6 +10,7 @@ import { trackSwipe } from '../../utils/gestures.js';
 import { dragX, settle, slideIn } from '../swipeFx.js';
 import { selectCurrent } from '../../player/player.js';
 import { hueFrom } from '../../utils/format.js';
+import { showToast } from '../uiStore.js';
 
 const BEHIND = '.main-col, .bottom-nav, .mini-player'; // made inert while the sheet is open
 
@@ -26,7 +27,7 @@ export function NowPlaying({ player, store, ui, prefs }) {
   const text = TrackText({ store, className: 'track-text--large' });
   const seek = SeekBar({ player, store });
   const transport = TransportControls({ player, store });
-  const queue = QueueList({ player, store });
+  const queue = QueueList({ player, store, ui });
   const mediaToggle = MediaToggleIcon({ ui, prefs });
   [text, seek, transport, queue, mediaToggle].forEach((c) => d.add(c.destroy));
 
@@ -43,7 +44,7 @@ export function NowPlaying({ player, store, ui, prefs }) {
   // Cover art by default; the user can switch to the YouTube video (shown here, see videoDock.js).
   const artWrap = h('div', { class: 'np__art-wrap' }, art.el, h('div', { class: 'np__video-slot', 'aria-hidden': 'true' }));
   const playerView = h('div', { class: 'np__body', role: 'tabpanel' }, artWrap, text.el, seek.el, transport.el);
-  const clearBtn = h('button', { class: 'btn btn--ghost btn--small', type: 'button', onclick: () => player.clearQueue() }, 'Clear');
+  const clearBtn = h('button', { class: 'btn btn--ghost btn--small', type: 'button', onclick: () => { const undo = player.clearQueue(); showToast(ui, 'Queue cleared', 'info', { label: 'Undo', onClick: undo }); } }, 'Clear');
   const queueEmpty = h('div', { class: 'np__queue-empty' }, 'Your queue is empty');
   const queueView = h('div', { class: 'np__queue', role: 'tabpanel', hidden: true },
     h('div', { class: 'np__queue-head' }, h('h2', null, 'Up next'), clearBtn), queue.el, queueEmpty);

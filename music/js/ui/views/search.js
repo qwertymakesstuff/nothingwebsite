@@ -1,8 +1,9 @@
 import { h, disposer } from '../../utils/dom.js';
 import { icon } from '../icons.js';
 import { SearchBox } from '../components/searchBox.js';
-import { TrackList, playAllButton } from '../components/trackList.js';
+import { TrackList, playAllButton, addAllButton } from '../components/trackList.js';
 import { ChannelRow } from '../components/channelRow.js';
+import { showToast } from '../uiStore.js';
 import { normalizeQuery } from '../../services/youtube.js';
 
 const RETRYABLE = new Set(['network', 'timeout', 'upstream', 'unavailable']);
@@ -71,7 +72,9 @@ export function SearchView({ router, params, player, store, ui, services }) {
     if (tracks.length) {
       list = TrackList({ tracks, player, store, ui, label: `Songs matching ${q}` });
       sections.push(h('section', { class: 'results-section' },
-        h('div', { class: 'results-head' }, h('h2', null, 'Songs'), playAllButton(() => player.playTracks(tracks, 0))),
+        h('div', { class: 'results-head' }, h('h2', null, 'Songs'), h('div', { class: 'results-head__actions' },
+          playAllButton(() => player.playTracks(tracks, 0)),
+          addAllButton(() => { player.enqueue(tracks); showToast(ui, `Added ${tracks.length} songs to queue`); }))),
         list.el));
     }
     body.replaceChildren(...sections, ...(services.simulated ? [h('p', { class: 'notice' }, 'Simulated playback (?engine=sim): no real audio.')] : []));

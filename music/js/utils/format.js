@@ -31,3 +31,9 @@ export function formatCount(n) {
   if (n < 1e9) return `${Math.floor(n / 1e6)}M`;
   return `${trim((n / 1e9).toFixed(1))}B`;
 }
+
+/** Total length for a list, in words: "42 min" or "2 hr 5 min". */
+export function formatDuration(seconds) {
+  const mins = Math.max(1, Math.round((Number.isFinite(seconds) ? seconds : 0) / 60));
+  return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} hr${mins % 60 ? ` ${mins % 60} min` : ''}`;
+}

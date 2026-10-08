@@ -279,3 +279,19 @@ button, a, [role="tab"], .row__main, .chip__label { touch-action: manipulation; 
 .debug__btn { min-height: 32px; padding: 0 12px; border: 1px solid #555; border-radius: 6px; background: #222; color: #fff; font: inherit; }
 .debug__body[hidden] { display: none; }
 .debug__log { margin: 0; padding: 8px; overflow: auto; max-height: calc(42vh - 48px); white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text; }
+
+/* ---------- queue: reorder, undo ---------- */
+.row__grip { flex: none; display: grid; place-items: center; width: 32px; height: 44px; margin-left: 2px; border: 0; background: transparent; color: var(--text-3); border-radius: var(--radius-sm); cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+.row__grip:hover, .row__grip:focus-visible { color: var(--text); background: var(--hover); }
+.row--sortable .row__main { padding-left: 4px; }
+.queue-list.is-sorting { -webkit-user-select: none; user-select: none; }
+.queue-list.is-sorting .row { transition: transform .15s var(--ease); }
+.queue-list.is-sorting .row.is-dragging { transition: none; position: relative; z-index: 5; background: var(--bg-elev-2); box-shadow: 0 8px 28px rgba(0, 0, 0, .55); cursor: grabbing; }
+.queue-list.is-sorting .row__grip { cursor: grabbing; }
+.page-count { font-size: .6em; font-weight: 500; color: var(--text-3); }
+.results-head__actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.channel-hero__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.toast--action { display: flex; align-items: center; justify-content: space-between; gap: 12px; pointer-events: auto; }
+.toast__btn { flex: none; min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--accent); font-weight: 600; }
+.toast__btn:hover { background: var(--hover); }
+@media (pointer: coarse) { .row__grip { width: 40px; height: 48px; } .toast__btn { min-height: 44px; } }
