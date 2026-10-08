@@ -2,27 +2,11 @@
 // corrupt data all fall back to a clean default.
 
 import * as Q from '../player/queueManager.js';
+import { safeStorage } from './safeStorage.js';
 
 const KEY = 'mm:v1:player';
 const VERSION = 1;
 const MAX_ITEMS = 500;
-
-function safeStorage() {
-  try {
-    const s = window.localStorage;
-    const probe = '__mm_probe__';
-    s.setItem(probe, '1');
-    s.removeItem(probe);
-    return s;
-  } catch {
-    const mem = new Map();
-    return {
-      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
-      setItem: (k, v) => { mem.set(k, String(v)); },
-      removeItem: (k) => { mem.delete(k); },
-    };
-  }
-}
 
 function cleanTrack(t) {
   if (!t || typeof t.id !== 'string' || !t.id || typeof t.title !== 'string') return null;
@@ -32,6 +16,7 @@ function cleanTrack(t) {
     artist: typeof t.artist === 'string' ? t.artist : '',
     artwork: typeof t.artwork === 'string' ? t.artwork : null,
     duration: Number.isFinite(t.duration) && t.duration > 0 ? t.duration : 0,
+    ...(typeof t.videoId === 'string' && t.videoId ? { videoId: t.videoId } : {}),
     ...(t.unavailable ? { unavailable: true } : {}),
   };
 }

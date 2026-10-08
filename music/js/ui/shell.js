@@ -20,11 +20,11 @@ import { selectCurrent } from '../player/player.js';
 const VIEWS = { home: HomeView, search: SearchView, library: LibraryView, queue: QueueView };
 const TITLES = { home: 'Home', search: 'Search', library: 'Library', queue: 'Queue' };
 
-export function mountApp(root, { player, store, ui }) {
+export function mountApp(root, { player, store, ui, services }) {
   const d = disposer();
   let router;
   const routerProxy = { navigate: (...a) => router.navigate(...a) };
-  const ctx = { player, store, ui, router: routerProxy };
+  const ctx = { player, store, ui, services, router: routerProxy };
 
   const sidebar = Sidebar();
   const bottomNav = BottomNav();
