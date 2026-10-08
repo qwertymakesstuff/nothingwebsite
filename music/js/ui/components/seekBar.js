@@ -22,14 +22,17 @@ export function SeekBar({ player, store, className = '' }) {
     input.setAttribute('aria-valuetext', `${formatTime(pos)} of ${dur > 0 ? formatTime(dur) : 'unknown'}`);
   }
 
+  const setDragging = (on) => { dragging = on; el.classList.toggle('is-dragging', on); };
   input.addEventListener('input', () => {
-    dragging = true;
+    setDragging(true);
     paint((Number(input.value) / 1000) * dur);
   });
   input.addEventListener('change', () => {
     player.seek((Number(input.value) / 1000) * dur);
-    dragging = false;
+    setDragging(false);
   });
+  input.addEventListener('pointercancel', () => setDragging(false));
+  input.addEventListener('blur', () => { if (dragging) setDragging(false); });
 
   d.add(store.subscribe((s) => [s.position, s.duration], ([pos, duration]) => {
     dur = duration;

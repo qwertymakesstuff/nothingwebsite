@@ -108,20 +108,70 @@
 
   /* full-screen now-playing sheet */
   .nowplaying {
+    --np-hue: 260;
     display: flex; flex-direction: column;
-    position: fixed; inset: 0; z-index: 60; overflow-y: auto;
+    position: fixed; inset: 0; z-index: 60; overflow: hidden;
     padding: var(--sat) calc(20px + var(--sar)) calc(16px + var(--sab)) calc(20px + var(--sal));
-    background: radial-gradient(120% 60% at 50% 0%, rgba(155, 140, 255, .22), transparent 70%), var(--bg);
+    background:
+      radial-gradient(120% 60% at 50% 0%, hsl(var(--np-hue) 55% 38% / .5), transparent 70%),
+      var(--bg);
     transform: translateY(100%); visibility: hidden;
     transition: transform .35s var(--ease), visibility 0s .35s;
     overscroll-behavior: contain;
   }
   .nowplaying.is-open { transform: none; visibility: visible; transition: transform .35s var(--ease); }
-  .np__header { flex: none; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-  .np__label { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; font-weight: 600; color: var(--text-2); }
-  .np__body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; width: 100%; max-width: 480px; margin: 0 auto; }
-  .np__art-wrap { display: grid; place-items: center; }
-  .np__art { width: min(100%, 42vh); border-radius: var(--radius); box-shadow: 0 24px 60px rgba(0, 0, 0, .55); }
+
+  .np__header { flex: none; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; height: 56px; touch-action: none; }
+  .np__tabs { justify-self: center; display: inline-flex; padding: 2px; border-radius: 999px; background: rgba(255, 255, 255, .08); }
+  .np__tab { min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 600; touch-action: manipulation; }
+  .np__tab[aria-selected="true"] { background: rgba(255, 255, 255, .16); color: var(--text); }
+
+  .np__body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; gap: 18px; width: 100%; max-width: 480px; margin: 0 auto; }
+  .np__body[hidden], .np__queue[hidden] { display: none; }
+  .np__art-wrap { display: grid; place-items: center; touch-action: none; }
+  .np__art { width: min(100%, 42vh); border-radius: var(--radius); box-shadow: 0 24px 60px rgba(0, 0, 0, .55); -webkit-touch-callout: none; user-select: none; }
   .nowplaying .play-btn { width: 72px; height: 72px; }
   .nowplaying .transport--full { gap: 12px; justify-content: space-between; }
+
+  .np__queue { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; max-width: 560px; margin: 0 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .np__queue-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 8px; }
+  .np__queue-head h2 { font-size: 17px; }
+  .np__queue-empty { padding: 32px 8px; text-align: center; color: var(--text-3); }
+  .np__queue-empty[hidden], .np__queue .queue-list[hidden] { display: none; }
+
+  /* hide the bottom bars while the on-screen keyboard is up (Android resizes the viewport) */
+  .kbd-open .bottom-nav, .kbd-open .mini-player { display: none; }
+}
+
+/* ===================== TABLET PORTRAIT (600-899px) ===================== */
+@media (min-width: 600px) and (max-width: 899px) {
+  .app.has-track .mini-player { left: 8px; right: 8px; max-width: 720px; margin-inline: auto; }
+  .np__body { max-width: 560px; gap: 22px; }
+  .np__art { width: min(100%, 48vh); }
+  .view-section { max-width: 720px; margin-inline: auto; }
+  .np__queue { max-width: 640px; }
+}
+
+/* ===================== PHONE LANDSCAPE (short and wide) ===================== */
+@media (max-width: 899px) and (orientation: landscape) and (max-height: 520px) {
+  :root { --nav-h: 48px; --mini-h: 56px; --topbar-h: 56px; }
+  .bottom-nav__item { flex-direction: row; gap: 8px; font-size: 12px; }
+  .bottom-nav__item .icon { width: 22px !important; height: 22px !important; }
+  .view { padding-bottom: calc(var(--nav-h) + var(--sab) + 16px); }
+  .app.has-track .view { padding-bottom: calc(var(--mini-h) + var(--nav-h) + var(--sab) + 24px); }
+  .app.has-track .mini-player { max-width: 640px; margin-inline: auto; }
+
+  .nowplaying { padding-top: max(var(--sat), 4px); padding-bottom: calc(8px + var(--sab)); }
+  .np__header { height: 44px; }
+  .np__body {
+    max-width: none; display: grid; grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto; align-content: center; column-gap: 32px; row-gap: 10px;
+  }
+  .np__art-wrap { grid-row: 1 / 4; grid-column: 1; }
+  .np__art { width: min(64vh, 38vw); }
+  .np__body > :not(.np__art-wrap) { grid-column: 2; }
+  .nowplaying .track-text--large { text-align: left; }
+  .nowplaying .track-text--large .track-text__title { font-size: 20px; }
+  .nowplaying .play-btn { width: 60px; height: 60px; }
+  .toaster { bottom: calc(var(--nav-h) + var(--mini-h) + var(--sab) + 12px); }
 }
