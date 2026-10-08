@@ -14,7 +14,7 @@ const good = { ok: true, tracks: [
 
 test('service: success sanitises tracks and caches by normalised query', async () => {
   let calls = 0;
-  const svc = createYouTubeService({ fetchImpl: async (url) => { calls++; assert.match(url, /^\/api\/search\?q=Daft\+Punk$/); return res(good); } });
+  const svc = createYouTubeService({ fetchImpl: async (url) => { calls++; assert.match(url, /^\/api\/search\?q=Daft\+Punk&v=3$/); return res(good); } });
   const r = await svc.search('  Daft   Punk ');
   assert.equal(r.ok, true);
   assert.equal(r.tracks.length, 2);
@@ -109,7 +109,7 @@ test('service: search returns sanitised channels (circle avatars need valid http
 });
 test('service: channel() validates id, parses and caches', async () => {
   let calls = 0;
-  const svc = createYouTubeService({ fetchImpl: async (url) => { calls++; assert.ok(url.startsWith('/api/channel?id=' + CID)); return res({ ok: true, channel: { id: CID, title: 'Artist', subscribers: 10 }, tracks: [{ id: 'v', title: 'T', duration: 5 }] }); } });
+  const svc = createYouTubeService({ fetchImpl: async (url) => { calls++; assert.ok(url.startsWith('/api/channel?id=' + CID + '&v=')); return res({ ok: true, channel: { id: CID, title: 'Artist', subscribers: 10 }, tracks: [{ id: 'v', title: 'T', duration: 5 }] }); } });
   assert.equal((await svc.channel('nope')).error, 'not_found');
   assert.equal((await svc.channel(undefined)).error, 'not_found');
   const r = await svc.channel(CID);
@@ -125,4 +125,13 @@ test('service: channel() errors and malformed bodies', async () => {
   const hang = (u, { signal }) => new Promise((_, rej) => signal.addEventListener('abort', () => rej(Object.assign(new Error('a'), { name: 'AbortError' }))));
   const ctrl = new AbortController(); const p = mk(hang).channel(CID, { signal: ctrl.signal }); ctrl.abort();
   assert.equal((await p).error, 'aborted');
+});
+
+test('service: channel() keeps popular songs with view counts', async () => {
+  const body = { ok: true, channel: { id: CID, title: 'A' }, popular: [{ id: 'p1', title: 'Hit', duration: 5, views: 1500000000 }, { id: 'p2', title: 'Odd', views: -4 }], tracks: [{ id: 'l1', title: 'New', duration: 5 }] };
+  const r = await createYouTubeService({ fetchImpl: async () => res(body) }).channel(CID);
+  assert.equal(r.popular.length, 2); assert.equal(r.popular[0].views, 1500000000); assert.equal('views' in r.popular[1], false);
+  assert.equal(r.tracks.length, 1);
+  const old = await createYouTubeService({ fetchImpl: async () => res({ ok: true, channel: { id: CID, title: 'A' }, tracks: [] }) }).channel(CID);
+  assert.deepEqual(old.popular, []);
 });

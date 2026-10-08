@@ -9,6 +9,8 @@ import { searchAll, getChannelPage, isChannelId, YouTubeError } from './youtube.
 
 const MAX_QUERY = 100;
 const CACHE_SECONDS = 60 * 60;
+// Bump when the response shape changes so stale cached answers (edge or browser) are never reused.
+const CACHE_VERSION = 3;
 
 function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
@@ -73,7 +75,7 @@ function handleSearch(request, env, ctx, url) {
     if (!q) return fail('empty', 'Type something to search.', 400);
     if (q.length > MAX_QUERY) return fail('too_long', `Search is limited to ${MAX_QUERY} characters.`, 400);
   }
-  return respond(request, url, ctx, `/api/search?q=${encodeURIComponent(q.toLowerCase())}`, async () => ({
+  return respond(request, url, ctx, `/api/search?v=${CACHE_VERSION}&q=${encodeURIComponent(q.toLowerCase())}`, async () => ({
     query: q,
     ...(await searchAll(q, { apiKey: env.YOUTUBE_API_KEY })),
   }));
@@ -82,7 +84,7 @@ function handleSearch(request, env, ctx, url) {
 function handleChannel(request, env, ctx, url) {
   const id = String(url.searchParams.get('id') ?? '').trim();
   if (request.method === 'GET' && !isChannelId(id)) return fail('not_found', 'Channel not found.', 404);
-  return respond(request, url, ctx, `/api/channel?id=${encodeURIComponent(id)}`, () =>
+  return respond(request, url, ctx, `/api/channel?v=${CACHE_VERSION}&id=${encodeURIComponent(id)}`, () =>
     getChannelPage(id, { apiKey: env.YOUTUBE_API_KEY }));
 }
 

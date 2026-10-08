@@ -57,6 +57,7 @@ export function normalizeVideos(items, order) {
     const duration = parseDuration(v.contentDetails?.duration);
     if (!duration) continue;
     const thumb = pickThumbnail(sn.thumbnails);
+    const views = Number(v.statistics?.viewCount);
     byId.set(id, {
       id,
       videoId: id,
@@ -64,6 +65,7 @@ export function normalizeVideos(items, order) {
       artist: cleanArtist(sn.channelTitle),
       artwork: thumb && thumb.startsWith('https://') ? thumb : null,
       duration,
+      ...(Number.isFinite(views) && views > 0 ? { views } : {}),
     });
   }
   // Keep YouTube's relevance order from the search call.
@@ -113,7 +115,7 @@ export async function searchYouTube(query, { apiKey, fetchImpl = fetch, maxResul
 
   const v = new URL(`${API}/videos`);
   v.search = new URLSearchParams({
-    part: 'snippet,contentDetails,status',
+    part: 'snippet,contentDetails,status,statistics',
     id: ids.join(','),
     key: apiKey,
   }).toString();
@@ -197,8 +199,42 @@ export async function searchAll(query, opts = {}) {
   return { tracks: songs.value, channels: channels.status === 'fulfilled' ? channels.value : [] };
 }
 
-/** A channel's profile plus its recent uploads (cheap: playlistItems costs 1 unit). */
-export async function getChannelPage(channelId, { apiKey, fetchImpl = fetch, maxItems = 30 } = {}) {
+async function loadVideos(ids, { apiKey, fetchImpl }) {
+  if (!ids.length) return [];
+  const v = new URL(`${API}/videos`);
+  v.search = new URLSearchParams({ part: 'snippet,contentDetails,status,statistics', id: ids.join(','), key: apiKey }).toString();
+  const vids = await getJson(fetchImpl, v);
+  return normalizeVideos(vids.items, ids);
+}
+
+/** The channel's most viewed videos (search.list order=viewCount: 100 units). */
+async function popularVideos(channelId, ctx, maxResults) {
+  const s = new URL(`${API}/search`);
+  s.search = new URLSearchParams({
+    part: 'snippet', type: 'video', channelId, order: 'viewCount',
+    maxResults: String(maxResults), videoEmbeddable: 'true', key: ctx.apiKey,
+  }).toString();
+  const found = await getJson(ctx.fetchImpl, s);
+  const ids = (found.items || []).map((i) => i?.id?.videoId).filter((x) => typeof x === 'string');
+  return loadVideos(ids, ctx);
+}
+
+/** The channel's newest uploads (playlistItems: 1 unit). */
+async function recentUploads(uploadsPlaylist, ctx, maxItems) {
+  if (!uploadsPlaylist) return [];
+  const pl = new URL(`${API}/playlistItems`);
+  pl.search = new URLSearchParams({ part: 'contentDetails', playlistId: uploadsPlaylist, maxResults: String(maxItems), key: ctx.apiKey }).toString();
+  const list = await getJson(ctx.fetchImpl, pl, { allow404: true });
+  const ids = (list?.items || []).map((i) => i?.contentDetails?.videoId).filter((x) => typeof x === 'string');
+  return loadVideos(ids, ctx);
+}
+
+/**
+ * A channel's profile, its most popular songs and its latest uploads.
+ * `popular` and `tracks` (latest) are independent: if one lookup fails (e.g. quota) the other
+ * is still returned; only when both fail do we report an error.
+ */
+export async function getChannelPage(channelId, { apiKey, fetchImpl = fetch, maxItems = 30, maxPopular = 10 } = {}) {
   if (!apiKey) throw new YouTubeError('not_configured', 'Search is not set up yet.', 503);
   if (!isChannelId(channelId)) throw new YouTubeError('not_found', 'Channel not found.', 404);
 
@@ -209,19 +245,15 @@ export async function getChannelPage(channelId, { apiKey, fetchImpl = fetch, max
   const channel = normalizeChannel(item);
   if (!channel) throw new YouTubeError('not_found', 'Channel not found.', 404);
 
-  const uploads = item.contentDetails?.relatedPlaylists?.uploads;
-  let tracks = [];
-  if (uploads) {
-    const pl = new URL(`${API}/playlistItems`);
-    pl.search = new URLSearchParams({ part: 'contentDetails', playlistId: uploads, maxResults: String(maxItems), key: apiKey }).toString();
-    const list = await getJson(fetchImpl, pl, { allow404: true });
-    const ids = (list?.items || []).map((i) => i?.contentDetails?.videoId).filter((x) => typeof x === 'string');
-    if (ids.length) {
-      const v = new URL(`${API}/videos`);
-      v.search = new URLSearchParams({ part: 'snippet,contentDetails,status', id: ids.join(','), key: apiKey }).toString();
-      const vids = await getJson(fetchImpl, v);
-      tracks = normalizeVideos(vids.items, ids);
-    }
-  }
-  return { channel, tracks };
+  const ctx = { apiKey, fetchImpl };
+  const [pop, rec] = await Promise.allSettled([
+    popularVideos(channelId, ctx, maxPopular),
+    recentUploads(item.contentDetails?.relatedPlaylists?.uploads, ctx, maxItems),
+  ]);
+  if (pop.status === 'rejected' && rec.status === 'rejected') throw pop.reason;
+
+  const popular = pop.status === 'fulfilled' ? pop.value : [];
+  const seen = new Set(popular.map((t) => t.id));
+  const tracks = (rec.status === 'fulfilled' ? rec.value : []).filter((t) => !seen.has(t.id));
+  return { channel, popular, tracks };
 }

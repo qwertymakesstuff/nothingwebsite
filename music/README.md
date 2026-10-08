@@ -79,7 +79,7 @@ never includes it in a response or error message.
 
 ### Quota
 
-Each search runs two `search.list` calls (songs + channels/artists, 100 units each) plus two 1-unit detail lookups, about **202 units**; the free quota is 10,000/day (about **50 uncached searches**). Opening a channel page costs about 3 units. If the channel half fails, songs still show. To stay inside it:
+Each search runs two `search.list` calls (songs + channels/artists, 100 units each) plus two 1-unit detail lookups, about **202 units**; the free quota is 10,000/day (about **50 uncached searches**). Opening a channel page costs about **105 units** (100 for the most-viewed lookup behind the Popular list, plus a few 1-unit lookups) and is cached for an hour. If the channel half fails, songs still show. Cached answers carry a version number (`CACHE_VERSION` in `worker/index.js`, `API_VERSION` in `music/js/services/youtube.js`); bump both when a response shape changes so old cached answers are never reused. To stay inside the quota:
 search is submit-only (no search-as-you-type), results are cached at the edge for 1 hour and in the
 browser for 10 minutes, and repeated terms are free. Add a free Cloudflare **rate limiting rule** on
 `/api/search` (Security -> WAF -> Rate limiting rules) so scripts cannot burn the quota; the Worker

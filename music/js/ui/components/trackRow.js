@@ -5,10 +5,10 @@ import { formatTime } from '../../utils/format.js';
 
 /**
  * One track in a list (search results, queue). The row itself plays the track; extra
- * buttons come from `actions` ([{ icon, label, onClick }]). The parent calls
+ * buttons come from `actions` ([{ icon, label, onClick }]). `subtitle` replaces the artist line. The parent calls
  * setState() to mark the row as the current / playing one without re-rendering the list.
  */
-export function TrackRow({ track, onPlay, actions = [] }) {
+export function TrackRow({ track, onPlay, actions = [], subtitle }) {
   const art = Artwork('row__art');
   art.update(track);
   const eq = h('span', { class: 'eq', 'aria-hidden': 'true', hidden: true }, h('i'), h('i'), h('i'));
@@ -17,7 +17,7 @@ export function TrackRow({ track, onPlay, actions = [] }) {
     h('div', { class: 'row__art-wrap' }, art.el, eq),
     h('div', { class: 'row__text' },
       h('div', { class: 'row__title' }, track.title),
-      h('div', { class: 'row__artist' }, track.artist || 'Unknown artist')),
+      h('div', { class: 'row__artist' }, subtitle ?? (track.artist || 'Unknown artist'))),
     h('span', { class: 'row__time' }, track.duration ? formatTime(track.duration) : ''));
 
   const buttons = actions.map((a) => h('button', {
