@@ -7,6 +7,8 @@ import { createPersistence } from './storage/persistence.js';
 import { createUiStore, showToast } from './ui/uiStore.js';
 import { mountApp } from './ui/shell.js';
 import { registerShortcuts } from './ui/keyboard.js';
+import { youtubeService } from './services/youtube.js';
+import { createRecentSearches } from './storage/recentSearches.js';
 
 const root = document.getElementById('app');
 
@@ -14,7 +16,7 @@ try {
   const store = createStore(initialPlayerState());
   const ui = createUiStore();
   const persistence = createPersistence();
-  // Phase 1 uses the simulated engine. A real engine will be swapped in here later.
+  // Playback is still simulated (Phase 2 added search only). A real engine will be swapped in here later.
   const engine = new SimulatedEngine();
   const player = createPlayer({ store, engine, notify: (message, kind) => showToast(ui, message, kind) });
 
@@ -31,7 +33,7 @@ try {
   setInterval(() => { if (store.getState().status === 'playing') persistence.save(store.getState()); }, 5000);
   window.addEventListener('pagehide', () => persistence.save(store.getState()));
 
-  mountApp(root, { player, store, ui });
+  mountApp(root, { player, store, ui, services: { youtube: youtubeService, recent: createRecentSearches() } });
   registerShortcuts({ player, store });
   window.__music = { store, ui, player }; // handy for debugging and tests
 } catch (err) {

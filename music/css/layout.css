@@ -74,7 +74,6 @@
   .page-title { font-size: 24px; margin-bottom: 14px; }
   .search-mobile { display: block; margin-bottom: 8px; }
   .hero { padding: 22px; }
-  .row__remove { opacity: .7; }
 
   .bottom-nav {
     display: grid; grid-template-columns: repeat(4, 1fr);
