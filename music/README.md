@@ -195,3 +195,8 @@ buttons? Return to the page, tap **Copy** in the debug panel and send the log.
 - The queue view header shows the song count and total time. The queue is saved between visits (Phase 3 storage).
 
 Tests: `tests/music/queue-edit.test.mjs` (logic, undo, cap) plus browser checks for mouse/touch/keyboard reorder.
+
+### Silent audio element (anchor) is phones-only by default
+
+On desktop it is off: in Safari on Mac it blocked the tab for over a minute when a song started. Phones still use
+it. Override with `?anchor=on` / `?anchor=off`.
