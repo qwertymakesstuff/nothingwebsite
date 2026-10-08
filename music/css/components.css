@@ -295,3 +295,11 @@ button, a, [role="tab"], .row__main, .chip__label { touch-action: manipulation; 
 .toast__btn { flex: none; min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--accent); font-weight: 600; }
 .toast__btn:hover { background: var(--hover); }
 @media (pointer: coarse) { .row__grip { width: 40px; height: 48px; } .toast__btn { min-height: 44px; } }
+
+/* ---------- Safari diagnostics: ?vh=a|b|c (alternative ways to hide the YouTube box) ---------- */
+/* a: plain box while hidden - no rounded-corner clipping, no shadow */
+body[data-vh="a"] .video-host.is-hidden, body[data-vh="c"] .video-host.is-hidden { border-radius: 0; overflow: visible; box-shadow: none; }
+/* b: park it off-screen instead of making it transparent */
+body[data-vh="b"] .video-host.is-hidden { opacity: 1; z-index: auto; left: -10000px !important; right: auto; }
+/* c: a, and almost (not fully) transparent, in front of the page */
+body[data-vh="c"] .video-host.is-hidden { opacity: .01; z-index: 1; }

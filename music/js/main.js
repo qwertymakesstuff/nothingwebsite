@@ -27,6 +27,9 @@ try {
   const ui = createUiStore({ videoVisible: prefs.get().videoVisible });
   // iPhone/iPad ignore volume set by a web page, so the volume slider is hidden there.
   if (isIosLike()) document.body.classList.add('ios');
+  // Safari diagnostics for the hidden YouTube box: ?vh=a|b|c picks an alternative way of hiding it (see components.css).
+  const vh = params.get('vh');
+  if (vh) document.body.dataset.vh = vh;
   const persistence = createPersistence();
   // Real playback uses YouTube's official embedded player. ?engine=sim swaps in a silent simulated
   // engine (no network needed) for UI testing.
