@@ -55,7 +55,7 @@ export class YouTubeEngine {
    * @param {{ container: Element, loadApi?: () => Promise<any>, pollMs?: number, blockedAfterMs?: number,
    *           origin?: string }} opts
    */
-  constructor({ container, loadApi = loadYouTubeApi, pollMs = 250, blockedAfterMs = 6000, firstBlockedAfterMs = isIosLike() ? 1500 : 6000, origin, isHidden = () => typeof document !== 'undefined' && document.hidden, resumeDelaysMs = [300, 1200, 3500], log = () => {} } = {}) {
+  constructor({ container, loadApi = loadYouTubeApi, pollMs = 250, blockedAfterMs = 6000, firstBlockedAfterMs = isIosLike() ? 1500 : 6000, origin, isHidden = () => typeof document !== 'undefined' && document.hidden, resumeDelaysMs = [300, 1200, 3500], stallDelaysMs = [5000, 10000], log = () => {} } = {}) {
     this.container = container;
     this.loadApi = loadApi;
     this.pollMs = pollMs;
@@ -65,6 +65,9 @@ export class YouTubeEngine {
     this.isHidden = isHidden;
     this.resumeDelaysMs = resumeDelaysMs; // retry schedule after the system pauses us while in the background
     this.log = log;
+    this.stallDelaysMs = stallDelaysMs; // stuck 'buffering': nudge play after the first delay, reload the video after the second
+    this._stallTimers = [];
+    this._recoveries = 0;
     this._resumeTimers = [];
     this._hiddenAt = -Infinity; // when the page last became hidden (the browser reports it a moment after the system pauses us)
     this.now = () => Date.now();
@@ -126,6 +129,7 @@ export class YouTubeEngine {
   load(track, { autoplay = true, startAt = 0 } = {}) {
     const seq = ++this._seq;
     this._clearTimers();
+    this._recoveries = 0;
     this.track = track;
     this.wantPlay = autoplay;
     this._lastState = null;
@@ -240,7 +244,35 @@ export class YouTubeEngine {
     this._poll = setInterval(() => this._tick(), this.pollMs);
   }
   _stopPoll() { if (this._poll) { clearInterval(this._poll); this._poll = null; } }
-  _clearTimers() { this._stopPoll(); clearTimeout(this._watchdog); this._watchdog = null; this._cancelResume(); }
+  _clearTimers() { this._stopPoll(); clearTimeout(this._watchdog); this._watchdog = null; this._cancelResume(); this._clearStall(); }
+  _clearStall() { this._stallTimers.forEach(clearTimeout); this._stallTimers = []; }
+
+  /**
+   * After the phone locks, YouTube's player often pauses and then sits in 'buffering' forever. If we want to play
+   * and it has been buffering too long: first ask it to play, then reload the same video at the same second.
+   * At most twice per song, so it can never loop.
+   */
+  _armStall() {
+    if (this._stallTimers.length || !this.wantPlay || this.stallDelaysMs.length < 2) return;
+    const seq = this._seq;
+    const stuck = () => seq === this._seq && this.wantPlay && this._lastState === S.BUFFERING;
+    const [nudge, reload] = this.stallDelaysMs;
+    this._stallTimers.push(setTimeout(() => {
+      if (!stuck()) return;
+      this.log(`engine: buffering for ${nudge}ms, nudging play`);
+      try { this.player?.playVideo(); } catch { /* ignore */ }
+    }, nudge));
+    this._stallTimers.push(setTimeout(() => {
+      this._stallTimers = [];
+      if (!stuck() || !this.track?.videoId) return;
+      if (this._recoveries >= 2) { this.log('engine: still buffering, giving up on recovery'); return; }
+      this._recoveries++;
+      let at = Number(this.player?.getCurrentTime?.());
+      if (!Number.isFinite(at) || at < 0) at = 0;
+      this.log(`engine: stuck buffering for ${reload}ms, reloading the video at ${at.toFixed(1)}s (attempt ${this._recoveries})`);
+      try { this.player?.loadVideoById({ videoId: this.track.videoId, startSeconds: at }); } catch { /* ignore */ }
+    }, reload));
+  }
 
   _cancelResume() { this._resumeTimers.forEach(clearTimeout); this._resumeTimers = []; }
 
@@ -279,6 +311,8 @@ export class YouTubeEngine {
     this._lastState = code;
     switch (code) {
       case S.PLAYING:
+        this._clearStall();
+        this._recoveries = 0;
         this._cancelResume();
         this.hasPlayed = true;
         clearTimeout(this._watchdog);
@@ -288,9 +322,11 @@ export class YouTubeEngine {
         break;
       case S.BUFFERING:
         this._startPoll();
+        this._armStall();
         this._emit('state', 'loading');
         break;
       case S.PAUSED:
+        this._clearStall();
         this._stopPoll();
         this._tick();
         this._emit('state', 'paused'); // our own pause, or a system interruption (call, another tab)
@@ -298,10 +334,12 @@ export class YouTubeEngine {
         else if (this.wantPlay) this.log('engine: paused while we wanted to play (waiting to see if the page is hidden)');
         break;
       case S.ENDED:
+        this._clearStall();
         this._stopPoll();
         this._emit('ended');
         break;
       case S.CUED:
+        this._clearStall();
         this._stopPoll();
         if (!this.wantPlay) this._emit('state', 'paused');
         break;
