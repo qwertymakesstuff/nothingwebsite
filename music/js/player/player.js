@@ -14,6 +14,7 @@ export const initialPlayerState = () => ({
   shuffle: false,
   repeat: 'off',       // off | all | one
   error: null,
+  needsTap: false,     // the browser refused to autoplay: the user must tap the video itself (common on iPhone)
 });
 
 export const selectCurrent = (s) => Q.currentItem(s.queue);
@@ -28,7 +29,11 @@ export function createPlayer({ store, engine, notify = () => {} }) {
 
   engine.on('state', (status) => {
     if (status === 'playing') errorStreak = 0;
-    store.setState({ status, ...(status === 'playing' ? { error: null } : {}) });
+    store.setState({ status, ...(status === 'playing' ? { error: null, needsTap: false } : {}) });
+  });
+  engine.on('blocked', () => {
+    store.setState({ status: 'paused', needsTap: true });
+    notify('Tap the video to start playback', 'info');
   });
   engine.on('time', (position, duration) => {
     store.setState({ position, duration: duration > 0 ? duration : state().duration });
@@ -51,7 +56,7 @@ export function createPlayer({ store, engine, notify = () => {} }) {
       return;
     }
     loadedId = track.id;
-    store.setState({ status: autoplay ? 'loading' : 'paused', position: startAt, duration: track.duration || 0, error: null });
+    store.setState({ status: autoplay ? 'loading' : 'paused', position: startAt, duration: track.duration || 0, error: null, needsTap: false });
     engine.load(track, { autoplay, startAt });
   }
 
@@ -193,6 +198,7 @@ export function createPlayer({ store, engine, notify = () => {} }) {
       duration: Q.currentItem(saved.queue)?.duration || 0,
       status: Q.currentItem(saved.queue) ? 'paused' : 'idle',
       error: null,
+      needsTap: false,
     });
     applyVolume();
   }

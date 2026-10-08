@@ -38,7 +38,8 @@ export function NowPlaying({ player, store, ui }) {
   }, name === 'player' ? 'Now playing' : 'Up next'));
   const tablist = h('div', { class: 'np__tabs', role: 'tablist' }, tabs);
 
-  const artWrap = h('div', { class: 'np__art-wrap' }, art.el);
+  // With real playback the YouTube player is shown here (it must stay visible); see videoDock.js.
+  const artWrap = h('div', { class: 'np__art-wrap' }, art.el, h('div', { class: 'np__video-slot', 'aria-hidden': 'true' }));
   const playerView = h('div', { class: 'np__body', role: 'tabpanel' }, artWrap, text.el, seek.el, transport.el);
   const clearBtn = h('button', { class: 'btn btn--ghost btn--small', type: 'button', onclick: () => player.clearQueue() }, 'Clear');
   const queueEmpty = h('div', { class: 'np__queue-empty' }, 'Your queue is empty');

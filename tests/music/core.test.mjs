@@ -209,3 +209,18 @@ test('formatCount (subscriber counts)', () => {
   assert.equal(formatCount(1500000), '1.5M'); assert.equal(formatCount(2000000), '2M'); assert.equal(formatCount(45678901), '45M');
   assert.equal(formatCount(1200000000), '1.2B'); assert.equal(formatCount(NaN), ''); assert.equal(formatCount(-1), '');
 });
+
+test('player: blocked autoplay asks for a tap, and playing clears it', () => {
+  const { store, engine, player, notes } = setup();
+  player.playTracks(tracks(2), 0);
+  assert.equal(store.getState().needsTap, false);
+  engine.emit('blocked');
+  assert.equal(store.getState().status, 'paused'); assert.equal(store.getState().needsTap, true);
+  assert.match(notes.at(-1)[0], /Tap the video/);
+  engine.emit('state', 'playing');
+  assert.equal(store.getState().needsTap, false);
+  engine.emit('blocked'); player.next();
+  assert.equal(store.getState().needsTap, false, 'loading another track resets the flag');
+  engine.emit('blocked'); player.restore({ volume: 0.5, muted: false, shuffle: false, repeat: 'off', position: 0, queue: Q.setItems(tracks(1), 0) });
+  assert.equal(store.getState().needsTap, false);
+});

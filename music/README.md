@@ -2,9 +2,9 @@
 
 A web music player, built in phases. No build step: plain ES modules, served as static files.
 
-**Status: Phase 4 (mobile player).** Search, channels/artists, and the mobile player UI are done.
-Playback is still *simulated* (a clock, no sound) - real audio via YouTube's embedded player is
-Phase 3, which has not been built yet.
+**Status: Phase 4 complete, Phase 3 (real playback) now done.** Search, channels/artists, the mobile
+player and real playback through YouTube's official embedded player all work. Media Session / lock-screen
+controls are Phase 5 and are not built yet.
 
 ## Run locally
 
@@ -28,7 +28,8 @@ js/
   player/
     queueManager.js       pure queue logic (play order, shuffle, repeat, add/remove)
     player.js             Player facade - the ONLY thing that changes playback state
-    playbackEngine.js     engine contract + SimulatedEngine (Phase 1 stand-in)
+    playbackEngine.js     engine contract + SimulatedEngine (silent, for UI tests: ?engine=sim)
+    youtubeEngine.js      real playback through YouTube's official IFrame Player API
     mediaSession.js       reserved seam: lock-screen controls (later phase)
   services/youtube.js     client for OUR /api/search (timeout, abort, cache, friendly errors)
   storage/persistence.js  validated save/restore of player state (never throws)
@@ -39,7 +40,7 @@ js/
     shell.js              layout + view switching
     router.js             hash router (#/home, #/search?q=, #/library, #/queue)
     uiStore.js            UI-only state (mobile sheet, queue panel, toast)
-    components/           reusable pieces shared by desktop AND mobile
+    components/           reusable pieces shared by desktop AND mobile (videoDock.js = the visible YouTube player)
     views/                home, search, library, queue
   dev/demoTracks.js       Phase 1 only: fake tracks for testing
 worker/                   (repo root, not served) Cloudflare Worker
@@ -107,3 +108,26 @@ itself only blocks cross-site browser requests.
 
 Tested with Chromium touch emulation (real touch events). It has **not** been tested on real iOS Safari or
 Android devices - hardware-specific behaviour (safe areas, address-bar collapse, keyboard handling) needs a real-device check.
+
+## Playback (Phase 3)
+
+Playback uses YouTube's **official embedded player** (IFrame Player API, privacy host `youtube-nocookie.com`).
+We only send it commands (load, play, pause, seek, volume); we never touch, download or extract the audio.
+
+- **The player stays visible.** YouTube's rules require the embedded player to stay visible while it plays, so it
+  is never hidden. It shows at the top of the queue panel (wide desktop), in place of the artwork in the
+  full-screen player (phones), or as a small floating box in the corner otherwise. It is one element that follows
+  placeholder slots (re-parenting an iframe would reload it and stop the music).
+- **Autoplay rules.** Browsers may refuse scripted playback. If nothing starts, the player shows "Tap the video to
+  start playback" and the video becomes tappable. iPhone/iPad usually need this on the *first* play of a session, so
+  the prompt appears after about 1.5s there (6s elsewhere).
+- **Errors** (video removed, embedding disabled, YouTube blocked by an ad blocker or offline) show a clear message and
+  the player skips to the next song, unless the whole queue is failing.
+- **Resume:** the queue, position, volume, shuffle and repeat are restored after a reload (paused); pressing play
+  resumes at the saved position.
+- `?engine=sim` swaps in a silent simulated engine (and the "Load demo tracks" card) for UI testing without network.
+
+Known platform limits: iOS ignores programmatic volume (use the hardware buttons); embedded videos can show ads
+that YouTube controls; the first YouTube script load happens about 1.5s after the page opens (or on the first play).
+Background / screen-off playback and lock-screen controls are Phase 5 and depend on the browser; iOS is the most
+restrictive.
