@@ -137,7 +137,7 @@ export class YouTubeEngine {
 
   play() {
     this.wantPlay = true;
-    this._ensure().then((p) => { p.playVideo(); this._armWatchdog(this._seq); }).catch(() => {
+    this._ensure().then((p) => { p.playVideo(); this._armWatchdog(this._seq); this._scheduleResume(); }).catch(() => {
       this._emit('error', "Couldn't load the YouTube player. Check your connection or ad blocker.");
     });
   }

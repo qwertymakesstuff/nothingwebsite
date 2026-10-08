@@ -21,7 +21,7 @@ export function makeSilentWav(seconds = 10, rate = 8000) {
 }
 
 export function createAudioAnchor({ store, doc = globalThis.document, enabled = true, log = () => {}, makeUrl } = {}) {
-  if (!enabled || !doc) return { el: null, destroy() {} };
+  if (!enabled || !doc) return { el: null, kick() {}, destroy() {} };
 
   const audio = doc.createElement('audio');
   audio.className = 'audio-anchor';
@@ -63,6 +63,8 @@ export function createAudioAnchor({ store, doc = globalThis.document, enabled = 
 
   return {
     el: audio,
+    /** Start the silent audio right now. Call it straight from a user action (lock-screen play button, tap): iOS only allows it there. */
+    kick() { if (audio.paused) play(); },
     destroy() {
       off();
       ['pointerdown', 'touchend', 'click', 'keydown'].forEach((e) => doc.removeEventListener(e, unlock, true));
