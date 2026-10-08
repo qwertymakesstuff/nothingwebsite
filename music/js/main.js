@@ -66,6 +66,8 @@ try {
     document.body.append(DebugPanel({ debug: dbg }).el);
     dbg.log('start', { ua: navigator.userAgent, mediaSession: mediaSession.supported, anchor: !!anchor.el, engine: simulated ? 'sim' : 'youtube', visibility: document.visibilityState });
     store.subscribe((s) => `${s.status}${s.needsTap ? ' needsTap' : ''}${s.adPlaying ? ' ad' : ''}`, (v) => dbg.log('player:', v), { immediate: false });
+    // Heartbeat: if the page freezes, the last heartbeat in the saved log shows when the main thread stopped.
+    setInterval(() => dbg.log('alive', store.getState().status), 2000);
     document.addEventListener('visibilitychange', () => dbg.log('visibility:', document.visibilityState));
     window.addEventListener('pagehide', () => dbg.log('pagehide'));
     window.addEventListener('pageshow', () => dbg.log('pageshow'));
