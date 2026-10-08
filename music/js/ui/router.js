@@ -1,7 +1,7 @@
-// Hash router: #/home, #/search?q=..., #/library, #/queue.
+// Hash router: #/home, #/search?q=..., #/library, #/queue, #/channel?id=...
 // Hash routing needs no server rewrites, so it works on any static host.
 
-export const ROUTES = ['home', 'search', 'library', 'queue'];
+export const ROUTES = ['home', 'search', 'library', 'queue', 'channel'];
 
 export function parseHash(hash = location.hash) {
   const raw = hash.replace(/^#\/?/, '');

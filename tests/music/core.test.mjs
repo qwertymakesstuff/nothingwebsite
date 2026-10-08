@@ -4,7 +4,7 @@ import { createStore, shallowEqual } from '../../music/js/core/store.js';
 import * as Q from '../../music/js/player/queueManager.js';
 import { createPlayer, initialPlayerState } from '../../music/js/player/player.js';
 import { createPersistence, fromSnapshot, toSnapshot } from '../../music/js/storage/persistence.js';
-import { formatTime, clamp, hueFrom } from '../../music/js/utils/format.js';
+import { formatTime, clamp, hueFrom, formatCount } from '../../music/js/utils/format.js';
 
 const T = (id, extra = {}) => ({ id, title: 't' + id, artist: 'a', duration: 100, ...extra });
 const tracks = (n) => Array.from({ length: n }, (_, i) => T(String(i)));
@@ -201,4 +201,11 @@ test('format helpers', () => {
   assert.equal(formatTime(3725), '1:02:05'); assert.equal(formatTime(NaN), '0:00'); assert.equal(formatTime(-4), '0:00');
   assert.equal(clamp(5, 0, 3), 3);
   assert.equal(hueFrom('a'), hueFrom('a')); assert.ok(hueFrom('zzz') < 360);
+});
+
+test('formatCount (subscriber counts)', () => {
+  assert.equal(formatCount(0), '0'); assert.equal(formatCount(999), '999');
+  assert.equal(formatCount(1000), '1K'); assert.equal(formatCount(1234), '1.2K'); assert.equal(formatCount(15400), '15K');
+  assert.equal(formatCount(1500000), '1.5M'); assert.equal(formatCount(2000000), '2M'); assert.equal(formatCount(45678901), '45M');
+  assert.equal(formatCount(1200000000), '1.2B'); assert.equal(formatCount(NaN), ''); assert.equal(formatCount(-1), '');
 });

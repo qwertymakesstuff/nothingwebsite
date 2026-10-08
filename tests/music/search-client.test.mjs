@@ -14,7 +14,7 @@ const good = { ok: true, tracks: [
 
 test('service: success sanitises tracks and caches by normalised query', async () => {
   let calls = 0;
-  const svc = createYouTubeService({ fetchImpl: async (url) => { calls++; assert.match(url, /^\/api\/search\?q=Daft%20Punk$/); return res(good); } });
+  const svc = createYouTubeService({ fetchImpl: async (url) => { calls++; assert.match(url, /^\/api\/search\?q=Daft\+Punk$/); return res(good); } });
   const r = await svc.search('  Daft   Punk ');
   assert.equal(r.ok, true);
   assert.equal(r.tracks.length, 2);
@@ -88,4 +88,41 @@ test('persistence keeps videoId for later playback', () => {
   const back = fromSnapshot({ v: 1, queue: q, position: 0 });
   assert.equal(back.queue.items[0].videoId, 'vA');
   assert.equal('videoId' in back.queue.items[1], false);
+});
+
+const CID = 'UC' + 'x'.repeat(22);
+test('service: search returns sanitised channels (circle avatars need valid https art)', async () => {
+  const body = { ok: true, tracks: [], channels: [
+    { id: CID, title: 'Artist', artwork: 'https://yt3.ggpht.com/a.jpg', description: 'd', subscribers: 5000 },
+    { id: CID, title: 'No Art', artwork: 'http://insecure', subscribers: -3 },
+    { id: 'bad', title: 'Bad id' }, { id: CID }, null,
+  ] };
+  const svc = createYouTubeService({ fetchImpl: async () => res(body) });
+  const r = await svc.search('artist');
+  assert.equal(r.ok, true);
+  assert.equal(r.channels.length, 2);
+  assert.equal(r.channels[0].subscribers, 5000);
+  assert.equal(r.channels[1].artwork, null); assert.equal(r.channels[1].subscribers, null);
+  // old servers without `channels` still work
+  const old = createYouTubeService({ fetchImpl: async () => res({ ok: true, tracks: [] }) });
+  assert.deepEqual((await old.search('x')).channels, []);
+});
+test('service: channel() validates id, parses and caches', async () => {
+  let calls = 0;
+  const svc = createYouTubeService({ fetchImpl: async (url) => { calls++; assert.ok(url.startsWith('/api/channel?id=' + CID)); return res({ ok: true, channel: { id: CID, title: 'Artist', subscribers: 10 }, tracks: [{ id: 'v', title: 'T', duration: 5 }] }); } });
+  assert.equal((await svc.channel('nope')).error, 'not_found');
+  assert.equal((await svc.channel(undefined)).error, 'not_found');
+  const r = await svc.channel(CID);
+  assert.equal(r.ok, true); assert.equal(r.channel.title, 'Artist'); assert.equal(r.tracks.length, 1);
+  assert.equal((await svc.channel(CID)).cached, true); assert.equal(calls, 1);
+});
+test('service: channel() errors and malformed bodies', async () => {
+  const mk = (f) => createYouTubeService({ fetchImpl: f });
+  assert.equal((await mk(async () => res({ ok: false, error: 'not_found' }, 404)).channel(CID)).error, 'not_found');
+  assert.equal((await mk(async () => res({ ok: true, tracks: [] })).channel(CID)).error, 'upstream');
+  assert.equal((await mk(async () => res({ ok: true, channel: { id: 'bad' }, tracks: [] })).channel(CID)).error, 'upstream');
+  assert.equal((await mk(async () => { throw new TypeError('x'); }).channel(CID)).error, 'network');
+  const hang = (u, { signal }) => new Promise((_, rej) => signal.addEventListener('abort', () => rej(Object.assign(new Error('a'), { name: 'AbortError' }))));
+  const ctrl = new AbortController(); const p = mk(hang).channel(CID, { signal: ctrl.signal }); ctrl.abort();
+  assert.equal((await p).error, 'aborted');
 });

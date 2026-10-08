@@ -15,10 +15,11 @@ import { HomeView } from './views/home.js';
 import { SearchView } from './views/search.js';
 import { LibraryView } from './views/library.js';
 import { QueueView } from './views/queue.js';
+import { ChannelView } from './views/channel.js';
 import { selectCurrent } from '../player/player.js';
 
-const VIEWS = { home: HomeView, search: SearchView, library: LibraryView, queue: QueueView };
-const TITLES = { home: 'Home', search: 'Search', library: 'Library', queue: 'Queue' };
+const VIEWS = { home: HomeView, search: SearchView, library: LibraryView, queue: QueueView, channel: ChannelView };
+const TITLES = { home: 'Home', search: 'Search', library: 'Library', queue: 'Queue', channel: 'Channel' };
 
 export function mountApp(root, { player, store, ui, services }) {
   const d = disposer();
@@ -61,8 +62,9 @@ export function mountApp(root, { player, store, ui, services }) {
     current = VIEWS[name]({ ...ctx, params });
     view.replaceChildren(current.el);
     view.scrollTop = 0;
-    sidebar.setRoute(name);
-    bottomNav.setRoute(name);
+    const navName = name === 'channel' ? 'search' : name; // channel pages belong to Search
+    sidebar.setRoute(navName);
+    bottomNav.setRoute(navName);
     topSearch.setValue(params.get('q') || '');
     document.title = `${TITLES[name]} - missing music`;
   });

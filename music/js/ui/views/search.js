@@ -1,11 +1,9 @@
 import { h, disposer } from '../../utils/dom.js';
 import { icon } from '../icons.js';
 import { SearchBox } from '../components/searchBox.js';
-import { TrackRow } from '../components/trackRow.js';
-import { showToast } from '../uiStore.js';
-import { selectCurrent } from '../../player/player.js';
+import { TrackList, playAllButton } from '../components/trackList.js';
+import { ChannelRow } from '../components/channelRow.js';
 import { normalizeQuery } from '../../services/youtube.js';
-import { shallowEqual } from '../../core/store.js';
 
 const RETRYABLE = new Set(['network', 'timeout', 'upstream', 'unavailable']);
 
@@ -21,21 +19,20 @@ export function SearchView({ router, params, player, store, ui, services }) {
     body);
 
   let ctrl = null;
-  let rows = [];
-  let tracks = [];
+  let list = null;
   let destroyed = false;
 
-  const show = (...nodes) => { body.replaceChildren(...nodes); body.removeAttribute('aria-busy'); };
+  const show = (...nodes) => { list?.destroy(); list = null; body.replaceChildren(...nodes); body.removeAttribute('aria-busy'); };
   const stateBlock = (iconName, title, text, ...extra) => h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon(iconName, 32)), h('h2', null, title), text ? h('p', null, text) : null, ...extra);
 
   function renderIdle() {
-    const list = recent.list();
-    if (!list.length) {
-      show(stateBlock('search', 'Search for music', 'Type a song, artist or album and press Enter.'));
+    const terms = recent.list();
+    if (!terms.length) {
+      show(stateBlock('search', 'Search for music', 'Type a song, artist, channel or album and press Enter.'));
       return;
     }
-    const chips = h('div', { class: 'chips' }, list.map((term) => h('span', { class: 'chip' },
+    const chips = h('div', { class: 'chips' }, terms.map((term) => h('span', { class: 'chip' },
       h('button', { class: 'chip__label', type: 'button', onclick: () => router.navigate('search', { q: term }) }, icon('clock', 16), term),
       h('button', { class: 'chip__remove', type: 'button', 'aria-label': `Remove ${term} from recent searches`, onclick: () => { recent.remove(term); renderIdle(); } }, icon('close', 14)))));
     show(h('div', { class: 'recent' },
@@ -47,10 +44,13 @@ export function SearchView({ router, params, player, store, ui, services }) {
 
   function renderLoading() {
     body.setAttribute('aria-busy', 'true');
+    list?.destroy(); list = null;
     body.replaceChildren(
       h('p', { class: 'sr-only' }, 'Searching…'),
       h('div', { class: 'skeleton-list', 'aria-hidden': 'true' },
-        Array.from({ length: 8 }, () => h('div', { class: 'skeleton-row' }, h('i', { class: 'sk sk--art' }), h('div', { class: 'sk-text' }, h('i', { class: 'sk sk--line' }), h('i', { class: 'sk sk--line sk--short' }))))));
+        Array.from({ length: 8 }, (_, i) => h('div', { class: 'skeleton-row' },
+          h('i', { class: `sk sk--art${i < 2 ? ' sk--round' : ''}` }),
+          h('div', { class: 'sk-text' }, h('i', { class: 'sk sk--line' }), h('i', { class: 'sk sk--line sk--short' }))))));
   }
 
   function renderError(res) {
@@ -60,33 +60,23 @@ export function SearchView({ router, params, player, store, ui, services }) {
     show(stateBlock('alert', "Couldn't search", res.message, retry));
   }
 
-  function renderResults() {
-    rows = tracks.map((track, i) => TrackRow({
-      track,
-      onPlay: () => {
-        const cur = selectCurrent(store.getState());
-        if (cur && cur.id === track.id) player.togglePlay(); else player.playTracks(tracks, i);
-      },
-      actions: [
-        { icon: 'play-next', label: 'Play next', onClick: () => { player.playNext(track); showToast(ui, 'Playing next'); } },
-        { icon: 'queue-add', label: 'Add to queue', onClick: () => { player.enqueue([track]); showToast(ui, 'Added to queue'); } },
-      ],
-    }));
-    show(
-      h('div', { class: 'results-head' },
-        h('h2', null, `Results for “${q}”`),
-        h('button', { class: 'btn btn--primary btn--small', type: 'button', onclick: () => player.playTracks(tracks, 0) }, icon('play', 18), 'Play all')),
-      h('ol', { class: 'queue-list results-list', 'aria-label': `Search results for ${q}` }, rows.map((r) => r.el)),
-      h('p', { class: 'notice' }, 'Playback is simulated for now — real audio arrives in the next phase.'));
-    paintCurrent();
+  function renderResults({ tracks, channels }) {
+    const sections = [];
+    if (channels.length) {
+      sections.push(h('section', { class: 'results-section' },
+        h('div', { class: 'results-head' }, h('h2', null, 'Artists & channels')),
+        h('ol', { class: 'queue-list', 'aria-label': `Channels matching ${q}` },
+          channels.map((channel) => ChannelRow({ channel, onOpen: () => router.navigate('channel', { id: channel.id }) }).el))));
+    }
+    if (tracks.length) {
+      list = TrackList({ tracks, player, store, ui, label: `Songs matching ${q}` });
+      sections.push(h('section', { class: 'results-section' },
+        h('div', { class: 'results-head' }, h('h2', null, 'Songs'), playAllButton(() => player.playTracks(tracks, 0))),
+        list.el));
+    }
+    body.replaceChildren(...sections, h('p', { class: 'notice' }, 'Playback is simulated for now — real audio arrives in the next phase.'));
+    body.removeAttribute('aria-busy');
   }
-
-  function paintCurrent() {
-    const s = store.getState();
-    const cur = selectCurrent(s);
-    rows.forEach((r, i) => r.setState({ current: !!cur && tracks[i].id === cur.id, playing: s.status === 'playing' }));
-  }
-  d.add(store.subscribe((s) => [selectCurrent(s)?.id, s.status === 'playing'], paintCurrent, { equals: shallowEqual, immediate: false }));
 
   async function run(query) {
     ctrl?.abort();
@@ -95,16 +85,15 @@ export function SearchView({ router, params, player, store, ui, services }) {
     const res = await youtube.search(query, { signal: ctrl.signal });
     if (destroyed || res.error === 'aborted') return;
     if (!res.ok) { renderError(res); return; }
-    tracks = res.tracks;
-    if (!tracks.length) {
-      show(stateBlock('search', `No results for “${query}”`, 'Check the spelling or try a different song or artist.'));
+    if (!res.tracks.length && !res.channels.length) {
+      show(stateBlock('search', `No results for “${query}”`, 'Check the spelling or try a different song, artist or channel.'));
       return;
     }
     recent.add(query);
-    renderResults();
+    renderResults(res);
   }
 
   if (q) run(q); else renderIdle();
 
-  return { el, destroy() { destroyed = true; ctrl?.abort(); d.run(); } };
+  return { el, destroy() { destroyed = true; ctrl?.abort(); list?.destroy(); d.run(); } };
 }

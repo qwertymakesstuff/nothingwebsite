@@ -19,3 +19,15 @@ export function hueFrom(str) {
   for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
   return hash % 360;
 }
+
+/** 1234 -> "1.2K", 2500000 -> "2.5M". Used for subscriber counts. */
+export function formatCount(n) {
+  if (!Number.isFinite(n) || n < 0) return '';
+  const trim = (v) => String(v).replace(/\.0$/, '');
+  if (n < 1000) return String(Math.floor(n));
+  if (n < 1e4) return `${trim((n / 1e3).toFixed(1))}K`;
+  if (n < 1e6) return `${Math.floor(n / 1e3)}K`;
+  if (n < 1e7) return `${trim((n / 1e6).toFixed(1))}M`;
+  if (n < 1e9) return `${Math.floor(n / 1e6)}M`;
+  return `${trim((n / 1e9).toFixed(1))}B`;
+}

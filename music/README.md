@@ -79,7 +79,7 @@ never includes it in a response or error message.
 
 ### Quota
 
-`search.list` costs 100 units; the free quota is 10,000/day (about 100 uncached searches). To stay inside it:
+Each search runs two `search.list` calls (songs + channels/artists, 100 units each) plus two 1-unit detail lookups, about **202 units**; the free quota is 10,000/day (about **50 uncached searches**). Opening a channel page costs about 3 units. If the channel half fails, songs still show. To stay inside it:
 search is submit-only (no search-as-you-type), results are cached at the edge for 1 hour and in the
 browser for 10 minutes, and repeated terms are free. Add a free Cloudflare **rate limiting rule** on
 `/api/search` (Security -> WAF -> Rate limiting rules) so scripts cannot burn the quota; the Worker

@@ -1,10 +1,11 @@
 // missing-music Worker.
-//   /api/search?q=...   secure YouTube search (this file)
-//   everything else     static player from ./music (served directly by Workers assets)
+//   /api/search?q=...    songs + channels/artists (secure YouTube search)
+//   /api/channel?id=UC.. a channel's profile + recent uploads
+//   everything else      static player from ./music (served directly by Workers assets)
 //
 // The YouTube API key lives in the YOUTUBE_API_KEY Worker secret and is never sent to the browser.
 
-import { searchYouTube, YouTubeError } from './youtube.js';
+import { searchAll, getChannelPage, isChannelId, YouTubeError } from './youtube.js';
 
 const MAX_QUERY = 100;
 const CACHE_SECONDS = 60 * 60;
@@ -35,16 +36,13 @@ export function isSameSite(request, url) {
   return true; // non-browser client; cannot be distinguished here (see README: add a rate-limit rule)
 }
 
-async function handleSearch(request, env, ctx, url) {
+/** Shared by every API route: method + same-site checks, edge cache, error mapping. */
+async function respond(request, url, ctx, cacheKeyPath, produce) {
   if (request.method !== 'GET') return fail('method_not_allowed', 'Use GET.', 405);
   if (!isSameSite(request, url)) return fail('forbidden', 'Not allowed.', 403);
 
-  const q = normalizeQuery(url.searchParams.get('q'));
-  if (!q) return fail('empty', 'Type something to search.', 400);
-  if (q.length > MAX_QUERY) return fail('too_long', `Search is limited to ${MAX_QUERY} characters.`, 400);
-
   const cache = typeof caches !== 'undefined' ? caches.default : null;
-  const cacheKey = new Request(`${url.origin}/api/search?q=${encodeURIComponent(q.toLowerCase())}`);
+  const cacheKey = new Request(`${url.origin}${cacheKeyPath}`);
   if (cache) {
     const hit = await cache.match(cacheKey);
     if (hit) {
@@ -55,11 +53,8 @@ async function handleSearch(request, env, ctx, url) {
   }
 
   try {
-    const tracks = await searchYouTube(q, { apiKey: env.YOUTUBE_API_KEY });
-    const res = json({ ok: true, query: q, tracks }, 200, {
-      'cache-control': `private, max-age=300`,
-      'x-cache': 'MISS',
-    });
+    const body = await produce();
+    const res = json({ ok: true, ...body }, 200, { 'cache-control': 'private, max-age=300', 'x-cache': 'MISS' });
     if (cache) {
       const stored = new Response(res.clone().body, res);
       stored.headers.set('cache-control', `public, max-age=${CACHE_SECONDS}`);
@@ -72,10 +67,30 @@ async function handleSearch(request, env, ctx, url) {
   }
 }
 
+function handleSearch(request, env, ctx, url) {
+  const q = normalizeQuery(url.searchParams.get('q'));
+  if (request.method === 'GET') {
+    if (!q) return fail('empty', 'Type something to search.', 400);
+    if (q.length > MAX_QUERY) return fail('too_long', `Search is limited to ${MAX_QUERY} characters.`, 400);
+  }
+  return respond(request, url, ctx, `/api/search?q=${encodeURIComponent(q.toLowerCase())}`, async () => ({
+    query: q,
+    ...(await searchAll(q, { apiKey: env.YOUTUBE_API_KEY })),
+  }));
+}
+
+function handleChannel(request, env, ctx, url) {
+  const id = String(url.searchParams.get('id') ?? '').trim();
+  if (request.method === 'GET' && !isChannelId(id)) return fail('not_found', 'Channel not found.', 404);
+  return respond(request, url, ctx, `/api/channel?id=${encodeURIComponent(id)}`, () =>
+    getChannelPage(id, { apiKey: env.YOUTUBE_API_KEY }));
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === '/api/search') return handleSearch(request, env, ctx, url);
+    if (url.pathname === '/api/channel') return handleChannel(request, env, ctx, url);
     if (url.pathname.startsWith('/api/')) return fail('not_found', 'Unknown API route.', 404);
     return env.ASSETS.fetch(request);
   },
