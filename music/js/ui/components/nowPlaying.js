@@ -4,74 +4,135 @@ import { Artwork } from './artwork.js';
 import { TrackText } from './trackInfo.js';
 import { TransportControls } from './transportControls.js';
 import { SeekBar } from './seekBar.js';
+import { QueueList } from './queueList.js';
+import { trackSwipe } from '../../utils/gestures.js';
+import { dragX, settle, slideIn } from '../swipeFx.js';
 import { selectCurrent } from '../../player/player.js';
+import { hueFrom } from '../../utils/format.js';
+
+const BEHIND = '.main-col, .bottom-nav, .mini-player'; // made inert while the sheet is open
 
 /**
- * Mobile full-screen player (a bottom sheet). Swipe down or press back to close.
- * Reuses the same text / seek / transport components as the desktop bar.
+ * Mobile full-screen player (a bottom sheet) with two views: Now playing and Up next.
+ *   drag down on the header or artwork   dismiss (follows the finger, flick to close)
+ *   swipe the artwork left/right         next / previous
+ *   back gesture / Esc / chevron         close
+ * Reuses the same text / seek / transport / queue components as the desktop bar.
  */
-export function NowPlaying({ player, store, ui, router }) {
+export function NowPlaying({ player, store, ui }) {
   const d = disposer();
   const art = Artwork('np__art');
   const text = TrackText({ store, className: 'track-text--large' });
   const seek = SeekBar({ player, store });
   const transport = TransportControls({ player, store });
-  d.add(text.destroy); d.add(seek.destroy); d.add(transport.destroy);
-  d.add(store.subscribe(selectCurrent, (t) => art.update(t)));
+  const queue = QueueList({ player, store });
+  [text, seek, transport, queue].forEach((c) => d.add(c.destroy));
 
-  const close = () => ui.setState({ nowPlayingOpen: false });
-  const header = h('div', { class: 'np__header' },
-    h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close player', onclick: close }, icon('chevron-down', 28)),
-    h('div', { class: 'np__label' }, 'Now playing'),
-    h('button', {
-      class: 'icon-btn', type: 'button', 'aria-label': 'Open queue',
-      onclick: () => {
-        // Drop the sheet's history marker first so navigating doesn't fight history.back().
-        if (history.state?.np) history.replaceState(null, '');
-        close();
-        router.navigate('queue');
-      },
-    }, icon('queue', 24)));
+  const el = h('section', { class: 'nowplaying', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Player', 'aria-hidden': 'true' });
+  const closeBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close player', onclick: () => requestClose() }, icon('chevron-down', 28));
 
-  const el = h('section', { class: 'nowplaying', 'aria-label': 'Now playing', 'aria-hidden': 'true' },
-    header,
-    h('div', { class: 'np__body' }, h('div', { class: 'np__art-wrap' }, art.el), text.el, seek.el, transport.el));
+  // ---- views: player / queue ----
+  const tabs = ['player', 'queue'].map((name) => h('button', {
+    class: 'np__tab', type: 'button', role: 'tab', 'aria-selected': name === 'player' ? 'true' : 'false',
+    onclick: () => setView(name),
+  }, name === 'player' ? 'Now playing' : 'Up next'));
+  const tablist = h('div', { class: 'np__tabs', role: 'tablist' }, tabs);
 
-  // Swipe down on the sheet to dismiss.
-  let startY = null;
-  let dy = 0;
-  el.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1 || el.querySelector('.slider:active')) return;
-    if (e.target.closest('.slider')) { startY = null; return; }
-    startY = e.touches[0].clientY; dy = 0;
+  const artWrap = h('div', { class: 'np__art-wrap' }, art.el);
+  const playerView = h('div', { class: 'np__body', role: 'tabpanel' }, artWrap, text.el, seek.el, transport.el);
+  const clearBtn = h('button', { class: 'btn btn--ghost btn--small', type: 'button', onclick: () => player.clearQueue() }, 'Clear');
+  const queueEmpty = h('div', { class: 'np__queue-empty' }, 'Your queue is empty');
+  const queueView = h('div', { class: 'np__queue', role: 'tabpanel', hidden: true },
+    h('div', { class: 'np__queue-head' }, h('h2', null, 'Up next'), clearBtn), queue.el, queueEmpty);
+
+  const header = h('div', { class: 'np__header' }, closeBtn, tablist, h('span', { class: 'np__header-spacer', 'aria-hidden': 'true' }));
+  el.append(header, playerView, queueView);
+
+  function setView(name) {
+    tabs.forEach((t, i) => t.setAttribute('aria-selected', String((i === 0) === (name === 'player'))));
+    playerView.hidden = name !== 'player';
+    queueView.hidden = name !== 'queue';
+    el.classList.toggle('is-queue', name === 'queue');
+  }
+
+  d.add(store.subscribe(selectCurrent, (t) => {
+    art.update(t);
+    // Placeholder artwork is tinted from the track id, so match it; real artwork keeps the brand purple.
+    el.style.setProperty('--np-hue', t && !t.artwork ? hueFrom(t.id) : 260);
+  }));
+  d.add(store.subscribe((s) => s.queue.items.length, (n) => { queueEmpty.hidden = n > 0; clearBtn.hidden = n === 0; queue.el.hidden = n === 0; }));
+
+  // ---- gestures ----
+  let dismissing = false;
+  const sheetDrag = ({ dy }) => {
+    if (dismissing) return;
     el.style.transition = 'none';
-  }, { passive: true });
-  el.addEventListener('touchmove', (e) => {
-    if (startY == null) return;
-    dy = Math.max(0, e.touches[0].clientY - startY);
-    el.style.transform = `translateY(${dy}px)`;
-  }, { passive: true });
-  const release = () => {
-    if (startY == null) return;
-    el.style.transition = '';
-    el.style.transform = '';
-    if (dy > 120) history.state?.np ? history.back() : close();
-    startY = null; dy = 0;
+    el.style.transform = `translateY(${Math.max(0, dy)}px)`;
   };
-  el.addEventListener('touchend', release);
-  el.addEventListener('touchcancel', release);
+  const sheetRelease = ({ dir }) => {
+    if (dismissing) return;
+    if (dir === 'down') {
+      dismissing = true;
+      el.style.transition = 'transform .22s cubic-bezier(.4,0,1,1)';
+      el.style.transform = 'translateY(100%)';
+      const done = () => { el.style.transition = ''; el.style.transform = ''; dismissing = false; requestClose(); };
+      el.addEventListener('transitionend', done, { once: true });
+      setTimeout(() => { if (dismissing) done(); }, 320); // in case transitionend never fires
+    } else {
+      el.style.transition = 'transform .25s cubic-bezier(.2,.8,.2,1)';
+      el.style.transform = '';
+    }
+  };
+  d.add(trackSwipe(header, { axes: 'y', onMove: sheetDrag, onEnd: sheetRelease }));
+  d.add(trackSwipe(artWrap, {
+    axes: 'xy',
+    onMove: ({ axis, dx, dy }) => (axis === 'x' ? dragX(art.el, dx, { fade: 300 }) : sheetDrag({ dy })),
+    onEnd: (e) => {
+      if (e.axis === 'y') { sheetRelease(e); return; }
+      if (e.dir === 'left') { player.next(); slideIn(art.el, 'left'); }
+      else if (e.dir === 'right') { player.previous(); slideIn(art.el, 'right'); }
+      else settle(art.el);
+    },
+  }));
 
-  // Open/close, with a history entry so the phone's back gesture closes the sheet first.
+  // ---- open / close ----
+  // The sheet owns one history entry so the phone's back gesture closes it first.
+  function requestClose() {
+    if (ui.getState().nowPlayingOpen) ui.setState({ nowPlayingOpen: false });
+  }
+  let returnFocus = null;
   d.add(ui.subscribe((s) => s.nowPlayingOpen, (open) => {
     el.classList.toggle('is-open', open);
     el.setAttribute('aria-hidden', String(!open));
     document.body.classList.toggle('np-open', open);
-    if (open && !history.state?.np) history.pushState({ np: true }, '');
-    if (!open && history.state?.np) history.back();
+    document.querySelectorAll(BEHIND).forEach((n) => { if (open) n.setAttribute('inert', ''); else n.removeAttribute('inert'); });
+    if (open) {
+      // Opened by a swipe (nothing focused)? Return focus to the mini-player's open button later.
+      const active = document.activeElement;
+      returnFocus = active && active !== document.body ? active : document.querySelector('.mini__open');
+      setView('player');
+      if (!history.state?.np) history.pushState({ np: true }, '');
+      setTimeout(() => closeBtn.focus({ preventScroll: true }), 50);
+    } else {
+      if (history.state?.np) history.back();
+      returnFocus?.focus?.({ preventScroll: true });
+      returnFocus = null;
+    }
   }, { immediate: false }));
+
   const onPop = () => { if (ui.getState().nowPlayingOpen && !history.state?.np) ui.setState({ nowPlayingOpen: false }); };
+  const onKey = (e) => { if (e.key === 'Escape' && ui.getState().nowPlayingOpen) requestClose(); };
+  // Rotating a tablet (or resizing) into the desktop layout hides the sheet: close it cleanly.
+  const wide = window.matchMedia('(min-width: 900px)');
+  const onWide = () => { if (wide.matches) requestClose(); };
   window.addEventListener('popstate', onPop);
-  d.add(() => window.removeEventListener('popstate', onPop));
+  window.addEventListener('keydown', onKey);
+  wide.addEventListener?.('change', onWide);
+  d.add(() => {
+    window.removeEventListener('popstate', onPop);
+    window.removeEventListener('keydown', onKey);
+    wide.removeEventListener?.('change', onWide);
+  });
 
   return { el, destroy: d.run };
 }

@@ -209,3 +209,23 @@
   .channel-hero { gap: 16px; }
   .channel-hero__art, .sk--hero { width: 88px; height: 88px; }
 }
+
+/* ---------- touch polish ---------- */
+button, a, [role="tab"], .row__main, .chip__label { touch-action: manipulation; }   /* no double-tap zoom / 300ms delay */
+.icon-btn, .play-btn, .btn, .np__tab, .bottom-nav__item, .row__main { -webkit-user-select: none; user-select: none; }
+.artwork img { -webkit-touch-callout: none; -webkit-user-drag: none; user-select: none; }
+.mini-player { touch-action: none; }
+.mini-player .transport { touch-action: manipulation; }
+
+/* bigger scrub target + live feedback while dragging the seek bar */
+.seekbar.is-dragging .slider::-webkit-slider-runnable-track { height: 8px; }
+.seekbar.is-dragging .slider::-webkit-slider-thumb { opacity: 1; width: 22px; height: 22px; margin-top: -7px; }
+.seekbar.is-dragging .slider::-moz-range-track, .seekbar.is-dragging .slider::-moz-range-progress { height: 8px; }
+.seekbar.is-dragging .slider::-moz-range-thumb { opacity: 1; width: 22px; height: 22px; }
+.seekbar.is-dragging .time { color: var(--text); font-weight: 600; }
+.nowplaying .seekbar .slider { height: 40px; }   /* generous touch zone around the 4px track */
+
+/* small buttons still need a finger-sized hit area on touch screens */
+@media (pointer: coarse) {
+  .btn--small { min-height: 44px; }
+}

@@ -54,6 +54,20 @@ export function mountApp(root, { player, store, ui, services }) {
   root.replaceChildren(app);
 
   d.add(store.subscribe((s) => !!selectCurrent(s), (has) => app.classList.toggle('has-track', has)));
+
+  // On-screen keyboard (Android resizes the viewport): hide the bottom bars so they don't float
+  // above the keyboard and squeeze the page.
+  const vv = window.visualViewport;
+  if (vv) {
+    const root = document.documentElement;
+    const update = () => {
+      const typing = document.activeElement?.matches?.('input, textarea');
+      root.classList.toggle('kbd-open', !!typing && vv.height < window.innerHeight * 0.75);
+    };
+    vv.addEventListener('resize', update);
+    window.addEventListener('focusout', () => setTimeout(update, 50));
+    d.add(() => { vv.removeEventListener('resize', update); root.classList.remove('kbd-open'); });
+  }
   d.add(ui.subscribe((s) => s.queuePanelOpen, (open) => app.classList.toggle('panel-closed', !open)));
 
   let current = null;

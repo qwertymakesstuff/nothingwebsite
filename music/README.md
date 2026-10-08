@@ -2,9 +2,9 @@
 
 A web music player, built in phases. No build step: plain ES modules, served as static files.
 
-**Status: Phase 2 (secure YouTube search).** Search, results, recent searches and all
-loading/empty/error states work. Playback is still *simulated* (a clock, no sound) - real audio via
-YouTube's embedded player is the next phase.
+**Status: Phase 4 (mobile player).** Search, channels/artists, and the mobile player UI are done.
+Playback is still *simulated* (a clock, no sound) - real audio via YouTube's embedded player is
+Phase 3, which has not been built yet.
 
 ## Run locally
 
@@ -35,6 +35,7 @@ js/
   storage/recentSearches.js   last 10 search terms
   storage/safeStorage.js  localStorage with an in-memory fallback
   ui/
+    swipeFx.js            swipe feedback animations (follow finger, settle, slide in)
     shell.js              layout + view switching
     router.js             hash router (#/home, #/search?q=, #/library, #/queue)
     uiStore.js            UI-only state (mobile sheet, queue panel, toast)
@@ -91,3 +92,18 @@ itself only blocks cross-site browser requests.
   YouTube's official embedded player (no downloading or extracting audio).
 - No Media Session / lock-screen controls, favorites, playlists, recently played, or PWA/offline yet.
 - The "Load demo tracks" button on Home is for testing and will be removed.
+
+## Mobile player (Phase 4)
+
+- **Mini-player:** tap or swipe up to open; swipe left/right for next/previous.
+- **Full-screen player:** drag down on the header or artwork to dismiss (a quick flick works too), swipe the
+  artwork for next/previous, switch between *Now playing* and *Up next*, back gesture / Esc / chevron close it.
+  It is an accessible modal (focus moves in and returns, the page behind is `inert`).
+- **Layouts:** phone portrait, phone landscape (artwork beside the controls, compact nav), tablet portrait
+  (capped widths), small phones (320px). Safe-area insets are used throughout. Rotating or widening past 900px
+  while the player is open closes it cleanly. Android's on-screen keyboard hides the bottom bars.
+- **Touch:** 44px targets, no double-tap zoom, no text selection or image callouts on controls, larger scrub
+  bar while dragging.
+
+Tested with Chromium touch emulation (real touch events). It has **not** been tested on real iOS Safari or
+Android devices - hardware-specific behaviour (safe areas, address-bar collapse, keyboard handling) needs a real-device check.
