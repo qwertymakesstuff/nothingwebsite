@@ -4,17 +4,19 @@
 // search(query, { signal }) ->
 //   { ok: true,  tracks: Track[], channels: Channel[] }
 // channel(id, { signal }) ->
-//   { ok: true,  channel: Channel, tracks: Track[] }
+//   { ok: true,  channel: Channel, popular: Track[], tracks: Track[] }   (tracks = latest uploads)
 // Failures:  { ok: false, error: code, message }
 //   codes: empty | too_long | not_found | not_configured | quota | network | timeout |
 //          unavailable | upstream | aborted
 //
-// Track:   { id, videoId, title, artist, artwork|null, duration }
+// Track:   { id, videoId, title, artist, artwork|null, duration, views? }
 // Channel: { id, channelId, title, artwork|null, description, subscribers|null }
 
 const CACHE_TTL = 10 * 60 * 1000;
 const CACHE_MAX = 50;
 const CHANNEL_ID = /^UC[\w-]{22}$/;
+// Sent with every request. Changing it makes browsers and the edge ignore older cached responses.
+const API_VERSION = '3';
 
 const MESSAGES = {
   empty: 'Type something to search.',
@@ -42,6 +44,7 @@ function cleanTrack(t) {
     artist: typeof t.artist === 'string' ? t.artist : '',
     artwork: https(t.artwork),
     duration: Number.isFinite(t.duration) && t.duration > 0 ? t.duration : 0,
+    ...(Number.isFinite(t.views) && t.views > 0 ? { views: t.views } : {}),
   };
 }
 
@@ -78,7 +81,7 @@ export function createYouTubeService({ fetchImpl = (...a) => fetch(...a), base =
     signal?.addEventListener('abort', onAbort);
 
     try {
-      const res = await fetchImpl(`${base}${path}?${new URLSearchParams(params)}`, { signal: ctrl.signal, headers: { accept: 'application/json' } });
+      const res = await fetchImpl(`${base}${path}?${new URLSearchParams({ ...params, v: API_VERSION })}`, { signal: ctrl.signal, headers: { accept: 'application/json' } });
       let body = null;
       try { body = await res.json(); } catch { /* not JSON, e.g. 404 page when no backend exists */ }
 
@@ -113,7 +116,7 @@ export function createYouTubeService({ fetchImpl = (...a) => fetch(...a), base =
     if (!CHANNEL_ID.test(String(id ?? ''))) return Promise.resolve(fail('not_found'));
     return call('/channel', { id }, `c:${id}`, (b) => {
       const ch = cleanChannel(b.channel);
-      return ch && Array.isArray(b.tracks) ? { channel: ch, tracks: cleanTracks(b.tracks) } : null;
+      return ch && Array.isArray(b.tracks) ? { channel: ch, popular: cleanTracks(b.popular), tracks: cleanTracks(b.tracks) } : null;
     }, signal);
   }
 

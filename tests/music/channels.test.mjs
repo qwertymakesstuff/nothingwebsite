@@ -13,12 +13,13 @@ const chan = (n, over = {}) => ({
   ...over,
 });
 const vid = (id) => ({
+  statistics: { viewCount: id.startsWith('p') ? '9000000' : '10' },
   id, snippet: { title: `Song ${id}`, channelTitle: 'Artist 1', liveBroadcastContent: 'none', thumbnails: { medium: { url: `https://i.ytimg.com/${id}.jpg` } } },
   contentDetails: { duration: 'PT3M' }, status: { embeddable: true, privacyStatus: 'public' },
 });
 
 /** Routes mocked YouTube endpoints by path + type. */
-function yt({ channelHits = [1, 2], channelItems, videoHits = ['v1', 'v2'], playlist = ['v1', 'v2'], playlistStatus = 200, channelSearchFails = false, videoSearchFails = false } = {}) {
+function yt({ channelHits = [1, 2], channelItems, videoHits = ['v1', 'v2'], popularHits = ['p1', 'p2', 'p3'], popularFails = false, playlist = ['v1', 'v2'], playlistStatus = 200, channelSearchFails = false, videoSearchFails = false } = {}) {
   const calls = [];
   const fn = async (u) => {
     const url = new URL(u); calls.push(url.pathname + '?' + url.searchParams.get('type'));
@@ -28,6 +29,10 @@ function yt({ channelHits = [1, 2], channelItems, videoHits = ['v1', 'v2'], play
         return jsonRes({ items: channelHits.map((n) => ({ id: { channelId: CID(n) } })) });
       }
       if (videoSearchFails) return jsonRes({ error: { errors: [{ reason: 'quotaExceeded' }] } }, 403);
+      if (url.searchParams.has('channelId')) {
+        if (popularFails) return jsonRes({ error: { errors: [{ reason: 'quotaExceeded' }] } }, 403);
+        return jsonRes({ items: popularHits.map((id) => ({ id: { videoId: id } })) });
+      }
       return jsonRes({ items: videoHits.map((id) => ({ id: { videoId: id } })) });
     }
     if (url.pathname.endsWith('/channels')) {
@@ -90,6 +95,7 @@ test('searchAll: returns songs + channels; channel failure only drops channels',
 test('getChannelPage: profile + uploads, missing playlist, unknown channel', async () => {
   const page = await getChannelPage(CID(1), { apiKey: 'K', fetchImpl: yt({ channelItems: [chan(1)] }) });
   assert.equal(page.channel.id, CID(1)); assert.equal(page.tracks.length, 2); assert.equal(page.tracks[0].videoId, 'v1');
+  assert.deepEqual(page.popular.map((t) => t.id), ['p1', 'p2', 'p3']); assert.equal(page.popular[0].views, 9000000);
   const noPlaylist = await getChannelPage(CID(1), { apiKey: 'K', fetchImpl: yt({ channelItems: [chan(1)], playlistStatus: 404 }) });
   assert.deepEqual(noPlaylist.tracks, []);
   const noUploads = await getChannelPage(CID(1), { apiKey: 'K', fetchImpl: yt({ channelItems: [chan(1, { contentDetails: {} })] }) });
@@ -117,7 +123,7 @@ test('worker /api/channel: success, bad id, unknown, errors, method, cross-site'
   await withFetch(yt({ channelItems: [chan(1)] }), async () => {
     let r = await worker.fetch(req(`/api/channel?id=${CID(1)}`), ENV, { waitUntil() {} });
     let body = await r.json();
-    assert.equal(r.status, 200); assert.equal(body.channel.title, 'Artist 1'); assert.equal(body.tracks.length, 2);
+    assert.equal(r.status, 200); assert.equal(body.channel.title, 'Artist 1'); assert.equal(body.tracks.length, 2); assert.equal(body.popular.length, 3);
     assert.ok(!JSON.stringify(body).includes('SECRETKEY'));
     r = await worker.fetch(req('/api/channel?id=bad'), ENV); assert.equal(r.status, 404);
     r = await worker.fetch(req('/api/channel'), ENV); assert.equal(r.status, 404);
@@ -129,4 +135,41 @@ test('worker /api/channel: success, bad id, unknown, errors, method, cross-site'
     const r = await worker.fetch(req(`/api/channel?id=${CID(2)}`), ENV, { waitUntil() {} });
     assert.equal(r.status, 404); assert.equal((await r.json()).error, 'not_found');
   });
+});
+
+test('getChannelPage: popular asks for most-viewed embeddable videos of that channel', async () => {
+  const f = yt({ channelItems: [chan(1)] });
+  const urls = [];
+  const spy = async (u) => { urls.push(String(u)); return f(u); };
+  await getChannelPage(CID(1), { apiKey: 'K', fetchImpl: spy });
+  const pop = urls.find((u) => u.includes('/search') && u.includes('channelId'));
+  assert.ok(pop && /order=viewCount/.test(pop) && /videoEmbeddable=true/.test(pop) && new RegExp('channelId=' + CID(1)).test(pop));
+});
+test('getChannelPage: duplicates between popular and latest are shown once (in popular)', async () => {
+  const page = await getChannelPage(CID(1), { apiKey: 'K', fetchImpl: yt({ channelItems: [chan(1)], popularHits: ['v1', 'p9'], playlist: ['v1', 'v2'] }) });
+  assert.deepEqual(page.popular.map((t) => t.id), ['v1', 'p9']);
+  assert.deepEqual(page.tracks.map((t) => t.id), ['v2']);
+});
+test('getChannelPage: one list failing does not break the page; both failing does', async () => {
+  const popOnly = await getChannelPage(CID(1), { apiKey: 'K', fetchImpl: yt({ channelItems: [chan(1)], playlistStatus: 500 }) });
+  assert.equal(popOnly.popular.length, 3); assert.deepEqual(popOnly.tracks, []);
+  const recentOnly = await getChannelPage(CID(1), { apiKey: 'K', fetchImpl: yt({ channelItems: [chan(1)], popularFails: true }) });
+  assert.deepEqual(recentOnly.popular, []); assert.equal(recentOnly.tracks.length, 2);
+  await assert.rejects(() => getChannelPage(CID(1), { apiKey: 'K', fetchImpl: yt({ channelItems: [chan(1)], popularFails: true, playlistStatus: 500 }) }), (e) => e instanceof YouTubeError);
+});
+test('normalizeVideos exposes view counts only when valid', async () => {
+  const { normalizeVideos } = await import('../../worker/youtube.js');
+  const out = normalizeVideos([vid('p1'), { ...vid('x'), statistics: {} }, { ...vid('y'), statistics: { viewCount: 'abc' } }], ['p1', 'x', 'y']);
+  assert.equal(out[0].views, 9000000); assert.equal('views' in out[1], false); assert.equal('views' in out[2], false);
+});
+test('worker: cache keys are versioned so pre-channel cached searches are never reused', async () => {
+  const keys = [];
+  const realCaches = globalThis.caches;
+  globalThis.caches = { default: { match: async (r) => { keys.push(new URL(r.url).search); return undefined; }, put: async () => {} } };
+  const real = globalThis.fetch; globalThis.fetch = yt();
+  try {
+    await worker.fetch(req('/api/search?q=Hello%20World'), ENV, { waitUntil() {} });
+    await worker.fetch(req(`/api/channel?id=${CID(1)}`), ENV, { waitUntil() {} });
+  } finally { globalThis.fetch = real; globalThis.caches = realCaches; }
+  assert.deepEqual(keys, ['?v=3&q=hello%20world', `?v=3&id=${CID(1)}`]);
 });

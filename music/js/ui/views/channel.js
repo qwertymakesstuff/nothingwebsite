@@ -16,16 +16,17 @@ export function ChannelView({ router, params, player, store, ui, services }) {
     body);
 
   let ctrl = null;
-  let list = null;
+  let lists = [];
   let destroyed = false;
 
-  const show = (...nodes) => { list?.destroy(); list = null; body.replaceChildren(...nodes); body.removeAttribute('aria-busy'); };
+  const clearLists = () => { lists.forEach((l) => l.destroy()); lists = []; };
+  const show = (...nodes) => { clearLists(); body.replaceChildren(...nodes); body.removeAttribute('aria-busy'); };
   const stateBlock = (iconName, title, text, ...extra) => h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon(iconName, 32)), h('h2', null, title), text ? h('p', null, text) : null, ...extra);
 
   function renderLoading() {
     body.setAttribute('aria-busy', 'true');
-    list?.destroy(); list = null;
+    clearLists();
     body.replaceChildren(
       h('p', { class: 'sr-only' }, 'Loading channel…'),
       h('div', { class: 'skeleton-list', 'aria-hidden': 'true' },
@@ -59,17 +60,28 @@ export function ChannelView({ router, params, player, store, ui, services }) {
       show(stateBlock('alert', "Couldn't open this channel", res.message, retry));
       return;
     }
-    const { channel, tracks } = res;
+    const { channel, popular = [], tracks } = res;
+    const all = [...popular, ...tracks];
     document.title = `${channel.title} - missing music`;
-    if (!tracks.length) {
-      show(hero(channel, tracks), stateBlock('note', 'No songs found', 'This channel has no playable videos.'));
+    if (!all.length) {
+      show(hero(channel, all), stateBlock('note', 'No songs found', 'This channel has no playable videos.'));
       return;
     }
-    list = TrackList({ tracks, player, store, ui, label: `Songs by ${channel.title}` });
-    show(hero(channel, tracks), h('div', { class: 'results-head' }, h('h2', null, 'Songs')), list.el,
+    const sections = [];
+    if (popular.length) {
+      const l = TrackList({ tracks: popular, queueTracks: all, queueOffset: 0, showViews: true, player, store, ui, label: `Popular songs by ${channel.title}` });
+      lists.push(l);
+      sections.push(h('section', { class: 'results-section' }, h('div', { class: 'results-head' }, h('h2', null, 'Popular')), l.el));
+    }
+    if (tracks.length) {
+      const l = TrackList({ tracks, queueTracks: all, queueOffset: popular.length, player, store, ui, label: `Latest uploads by ${channel.title}` });
+      lists.push(l);
+      sections.push(h('section', { class: 'results-section' }, h('div', { class: 'results-head' }, h('h2', null, popular.length ? 'Latest uploads' : 'Songs')), l.el));
+    }
+    show(hero(channel, all), ...sections,
       h('p', { class: 'notice' }, 'Playback is simulated for now — real audio arrives in the next phase.'));
   }
 
   run();
-  return { el, destroy() { destroyed = true; ctrl?.abort(); list?.destroy(); d.run(); } };
+  return { el, destroy() { destroyed = true; ctrl?.abort(); clearLists(); d.run(); } };
 }
