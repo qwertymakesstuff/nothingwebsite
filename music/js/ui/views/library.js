@@ -1,6 +1,5 @@
 import { h } from '../../utils/dom.js';
 import { icon } from '../icons.js';
-import { showToast } from '../uiStore.js';
 
 const KEY = 'mm:v1:playlists';
 const MAX_TRACKS = 500;
@@ -56,7 +55,7 @@ export function LibraryView({ player, services }) {
             button('Delete', () => {
               if (!confirm(`Delete “${playlist.name}” from your library?`)) return;
               playlists = playlists.filter(p => p.id !== playlist.id);
-              savePlaylists(playlists); render(); showToast(services.ui || { setState() {} }, 'Playlist deleted.', 'info');
+              savePlaylists(playlists); render();
             }, 'btn btn--ghost btn--small')));
         list.append(card);
       }
