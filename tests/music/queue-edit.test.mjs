@@ -184,3 +184,19 @@ test('format: duration in words', () => {
   assert.equal(formatDuration(7500), '2 hr 5 min');
   assert.equal(formatDuration(7200), '2 hr');
 });
+
+// Guard: every app module must at least parse, so a typo can never leave the site on "Loading..." again.
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+test('every music/js module has valid syntax', () => {
+  const files = [];
+  const walk = (d) => readdirSync(d).forEach((n) => { const f = join(d, n); statSync(f).isDirectory() ? walk(f) : f.endsWith('.js') && files.push(f); });
+  walk(new URL('../../music/js', import.meta.url).pathname);
+  walk(new URL('../../worker', import.meta.url).pathname);
+  assert.ok(files.length > 20);
+  for (const f of files) {
+    try { execFileSync(process.execPath, ['--experimental-default-type=module', '--check', f], { stdio: 'pipe' }); }
+    catch (e) { assert.fail(`${f}: ${String(e.stderr).split('\n').slice(0, 4).join(' ')}`); }
+  }
+});

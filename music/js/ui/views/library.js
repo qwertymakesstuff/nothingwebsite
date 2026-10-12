@@ -67,7 +67,8 @@ export function LibraryView({ player, services }) {
     const url = h('input', { class: 'playlist-input', type: 'url', placeholder: 'https://www.youtube.com/playlist?list=…', 'aria-label': 'YouTube playlist link' });
     const error = h('p', { class: 'playlist-error', hidden: true, role: 'alert' });
     const status = h('p', { class: 'playlist-status', hidden: true, 'aria-live': 'polite' });
-    const body = h('div', { class: 'playlist-dialog__body' }, h('p', null, description), name, url, error, status);
+    const importing = title === 'Import YouTube Playlist';
+    const body = h('div', { class: 'playlist-dialog__body' }, h('p', null, description), importing ? url : name, error, status);
     const dialog = h('div', { class: 'playlist-dialog-backdrop', role: 'presentation', onclick: e => { if (e.target === dialog) render(); } },
       h('section', { class: 'playlist-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
         h('div', { class: 'playlist-dialog__head' }, h('h2', null, title), button('×', render, 'icon-btn')),
@@ -96,7 +97,7 @@ export function LibraryView({ player, services }) {
           } else playlists.push({ id, name: result.title, tracks: result.tracks.slice(0, MAX_TRACKS) });
           if (!savePlaylists(playlists)) { error.textContent = 'The playlist loaded, but your browser could not save it. Free some storage and try again.'; error.hidden = false; submit.disabled = false; submit.textContent = 'Import playlist'; return; }
           render();
-        }, 'btn')));
+        }, 'btn'))));
     el.append(dialog);
     (title === 'Import YouTube Playlist' ? url : name).focus();
   }
