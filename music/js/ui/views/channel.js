@@ -8,7 +8,7 @@ import { formatCount } from '../../utils/format.js';
 const RETRYABLE = new Set(['network', 'timeout', 'upstream', 'unavailable']);
 
 /** A channel / artist page: avatar, name, and their songs. Reached from search results. */
-export function ChannelView({ router, params, player, store, ui, services }) {
+export function ChannelView({ router, params, player, store, ui, services, library }) {
   const id = params.get('id') || '';
   const d = disposer();
   const body = h('div', { class: 'channel-body', 'aria-live': 'polite' });
@@ -71,12 +71,12 @@ export function ChannelView({ router, params, player, store, ui, services }) {
     }
     const sections = [];
     if (popular.length) {
-      const l = TrackList({ tracks: popular, queueTracks: all, queueOffset: 0, showViews: true, player, store, ui, label: `Popular songs by ${channel.title}` });
+      const l = TrackList({ tracks: popular, queueTracks: all, queueOffset: 0, showViews: true, player, store, ui, library, label: `Popular songs by ${channel.title}` });
       lists.push(l);
       sections.push(h('section', { class: 'results-section' }, h('div', { class: 'results-head' }, h('h2', null, 'Popular')), l.el));
     }
     if (tracks.length) {
-      const l = TrackList({ tracks, queueTracks: all, queueOffset: popular.length, player, store, ui, label: `Latest uploads by ${channel.title}` });
+      const l = TrackList({ tracks, queueTracks: all, queueOffset: popular.length, player, store, ui, library, label: `Latest uploads by ${channel.title}` });
       lists.push(l);
       sections.push(h('section', { class: 'results-section' }, h('div', { class: 'results-head' }, h('h2', null, popular.length ? 'Latest uploads' : 'Songs')), l.el));
     }

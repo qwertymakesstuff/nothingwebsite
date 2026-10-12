@@ -93,6 +93,15 @@ export function createPlayer({ store, engine, notify = () => {} }) {
     loadCurrent(true);
   }
 
+  /** Play a list in random order (turns shuffle on, so Next stays shuffled too). */
+  function playShuffled(tracks) {
+    if (!tracks?.length) return;
+    errorStreak = 0;
+    const start = Math.floor(Math.random() * tracks.length);
+    store.setState({ shuffle: true, queue: Q.setItems(tracks, start, { shuffle: true }) });
+    loadCurrent(true);
+  }
+
   function play() {
     const s = state();
     const track = current();
@@ -260,7 +269,7 @@ export function createPlayer({ store, engine, notify = () => {} }) {
   applyVolume();
 
   return {
-    playTracks, play, pause, togglePlay, next, previous, seek,
+    playTracks, playShuffled, play, pause, togglePlay, next, previous, seek,
     setVolume, toggleMute, toggleShuffle, cycleRepeat,
     enqueue, playNext, moveInQueue, moveNext, jumpTo, removeFromQueue, clearQueue, restore,
   };

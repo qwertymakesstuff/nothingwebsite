@@ -8,7 +8,7 @@ import { normalizeQuery } from '../../services/youtube.js';
 
 const RETRYABLE = new Set(['network', 'timeout', 'upstream', 'unavailable']);
 
-export function SearchView({ router, params, player, store, ui, services }) {
+export function SearchView({ router, params, player, store, ui, services, library }) {
   const { youtube, recent } = services;
   const q = normalizeQuery(params.get('q') || '');
   const d = disposer();
@@ -70,7 +70,7 @@ export function SearchView({ router, params, player, store, ui, services }) {
           channels.map((channel) => ChannelRow({ channel, onOpen: () => router.navigate('channel', { id: channel.id }) }).el))));
     }
     if (tracks.length) {
-      list = TrackList({ tracks, player, store, ui, label: `Songs matching ${q}` });
+      list = TrackList({ tracks, player, store, ui, library, label: `Songs matching ${q}` });
       sections.push(h('section', { class: 'results-section' },
         h('div', { class: 'results-head' }, h('h2', null, 'Songs'), h('div', { class: 'results-head__actions' },
           playAllButton(() => player.playTracks(tracks, 0)),

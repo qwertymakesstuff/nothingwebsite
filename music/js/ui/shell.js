@@ -17,16 +17,18 @@ import { SearchView } from './views/search.js';
 import { LibraryView } from './views/library.js';
 import { QueueView } from './views/queue.js';
 import { ChannelView } from './views/channel.js';
+import { PlaylistView } from './views/playlist.js';
+import { FavoritesView, RecentView } from './views/songs.js';
 import { selectCurrent } from '../player/player.js';
 
-const VIEWS = { home: HomeView, search: SearchView, library: LibraryView, queue: QueueView, channel: ChannelView };
-const TITLES = { home: 'Home', search: 'Search', library: 'Library', queue: 'Queue', channel: 'Channel' };
+const VIEWS = { home: HomeView, search: SearchView, library: LibraryView, queue: QueueView, channel: ChannelView, playlist: PlaylistView, favorites: FavoritesView, recent: RecentView };
+const TITLES = { home: 'Home', search: 'Search', library: 'Library', queue: 'Queue', channel: 'Channel', playlist: 'Playlist', favorites: 'Favorites', recent: 'Recently played' };
 
-export function mountApp(root, { player, store, ui, services, prefs }) {
+export function mountApp(root, { player, store, ui, services, prefs, library }) {
   const d = disposer();
   let router;
   const routerProxy = { navigate: (...a) => router.navigate(...a) };
-  const ctx = { player, store, ui, services, prefs, router: routerProxy };
+  const ctx = { player, store, ui, services, prefs, library, router: routerProxy };
 
   const sidebar = Sidebar();
   const bottomNav = BottomNav();
@@ -35,7 +37,7 @@ export function mountApp(root, { player, store, ui, services, prefs }) {
   const mini = MiniPlayer(ctx);
   const nowPlaying = NowPlaying(ctx);
   const expanded = ExpandedPlayer(ctx);
-  const panelQueue = QueueList({ player, store, ui });
+  const panelQueue = QueueList({ player, store, ui, library });
   const toaster = Toaster({ ui });
   [playerBar, mini, nowPlaying, expanded, panelQueue, toaster].forEach((c) => d.add(c.destroy));
 
@@ -87,7 +89,7 @@ export function mountApp(root, { player, store, ui, services, prefs }) {
     current = VIEWS[name]({ ...ctx, params });
     view.replaceChildren(current.el);
     view.scrollTop = 0;
-    const navName = name === 'channel' ? 'search' : name; // channel pages belong to Search
+    const navName = name === 'channel' ? 'search' : ['playlist', 'favorites', 'recent'].includes(name) ? 'library' : name; // channel pages belong to Search; playlists, favorites and history to Library
     sidebar.setRoute(navName);
     bottomNav.setRoute(navName);
     topSearch.setValue(params.get('q') || '');

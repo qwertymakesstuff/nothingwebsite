@@ -7,20 +7,22 @@ import { SeekBar } from './seekBar.js';
 import { VolumeControl } from './volumeControl.js';
 import { selectCurrent } from '../../player/player.js';
 import { shallowEqual } from '../../core/store.js';
+import { FavoriteButton } from './favoriteButton.js';
 
 /**
  * Desktop player bar: cover + title (left), transport + seek (center), volume + queue (right).
  * Clicking the cover opens the expanded player; while it is open the cover is replaced by an arrow
  * in the same spot that closes it.
  */
-export function PlayerBar({ player, store, ui, router }) {
+export function PlayerBar({ player, store, ui, router, library }) {
   const d = disposer();
   const art = Artwork('bar-art__img');
   const text = TrackText({ store });
   const transport = TransportControls({ player, store });
   const seek = SeekBar({ player, store });
   const volume = VolumeControl({ player, store });
-  [text, transport, seek, volume].forEach((c) => d.add(c.destroy));
+  const fav = FavoriteButton({ store, player, library, ui, size: 22 });
+  [text, transport, seek, volume, fav].forEach((c) => d.add(c.destroy));
 
   const coverBtn = h('button', {
     class: 'bar-art', type: 'button', 'aria-label': 'Open larger cover', 'aria-expanded': 'false',
@@ -46,7 +48,7 @@ export function PlayerBar({ player, store, ui, router }) {
   d.add(ui.subscribe((s) => [s.queuePanelOpen], ([open]) => queueBtn.classList.toggle('is-on', open), { equals: shallowEqual }));
 
   const el = h('footer', { class: 'player-bar', 'aria-label': 'Player' },
-    h('div', { class: 'player-bar__left' }, h('div', { class: 'track-info' }, coverBtn, text.el)),
+    h('div', { class: 'player-bar__left' }, h('div', { class: 'track-info' }, coverBtn, text.el, fav.el)),
     h('div', { class: 'player-bar__center' }, transport.el, seek.el),
     h('div', { class: 'player-bar__right' }, volume.el, queueBtn));
   return { el, destroy: d.run };

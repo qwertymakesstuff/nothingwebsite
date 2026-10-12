@@ -6,6 +6,7 @@ import { TransportControls } from './transportControls.js';
 import { SeekBar } from './seekBar.js';
 import { QueueList } from './queueList.js';
 import { MediaToggleIcon } from './mediaToggle.js';
+import { FavoriteButton, PlaylistAddButton } from './favoriteButton.js';
 import { trackSwipe } from '../../utils/gestures.js';
 import { dragX, settle, slideIn } from '../swipeFx.js';
 import { selectCurrent } from '../../player/player.js';
@@ -21,15 +22,17 @@ const BEHIND = '.main-col, .bottom-nav, .mini-player'; // made inert while the s
  *   back gesture / Esc / chevron         close
  * Reuses the same text / seek / transport / queue components as the desktop bar.
  */
-export function NowPlaying({ player, store, ui, prefs }) {
+export function NowPlaying({ player, store, ui, prefs, library }) {
   const d = disposer();
   const art = Artwork('np__art');
   const text = TrackText({ store, className: 'track-text--large' });
   const seek = SeekBar({ player, store });
   const transport = TransportControls({ player, store });
-  const queue = QueueList({ player, store, ui });
+  const queue = QueueList({ player, store, ui, library });
   const mediaToggle = MediaToggleIcon({ ui, prefs });
-  [text, seek, transport, queue, mediaToggle].forEach((c) => d.add(c.destroy));
+  const fav = FavoriteButton({ store, player, library, ui });
+  const addTo = PlaylistAddButton({ store, library, ui });
+  [text, seek, transport, queue, mediaToggle, fav, addTo].forEach((c) => d.add(c.destroy));
 
   const el = h('section', { class: 'nowplaying', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Player', 'aria-hidden': 'true' });
   const closeBtn = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Close player', onclick: () => requestClose() }, icon('chevron-down', 28));
@@ -43,7 +46,7 @@ export function NowPlaying({ player, store, ui, prefs }) {
 
   // Cover art by default; the user can switch to the YouTube video (shown here, see videoDock.js).
   const artWrap = h('div', { class: 'np__art-wrap' }, art.el, h('div', { class: 'np__video-slot', 'aria-hidden': 'true' }));
-  const playerView = h('div', { class: 'np__body', role: 'tabpanel' }, artWrap, text.el, seek.el, transport.el);
+  const playerView = h('div', { class: 'np__body', role: 'tabpanel' }, artWrap, h('div', { class: 'np__title-row' }, text.el, h('div', { class: 'np__quick' }, fav.el, addTo.el)), seek.el, transport.el);
   const clearBtn = h('button', { class: 'btn btn--ghost btn--small', type: 'button', onclick: () => { const undo = player.clearQueue(); showToast(ui, 'Queue cleared', 'info', { label: 'Undo', onClick: undo }); } }, 'Clear');
   const queueEmpty = h('div', { class: 'np__queue-empty' }, 'Your queue is empty');
   const queueView = h('div', { class: 'np__queue', role: 'tabpanel', hidden: true },

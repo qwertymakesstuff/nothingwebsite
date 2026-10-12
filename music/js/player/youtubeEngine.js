@@ -92,7 +92,15 @@ export class YouTubeEngine {
    * reported hidden, so if we are already paused against the user's wish, start the resume attempts now.
    */
   notifyVisibility(hidden) {
-    if (!hidden) return;
+    if (!hidden) {
+      // Back on the page (unlocked): if we are meant to be playing but are not, ask again right away.
+      if (this.wantPlay && this.track?.videoId && this._lastState !== S.PLAYING && this._lastState !== S.ENDED) {
+        this.log('engine: page visible again and not playing, trying to resume');
+        try { this.player?.playVideo(); } catch { /* ignore */ }
+        this._scheduleResume();
+      }
+      return;
+    }
     this._hiddenAt = this.now();
     if (this.wantPlay && this._lastState === S.PAUSED) {
       this.log('engine: page hidden right after a system pause, trying to resume');

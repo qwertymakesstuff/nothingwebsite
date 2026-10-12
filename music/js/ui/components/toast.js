@@ -13,5 +13,7 @@ export function Toaster({ ui }) {
         onclick: () => { dismissToast(ui); action.onClick(); },
       }, action.label) : null));
   });
-  return { el, destroy: off };
+  // The full-screen player covers the usual spot at the bottom, so show toasts at the top while it is open.
+  const offSheet = ui.subscribe((s) => s.nowPlayingOpen, (open) => el.classList.toggle('toaster--top', open));
+  return { el, destroy: () => { off(); offSheet(); } };
 }
