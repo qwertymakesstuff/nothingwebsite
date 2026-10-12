@@ -289,6 +289,23 @@ test('iPhone lock order: YouTube pauses first, the page is reported hidden a mom
   assert.ok(p.calls.filter((c) => c[0] === 'play').length >= 1, 'resume attempts start once hidden is reported');
   assert.ok(logs.some((l) => /hidden right after a system pause/.test(l)));
 });
+test('coming back to the page (unlock) while paused or stuck buffering asks to play right away', async () => {
+  const logs = [];
+  const { engine, made } = setup({ logs, first: 5000 });
+  engine.load(TRACK, { autoplay: true }); await wait(20);
+  const p = made.players[0];
+  p.state(1); p.state(3);                         // locked: stuck buffering
+  const plays = () => p.calls.filter((c) => c[0] === 'play').length;
+  const before = plays();
+  engine.notifyVisibility(false);                 // unlocked
+  assert.equal(plays(), before + 1, 'asked to play immediately');
+  assert.ok(logs.some((l) => /visible again/.test(l)));
+  p.state(1); const n = plays();
+  engine.notifyVisibility(false);
+  assert.equal(plays(), n, 'nothing to do when it is already playing');
+  engine.pause(); engine.notifyVisibility(false);
+  assert.equal(plays(), n, 'a user pause is respected');
+});
 test('hidden notice does nothing when the user paused or nothing is paused', async () => {
   const hidden = { v: true };
   const { engine, made } = setup({ hidden, first: 5000 });

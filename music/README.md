@@ -2,7 +2,7 @@
 
 A web music player, built in phases. No build step: plain ES modules, served as static files.
 
-**Status: Phases 1-6 done (Phase 6 = queue system).** Search, channels/artists, the mobile
+**Status: Phases 1-7 done (Phase 7 = library).** Search, channels/artists, the mobile
 player and real playback through YouTube's official embedded player all work. Media Session / lock-screen
 controls (Phase 5) are built too; see below for what is and is not verified.
 
@@ -200,3 +200,31 @@ Tests: `tests/music/queue-edit.test.mjs` (logic, undo, cap) plus browser checks 
 
 On desktop it is off: in Safari on Mac it blocked the tab for over a minute when a song started. Phones still use
 it. Override with `?anchor=on` / `?anchor=off`.
+
+## Library (Phase 7)
+
+Everything is saved in this browser (localStorage), validated on the way back in, and never throws if storage
+is full or blocked (you get one toast, and it keeps working for the session).
+
+| What | Where | Limit |
+|---|---|---|
+| Favorites | heart on every song row, the player bar and the full-screen player; page `#/favorites` | 1000 songs |
+| Recently played | recorded when a song starts playing, newest first, no duplicates; page `#/recent`, shelf on Home | 50 songs |
+| Playlists | Library page; page `#/playlist?id=…` | 100 playlists, 500 songs each |
+
+- **Add to a playlist** from any song row ("bookmark" button, or the "..." menu on phones), the player, or
+  "Save as playlist" on the Queue page (saves the queue in play order). Songs already in a playlist are skipped.
+- **A playlist page** has Play, Shuffle, Add to queue, Rename, Delete; reorder by dragging the grip or with
+  Up / Down on it; remove songs. Removing, deleting and clearing history all show an **Undo** toast.
+- **Import** a public YouTube playlist (up to 50 songs) by link; importing the same one again refreshes it.
+- **Phones**: the extra row buttons collapse into a "..." menu that opens as a bottom sheet.
+- Code: `js/storage/library.js` (all the logic, no DOM), `js/ui/dialog.js` (modal/menu/prompt),
+  `js/ui/components/trackActions.js` (what you can do with a song), `js/ui/views/{library,playlist,songs}.js`.
+- Tests: `tests/music/library.test.mjs`.
+
+### Locked phone
+
+When the phone locks, YouTube's player pauses itself and often stays stuck "buffering". The app now asks it to
+resume (a few tries, once it notices the page is hidden), nudges and reloads a stuck video at the same second, and
+asks again the moment you come back. Whether playback can continue with the screen off is decided by YouTube and
+the browser, not by this app; see the debug log (`?debug=1`) for what happened.

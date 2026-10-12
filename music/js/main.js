@@ -1,7 +1,7 @@
 // Composition root: wires stores, engine, player, persistence and UI together.
 
 import { createStore, shallowEqual } from './core/store.js';
-import { createPlayer, initialPlayerState } from './player/player.js';
+import { createPlayer, initialPlayerState, selectCurrent } from './player/player.js';
 import { SimulatedEngine } from './player/playbackEngine.js';
 import { YouTubeEngine, isIosLike } from './player/youtubeEngine.js';
 import { VideoDock } from './ui/components/videoDock.js';
@@ -12,6 +12,7 @@ import { registerShortcuts } from './ui/keyboard.js';
 import { youtubeService } from './services/youtube.js';
 import { createRecentSearches } from './storage/recentSearches.js';
 import { createPrefs } from './storage/prefs.js';
+import { createLibrary } from './storage/library.js';
 import { createMediaSession } from './player/mediaSession.js';
 import { createAudioAnchor } from './player/audioAnchor.js';
 import { createDebugLog } from './utils/debugLog.js';
@@ -45,6 +46,11 @@ try {
     engine = new YouTubeEngine({ container: dock.container, log: dbg.log });
   }
   const player = createPlayer({ store, engine, notify: (message, kind) => showToast(ui, message, kind) });
+  // Favorites, recently played and playlists (saved in this browser).
+  const library = createLibrary({ notify: (message, kind) => showToast(ui, message, kind) });
+  store.subscribe((s) => (s.status === 'playing' ? selectCurrent(s) : null), (track) => { if (track) library.recordPlayed(track); }, { immediate: false });
+  window.addEventListener('storage', (e) => { if (!e.key || e.key.startsWith('mm:v1:')) library.reload(); }); // another tab changed it
+  window.addEventListener('pagehide', () => library.flush());
 
   const saved = persistence.load();
   if (saved) player.restore(saved);
@@ -59,7 +65,7 @@ try {
   setInterval(() => { if (store.getState().status === 'playing') persistence.save(store.getState()); }, 5000);
   window.addEventListener('pagehide', () => persistence.save(store.getState()));
 
-  mountApp(root, { player, store, ui, prefs, services: { youtube: youtubeService, recent: createRecentSearches(), simulated } });
+  mountApp(root, { player, store, ui, prefs, library, services: { youtube: youtubeService, recent: createRecentSearches(), simulated } });
   registerShortcuts({ player, store });
 
   // Phase 5: lock screen / headset / media-key controls and background behaviour.
@@ -85,7 +91,7 @@ try {
   }
   // Warm up YouTube's player in the background so the first tap on a song starts instantly.
   if (!simulated) setTimeout(() => engine.preload(), 1500);
-  window.__music = { store, ui, player, debug: dbg }; // handy for debugging and tests
+  window.__music = { store, ui, player, library, debug: dbg }; // handy for debugging and tests
 } catch (err) {
   console.error(err);
   root.replaceChildren(Object.assign(document.createElement('p'), {

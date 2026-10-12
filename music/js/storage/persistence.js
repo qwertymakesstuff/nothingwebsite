@@ -8,7 +8,7 @@ const KEY = 'mm:v1:player';
 const VERSION = 1;
 const MAX_ITEMS = 500;
 
-function cleanTrack(t) {
+export function cleanTrack(t) {
   if (!t || typeof t.id !== 'string' || !t.id || typeof t.title !== 'string') return null;
   return {
     id: t.id,
