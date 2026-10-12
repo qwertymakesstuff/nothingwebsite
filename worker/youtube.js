@@ -257,3 +257,21 @@ export async function getChannelPage(channelId, { apiKey, fetchImpl = fetch, max
   const tracks = (rec.status === 'fulfilled' ? rec.value : []).filter((t) => !seen.has(t.id));
   return { channel, popular, tracks };
 }
+
+
+// Import a public YouTube playlist using the official Data API. Caps imports at 50 tracks
+// to keep requests predictable and preserve the playlist's original order.
+export async function getPlaylist(playlistId, { apiKey, fetchImpl = fetch, maxItems = 50 } = {}) {
+  if (!apiKey) throw new YouTubeError('not_configured', 'YouTube import is not configured on the server.', 503);
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(String(playlistId || ''))) {
+    throw new YouTubeError('invalid_playlist', 'That does not look like a valid YouTube playlist link.', 400);
+  }
+  const pl = new URL(`${API}/playlistItems`);
+  pl.search = new URLSearchParams({ part: 'snippet,contentDetails', playlistId, maxResults: String(Math.min(50, maxItems)), key: apiKey }).toString();
+  const list = await getJson(fetchImpl, pl);
+  const ids = (list.items || []).map(i => i?.contentDetails?.videoId).filter(x => typeof x === 'string');
+  if (!ids.length) throw new YouTubeError('empty_playlist', 'No public videos were found in that playlist.', 404);
+  const tracks = await loadVideos(ids, { apiKey, fetchImpl });
+  if (!tracks.length) throw new YouTubeError('empty_playlist', 'No playable public videos were found in that playlist.', 404);
+  return { playlistId, title: decodeEntities(list.items?.[0]?.snippet?.playlistTitle || 'Imported YouTube playlist'), tracks };
+}
