@@ -112,6 +112,15 @@ export function createYouTubeService({ fetchImpl = (...a) => fetch(...a), base =
       : null), signal);
   }
 
+  function playlist(id, { signal } = {}) {
+    const playlistId = String(id ?? '').trim();
+    if (!/^[A-Za-z0-9_-]{10,}$/.test(playlistId)) return Promise.resolve(fail('invalid_playlist', 'Paste a valid YouTube playlist link.'));
+    return call('/playlist', { id: playlistId }, `p:${playlistId}`, (b) => {
+      const tracks = cleanTracks(b.tracks);
+      return tracks.length ? { playlistId, title: typeof b.title === 'string' && b.title ? b.title : 'Imported playlist', tracks } : null;
+    }, signal);
+  }
+
   function channel(id, { signal } = {}) {
     if (!CHANNEL_ID.test(String(id ?? ''))) return Promise.resolve(fail('not_found'));
     return call('/channel', { id }, `c:${id}`, (b) => {
@@ -120,7 +129,7 @@ export function createYouTubeService({ fetchImpl = (...a) => fetch(...a), base =
     }, signal);
   }
 
-  return { search, channel, clearCache: () => cache.clear() };
+  return { search, channel, playlist, clearCache: () => cache.clear() };
 }
 
 export const youtubeService = createYouTubeService();
