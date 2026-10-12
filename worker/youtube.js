@@ -266,6 +266,11 @@ export async function getPlaylist(playlistId, { apiKey, fetchImpl = fetch, maxIt
   if (!/^[A-Za-z0-9_-]{10,}$/.test(String(playlistId || ''))) {
     throw new YouTubeError('invalid_playlist', 'That does not look like a valid YouTube playlist link.', 400);
   }
+  const metaUrl = new URL(`${API}/playlists`);
+  metaUrl.search = new URLSearchParams({ part: 'snippet', id: playlistId, key: apiKey }).toString();
+  const meta = await getJson(fetchImpl, metaUrl);
+  const playlistTitle = decodeEntities(meta.items?.[0]?.snippet?.title || 'Imported YouTube playlist');
+  if (!meta.items?.length) throw new YouTubeError('not_found', 'That public YouTube playlist could not be found.', 404);
   const pl = new URL(`${API}/playlistItems`);
   pl.search = new URLSearchParams({ part: 'snippet,contentDetails', playlistId, maxResults: String(Math.min(50, maxItems)), key: apiKey }).toString();
   const list = await getJson(fetchImpl, pl);
@@ -273,5 +278,5 @@ export async function getPlaylist(playlistId, { apiKey, fetchImpl = fetch, maxIt
   if (!ids.length) throw new YouTubeError('empty_playlist', 'No public videos were found in that playlist.', 404);
   const tracks = await loadVideos(ids, { apiKey, fetchImpl });
   if (!tracks.length) throw new YouTubeError('empty_playlist', 'No playable public videos were found in that playlist.', 404);
-  return { playlistId, title: decodeEntities(list.items?.[0]?.snippet?.playlistTitle || 'Imported YouTube playlist'), tracks };
+  return { playlistId, title: playlistTitle, tracks };
 }
