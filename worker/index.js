@@ -5,12 +5,12 @@
 //
 // The YouTube API key lives in the YOUTUBE_API_KEY Worker secret and is never sent to the browser.
 
-import { searchAll, getChannelPage, isChannelId, YouTubeError } from './youtube.js';
+import { searchAll, getChannelPage, getPlaylist, isChannelId, YouTubeError } from './youtube.js';
 
 const MAX_QUERY = 100;
 const CACHE_SECONDS = 60 * 60;
 // Bump when the response shape changes so stale cached answers (edge or browser) are never reused.
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
 function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
@@ -81,6 +81,12 @@ function handleSearch(request, env, ctx, url) {
   }));
 }
 
+function handlePlaylist(request, env, ctx, url) {
+  const id = String(url.searchParams.get('id') ?? '').trim();
+  if (request.method === 'GET' && !/^[A-Za-z0-9_-]{10,}$/.test(id)) return fail('invalid_playlist', 'That does not look like a valid playlist link.', 400);
+  return respond(request, url, ctx, `/api/playlist?v=${CACHE_VERSION}&id=${encodeURIComponent(id)}`, () => getPlaylist(id, { apiKey: env.YOUTUBE_API_KEY }));
+}
+
 function handleChannel(request, env, ctx, url) {
   const id = String(url.searchParams.get('id') ?? '').trim();
   if (request.method === 'GET' && !isChannelId(id)) return fail('not_found', 'Channel not found.', 404);
@@ -93,6 +99,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/api/search') return handleSearch(request, env, ctx, url);
     if (url.pathname === '/api/channel') return handleChannel(request, env, ctx, url);
+    if (url.pathname === '/api/playlist') return handlePlaylist(request, env, ctx, url);
     if (url.pathname.startsWith('/api/')) return fail('not_found', 'Unknown API route.', 404);
     return env.ASSETS.fetch(request);
   },
