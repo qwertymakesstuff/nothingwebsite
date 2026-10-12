@@ -171,5 +171,5 @@ test('worker: cache keys are versioned so pre-channel cached searches are never 
     await worker.fetch(req('/api/search?q=Hello%20World'), ENV, { waitUntil() {} });
     await worker.fetch(req(`/api/channel?id=${CID(1)}`), ENV, { waitUntil() {} });
   } finally { globalThis.fetch = real; globalThis.caches = realCaches; }
-  assert.deepEqual(keys, ['?v=3&q=hello%20world', `?v=3&id=${CID(1)}`]);
+  assert.deepEqual(keys, ['?v=4&q=hello%20world', `?v=4&id=${CID(1)}`]);
 });
