@@ -23,7 +23,7 @@ Names, art, mazes and word lists are original; only the well-known mechanics are
 ## Layout
 
 ```
-wrangler.jsonc        Worker config (name: missing-play, domain: play.missing.website)
+wrangler.jsonc        Worker config (name: nothingplay, domain: play.missing.website)
 public/index.html     the homepage: a list of 1260 x 320 banners (same layout as missing.website/programs)
 public/games.json     what the homepage lists: name, banner image, url (add "hidden": true to hide one)
 public/banners/       one 1260 x 320 banner per game (SVG; replace with your own PNG/JPG any time)
@@ -42,7 +42,7 @@ on-screen controls on phones. A game is one class with `reset()`, `update(dt)`, 
 
 ## Deploying
 
-In Cloudflare: Workers & Pages -> create a Worker named **missing-play**, connect this repository, and set
+In Cloudflare: Workers & Pages -> create a Worker named **nothingplay**, connect this repository, and set
 **Root directory** to `play`. The custom domain `play.missing.website` is attached by `wrangler.jsonc` on deploy.
 
 ## Testing
