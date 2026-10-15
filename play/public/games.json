@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Snake",
+    "image": "/banners/snake.svg",
+    "url": "/snake/",
+    "description": "Steer a growing snake, eat apples, don't crash."
+  },
+  {
+    "name": "Blockfall",
+    "image": "/banners/blockfall.svg",
+    "url": "/blockfall/",
+    "description": "Drop and rotate falling blocks to clear rows."
+  },
+  {
+    "name": "Flutter",
+    "image": "/banners/flutter.svg",
+    "url": "/flutter/",
+    "description": "Tap to flap through the gaps."
+  },
+  {
+    "name": "Merge Tiles",
+    "image": "/banners/merge.svg",
+    "url": "/merge/",
+    "description": "Slide and merge numbers up to 2048."
+  },
+  {
+    "name": "Paddle Duel",
+    "image": "/banners/paddle.svg",
+    "url": "/paddle/",
+    "description": "Classic paddle-and-ball duel against the computer."
+  },
+  {
+    "name": "Brick Breaker",
+    "image": "/banners/bricks.svg",
+    "url": "/bricks/",
+    "description": "Bounce the ball and smash every brick."
+  },
+  {
+    "name": "Sweeper",
+    "image": "/banners/sweeper.svg",
+    "url": "/sweeper/",
+    "description": "Clear the minefield using the numbers."
+  },
+  {
+    "name": "Five Letters",
+    "image": "/banners/five.svg",
+    "url": "/five/",
+    "description": "Guess the secret word in six tries."
+  },
+  {
+    "name": "Void Raiders",
+    "image": "/banners/raiders.svg",
+    "url": "/raiders/",
+    "description": "Defend the ground from descending raiders."
+  },
+  {
+    "name": "Chomper",
+    "image": "/banners/chomper.svg",
+    "url": "/chomper/",
+    "description": "Eat every dot, outsmart three ghosts."
+  }
+]

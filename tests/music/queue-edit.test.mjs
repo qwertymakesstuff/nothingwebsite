@@ -194,6 +194,7 @@ test('every music/js module has valid syntax', () => {
   const walk = (d) => readdirSync(d).forEach((n) => { const f = join(d, n); statSync(f).isDirectory() ? walk(f) : f.endsWith('.js') && files.push(f); });
   walk(new URL('../../music/js', import.meta.url).pathname);
   walk(new URL('../../worker', import.meta.url).pathname);
+  walk(new URL('../../play/public', import.meta.url).pathname);
   assert.ok(files.length > 20);
   for (const f of files) {
     try { execFileSync(process.execPath, ['--experimental-default-type=module', '--check', f], { stdio: 'pipe' }); }

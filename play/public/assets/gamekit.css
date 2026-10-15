@@ -1,0 +1,58 @@
+/* page chrome and controls for every game (see gamekit.js) */
+.game-shell{width:min(980px,calc(100% - 24px));margin:20px auto 40px}
+.gk-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.gk-bar h1{margin:0;font-weight:400;font-size:1.35rem}
+.gk-scores{display:flex;align-items:center;gap:10px;color:var(--text);font-size:1rem}
+.gk-scores .gk-sep{color:var(--muted)}
+.gk-tools{display:flex;gap:8px}
+.gk-btn{min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:#0b0b0b;color:var(--text);font:inherit;font-size:.85rem;cursor:pointer}
+.gk-btn:hover:not(:disabled){border-color:var(--accent)}
+.gk-btn:disabled{opacity:.4;cursor:default}
+.gk-btn:focus-visible,.gk-play:focus-visible,.gk-key:focus-visible{outline:3px solid #7dff3a;outline-offset:2px}
+
+.gk-stage{position:relative;margin:0 auto;width:min(100%,var(--w),calc((100dvh - var(--chrome, 230px)) * var(--ratio)));min-width:min(100%,200px);aspect-ratio:var(--ratio);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0b0b10;box-shadow:0 18px 60px rgba(0,0,0,.55)}
+.gk-canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none;outline:none;-webkit-touch-callout:none}
+.gk-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;background:rgba(6,6,8,.78);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.gk-overlay[hidden]{display:none}
+.gk-overlay h2{margin:0;font-weight:400;font-size:clamp(1.4rem,5vw,2.2rem)}
+.gk-overlay p{margin:0;max-width:34ch;color:var(--muted);font-size:clamp(.8rem,2.6vw,.95rem);line-height:1.5}
+.gk-play{min-height:48px;min-width:150px;padding:0 26px;border:1px solid #7dff3a;border-radius:999px;background:rgba(125,255,58,.1);color:#caffa8;font:inherit;font-size:1.05rem;cursor:pointer}
+.gk-play:hover{background:rgba(125,255,58,.2)}
+.gk-help{margin:14px auto 0;max-width:62ch;text-align:center;color:var(--muted);font-size:.85rem;line-height:1.55}
+
+/* on-screen controls: only on touch screens */
+.gk-touch{display:none;margin:14px auto 0;max-width:420px;gap:10px;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none}
+@media(pointer:coarse){.gk-touch{display:flex;flex-wrap:wrap}.gk-touch[hidden]{display:none}.gk-help{font-size:.8rem}}
+.gk-key{width:64px;height:64px;border:1px solid var(--line);border-radius:16px;background:#121212;color:var(--text);font:inherit;font-size:1.4rem;touch-action:none;-webkit-user-select:none;user-select:none}
+.gk-key.is-down{background:#2a2a2a;border-color:#7dff3a}
+.gk-key--wide{width:160px}
+.gk-key--act{width:auto;min-width:72px;padding:0 16px;font-size:1.05rem}
+.gk-touch--dpad{display:none;grid-template-columns:repeat(3,64px);grid-template-areas:". up ." "left . right" ". down .";justify-content:center}
+@media(pointer:coarse){.gk-touch--dpad{display:grid}.gk-touch--dpad[hidden]{display:none}}
+.gk-touch--dpad .gk-key--up{grid-area:up}.gk-touch--dpad .gk-key--left{grid-area:left}.gk-touch--dpad .gk-key--right{grid-area:right}.gk-touch--dpad .gk-key--down{grid-area:down}
+.gk-touch--dpad .gk-key--act,.gk-touch--dpad .gk-key--wide{grid-column:1/-1;justify-self:center;margin-top:8px}
+@media(max-width:520px){.game-shell{width:calc(100% - 12px);margin-top:10px}.gk-bar h1{font-size:1.15rem}.gk-stage{width:min(100%,var(--w),calc((100dvh - var(--chrome, 290px)) * var(--ratio)))}}
+
+.gk-choices{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.gk-choices[hidden]{display:none}
+.gk-choice{min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:#0b0b0b;color:var(--muted);font:inherit;font-size:.9rem;cursor:pointer}
+.gk-choice[aria-pressed="true"]{color:#caffa8;border-color:#7dff3a;background:rgba(125,255,58,.1)}
+
+/* on touch screens leave room for the on-screen controls under the board */
+@media(pointer:coarse){
+  #game[data-ctl="dpad"]{--chrome:480px}
+  #game[data-ctl="buttons"]{--chrome:330px}
+  #game[data-ctl="none"]{--chrome:290px}
+}
+
+/* short phones: smaller (still finger-sized) keys so board and controls share the screen */
+@media(pointer:coarse) and (max-height:720px){
+  #game[data-ctl="dpad"]{--chrome:400px}
+  #game[data-ctl="buttons"]{--chrome:380px}
+  .gk-key{width:52px;height:52px}
+  .gk-key--wide{width:150px}
+  .gk-key--act{min-width:60px}
+  .gk-touch{margin-top:8px;gap:8px}
+  .gk-touch--dpad{grid-template-columns:repeat(3,52px)}
+  .gk-bar{margin-bottom:8px}
+}
