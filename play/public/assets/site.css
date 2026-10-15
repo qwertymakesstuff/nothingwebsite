@@ -35,3 +35,6 @@ footer.site-footer{display:flex;justify-content:space-between;gap:12px;width:min
 @media(max-width:520px){.programs-shell{width:calc(100% - 16px)}.program{border-radius:16px}.topbar{padding:12px}.wordmark{font-size:1.2rem}footer.site-footer{width:calc(100% - 16px);flex-direction:column}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 button,a{touch-action:manipulation}
+
+.group-title{margin:18px 0 -6px;font-weight:400;font-size:1.05rem;color:var(--muted);letter-spacing:.08em;text-transform:lowercase;border-bottom:1px solid var(--line-soft);padding-bottom:8px}
+.group-title:first-child{margin-top:0}
