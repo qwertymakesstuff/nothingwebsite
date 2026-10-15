@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#090909" />
+  <meta name="description" content="A small arcade of classic-style games that run in your browser." />
+  <title>play — missing.website</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&family=Nosifer&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body><div class="noise" aria-hidden="true"></div>
+<header class="topbar"><a class="wordmark" href="/">play</a><nav aria-label="Primary navigation"><a href="/">all games</a><a href="https://missing.website">missing.website</a></nav></header>
+<main class="programs-shell">
+  <div class="programs-head"><p class="eyebrow">arcade</p><h1>play</h1><p class="lede">classic-style games that run right in your browser. pick one.</p></div>
+  <div class="programs-list" id="list"><p class="programs-empty">loading…</p></div>
+</main>
+<footer class="site-footer"><span>games run in your browser; scores stay on your device.</span><span>keyboard, mouse or touch</span></footer>
+<script>
+fetch('/games.json').then(r => r.json()).then(items => {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  items = items.filter(p => !p.hidden);
+  if (!items.length) { list.innerHTML = '<p class="programs-empty">nothing here yet.</p>'; return; }
+  items.forEach(p => {
+    const a = document.createElement('a');
+    a.className = 'program';
+    a.href = p.url;
+    a.setAttribute('aria-label', p.name + (p.description ? ': ' + p.description : ''));
+    const img = document.createElement('div');
+    img.className = 'program-img';
+    if (p.image) img.style.setProperty('--img', 'url("' + new URL(p.image, location.href).href.replace(/"/g, '%22') + '")');
+    a.append(img);
+    const name = document.createElement('span');
+    name.className = 'program-name';
+    name.textContent = p.name;
+    a.append(name);
+    list.appendChild(a);
+  });
+}).catch(() => { document.getElementById('list').innerHTML = '<p class="programs-empty">couldn\'t load the games.</p>'; });
+</script>
+</body>
+</html>
