@@ -1,6 +1,6 @@
 # play.missing.website
 
-A small arcade of ten classic-style games that run in the browser. Static files only (no build step), served by a
+A small arcade of 22 games that run in the browser: ten classics and twelve early-Flash-era favourites. Static files only (no build step), served by a
 Cloudflare Worker with static assets.
 
 ## Games
@@ -18,6 +18,25 @@ Cloudflare Worker with static assets.
 | `/raiders/` | Void Raiders | shoot-'em-up arcade invaders | arrows, space |
 | `/chomper/` | Chomper | maze-and-dot chase games | arrows / WASD, swipe |
 
+### Flash-era favourites
+
+| URL | Game | Inspired by | Controls |
+|---|---|---|---|
+| `/wheeliehills/` | Wheelie Hills | physics bike / ragdoll crash games | gas, brake, lean (arrows/WASD or on-screen) |
+| `/blockroll/` | Block Roll | roll-the-block puzzles | arrows/swipe; R restart, H hint |
+| `/rooftop/` | Rooftop Run | one-button rooftop runners | space / tap (hold to jump higher) |
+| `/dotdefense/` | Dot Defense | tower defense | tap to build/upgrade; 1-3, space |
+| `/bubblepop/` | Bubble Pop | bubble shooters | aim + click/tap, or arrows + space |
+| `/snowlaunch/` | Snow Launch | launch-and-upgrade games | space/tap, up/down glide, boost |
+| `/claw/` | Claw Digger | gold-miner swinging claw | space / tap |
+| `/bigfish/` | Big Fish | eat-the-smaller-fish games | mouse / touch / arrows |
+| `/archer/` | Archer Duel | stick-figure archery | drag back and release |
+| `/skyhop/` | Sky Hop | endless platform hoppers | arrows / drag |
+| `/slideout/` | Slide Out | sliding-car puzzles | drag cars; Z undo |
+| `/lanewars/` | Lane Wars | lane-battle strategy | tap units; 1-6 |
+
+Block Roll's 12 levels and Slide Out's 17 puzzles are checked by solvers in `tests/music/play-levels.test.mjs`.
+
 Names, art, mazes and word lists are original; only the well-known mechanics are borrowed.
 
 ## Layout
@@ -25,7 +44,7 @@ Names, art, mazes and word lists are original; only the well-known mechanics are
 ```
 wrangler.jsonc        Worker config (name: nothingplay, domain: play.missing.website)
 public/index.html     the homepage: a list of 1260 x 320 banners (same layout as missing.website/programs)
-public/games.json     what the homepage lists: name, banner image, url (add "hidden": true to hide one)
+public/games.json     what the homepage lists: name, banner image, url, group (add "hidden": true to hide one)
 public/banners/       one 1260 x 320 banner per game (SVG; replace with your own PNG/JPG any time)
 public/assets/        site.css (page look), gamekit.js + gamekit.css (shared game engine and chrome)
 public/<game>/        index.html + <game>.js for each game

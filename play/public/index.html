@@ -14,17 +14,26 @@
 <body><div class="noise" aria-hidden="true"></div>
 <header class="topbar"><a class="wordmark" href="/">play</a><nav aria-label="Primary navigation"><a href="/">all games</a><a href="https://missing.website">missing.website</a></nav></header>
 <main class="programs-shell">
-  <div class="programs-head"><p class="eyebrow">arcade</p><h1>play</h1><p class="lede">classic-style games that run right in your browser. pick one.</p></div>
+  <div class="programs-head"><p class="eyebrow">arcade</p><h1>play</h1><p class="lede">classic-style and early-flash-style games that run right in your browser. pick one.</p></div>
   <div class="programs-list" id="list"><p class="programs-empty">loading…</p></div>
 </main>
 <footer class="site-footer"><span>games run in your browser; scores stay on your device.</span><span>keyboard, mouse or touch</span></footer>
 <script>
+const GROUPS = { classics: 'the classics', flash: 'flash-era favourites' };
 fetch('/games.json').then(r => r.json()).then(items => {
   const list = document.getElementById('list');
   list.innerHTML = '';
   items = items.filter(p => !p.hidden);
   if (!items.length) { list.innerHTML = '<p class="programs-empty">nothing here yet.</p>'; return; }
+  let group = null;
   items.forEach(p => {
+    if (p.group && p.group !== group) {
+      group = p.group;
+      const h = document.createElement('h2');
+      h.className = 'group-title';
+      h.textContent = GROUPS[group] || group;
+      list.appendChild(h);
+    }
     const a = document.createElement('a');
     a.className = 'program';
     a.href = p.url;

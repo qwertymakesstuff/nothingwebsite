@@ -30,7 +30,11 @@
 .gk-touch--dpad{display:none;grid-template-columns:repeat(3,64px);grid-template-areas:". up ." "left . right" ". down .";justify-content:center}
 @media(pointer:coarse){.gk-touch--dpad{display:grid}.gk-touch--dpad[hidden]{display:none}}
 .gk-touch--dpad .gk-key--up{grid-area:up}.gk-touch--dpad .gk-key--left{grid-area:left}.gk-touch--dpad .gk-key--right{grid-area:right}.gk-touch--dpad .gk-key--down{grid-area:down}
-.gk-touch--dpad .gk-key--act,.gk-touch--dpad .gk-key--wide{grid-column:1/-1;justify-self:center;margin-top:8px}
+.gk-touch--dpad .gk-key--wide{grid-column:1/-1;justify-self:center;margin-top:8px}
+/* extra buttons next to the pad sit in its empty top corners, so the pad stays three rows tall */
+.gk-touch--dpad .gk-key--act{min-width:0;width:64px}
+.gk-touch--dpad .gk-key--act:nth-child(5){grid-column:1;grid-row:1}
+.gk-touch--dpad .gk-key--act:nth-child(6){grid-column:3;grid-row:1}
 @media(max-width:520px){.game-shell{width:calc(100% - 12px);margin-top:10px}.gk-bar h1{font-size:1.15rem}.gk-stage{width:min(100%,var(--w),calc((100dvh - var(--chrome, 290px)) * var(--ratio)))}}
 
 .gk-choices{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
