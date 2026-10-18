@@ -14,6 +14,29 @@ A GTA-style open-world sandbox: three.js (local `three.min.js`, no other depende
 | `police.js`, `weapons.js`, `lifecycle.js` | wanted level + cops, pistol, death/arrest/respawn |
 | `missions.js`, `locations.js`, `ui.js`, `audio.js`, `effects.js` | jobs, points of interest, HUD/menus/minimap, sound, visuals |
 
+### The world (phase 3)
+
+An 11 x 11 grid of blocks. `layout.js` has the map (`MAP`, one character per block) and what each type is; change a letter and the district changes.
+
+| District | Where | What is there |
+| --- | --- | --- |
+| Downtown | centre | office blocks, Harbor Tower, bank, parking garage, city plaza with clock tower |
+| Residential | west / north-west | houses, apartment blocks with alleys, corner stores, parks, waterfront park with the Harbor Wheel, safehouse |
+| Commercial | east | supermarket, restaurants, clothing stores, gas stations, dealership, repair garage, car park |
+| Civic centre | north-east | police HQ with holding yard, fire station, hospital |
+| Industrial | south-west | warehouses with loading alleys, steel factory, truck depot |
+| Port | south-east | container yards with a gantry crane, port warehouses, docks, a ship at the quay |
+| Outskirts | edges | construction site, farmstead, lighthouse, empty lots, billboards |
+| Highway | road 7 | elevated deck over the cross streets, ramps down to the two edge intersections (`highway.js`, `models/highwayModel.js`) |
+
+* **Points of interest** (`pois.js`): one registry (id, name, category, icon, position, district, flags). Everything else reads it: markers, minimap, map, missions, zones, respawns. Plain data computed from the map, so it is unit-tested.
+* **Markers** (`markers.js`): world beams, minimap icons and map icons for POIs, the current job and the player's waypoint (click the map).
+* **Zones** (`zones.js`): shop doors, repair garage, dealership, safehouse. Only places with a real interaction are zones; the rest are exterior-only (`exteriorOnly` in the registry).
+* **Missions** (`missionDefs.js`, `missions.js`): definitions refer to places by reference (`poi:id`, `cat:docks`, `district:industrial`, `node:3,3`, `deck:5`), never by coordinates.
+* **Layers**: cars have a level (`y`, `layer`). Ground traffic can't climb a ramp from underneath, deck cars stay between the barriers, and people can't walk onto ramps.
+* **Population**: traffic, pedestrians and parked cars are weighted by district (`DISTRICTS` in `layout.js`), plus a few cars on the highway.
+* **Culling**: blocks and prop chunks beyond ~200-250 m are hidden; instanced props are split into chunks so the camera can skip them.
+
 ### Art and models (`js/models/`, `environment.js`)
 
 Everything is procedural: no downloaded models or textures. Models are built once from small functions, merged into a few geometries, and shared.

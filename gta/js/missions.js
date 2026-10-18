@@ -1,60 +1,60 @@
-// Jobs: step into a yellow beam to start a package run, taxi fare or street race. State lives in G.mission.
-import { beam } from './city.js';
-import { N } from './layout.js';
-import { nodePos } from './roads.js';
-import { POIS } from './locations.js';
+// Jobs: step into a yellow beam to start one. Definitions are data (missionDefs.js) that point at places by reference;
+// the destination shows as a marker in the world, on the minimap and on the map. State lives in G.mission.
 import { G, canAct, addMoney, bump } from './state.js';
 import { data, persist } from './save.js';
+import { POIS, getPoi, resolveTarget } from './pois.js';
+import { DEFS, defsFor } from './missionDefs.js';
+import { addMarker, removeMarker, moveMarker } from './markers.js';
 import { pick } from './util.js';
 import { sfx } from './audio.js';
 import { player } from './player.js';
 import { banner, say } from './ui.js';
 
-const markers = beam(0, 0, 0xffee55, 40); markers.visible = false;
-const rnode = () => nodePos(Math.floor(Math.random() * (N + 1)), Math.floor(Math.random() * (N + 1)));
-const where = () => player.car ? [player.car.x, player.car.z] : [player.x, player.z];
-
-export function cancelMission() { G.mission = null; markers.visible = false; }
-export function startMission(type) {
-  type = type || pick(['delivery', 'taxi', 'race']);
-  let pts, time, reward, label;
-  if (type === 'race') {
-    const a0 = Math.floor(Math.random() * (N - 1)), b0 = Math.floor(Math.random() * (N - 1));
-    pts = [[a0 + 2, b0], [a0 + 2, b0 + 2], [a0, b0 + 2], [a0, b0], [a0 + 2, b0], [a0 + 2, b0 + 2]].map(n => nodePos(n[0], n[1]));
-    time = 80; reward = 700; label = 'street race: hit every checkpoint';
-  } else {
-    const [px, pz] = where(), a = rnode(); let b = rnode(), tries = 0; while (Math.hypot(a[0] - b[0], a[1] - b[1]) < 120 && tries++ < 30) b = rnode();
-    pts = [a, b]; const d = Math.hypot(a[0] - px, a[1] - pz) + Math.hypot(a[0] - b[0], a[1] - b[1]);
-    time = Math.round(d * .16 + 35); reward = Math.round(150 + d * .9);
-    label = type === 'delivery' ? 'package run: pick it up, drop it off' : 'taxi fare: you need a car';
-  }
-  G.mission = { type, pts, idx: 0, left: time, total: time, reward, label, need: type !== 'delivery' };
-  markers.visible = true; banner(type === 'race' ? 'STREET RACE' : type === 'taxi' ? 'TAXI FARE' : 'PACKAGE RUN', '#ffd23f', 2);
+const where = () => player.car ? [player.car.x, player.car.z, player.car.y] : [player.x, player.z, 0];
+export function cancelMission() { G.mission = null; removeMarker('mission'); }
+function farTarget(refFrom, refTo) { // pick a destination that is not right next to the start
+  const a = resolveTarget(refFrom); let b = null;
+  for (let k = 0; k < 20; k++) { const t = resolveTarget(refTo); if (t && (!a || Math.hypot(t.x - a.x, t.z - a.z) > 90) && (!b || true)) { b = t; if (a && Math.hypot(t.x - a.x, t.z - a.z) > 90) break; } }
+  return [a, b];
 }
+export function startMission(defId, giverId) {
+  const def = defId ? DEFS.find(d => d.id === defId) : pick(giverId ? defsFor(giverId) : DEFS); if (!def) return false;
+  let pts, time, reward;
+  if (def.type === 'race') {
+    pts = def.route.map(r => resolveTarget(r)).filter(Boolean); time = def.limit; reward = def.reward;
+  } else {
+    const [a, b] = farTarget(def.from, def.to); if (!a || !b) return false; pts = [a, b];
+    const [px, pz] = where(), d = Math.hypot(a.x - px, a.z - pz) + Math.hypot(a.x - b.x, a.z - b.z);
+    time = Math.round(d * .17 + 35); reward = Math.round(150 + d * .9);
+  }
+  G.mission = { id: def.id, type: def.type, title: def.title, text: def.text || '', pts, idx: 0, left: time, total: time, reward, need: !!def.need };
+  const t = pts[0]; addMarker({ id: 'mission', x: t.x, z: t.z, y: t.y || 0, color: '#ffee55', glyph: '!', label: t.name, kind: 'mission', beam: true, height: 40 });
+  banner(def.title, '#ffd23f', 2); return true;
+}
+const needsCar = m => m.need && !player.car;
 /** Text for the mission strip, or '' when no job is running. */
 export function missionText() {
   const m = G.mission; if (!m) return '';
-  const t = m.pts[m.idx], [x, z] = where(), d = Math.ceil(Math.hypot(t[0] - x, t[1] - z));
-  const stage = m.type === 'race' ? 'checkpoint ' + (m.idx + 1) + '/' + m.pts.length : m.idx === 0 ? 'go to the pickup' : 'go to the drop-off';
-  return m.label + ' - ' + stage + ' - ' + d + 'm - ' + Math.max(0, Math.ceil(m.left)) + 's' + (needsCar(m) ? ' - GET IN A CAR' : '');
+  const t = m.pts[m.idx], [x, z] = where(), d = Math.ceil(Math.hypot(t.x - x, t.z - z));
+  const stage = m.type === 'race' ? 'checkpoint ' + (m.idx + 1) + '/' + m.pts.length + ': ' + t.name : m.idx === 0 ? m.text + ' at ' + t.name : 'deliver to ' + t.name;
+  return m.title.toLowerCase() + ' - ' + stage + ' - ' + d + 'm - ' + Math.max(0, Math.ceil(m.left)) + 's' + (needsCar(m) ? ' - GET IN A CAR' : '');
 }
-const needsCar = m => m.need && !player.car;
-
+export const missionTarget = () => G.mission ? G.mission.pts[G.mission.idx] : null;
 export function updateMission(dt) {
   const m = G.mission; G.missionCd -= dt;
-  const [px, pz] = where();
+  const [px, pz, py] = where();
   if (!m) {
-    if (G.missionCd <= 0 && canAct()) for (const p of POIS) if (p.type === 'job' && Math.hypot(p.x - px, p.z - pz) < 3.5) { startMission(); break; }
+    if (G.missionCd <= 0 && canAct()) for (const p of POIS) if (p.category === 'mission' && Math.hypot(p.x - px, p.z - pz) < 3.5) { startMission(null, p.id); break; }
     return;
   }
   if (!canAct()) return;
   m.left -= dt;
-  const t = m.pts[m.idx]; markers.position.set(t[0], 20, t[1]);
-  if (Math.hypot(t[0] - px, t[1] - pz) < 6 && !needsCar(m)) {
+  const t = m.pts[m.idx]; moveMarker('mission', t.x, t.z, t.y || 0);
+  if (Math.hypot(t.x - px, t.z - pz) < 6 && Math.abs((t.y || 0) - py) < 3.5 && !needsCar(m)) {
     m.idx++; sfx.cash();
     if (m.idx >= m.pts.length) {
       let r = m.reward;
-      if (m.type === 'race') { const used = m.total - m.left; r += Math.round(Math.max(0, m.left) * 8); if (!data.bestRace || used < data.bestRace) { data.bestRace = used; say('new best race time: ' + used.toFixed(1) + 's', 3); } }
+      if (m.type === 'race') { const used = m.total - m.left; r += Math.round(Math.max(0, m.left) * 8); const best = (data.bestRaces || {})[m.id]; if (!best || used < best) { data.bestRaces = Object.assign({}, data.bestRaces, { [m.id]: used }); data.bestRace = used; say('new best time: ' + used.toFixed(1) + 's', 3); } }
       addMoney(r); bump('jobs'); persist(); banner('MISSION PASSED  $' + r, '#7ae27a', 3); cancelMission(); G.missionCd = 4;
     }
   }

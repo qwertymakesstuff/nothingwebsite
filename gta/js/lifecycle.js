@@ -2,7 +2,7 @@
 import { G, loseMoney, getMoney, bump } from './state.js';
 import { player, leaveCar } from './player.js';
 import { cars, removeCar } from './vehicles.js';
-import { spawnHospital, spawnStation } from './locations.js';
+import { spawnPoint } from './locations.js';
 import { clearPolice } from './police.js';
 import { cancelMission } from './missions.js';
 import { banner, say, clearBanners } from './ui.js';
@@ -25,7 +25,7 @@ export function busted() {
 export function respawn(where) {
   if (player.car) leaveCar(true);
   player.vis = null;
-  const at = where === 'station' ? spawnStation : spawnHospital;
+  const at = spawnPoint(where);
   clearPolice(); cancelMission(); clearBanners();
   cars.filter(c => !c.wreck && c.driver !== 'player' && Math.hypot(c.x - at[0], c.z - at[1]) < 8).forEach(removeCar); // keep the spawn spot clear
   player.x = at[0]; player.z = at[1]; player.vx = player.vz = 0; player.hp = 100; player.hurt = 0; player.shootCd = 0; player.mesh.visible = true; player.ch.update(0, 0, {});
