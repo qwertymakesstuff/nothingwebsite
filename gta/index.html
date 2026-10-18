@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#101418">
+<meta name="robots" content="noindex, nofollow">
+<title>Harbor City — missing.website</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png?v=4">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#050303;color:#d5cccc;font-family:"Special Elite",ui-monospace,monospace;user-select:none;-webkit-user-select:none;touch-action:none}
+canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
+.overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:rgba(5,3,3,.9)}
+.overlay[hidden]{display:none}
+.overlay h1{margin:0 0 6px;font:400 clamp(3.4rem,13vw,7rem)/1 "VT323",monospace;letter-spacing:.2em;color:#b83a3a;text-shadow:0 0 22px rgba(184,58,58,.45)}
+.overlay h2{margin:0 0 10px;font:400 clamp(2.2rem,8vw,4rem)/1 "VT323",monospace;letter-spacing:.14em}
+.overlay p{margin:6px 0;color:#8e8585;max-width:520px;line-height:1.5}
+.btn{margin-top:22px;border:1px solid #665b5b;background:#0b0b0b;color:#d5cccc;font:inherit;font-size:1.05rem;padding:13px 30px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{border-color:#b8a1a1;background:#141010}
+.keys-help{display:grid;grid-template-columns:auto auto;gap:4px 18px;margin:18px 0 0;text-align:left;font-size:.9rem;color:#8e8585}
+.keys-help b{color:#d5cccc;font-weight:400}
+.wgl{max-width:560px;margin:14px 0 0;text-align:left}
+.wgl-t{display:block;width:100%;background:none;border:0;color:#b83a3a;font:inherit;text-align:center;line-height:1.5;cursor:pointer;padding:6px}
+.wgl-b{border:1px solid #4a4242;background:#0b0b0b;padding:8px 14px;font-size:.9rem;color:#8e8585}
+.wgl-b details{border-bottom:1px solid #2a2525;padding:6px 0}
+.wgl-b summary{cursor:pointer;color:#d5cccc}
+.wgl-b ol{margin:8px 0 6px;padding-left:20px;line-height:1.6}
+.wgl-b code{color:#d5cccc;background:#1a1616;padding:1px 5px;cursor:pointer;word-break:break-all}
+.wgl-d{font-size:.72rem;color:#665b5b;margin:8px 0 2px}
+.back{margin-top:16px;color:#665b5b;font-size:.85rem}
+.back a{color:#8e8585}
+#hud{position:fixed;inset:0;z-index:5;pointer-events:none}
+#hud[hidden]{display:none}
+#msg{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);width:90%;text-align:center;font-size:1.05rem;text-shadow:0 0 6px #000,0 0 3px #000;opacity:0;transition:opacity .25s}
+#msg.on{opacity:1}
+#flash{position:fixed;inset:0;z-index:6;background:#a00;opacity:0;pointer-events:none;transition:opacity .6s}
+#vig{position:fixed;inset:0;z-index:4;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.75) 100%)}
+#touch{position:fixed;inset:0;z-index:8;display:none}
+.touch #touch{display:block;pointer-events:none}
+.tbtn{position:absolute;pointer-events:auto;width:64px;height:64px;border-radius:50%;border:1px solid #665b5b;background:rgba(0,0,0,.5);color:#d5cccc;display:grid;place-items:center;font-size:.8rem}
+.tbtn.on{background:rgba(184,161,161,.35)}
+#stick{position:absolute;pointer-events:none;width:100px;height:100px;border:1px solid #665b5b;border-radius:50%;display:none}
+#stick i{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px;border-radius:50%;background:rgba(184,161,161,.35)}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.opt{border:1px solid #4a4242;background:#0b0b0b;color:#8e8585;font:inherit;font-size:.9rem;padding:8px 14px;cursor:pointer}
+.opt.on{border-color:#b8a1a1;color:#d5cccc;background:#1a1414}
+.small{font-size:.8rem;color:#665b5b;margin:4px 0}
+
+#msg{position:absolute;left:50%;bottom:14%;transform:translateX(-50%);width:90%;text-align:center;font-size:1.05rem;text-shadow:0 0 6px #000;opacity:0;transition:opacity .25s}
+#msg.on{opacity:1}
+#money{position:absolute;top:14px;right:16px;font:2rem "VT323",monospace;color:#7ae27a;text-shadow:0 0 6px #000}
+#stars{position:absolute;top:50px;right:16px;font-size:1.4rem;letter-spacing:.1em;text-shadow:0 0 6px #000}
+#stars i{font-style:normal;color:#333}#stars i.on{color:#ffd23f}#stars i.on.dim{color:#8a6a20}
+#hp{position:absolute;left:16px;bottom:18px;width:min(180px,40vw);height:8px;background:rgba(0,0,0,.5);border:1px solid #555}
+#hp i{display:block;height:100%;width:100%;background:#d33a4a}
+#speed{position:absolute;left:16px;bottom:34px;font:1.3rem "VT323",monospace;text-shadow:0 0 6px #000}
+#minimap{position:absolute;left:14px;top:14px;width:150px;height:150px;border:2px solid #222;border-radius:50%;box-shadow:0 0 10px #000;opacity:.92}
+#mission{position:absolute;left:50%;top:14px;transform:translateX(-50%);max-width:min(560px,50vw);text-align:center;font-size:.85rem;background:rgba(0,0,0,.55);padding:6px 10px;border:1px solid #665b5b}
+#mission[hidden]{display:none}
+#prompt{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);font-size:1rem;text-shadow:0 0 6px #000;white-space:nowrap}
+.big{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font:clamp(2.4rem,9vw,5.5rem)/1 "VT323",monospace;letter-spacing:.1em;text-shadow:0 0 18px #000,0 0 3px #000;opacity:0;transition:opacity .25s;white-space:nowrap}
+.big.on{opacity:1}
+.touch #msg{bottom:30%}.touch #prompt{bottom:38%}
+@media (max-width:700px){#minimap{width:110px;height:110px}#mission{top:130px;max-width:90vw}}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="flash"></div>
+<div id="hud" hidden>
+  <canvas id="minimap" width="300" height="300"></canvas>
+  <div id="mission" hidden></div>
+  <div id="money">$0</div><div id="stars"></div>
+  <div id="speed"></div><div id="hp"><i></i></div>
+  <div id="prompt"></div><div id="msg"></div><div class="big" id="banner"></div>
+</div>
+<div id="touch">
+  <div id="stick"><i></i></div>
+  <div class="tbtn" id="tCar" style="right:18px;bottom:110px">CAR</div>
+  <div class="tbtn" id="tFire" style="right:98px;bottom:150px">FIRE</div>
+  <div class="tbtn" id="tBrake" style="right:98px;bottom:70px">BRAKE</div>
+  <div class="tbtn" id="tRun" style="right:18px;bottom:30px">RUN</div>
+</div>
+<div class="overlay" id="start">
+  <h1 style="color:#e8b030;text-shadow:0 0 22px rgba(232,176,48,.4);letter-spacing:.1em">HARBOR CITY</h1>
+  <p>A small open-world crime sandbox. Steal cars, take jobs for cash, cause trouble and try to shake the police. Everything here is made up.</p>
+  <div class="keys-help" id="help">
+    <b>W A S D</b><span>walk / drive</span>
+    <b>mouse</b><span>look</span>
+    <b>E</b><span>get in or out of a car</span>
+    <b>space</b><span>handbrake</span>
+    <b>click</b><span>shoot (on foot)</span>
+    <b>shift</b><span>run &nbsp; <b>H</b> horn</span>
+  </div>
+  <button class="btn" id="go">hit the streets</button>
+  <p class="back"><a href="/">← back to missing.website</a></p>
+</div>
+<div class="overlay" id="pause" hidden>
+  <h2>paused</h2><p id="pauseStat"></p>
+  <button class="btn" id="resume">resume</button>
+  <p class="back"><a href="/">← back to missing.website</a></p>
+</div>
+<script src="three.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

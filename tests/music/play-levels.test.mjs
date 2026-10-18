@@ -46,9 +46,14 @@ test('slide out: every puzzle is solvable in exactly its stated minimum number o
 
 test('play site: every game listed on the homepage has a page, a script and a banner', () => {
   const games = JSON.parse(readFileSync(new URL('../../play/public/games.json', import.meta.url)));
-  assert.ok(games.length >= 22);
+  assert.ok(games.length >= 24);
   const slugs = new Set();
   for (const g of games) {
+    if (/^https:\/\//.test(g.url)) { // bigger games live on the main site
+      assert.ok(existsSync(new URL('../../play/public/' + g.image.replace(/^\//, ''), import.meta.url)), `${g.name}: missing banner`);
+      assert.ok(existsSync(new URL('../..' + new URL(g.url).pathname + 'index.html', import.meta.url)), `${g.name}: missing page on the main site`);
+      continue;
+    }
     const slug = g.url.replace(/\//g, '');
     assert.ok(!slugs.has(slug), `duplicate ${slug}`); slugs.add(slug);
     for (const f of [`${slug}/index.html`, `${slug}/${slug}.js`, g.image.replace(/^\//, '')]) assert.ok(existsSync(new URL(`../../play/public/${f}`, import.meta.url)), `${g.name}: missing ${f}`);

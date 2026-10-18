@@ -19,7 +19,7 @@
 </main>
 <footer class="site-footer"><span>games run in your browser; scores stay on your device.</span><span>keyboard, mouse or touch</span></footer>
 <script>
-const GROUPS = { classics: 'the classics', flash: 'flash-era favourites' };
+const GROUPS = { classics: 'the classics', flash: 'flash-era favourites', big: 'bigger 3D games' };
 fetch('/games.json').then(r => r.json()).then(items => {
   const list = document.getElementById('list');
   list.innerHTML = '';

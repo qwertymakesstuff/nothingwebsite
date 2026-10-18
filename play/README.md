@@ -1,6 +1,6 @@
 # play.missing.website
 
-A small arcade of 22 games that run in the browser: ten classics and twelve early-Flash-era favourites. Static files only (no build step), served by a
+A small arcade of 24 games that run in the browser: ten classics, twelve early-Flash-era favourites, and two bigger 3D games (Granny at `missing.website/granny/` and Harbor City at `missing.website/gta/`) that live on the main site and are linked from the homepage. Static files only (no build step), served by a
 Cloudflare Worker with static assets.
 
 ## Games
