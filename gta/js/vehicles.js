@@ -6,6 +6,7 @@ import { createBust } from './models/characters.js';
 import { pushOut } from './city.js';
 import { G, addHeat, bump } from './state.js';
 import { clamp, pick } from './util.js';
+import { zoneAt, nextLayer, heightFor, groundBlocked, deckSlope, HW_Z, HW_HALF } from './highway.js';
 import { sfx } from './audio.js';
 import { fireball, smoke } from './effects.js';
 import { player, leaveCar, hurtPlayer } from './player.js';
@@ -19,8 +20,8 @@ export const cars = [];
 export function makeCar(x, z, yaw, kind, color, type) {
   type = type || (kind === 'cop' ? 'cruiser' : pickCarType());
   const model = createCarMesh(type, color == null ? CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)] : color), T = CAR_TYPES[type];
-  const c = { kind, type, x, z, yaw, speed: 0, hp: kind === 'cop' ? 90 : 100, vx: 0, vz: 0, spin: 0, driver: null, model, mesh: model.group, cl: T.cl, cr: T.cr, seat: T.seat, wreck: false, ai: null, cop: null, honk: 0, despawn: 0, stuck: 0, hitCd: 0, burn: 0, steer: 0, braking: false, dm: null, lastYaw: yaw };
-  c.mesh.position.set(x, 0, z); c.mesh.rotation.y = yaw; scene.add(c.mesh); cars.push(c); return c;
+  const c = { kind, type, x, z, yaw, speed: 0, hp: kind === 'cop' ? 90 : 100, vx: 0, vz: 0, spin: 0, driver: null, model, mesh: model.group, cl: T.cl, cr: T.cr, seat: T.seat, wreck: false, ai: null, cop: null, honk: 0, despawn: 0, stuck: 0, hitCd: 0, burn: 0, steer: 0, braking: false, dm: null, lastYaw: yaw, y: 0, layer: 0, pitch: 0, forSale: false };
+  c.mesh.rotation.order = 'YXZ'; c.mesh.position.set(x, 0, z); c.mesh.rotation.y = yaw; scene.add(c.mesh); cars.push(c); return c;
 }
 /** little seated figure behind the wheel of civilian and police cars */
 export function showDriver(c, on) {
@@ -58,14 +59,17 @@ export function moveCarBy(c, dx, dz, bounce) {
       else if (bounce) c.speed *= .8;
     }
   }
+  // the highway: ground cars can't climb a ramp from underneath the deck; cars on the deck stay between the barriers
+  if (c.layer === 0 && groundBlocked(c.x, c.x + dx, c.z)) { dx = 0; if (bounce) c.speed *= -.2; }
   c.x += dx; c.z += dz;
+  if (!c.ai) { c.layer = nextLayer(c.layer, c.x, c.z); if (c.layer === 1 && zoneAt(c.x, c.z)) c.z = clamp(c.z, HW_Z - HW_HALF + 1.5, HW_Z + HW_HALF - 1.5); c.y = heightFor(c.layer, c.x, c.z); }
 }
 export function hurtCar(c, d) { if (c.wreck || !(d > 0)) return; c.hp -= d; if (c.hp <= 0) explodeCar(c); }
 export function explodeCar(c) {
   c.wreck = true; c.hp = 0; c.speed = 0; c.vx = c.vz = 0; c.burn = 20; sfx.boom();
   c.model.parts.body.material = burntMat; showDriver(c, false); fireball(c.x, c.z);
   peds.forEach(p => { if (!p.dead && Math.hypot(p.x - c.x, p.z - c.z) < 7) killPed(p, 'explosion'); });
-  cars.forEach(o => { if (o !== c && !o.wreck && Math.hypot(o.x - c.x, o.z - c.z) < 7) hurtCar(o, 45); });
+  cars.forEach(o => { if (o !== c && !o.wreck && Math.abs(o.y - c.y) < 3 && Math.hypot(o.x - c.x, o.z - c.z) < 7) hurtCar(o, 45); });
   if (player.car === c) { leaveCar(true); hurtPlayer(28); }
   else if (!player.car && Math.hypot(player.x - c.x, player.z - c.z) < 6) hurtPlayer(35);
   if (c.kind === 'cop') { addHeat(30); bump('copsKilled'); }
@@ -103,7 +107,7 @@ export function updateCars(dt) {
     if (c.wreck && c.burn > 0 && Math.random() < dt * 3) smoke(c.x + (Math.random() - .5) * 1.6, c.z + (Math.random() - .5) * 1.6);
   }
   for (let i = 0; i < cars.length; i++) for (let j = i + 1; j < cars.length; j++) {
-    const a = cars[i], b = cars[j]; if (Math.abs(a.x - b.x) > 5.5 || Math.abs(a.z - b.z) > 5.5) continue;
+    const a = cars[i], b = cars[j]; if (Math.abs(a.x - b.x) > 6.5 || Math.abs(a.z - b.z) > 6.5 || Math.abs(a.y - b.y) > 2.5) continue; // other layers don't touch
     const mover = b.driver === 'player' ? b : a, other = mover === a ? b : a;
     const rel = Math.abs(mover.speed) + Math.hypot(other.vx || 0, other.vz || 0);
     if (!carVsCar(mover, other)) continue;
@@ -118,10 +122,11 @@ export function updateCars(dt) {
   cars.forEach(c => {
     const dist = Math.max(Math.abs(c.x - px), Math.abs(c.z - pz));
     if (c.driver !== 'player' && !c.cop && !c.ai && Math.abs(c.speed) < .2) c.braking = false; // parked cars don't keep their brake lights on
-    c.mesh.position.set(c.x, 0, c.z); c.mesh.rotation.y = c.yaw;
+    c.mesh.position.set(c.x, c.y, c.z); c.mesh.rotation.y = c.yaw;
+    const sl = c.y > 0 || c.layer ? deckSlope(c.x) * Math.sin(c.yaw) : 0; c.pitch += (-Math.atan(sl) - c.pitch) * Math.min(1, dt * 12); c.mesh.rotation.x = c.pitch;
     c.mesh.visible = dist < 170; // far cars are hidden (the fog hides them anyway)
     if (!c.mesh.visible) return;
-    const p = c.model.parts, near = dist < 80;
+    const p = c.model.parts, near = dist < 60;
     p.wf.visible = p.wr.visible = p.dark.visible = p.lamps.visible = p.glass.visible = near;             // distant cars: just paint
     if (!near) return;
     let sp = c.speed, steer = c.steer;

@@ -26,6 +26,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyE' || e.code === 'KeyF') actions.interact && actions.interact();
   if (e.code === 'KeyH') actions.horn && actions.horn();
   if (e.code === 'KeyP') actions.pause && actions.pause();
+  if (e.code === 'KeyM') actions.map && actions.map();
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('blur', () => { clearInput(); actions.blur && actions.blur(); });

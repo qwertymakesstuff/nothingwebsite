@@ -64,6 +64,12 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 .big{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font:clamp(2.4rem,9vw,5.5rem)/1 "VT323",monospace;letter-spacing:.1em;text-shadow:0 0 18px #000,0 0 3px #000;opacity:0;transition:opacity .25s;white-space:nowrap}
 .big.on{opacity:1}
 .touch #msg{bottom:30%}.touch #prompt{bottom:38%}
+#district{position:absolute;left:50%;top:78px;transform:translateX(-50%);font:1.6rem "VT323",monospace;letter-spacing:.16em;text-transform:uppercase;color:#f0e6c8;text-shadow:0 0 8px #000;opacity:0;transition:opacity .5s}#district.on{opacity:1}
+#mapBtn{position:absolute;left:14px;top:172px;pointer-events:auto;background:rgba(0,0,0,.55);color:#d5cccc;border:1px solid #665b5b;font:inherit;font-size:.75rem;padding:5px 10px;cursor:pointer}
+#map{background:rgba(5,5,8,.94);z-index:12}.mapwrap{display:flex;gap:18px;align-items:flex-start;max-width:96vw;max-height:94vh;overflow:auto;text-align:left}
+#mapCanvas{width:min(78vh,66vw);height:min(78vh,66vw);background:#1d4660;border:1px solid #444;cursor:crosshair}
+.mapwrap aside{min-width:170px}.mapwrap h2{margin:0 0 6px;font-size:2rem}#mapLegend{list-style:none;margin:10px 0;padding:0;font-size:.8rem;column-count:1}#mapLegend li{margin:3px 0;display:flex;align-items:center;gap:8px}#mapLegend b{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;color:#0b0b0b;font:700 11px sans-serif}
+@media (max-width:700px){#mapBtn{top:130px}.mapwrap{flex-direction:column}#mapCanvas{width:90vw;height:90vw}#district{top:150px;font-size:1.2rem}}
 @media (max-width:700px){#minimap{width:110px;height:110px}#mission{top:130px;max-width:90vw}}
 </style>
 </head>
@@ -75,7 +81,7 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
   <div id="mission" hidden></div>
   <div id="money">$0</div><div id="stars"></div>
   <div id="speed"></div><div id="hp"><i></i></div>
-  <div id="prompt"></div><div id="msg"></div><div class="big" id="banner"></div>
+  <div id="prompt"></div><div id="district"></div><button id="mapBtn" type="button" aria-label="open the map">MAP</button><div id="msg"></div><div class="big" id="banner"></div>
 </div>
 <div id="touch">
   <div id="stick"><i></i></div>
@@ -103,6 +109,10 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
   <h2>paused</h2><p id="pauseStat"></p>
   <button class="btn" id="resume">resume</button>
   <p class="back"><a href="/">← back to missing.website</a></p>
+</div>
+<div class="overlay" id="map" hidden>
+  <div class="mapwrap"><canvas id="mapCanvas" width="760" height="760"></canvas>
+    <aside><h2>Harbor City</h2><p class="small">click the map to set a waypoint, right-click to clear it. M or Esc closes.</p><ul id="mapLegend"></ul><button class="opt" id="mapClear" type="button">clear waypoint</button> <button class="opt" id="mapClose" type="button">close</button></aside></div>
 </div>
 <script src="three.min.js"></script>
 <script type="module" src="js/main.js"></script>

@@ -1,6 +1,7 @@
 // Pedestrians walking round the pavements (and across the roads), plus the pickups (cash, health) they and the world drop.
 import { scene } from './render.js';
-import { N, blockX, blockZ, corner } from './layout.js';
+import { N, blockX, blockZ, corner, blockType, DISTRICTS } from './layout.js';
+import { walkBlocked } from './highway.js';
 import { G, addMoney, addHeat, bump } from './state.js';
 import { rand, pick } from './util.js';
 import { sfx } from './audio.js';
@@ -12,15 +13,18 @@ export function layDown(ch) { ch.update(0, 0, { dead: true }); }
 
 export const peds = [], items = [];
 export function makePed(at) {
-  const i = Math.floor(Math.random() * N), j = Math.floor(Math.random() * N), c = Math.floor(Math.random() * 4), p = corner(i, j, c);
-  const q = { x: at ? at[0] : p[0] + rand(-2, 2), z: at ? at[1] : p[1] + rand(-2, 2), i, j, c, dir: Math.random() < .5 ? 1 : -1, hp: 30, dead: 0, panic: 0, speed: rand(1.2, 1.9), ch: null, mesh: null, tgt: null, yaw: 0 };
+  let i = 0, j = 0;
+  for (let t = 0; t < 30; t++) { i = Math.floor(Math.random() * N); j = Math.floor(Math.random() * N); if (Math.random() * 1.8 <= DISTRICTS[blockType(i, j).district].peds) break; }  // busier districts get more people
+  const c = Math.floor(Math.random() * 4), p = corner(i, j, c);
+  const q = { x: at ? at[0] : p[0] + rand(-.7, .7), z: at ? at[1] : p[1] + rand(-.7, .7), i, j, c, dir: Math.random() < .5 ? 1 : -1, hp: 30, dead: 0, panic: 0, speed: rand(1.2, 1.9), ch: null, mesh: null, tgt: null, yaw: 0 };
   q.ch = createCharacter(civilianSpec()); q.mesh = q.ch.root; scene.add(q.mesh); q.ph = 0;
   q.nc = (c + q.dir + 4) % 4; q.tgt = corner(i, j, q.nc); q.mesh.position.set(q.x, 0, q.z); peds.push(q); return q;
 }
 function pedNext(p) { // arrived at a corner: keep going round the block, turn back, or cross the road
   const r = Math.random(), sx = [-1, 1, 1, -1][p.nc], sz = [-1, -1, 1, 1][p.nc];
-  if (r < .22) { const ni = p.i + sx; if (ni >= 0 && ni < N) { p.i = ni; p.c = p.nc; p.nc = [1, 0, 3, 2][p.nc]; p.tgt = corner(ni, p.j, p.nc); return; } }
-  else if (r < .44) { const nj = p.j + sz; if (nj >= 0 && nj < N) { p.j = nj; p.c = p.nc; p.nc = [3, 2, 1, 0][p.nc]; p.tgt = corner(p.i, nj, p.nc); return; } }
+  const ok = t => !walkBlocked(t[0], t[1]) && !walkBlocked((t[0] + p.x) / 2, (t[1] + p.z) / 2);  // nobody crosses a highway ramp on foot
+  if (r < .22) { const ni = p.i + sx, nn = [1, 0, 3, 2][p.nc]; if (ni >= 0 && ni < N && ok(corner(ni, p.j, nn))) { p.i = ni; p.c = p.nc; p.nc = nn; p.tgt = corner(ni, p.j, p.nc); return; } }
+  else if (r < .44) { const nj = p.j + sz, nn = [3, 2, 1, 0][p.nc]; if (nj >= 0 && nj < N && ok(corner(p.i, nj, nn))) { p.j = nj; p.c = p.nc; p.nc = nn; p.tgt = corner(p.i, nj, p.nc); return; } }
   else if (r < .55) p.dir *= -1;
   p.c = p.nc; p.nc = (p.c + p.dir + 4) % 4; p.tgt = corner(p.i, p.j, p.nc);
 }
@@ -38,10 +42,10 @@ export function updatePeds(dt) {
     if (d < .6) pedNext(p);
     else { const sp = p.speed * (p.panic > 0 ? 3.4 : 1); p.x += dx / d * sp * dt; p.z += dz / d * sp * dt; p.yaw = Math.atan2(dx, dz); p.cur = sp; }
     p.mesh.position.set(p.x, 0, p.z); p.mesh.rotation.y = p.yaw;
-    p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140;
+    p.mesh.visible = Math.abs(p.x - player.x) < 110 && Math.abs(p.z - player.z) < 110;
     if (p.mesh.visible) p.ch.update(dt, p.cur || 0, { run: p.panic > 0 });
     for (const c of cars) { // cars hit people; fast cars scare them
-      if (c.wreck) continue; const dd = carDist(c, p.x, p.z) + 1.2, spd = Math.abs(c.speed) + Math.hypot(c.vx || 0, c.vz || 0);
+      if (c.wreck || Math.abs(c.y) > 1.5) continue; const dd = carDist(c, p.x, p.z) + 1.2, spd = Math.abs(c.speed) + Math.hypot(c.vx || 0, c.vz || 0);
       if (dd < 14 && spd > 8 && p.panic <= 0) p.panic = 3;
       if (dd < 1.4 && spd > 5) { killPed(p, 'car'); if (c.driver === 'player') addHeat(12); break; }
     }

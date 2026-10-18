@@ -1,8 +1,9 @@
 // HUD (money, health, stars, speed, prompt, mission strip), toasts/banners, minimap and the start/pause menus.
-import { N, B, blockX, blockZ, isPark, HOSPITAL, STATION } from './layout.js';
+import { N, B, P, RD, blockX, blockZ, blockType, DISTRICTS, districtAt } from './layout.js';
+import { HW, HW_Z } from './highway.js';
+import { allMarkers, getMarker } from './markers.js';
 import { G } from './state.js';
 import { data } from './save.js';
-import { POIS } from './locations.js';
 import { player } from './player.js';
 import { cars } from './vehicles.js';
 import { officers, copsNearby } from './police.js';
@@ -26,21 +27,32 @@ export function showPause(on) {
   if (on) setText('pauseStat', '$' + data.money.toLocaleString() + (data.bestRace ? ' - best race ' + data.bestRace.toFixed(1) + 's' : '') + ' - jobs ' + data.stats.jobs);
 }
 
+const hexOf = n => '#' + n.toString(16).padStart(6, '0');
+function glyphDot(g, x, y, r, color, glyph) { g.fillStyle = '#0b0b0b'; g.beginPath(); g.arc(x, y, r + 1.5, 0, 7); g.fill(); g.fillStyle = color; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.fillStyle = '#0b0b0b'; g.font = 'bold ' + Math.round(r * 1.35) + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(glyph, x, y + .5); }
 function drawMinimap() {
   const S = mm.width, sc = S / 230, cx = S / 2, px = player.x, pz = player.z;
   mg.clearRect(0, 0, S, S); mg.fillStyle = '#2b2d30'; mg.fillRect(0, 0, S, S);
-  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
-    const x = cx + (blockX(i) - px) * sc, z = cx + (blockZ(j) - pz) * sc;
-    if (x > S || z > S || x + B * sc < 0 || z + B * sc < 0) continue;
-    mg.fillStyle = isPark(i, j) ? '#3f7a3a' : (i === HOSPITAL[0] && j === HOSPITAL[1]) ? '#e8e8ec' : (i === STATION[0] && j === STATION[1]) ? '#4466aa' : '#4d4d49'; mg.fillRect(x, z, B * sc, B * sc);
+  const lo = Math.max(0, Math.floor((px - 125 - RD / 2) / P)), hi = Math.min(N - 1, Math.ceil((px + 125 - RD / 2) / P)), lz = Math.max(0, Math.floor((pz - 125 - RD / 2) / P)), hz = Math.min(N - 1, Math.ceil((pz + 125 - RD / 2) / P));
+  for (let i = lo; i <= hi; i++) for (let j = lz; j <= hz; j++) {
+    const x = cx + (blockX(i) - px) * sc, z = cx + (blockZ(j) - pz) * sc, t = blockType(i, j);
+    mg.fillStyle = t.open ? '#3f7a3a' : DISTRICTS[t.district].color; mg.globalAlpha = t.open ? 1 : .55; mg.fillRect(x, z, B * sc, B * sc); mg.globalAlpha = 1;
   }
-  const dot = (x, z, col, r) => { const X = cx + (x - px) * sc, Z = cx + (z - pz) * sc; if (X < 2 || Z < 2 || X > S - 2 || Z > S - 2) return; mg.fillStyle = col; mg.beginPath(); mg.arc(X, Z, r, 0, 7); mg.fill(); };
-  POIS.forEach(p => { if (p.type !== 'health') dot(p.x, p.z, '#' + p.color.toString(16).padStart(6, '0'), 3); });
+  // the highway deck and ramps
+  mg.strokeStyle = '#e8d060'; mg.lineWidth = 3.2; mg.beginPath(); mg.moveTo(cx + (HW.w0 - px) * sc, cx + (HW_Z - pz) * sc); mg.lineTo(cx + (HW.e1 - px) * sc, cx + (HW_Z - pz) * sc); mg.stroke();
+  const edge = (x, z, m) => { let dx = (x - px) * sc, dz = (z - pz) * sc; const dd = Math.max(Math.abs(dx), Math.abs(dz)), mm2 = cx - m; if (dd > mm2) { dx = dx / dd * mm2; dz = dz / dd * mm2; return [cx + dx, cx + dz, true]; } return [cx + dx, cx + dz, false]; };
+  for (const m of allMarkers()) {
+    if (m.kind === 'poi') { if (!m.minimap || m.category === 'park') continue; const X = cx + (m.x - px) * sc, Z = cx + (m.z - pz) * sc; if (X < 6 || Z < 6 || X > S - 6 || Z > S - 6) continue; glyphDot(mg, X, Z, 5.5, m.color, m.glyph); }
+  }
   const flashRed = Math.sin(G.time * 8) > 0;
-  cars.forEach(c => { if (c.kind === 'cop' && !c.wreck && c.driver !== 'player') dot(c.x, c.z, flashRed ? '#ff3030' : '#3060ff', 3); });
-  officers.forEach(o => { if (!o.dead) dot(o.x, o.z, '#6688ff', 2); });
-  if (G.mission) { const t = G.mission.pts[G.mission.idx]; let dx = (t[0] - px) * sc, dz = (t[1] - pz) * sc; const m = cx - 7, dd = Math.max(Math.abs(dx), Math.abs(dz)); if (dd > m) { dx = dx / dd * m; dz = dz / dd * m; } mg.fillStyle = '#ffee55'; mg.beginPath(); mg.arc(cx + dx, cx + dz, 5, 0, 7); mg.fill(); }
+  cars.forEach(c => { if (c.kind === 'cop' && !c.wreck && c.driver !== 'player') { const X = cx + (c.x - px) * sc, Z = cx + (c.z - pz) * sc; if (X > 2 && Z > 2 && X < S - 2 && Z < S - 2) { mg.fillStyle = flashRed ? '#ff3030' : '#3060ff'; mg.beginPath(); mg.arc(X, Z, 3, 0, 7); mg.fill(); } } });
+  officers.forEach(o => { if (!o.dead) { const X = cx + (o.x - px) * sc, Z = cx + (o.z - pz) * sc; if (X > 2 && Z > 2 && X < S - 2 && Z < S - 2) { mg.fillStyle = '#6688ff'; mg.beginPath(); mg.arc(X, Z, 2, 0, 7); mg.fill(); } } });
+  for (const id of ['waypoint', 'mission']) { const m = getMarker(id); if (!m) continue; const [X, Z, clamped] = edge(m.x, m.z, 8); mg.fillStyle = m.color; mg.strokeStyle = '#000'; mg.lineWidth = 2; mg.beginPath(); mg.arc(X, Z, clamped ? 5 : 6, 0, 7); mg.fill(); mg.stroke(); }
   mg.save(); mg.translate(cx, cx); mg.rotate(Math.PI - player.yaw); mg.fillStyle = '#fff'; mg.beginPath(); mg.moveTo(0, -7); mg.lineTo(5, 5); mg.lineTo(-5, 5); mg.closePath(); mg.fill(); mg.restore();
+}
+let lastDistrict = '';
+function showDistrict() {
+  const d = DISTRICTS[districtAt(player.x, player.z)].name;
+  if (d !== lastDistrict) { lastDistrict = d; const el = $('district'); el.textContent = d; el.classList.add('on'); clearTimeout(showDistrict.t); showDistrict.t = setTimeout(() => el.classList.remove('on'), 2600); }
 }
 
 export function updateHud(dt) {
@@ -54,5 +66,5 @@ export function updateHud(dt) {
   const c = player.car; setText('speed', c ? Math.round(Math.abs(c.speed) * 3.6) + ' km/h' + (c.hp < 100 ? '  car ' + Math.max(0, Math.round(c.hp)) + '%' : '') : '');
   setText('prompt', interaction.text);
   const mt = missionText(); $('mission').hidden = !mt; setText('mission', mt);
-  drawMinimap();
+  drawMinimap(); showDistrict();
 }

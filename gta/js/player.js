@@ -9,11 +9,12 @@ import { createCharacter, playerSpec } from './models/characters.js';
 import { scene } from './render.js';
 import { data } from './save.js';
 import { roomPush } from './models/interiors.js';
+import { walkBlocked, zoneAt } from './highway.js';
 import { spawnHospital } from './locations.js';
 import { flash, say } from './ui.js';
 import { wasted } from './lifecycle.js';
 
-export const player = { x: spawnHospital[0] - 8, z: spawnHospital[1], yaw: 0, vx: 0, vz: 0, hp: 100, car: null, mesh: null, ch: null, aimT: 0, vis: null, shootCd: 0, hurt: 0, moving: false, ph: 0, sprinting: false };
+export const player = { x: spawnHospital[0] - 8, z: spawnHospital[1], yaw: 0, vx: 0, vz: 0, hp: 100, car: null, mesh: null, ch: null, aimT: 0, vis: null, shootCd: 0, hurt: 0, moving: false, ph: 0, sprinting: false, y: 0 };
 export const REACH = 3.8;
 export function initPlayer() { dressPlayer(); }
 /** (Re)build the player's character with the saved outfit. */
@@ -43,8 +44,9 @@ export function nearestCar() {
 }
 export function enterCar(c) {
   if (!c || c.wreck || player.car || !canAct()) return false;
+  if (c.kind === 'display') { say('for sale: talk to the dealer first', 2); return false; }
   if (c.driver === 'ai') { addHeat(c.kind === 'cop' ? 40 : 14); say('carjacked', 1.5); ejectDriver(c); }
-  else if (c.kind === 'cop') addHeat(40);
+  else if (c.kind === 'cop' || c.type === 'cruiser') addHeat(40);
   if (c.kind === 'cop') { if (c.cop && c.cop.out) c.cop.out.car = null; c.cop = null; }
   c.ai = null; c.driver = 'player'; c.kind = c.kind === 'parked' || c.kind === 'cop' || c.kind === 'traffic' ? 'owned' : c.kind;
   c.vx = c.vz = c.spin = 0; c.despawn = 0;
@@ -59,6 +61,7 @@ function carBlocks(x, z, except) { return cars.some(c => c !== except && carDist
 export function leaveCar(forced) {
   const c = player.car; if (!c) return false;
   if (!forced && Math.abs(c.speed) >= 14) { say('slow down first', 1.5); return false; }
+  if (!forced && c.layer === 1 && zoneAt(c.x, c.z)) { say('no stopping on the highway', 2); return false; }
   const rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw), fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
   let spot = null;
   outer: for (const dist of [c.cr + 1.3, c.cr + 2.4]) for (const side of [1, -1]) for (const off of [0, 1.8, -1.8]) {
@@ -76,7 +79,7 @@ export function hurtPlayer(d) {
 }
 
 export function updatePlayer(dt, inp) {
-  player.shootCd -= dt; player.hurt -= dt;
+  player.shootCd -= dt; player.hurt -= dt; player.y = player.car ? player.car.y : 0;
   const c = player.car;
   if (G.mode !== 'playing') { if (c) driveCar(c, 0, 0, true, dt); if (c) { player.x = c.x; player.z = c.z; } return; }
   if (c) {
@@ -102,6 +105,7 @@ export function updatePlayer(dt, inp) {
       const dx = r[0] - qx, dz = r[1] - qz, m = car.cr + .4, d2 = dx * dx + dz * dz;
       if (d2 < m * m) { const d = Math.sqrt(d2) || .001; r = pushOut(qx + dx / d * m, qz + dz / d * m, .45); }
     }
+    if (!room && walkBlocked(r[0], r[1])) { r[0] = player.x; r[1] = player.z; }   // the ramps are for cars only
     player.x = r[0]; player.z = r[1];
     player.yaw += angDiff(Math.atan2(player.vx, player.vz), player.yaw) * Math.min(1, dt * 14);
     player.ph += dt * (inp.run ? 14 : 10);
