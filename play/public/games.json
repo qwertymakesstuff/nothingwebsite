@@ -152,5 +152,19 @@
     "url": "/lanewars/",
     "description": "Train an army and destroy the enemy base.",
     "group": "flash"
+  },
+  {
+    "name": "Granny",
+    "image": "/banners/granny.svg",
+    "url": "https://missing.website/granny/",
+    "description": "Escape her three-storey house. Keys, bottles, hiding spots.",
+    "group": "big"
+  },
+  {
+    "name": "Harbor City",
+    "image": "/banners/gta.svg",
+    "url": "https://missing.website/gta/",
+    "description": "Open-world crime sandbox: steal cars, take jobs, evade the police.",
+    "group": "big"
   }
 ]
