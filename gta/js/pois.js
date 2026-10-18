@@ -2,6 +2,7 @@
 // Everything here is plain data computed from the city map, so positions can be tested without a renderer.
 import { N, B, S, INSET, MAP, blockX, blockZ, corner, findBlocks, districtOf, footprints, entrance, doorAt, rc } from './layout.js';
 import { HW_H, HW_ROAD } from './highway.js';
+import { coastalSpots } from './coast.js';
 
 /** category -> label, colour, map glyph (a letter, so it also draws without an emoji font) and a display emoji */
 export const CATEGORIES = {
@@ -23,6 +24,7 @@ export const CATEGORIES = {
   depot:       { label: 'Truck depot',     color: '#9aa4b0', glyph: 'T', icon: '🚚' },
   docks:       { label: 'Docks',           color: '#5ab8e0', glyph: 'K', icon: '⚓' },
   parking:     { label: 'Parking',         color: '#8a9ab0', glyph: 'p', icon: '🅿️' },
+  beach:       { label: 'Beach / pier',    color: '#f0d890', glyph: '~', icon: '🏖️' },
   landmark:    { label: 'Landmark',        color: '#ff7ad8', glyph: '*', icon: '⭐' },
   park:        { label: 'Park',            color: '#6ac85a', glyph: 't', icon: '🌳' },
   site:        { label: 'Site',            color: '#b89a6a', glyph: 's', icon: '🚧' },
@@ -90,13 +92,15 @@ export function buildPois() {
   // job givers on pavement corners all over the city
   const giverSpots = [['Z', 0, 'City Plaza job'], ['K', 1, 'Docks job'], ['U', 0, 'Depot job'], ['N', 0, 'Car park job'], ['w', 0, 'Waterfront job'], ['p', 1, 'Park job'], ['o', 0, 'Outskirts job'], ['D', 0, 'Downtown job']];
   giverSpots.forEach(([ch, c, name], k) => { const [i, j] = findBlocks(ch)[0]; const p = corner(i, j, c); add({ id: 'job_' + (k + 1), name, category: 'mission', i, j, x: p[0], z: p[1], radius: 3.5, kind: 'giver', exteriorOnly: true, road: [p[0], p[1]] }); });
+  // beach car parks and piers outside the city square
+  coastalSpots().forEach(c => add({ id: c.id, name: c.name, category: c.category, i: 0, j: 0, district: 'outskirts', x: c.x, z: c.z, radius: 10, kind: 'coast', exteriorOnly: true, road: [c.x, c.z] }));
   // health pickups
   findBlocks('p').concat(findBlocks('w'), findBlocks('Z')).forEach(([i, j], k) => { const p = corner(i, j, 0); add({ id: 'health_' + (k + 1), name: 'Health', category: 'health', i, j, x: p[0] + 3, z: p[1] + 3, radius: 2.2, kind: 'pickup', exteriorOnly: true, road: [p[0], p[1]] }); });
   return out;
 }
 // only the first of each bulk category (warehouse, factory, depot, docks, site) is a flagship marker; the rest are minor (still valid mission targets)
 const POIS_ALL = buildPois(), seen = new Set();
-POIS_ALL.forEach(p => { if (['warehouse', 'factory', 'depot', 'docks', 'site', 'gas', 'parking', 'store', 'restaurant', 'clothing'].includes(p.category)) { const k = p.category + '|' + (p.category === 'warehouse' || p.category === 'depot' || p.category === 'factory' || p.category === 'docks' || p.category === 'site' ? '' : p.district); p.minor = seen.has(k); seen.add(k); } });
+POIS_ALL.forEach(p => { if (p.kind === 'coast') { p.minor = false; return; } if (['warehouse', 'factory', 'depot', 'docks', 'site', 'gas', 'parking', 'store', 'restaurant', 'clothing'].includes(p.category)) { const k = p.category + '|' + (p.category === 'warehouse' || p.category === 'depot' || p.category === 'factory' || p.category === 'docks' || p.category === 'site' ? '' : p.district); p.minor = seen.has(k); seen.add(k); } });
 export const POIS = POIS_ALL;
 const byId = new Map(POIS.map(p => [p.id, p]));
 export const getPoi = id => byId.get(id) || null;

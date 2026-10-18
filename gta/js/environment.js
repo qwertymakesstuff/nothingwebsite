@@ -3,6 +3,7 @@ import { scene, camera, renderer } from './render.js';
 import { quality } from './settings.js';
 import { clamp } from './util.js';
 import { setWindowGlow } from './models/facades.js';
+import { setWaterEnv } from './terrain.js';
 import { setNightProps } from './models/props.js';
 import { lampTint } from './models/vehicles3d.js';
 
@@ -80,6 +81,7 @@ export function updateEnvironment(dt, fx, fz, play) {
   // the shadow box follows the player, snapped to shadow texels so edges don't crawl
   const snap = 150 / 2048, sx = Math.round(fx / snap) * snap, sz = Math.round(fz / snap) * snap;
   sun.target.position.set(sx, 0, sz); sun.position.set(sx + sdir.x * 160, sdir.y * 160, sz + sdir.z * 160);
+  setWaterEnv(sdir, tmp.sunC, tmp.hor, env.night);
   setWindowGlow(env.night * 1.15);
   setNightProps(env.night);
   const g = .5 + .5 * env.night; lampTint.color.setRGB(g, g * .97, g * .88);

@@ -1,6 +1,8 @@
 // HUD (money, health, stars, speed, prompt, mission strip), toasts/banners, minimap and the start/pause menus.
 import { N, B, P, RD, blockX, blockZ, blockType, DISTRICTS, districtAt } from './layout.js';
 import { HW, HW_Z } from './highway.js';
+import { shoreDist } from './coast.js';
+import { WORLD } from './layout.js';
 import { allMarkers, getMarker } from './markers.js';
 import { G } from './state.js';
 import { data } from './save.js';
@@ -32,6 +34,10 @@ function glyphDot(g, x, y, r, color, glyph) { g.fillStyle = '#0b0b0b'; g.beginPa
 function drawMinimap() {
   const S = mm.width, sc = S / 230, cx = S / 2, px = player.x, pz = player.z;
   mg.clearRect(0, 0, S, S); mg.fillStyle = '#2b2d30'; mg.fillRect(0, 0, S, S);
+  if (px < 140 || px > WORLD - 140 || pz < 140 || pz > WORLD - 140) { // near the edge of the city: show sea, sand and grass beyond it
+    const CELL = 10;
+    for (let ix = 0; ix < S; ix += CELL) for (let iz = 0; iz < S; iz += CELL) { const wx = px + (ix + CELL / 2 - cx) / sc, wz = pz + (iz + CELL / 2 - cx) / sc; if (wx > 0 && wx < WORLD && wz > 0 && wz < WORLD) continue; const d = shoreDist(wx, wz); mg.fillStyle = d < 0 ? (d < -35 ? '#14405c' : '#1f6c86') : d < 26 ? '#e0cf9c' : '#5f8a4a'; mg.fillRect(ix, iz, CELL + 1, CELL + 1); }
+  }
   const lo = Math.max(0, Math.floor((px - 125 - RD / 2) / P)), hi = Math.min(N - 1, Math.ceil((px + 125 - RD / 2) / P)), lz = Math.max(0, Math.floor((pz - 125 - RD / 2) / P)), hz = Math.min(N - 1, Math.ceil((pz + 125 - RD / 2) / P));
   for (let i = lo; i <= hi; i++) for (let j = lz; j <= hz; j++) {
     const x = cx + (blockX(i) - px) * sc, z = cx + (blockZ(j) - pz) * sc, t = blockType(i, j);

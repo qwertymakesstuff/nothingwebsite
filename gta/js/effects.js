@@ -24,3 +24,8 @@ export function clearFx() { fx.forEach(f => scene.remove(f.mesh)); fx.length = 0
 
 const flashMat = new THREE.SpriteMaterial({ color: 0xffd070, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
 export function muzzleFlash(x, y, z) { const s = new THREE.Sprite(flashMat); s.scale.set(.7, .7, 1); s.position.set(x, y, z); addFx(s, .06, 0); }
+
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xe8f4ff, transparent: true, opacity: .8, depthWrite: false, side: THREE.DoubleSide });
+const ringGeo = new THREE.RingGeometry(.6, 1, 16).rotateX(-Math.PI / 2);
+/** a ring of spray where a car meets the water */
+export function splash(x, z, speed) { const m = new THREE.Mesh(ringGeo, ringMat.clone()); m.position.set(x, -.02, z); addFx(m, .8, 3 + Math.min(4, speed * .15)); import('./audio.js').then(a => a.sfx.splash && a.sfx.splash(Math.min(.4, speed / 60))); }

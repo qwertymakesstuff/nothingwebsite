@@ -37,6 +37,11 @@ An 11 x 11 grid of blocks. `layout.js` has the map (`MAP`, one character per blo
 * **Population**: traffic, pedestrians and parked cars are weighted by district (`DISTRICTS` in `layout.js`), plus a few cars on the highway.
 * **Culling**: blocks and prop chunks beyond ~200-250 m are hidden; instanced props are split into chunks so the camera can skip them.
 
+### Coast, beaches and ocean (phase 4.5)
+The old square edge is gone. `js/coast.js` (pure, tested) defines the shoreline as a signed distance field: an irregular perimeter with bays, headlands and rocky stretches. `terrain.js` builds a sloping sand/rock/grass terrain mesh and a shader ocean (waves, foam line, wet sand, depth colour) that runs to the horizon. `models/beach.js` adds dunes, rocks, driftwood, beach grass, palms, umbrellas, boardwalks, piers, lifeguard towers, car parks and the port quay.
+- Collisions: `limitToLand()` (used by `pushOut`) only acts at the waterline, so cars slow and splash instead of hitting an invisible wall; player, NPCs, traffic and mission vehicles all share it.
+- City edges flow into the coast: the harbour pier and port quay, west beach road and car park, east point/jetty, and scenic coastal roads. Beach POIs appear on the map and minimap.
+
 ### Art and models (`js/models/`, `environment.js`)
 
 Everything is procedural: no downloaded models or textures. Models are built once from small functions, merged into a few geometries, and shared.

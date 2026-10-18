@@ -2,6 +2,8 @@
 import { scene } from './render.js';
 import { N, blockX, blockZ, corner, blockType, DISTRICTS } from './layout.js';
 import { walkBlocked } from './highway.js';
+import { shoreDist } from './coast.js';
+import { WORLD } from './layout.js';
 import { G, addMoney, addHeat, bump } from './state.js';
 import { rand, pick } from './util.js';
 import { sfx } from './audio.js';
@@ -28,6 +30,16 @@ function pedNext(p) { // arrived at a corner: keep going round the block, turn b
   else if (r < .55) p.dir *= -1;
   p.c = p.nc; p.nc = (p.c + p.dir + 4) % 4; p.tgt = corner(p.i, p.j, p.nc);
 }
+/** a beach-goer: wanders freely over the sand between the water and the dunes */
+const beachPoint = (x, z) => { for (let t = 0; t < 30; t++) { const a = Math.random() * 6.283, r = 6 + Math.random() * 40, px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r; const d = shoreDist(px, pz); if (d > 7 && d < 34 && !(px > -4 && px < WORLD + 4 && pz > -4 && pz < WORLD + 4)) return [px, pz]; } return null; };
+export function makeBeachPed() {
+  for (let t = 0; t < 60; t++) {
+    const a = Math.random() * 6.283, r = 330 + Math.random() * 250, x = WORLD / 2 + Math.cos(a) * r, z = WORLD / 2 + Math.sin(a) * r, d = shoreDist(x, z);
+    if (d < 8 || d > 30 || (x > -4 && x < WORLD + 4 && z > -4 && z < WORLD + 4)) continue;
+    const q = makePed([x, z]); q.free = true; q.speed = 1 + Math.random() * .6; q.tgt = beachPoint(x, z) || [x, z]; return q;
+  }
+  return null;
+}
 export function killPed(p, by) {
   if (p.dead) return; p.dead = 1; layDown(p.ch); dropItem('cash', p.x, p.z, Math.floor(rand(15, 70))); sfx.scream(); bump('kills');
 }
@@ -36,10 +48,10 @@ export function damagePed(p, dmg) { p.hp -= dmg; p.panic = 6; if (p.hp <= 0) { k
 export function updatePeds(dt) {
   for (let i = peds.length - 1; i >= 0; i--) {
     const p = peds[i];
-    if (p.dead) { p.dead += dt; p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); makePed(); } continue; }
+    if (p.dead) { p.dead += dt; p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); if (p.free) makeBeachPed(); else makePed(); } continue; }
     if (p.panic > 0) p.panic -= dt;
     const dx = p.tgt[0] - p.x, dz = p.tgt[1] - p.z, d = Math.hypot(dx, dz);
-    if (d < .6) pedNext(p);
+    if (d < .6) { if (p.free) p.tgt = beachPoint(p.x, p.z) || [p.x + (Math.random() - .5) * 8, p.z + (Math.random() - .5) * 8]; else pedNext(p); }
     else { const sp = p.speed * (p.panic > 0 ? 3.4 : 1); p.x += dx / d * sp * dt; p.z += dz / d * sp * dt; p.yaw = Math.atan2(dx, dz); p.cur = sp; }
     p.mesh.position.set(p.x, 0, p.z); p.mesh.rotation.y = p.yaw;
     p.mesh.visible = Math.abs(p.x - player.x) < 110 && Math.abs(p.z - player.z) < 110;

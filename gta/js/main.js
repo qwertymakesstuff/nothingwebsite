@@ -4,6 +4,7 @@ import { buildCity, cullBlocks } from './city.js';
 import { buildHighway } from './models/highwayModel.js';
 import { buildProps, updateTrafficLights, cullProps } from './models/props.js';
 import { updateEnvironment, updateHeadlights, env, setHour } from './environment.js';
+import { updateWater } from './terrain.js';
 import { quality, setQuality } from './settings.js';
 import { enterShop, leaveShop } from './shops.js';
 import { doors } from './models/buildings.js';
@@ -18,7 +19,7 @@ import { openMap, closeMap, isMapOpen } from './map.js';
 import { staticCars, spinners } from './models/kit.js';
 import { cars, makeCar, updateCars, removeCar } from './vehicles.js';
 import { spawnTraffic, spawnParked, spawnHighwayCar, trafficCount, highwayCount } from './traffic.js';
-import { peds, makePed, updatePeds, updateItems, dropItem } from './people.js';
+import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem } from './people.js';
 import { player, initPlayer, updatePlayer, syncPlayerMesh, hurtPlayer } from './player.js';
 import { updatePolice, spawnCop, officers } from './police.js';
 import { updateMission, startMission } from './missions.js';
@@ -38,6 +39,7 @@ initPlayer();
 /* build the city, then populate it */
 buildCity(); buildHighway(); buildProps(); registerPoiMarkers(); buildZones(); updateEnvironment(0, 0, 0, false);
 for (let i = 0; i < 56; i++) makePed();
+for (let i = 0; i < 14; i++) makeBeachPed();
 for (let i = 0; i < 46; i++) spawnParked();
 for (let i = 0; i < 30; i++) spawnTraffic();
 for (let i = 0; i < 6; i++) spawnHighwayCar();
@@ -99,7 +101,7 @@ function frame(now) {
       if (G.mode === 'playing' && inp.fire) shoot();
     }
   }
-  updateMarkers(dt, player.x, player.z); spinners.forEach(s => { s.mesh.rotation[s.axis || 'z'] += s.speed * dt; });
+  updateWater(performance.now() / 1000); updateMarkers(dt, player.x, player.z); spinners.forEach(s => { s.mesh.rotation[s.axis || 'z'] += s.speed * dt; });
   cullT -= dt; if (cullT <= 0) { cullT = .4; cullBlocks(player.x, player.z, quality === 'low' ? 200 : 250); cullProps(player.x, player.z, quality === 'low' ? 170 : 220); }
   updateTrafficLights(G.time); updateHeadlights(G.interior ? null : player.car);
   updateEnvironment(dt, player.x, player.z, inWorld());

@@ -10,7 +10,7 @@ import { vcLambert, glowTexture } from './materials.js';
 const mat4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), sc = new THREE.Vector3(), pos = new THREE.Vector3();
 const CHUNK = 110, allChunks = [];
 /** Instanced props, split into spatial chunks so the camera can skip whole chunks (an InstancedMesh is otherwise drawn in full, however far away). */
-class Prop {
+export class Prop {
   constructor(parts) { this.parts = parts; this.n = 0; this.chunks = new Map(); }
   place(x, z, yaw, s, y) {
     q.setFromAxisAngle(up, yaw || 0); sc.set(s || 1, s || 1, s || 1); pos.set(x, y || 0, z); mat4.compose(pos, q, sc);

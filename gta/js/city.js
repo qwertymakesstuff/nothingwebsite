@@ -2,6 +2,9 @@
 import { scene } from './render.js';
 import { N, B, RD, P, WORLD, INSET, rc, blockX, blockZ, blockType, blockChar, footprints } from './layout.js';
 import { HW, HW_Z, HW_HALF } from './highway.js';
+import { limitToLand } from './coast.js';
+import { buildTerrain } from './terrain.js';
+import { buildBeach } from './models/beach.js';
 import { clamp, rng } from './util.js';
 import { quality } from './settings.js';
 import { buildBlock, circles, spinners } from './models/buildings.js';
@@ -16,7 +19,7 @@ export function addCircle(x, z, r) { const k = Math.floor(x / CELLSZ) + ',' + Ma
 /** Push a circle (x,z,rad) out of every solid thing. Returns [x, z, hit, nx, nz]. */
 export function pushOut(x, z, rad) {
   const bi = Math.floor((x - RD / 2) / P), bj = Math.floor((z - RD / 2) / P);
-  let hit = false, nx = 0, nz = 0;
+  let hit = false, nx = 0, nz = 0, wall = false;
   for (let i = bi - 1; i <= bi + 1; i++) for (let j = bj - 1; j <= bj + 1; j++) {
     const list = rectGrid[i + ',' + j]; if (!list) continue;
     for (const r of list) {
@@ -39,9 +42,9 @@ export function pushOut(x, z, rad) {
       if (d2 < m * m) { const d = Math.sqrt(d2) || .001; x = c.x + dx / d * m; z = c.z + dz / d * m; hit = true; nx += dx / d; nz += dz / d; }
     }
   }
-  if (x < 1.5 + rad) { x = 1.5 + rad; hit = true; nx = 1; } if (x > WORLD - 1.5 - rad) { x = WORLD - 1.5 - rad; hit = true; nx = -1; }
-  if (z < 1.5 + rad) { z = 1.5 + rad; hit = true; nz = 1; } if (z > WORLD - 1.5 - rad) { z = WORLD - 1.5 - rad; hit = true; nz = -1; }
-  return [x, z, hit, nx, nz];
+  // the edge of the world is the water line, not a wall: stay on dry land (or a pier) outside the city square
+  wall = hit; const lp = limitToLand(x, z, rad + 1.4); let shore = false; if (lp.hit) { x = lp.x; z = lp.z; hit = true; nx += lp.nx; nz += lp.nz; shore = !wall; }
+  return [x, z, hit, nx, nz, shore];
 }
 /** True if the straight line a->b is not blocked by a building. */
 export function lineClear(ax, az, bx, bz) {
@@ -95,16 +98,16 @@ function groundTex() {
   const t = new THREE.CanvasTexture(c); t.anisotropy = 8; return t;
 }
 export let ground = null;
-const sea = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x2c6a88, roughness: .25, metalness: .2 }));
-sea.rotation.x = -Math.PI / 2; sea.position.set(WORLD / 2, -.4, WORLD / 2); scene.add(sea);
-export { sea };
+
 
 /* the blocks themselves */
 export function buildCity() {
+  buildTerrain();
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) if (blockType(i, j) && true) buildBlock(i, j);
   circles.forEach(c => addCircle(c[0], c[1], c[2]));
   ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD), new THREE.MeshLambertMaterial({ map: groundTex() }));
   ground.rotation.x = -Math.PI / 2; ground.position.set(WORLD / 2, 0, WORLD / 2); ground.receiveShadow = true; scene.add(ground);
+  buildBeach();
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (blockChar(i, j) === 'p') addCircle(blockX(i) + B / 2, blockZ(j) + B / 2, 4.2); // the pond
 }
 export function beam(x, z, col, h) {
