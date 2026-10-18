@@ -1,6 +1,12 @@
 // Entry point: builds the world, runs the frame loop, wires menus to the game state.
 import { renderer, render } from './render.js';
-import './city.js';
+import { buildCity } from './city.js';
+import { buildProps, updateTrafficLights } from './models/props.js';
+import { updateEnvironment, updateHeadlights, env, setHour } from './environment.js';
+import { quality, setQuality } from './settings.js';
+import { enterShop, leaveShop } from './shops.js';
+import { doors } from './models/buildings.js';
+import { lightPhase } from './signals.js';
 import { G, inWorld, canAct } from './state.js';
 import { data, persist } from './save.js';
 import { initAudio, resumeAudio } from './audio.js';
@@ -24,7 +30,8 @@ import { addHeat } from './state.js';
 const $ = id => document.getElementById(id);
 initPlayer();
 
-/* populate the city */
+/* build the city, then populate it */
+buildCity(); buildProps(); updateEnvironment(0, 0, 0, false);
 for (let i = 0; i < 40; i++) makePed();
 for (let i = 0; i < 34; i++) spawnParked();
 for (let i = 0; i < 22; i++) spawnTraffic();
@@ -53,6 +60,7 @@ bindActions({
   lockLost() { if (G.mode === 'playing') pause(true); }
 });
 $('go').addEventListener('click', begin);
+const qb = $('qual'); qb.textContent = 'graphics: ' + quality; qb.addEventListener('click', () => { setQuality(quality === 'high' ? 'low' : 'high'); location.reload(); });
 $('resume').addEventListener('click', () => pause(false));
 document.addEventListener('visibilitychange', () => { if (document.hidden && G.mode === 'playing') pause(true); });
 window.addEventListener('pagehide', persist);
@@ -62,20 +70,27 @@ let lastT = performance.now();
 function afterRespawn() { snapCamera(); clearInput(); if (!isTouch() && !hasLock()) pause(true); } // after dying the mouse lock is gone: land on the pause menu
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
+  const dt = Math.min(window.__maxDt || .05, (now - lastT) / 1000); lastT = now; // __maxDt is only for the automated tests, which run on a software renderer
   if (inWorld()) {
     G.time += dt;
-    updatePlayer(dt, readInput()); updateCars(dt); updatePeds(dt); updatePolice(dt); updateItems(dt, it => { if (it.kind === 'cash') sfx.cash(); else say('health', 1.2); });
-    updateFx(dt); updateMission(dt); updateLifecycle(dt, afterRespawn);
-    if (trafficCount() < 24 && Math.random() < dt * 2) spawnTraffic();
-    POIS.forEach(p => { if (p.type === 'job' && p.mesh) p.mesh.rotation.y += dt; });
-    updateInteraction();
-    if (G.mode === 'playing' && readInput().fire) shoot();
+    const inp = readInput();
+    if (G.interior) { // inside a shop the street is frozen: only the player, effects and the timers that matter run
+      updatePlayer(dt, inp); updateFx(dt); updateLifecycle(dt, afterRespawn); updateInteraction(); G.interior.room.clerk.update(dt, 0, {});
+    } else {
+      updatePlayer(dt, inp); updateCars(dt); updatePeds(dt); updatePolice(dt); updateItems(dt, it => { if (it.kind === 'cash') sfx.cash(); else say('health', 1.2); });
+      updateFx(dt); updateMission(dt); updateLifecycle(dt, afterRespawn);
+      if (trafficCount() < 24 && Math.random() < dt * 2) spawnTraffic();
+      POIS.forEach(p => { if (p.type === 'job' && p.mesh) p.mesh.rotation.y += dt; });
+      updateInteraction();
+      if (G.mode === 'playing' && inp.fire) shoot();
+    }
   }
-  syncPlayerMesh(); updateCamera(dt); updateHud(dt);
+  updateTrafficLights(G.time); updateHeadlights(G.interior ? null : player.car);
+  updateEnvironment(dt, player.x, player.z, inWorld());
+  syncPlayerMesh(dt); updateCamera(dt); updateHud(dt);
   render();
 }
 if (renderer) requestAnimationFrame(frame);
 
 // handles for the automated tests
-window.__gta = { G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted };
+window.__gta = { doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted };

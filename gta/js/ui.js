@@ -16,7 +16,7 @@ let msgT = 0, bannerT = 0, hudT = 0, lastStars = -1, lastText = {};
 export function say(text, secs) { msgEl.textContent = text; msgEl.classList.add('on'); msgT = secs || 2.5; }
 export function banner(text, col, secs) { bannerEl.textContent = text; bannerEl.style.color = col || '#fff'; bannerEl.classList.add('on'); bannerT = secs || 2.2; }
 export function clearBanners() { bannerEl.classList.remove('on'); msgEl.classList.remove('on'); bannerT = msgT = 0; }
-export function flash(o) { flashEl.style.transition = 'none'; flashEl.style.opacity = o; requestAnimationFrame(() => requestAnimationFrame(() => { flashEl.style.transition = 'opacity .7s'; flashEl.style.opacity = 0; })); }
+export function flash(o, color) { flashEl.style.background = color || '#a00'; flashEl.style.transition = 'none'; flashEl.style.opacity = o; requestAnimationFrame(() => requestAnimationFrame(() => { flashEl.style.transition = 'opacity .7s'; flashEl.style.opacity = 0; })); }
 const setText = (id, t) => { if (lastText[id] !== t) { lastText[id] = t; $(id).textContent = t; } };
 
 export function showHud(on) { $('hud').hidden = !on; }

@@ -1,4 +1,5 @@
-// three.js renderer, scene, camera and lights. If WebGL is unavailable `renderer` stays null and a help box is shown.
+import { quality } from './settings.js';
+// three.js renderer, scene and camera (lighting lives in environment.js). If WebGL is unavailable `renderer` stays null and a help box is shown.
 /* ---------- three setup ---------- */
 export let canvas = document.getElementById('view');
 function failStart(detail) {
@@ -42,9 +43,9 @@ for (const [type, attrs] of [['webgl2', { antialias: true }], ['webgl', { antial
   catch (e) { ctxErr.push('three on ' + type + ': ' + e.message); }
 }
 if (!renderer) failStart(ctxErr.join(' | ') || 'no WebGL context available');
-if (renderer) { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setClearColor(0x9fb8c8); }
+if (renderer) { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setClearColor(0x9fb8c8); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05; if (quality === 'high') { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; } }
 export const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x9fb8c8, 90, 300);
+scene.fog = new THREE.Fog(0x9fb8c8, 70, 340);
 export const camera = new THREE.PerspectiveCamera(65, 1, 0.3, 340);
 
 scene.add(camera);
@@ -54,7 +55,4 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize); resize();
-export const hemi = new THREE.HemisphereLight(0xdfe9f2, 0x59605a, 0.95);
-export const sun = new THREE.DirectionalLight(0xfff1d6, 0.75); sun.position.set(80, 140, 50);
-scene.add(hemi, sun);
 export function render() { if (renderer) renderer.render(scene, camera); }

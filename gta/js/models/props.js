@@ -1,0 +1,132 @@
+// Street furniture, placed with instancing: every kind of prop is one geometry drawn many times. Collisions are small circles.
+import { scene } from '../render.js';
+import { N, B, RD, blockX, blockZ, rc, isPark, HOSPITAL, STATION } from '../layout.js';
+import { addCircle } from '../city.js';
+import { rng } from '../util.js';
+import { part, merge, BOX, CYL, SPH } from './mesh.js';
+import { vcLambert, glowTexture } from './materials.js';
+
+const mat4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), sc = new THREE.Vector3(), pos = new THREE.Vector3();
+class Prop {
+  constructor(parts, cap) { this.n = 0; this.meshes = parts.map(p => { const m = new THREE.InstancedMesh(p.geo, p.mat, cap); m.count = 0; m.castShadow = p.shadow !== false; m.frustumCulled = false; scene.add(m); return m; }); }
+  place(x, z, yaw, s, y) {
+    q.setFromAxisAngle(up, yaw || 0); sc.set(s || 1, s || 1, s || 1); pos.set(x, y || 0, z); mat4.compose(pos, q, sc);
+    this.meshes.forEach(m => m.setMatrixAt(this.n, mat4)); this.n++;
+    return this.n - 1;
+  }
+  done() { this.meshes.forEach(m => { m.count = this.n; m.instanceMatrix.needsUpdate = true; }); }
+}
+const metal = 0x3a3d42;
+const G = {
+  pole: merge([part(CYL(.09, .12, 6.4, 6), metal, { y: 3.2 }), part(BOX, metal, { sx: .1, sy: .1, sz: 1.7, y: 6.3, z: .8 }), part(BOX, 0x25272b, { sx: .4, sy: .12, sz: .7, y: 6.22, z: 1.55 })]),
+  bulb: merge([part(BOX, 0xffffff, { sx: .32, sy: .06, sz: .55, y: 6.14, z: 1.55 })]),
+  hydrant: merge([part(CYL(.16, .18, .55, 8), 0xc43228, { y: .3 }), part(SPH(.17, 8, 5), 0xc43228, { y: .6, sy: .7 }), part(BOX, 0xe0e0e0, { sx: .4, sy: .08, sz: .08, y: .42 }), part(CYL(.06, .06, .12, 6), 0xd8d8d8, { y: .82 })]),
+  trash: merge([part(CYL(.28, .24, .8, 9), 0x3f5a46, { y: .4 }), part(CYL(.3, .3, .06, 9), 0x2a3a2e, { y: .83 }), part(BOX, 0x555a5e, { sx: .5, sy: .04, sz: .04, y: .6 })]),
+  meter: merge([part(CYL(.04, .04, 1.1, 5), 0x66696e, { y: .55 }), part(BOX, 0x4a4d52, { sx: .18, sy: .3, sz: .12, y: 1.2 }), part(BOX, 0x9ac0e0, { sx: .12, sy: .1, sz: .02, y: 1.25, z: .07 })]),
+  bench: merge([part(BOX, 0x7a5a3a, { sx: 1.7, sy: .08, sz: .5, y: .45 }), part(BOX, 0x7a5a3a, { sx: 1.7, sy: .4, sz: .07, y: .72, z: -.22, rx: -.12 }), part(BOX, metal, { sx: .08, sy: .45, sz: .45, x: -.75, y: .22 }), part(BOX, metal, { sx: .08, sy: .45, sz: .45, x: .75, y: .22 })]),
+  dumpster: merge([part(BOX, 0x2f6a3f, { sx: 1.9, sy: 1.1, sz: 1.0, y: .75 }), part(BOX, 0x1f2a22, { sx: 2.0, sy: .1, sz: 1.1, y: 1.35 }), part(BOX, 0x1a1a1c, { sx: .15, sy: .2, sz: .15, x: -.8, y: .12, z: .35 }), part(BOX, 0x1a1a1c, { sx: .15, sy: .2, sz: .15, x: .8, y: .12, z: .35 })]),
+  tlPole: merge([part(CYL(.1, .12, 4.6, 6), metal, { y: 2.3 }), part(BOX, 0x1c1c1f, { sx: .38, sy: 1.15, sz: .3, y: 4.5, z: .0 })]),
+  tree: merge([part(CYL(.16, .24, 2.4, 6), 0x5a3d22, { y: 1.2 }), part(SPH(1.5, 8, 6), 0x3a7a3a, { y: 3.4, sy: 1.05 }), part(SPH(1.05, 7, 5), 0x4a8a3a, { x: .7, y: 4.4, z: .2 }), part(SPH(.95, 7, 5), 0x2f6a35, { x: -.6, y: 4.1, z: -.4 })]),
+  pine: merge([part(CYL(.14, .2, 1.4, 6), 0x4a3320, { y: .7 }), part(CYL(0, 1.5, 2.4, 8), 0x2a6a3a, { y: 2.4 }), part(CYL(0, 1.15, 2.2, 8), 0x2f7a40, { y: 3.8 }), part(CYL(0, .8, 1.8, 8), 0x378a48, { y: 5.0 })])
+};
+const plateGeo = (txt, bg, fg, shape) => {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#2a2a2a'; g.fillRect(0, 0, 64, 64);
+  g.fillStyle = bg; if (shape === 'round') { g.beginPath(); g.arc(32, 32, 28, 0, 7); g.fill(); g.strokeStyle = '#cc2222'; g.lineWidth = 5; g.stroke(); } else g.fillRect(3, 3, 58, 58);
+  g.fillStyle = fg; g.font = 'bold 28px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 32, 34);
+  return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) });
+};
+const POLE_GEO = merge([part(CYL(.04, .04, 2.6, 5), 0x6a6d72, { y: 1.3 })]);
+const PLATE = new THREE.BoxGeometry(.7, .7, .04); PLATE.translate(0, 2.35, .05);
+
+export const lightMats = { bulb: new THREE.MeshBasicMaterial({ color: 0x9a9a90 }), pool: null };
+const poolMat = new THREE.MeshBasicMaterial({ map: glowTexture('rgba(255,225,160,.9)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 });
+export const nightProps = { poolMat };
+const tl = { x: null, lamps: null, nodes: [] };
+
+import { lightPhase } from '../signals.js';
+export { lightPhase };
+const LC = { red: [0xff3a2a, 0x401210, 0x401210], yellow: [0x3a2a08, 0xffc22a, 0x3a2a08], green: [0x0c2a14, 0x0c2a14, 0x3aff6a] };
+
+export function buildProps() {
+  const R = rng(99), pad = 0.7;
+  const lights = new Prop([{ geo: G.pole, mat: vcLambert }, { geo: G.bulb, mat: lightMats.bulb, shadow: false }], 260);
+  const pools = new THREE.InstancedMesh(new THREE.PlaneGeometry(9, 9).rotateX(-Math.PI / 2), poolMat, 260); pools.count = 0; pools.frustumCulled = false; scene.add(pools); let pn = 0;
+  const hyd = new Prop([{ geo: G.hydrant, mat: vcLambert }], 120), trash = new Prop([{ geo: G.trash, mat: vcLambert }], 120), meters = new Prop([{ geo: G.meter, mat: vcLambert }], 200), bench = new Prop([{ geo: G.bench, mat: vcLambert }], 100), dump = new Prop([{ geo: G.dumpster, mat: vcLambert }], 40), trees = new Prop([{ geo: G.tree, mat: vcLambert }], 700), pines = new Prop([{ geo: G.pine, mat: vcLambert }], 200);
+  const place = (prop, x, z, yaw, r, s) => { prop.place(x, z, yaw, s); if (r) addCircle(x, z, r); };
+  const toRoad = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // outward direction of each block side
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const bx = blockX(i), bz = blockZ(j), park = isPark(i, j), dc = Math.max(Math.abs(i - 3), Math.abs(j - 3));
+    // street lights: middle of each side, arm pointing at the road
+    [[bx + B / 2, bz + pad, 0], [bx + B / 2, bz + B - pad, 1], [bx + pad, bz + B / 2, 2], [bx + B - pad, bz + B / 2, 3]].forEach(([x, z, f]) => {
+      const d = toRoad[f], yaw = Math.atan2(d[0], d[1]); place(lights, x, z, yaw, .25);
+      const px = x + d[0] * 1.6, pz = z + d[1] * 1.6; q.setFromAxisAngle(up, 0); pos.set(px, .05, pz); sc.set(1, 1, 1); mat4.compose(pos, q, sc); pools.setMatrixAt(pn++, mat4);
+    });
+    const sides = [[0, 1], [1, 0]];
+    // hydrants and bins near the corners (the curb side keeps them clear of the walking line)
+    if (!park && R() < .7) place(hyd, bx + 6 + R() * 6, bz + pad + .1, 0, .3);
+    if (!park && R() < .6) place(trash, bx + B - 8 - R() * 4, bz + B - pad - .1, 0, .35);
+    if (!park && dc >= 1 && R() < .5) place(trash, bx + pad + .1, bz + 8 + R() * 6, 0, .35);
+    // parking meters in a row where there is a shop front
+    if (dc <= 2 && !park) for (let m = 0; m < 4; m++) place(meters, bx + 9 + m * 6, bz + B - pad - .1, 0, .15);
+    // benches against the building line, facing the road
+    if (!park && R() < .5) place(bench, bx + 10 + R() * 8, bz + 2.55, Math.PI, .6);
+    if (!park && R() < .4) place(bench, bx + 10 + R() * 8, bz + B - 2.55, 0, .6);
+    // dumpsters round the back of the industrial corner
+    if (i <= 1 && j >= 4 && !(i === STATION[0] && j === STATION[1])) place(dump, bx + 8 + R() * 18, bz + 2.3, 0, 1.0);
+    // street trees on the quieter blocks
+    if (!park && dc >= 2) for (let t = 0; t < 3; t++) place(trees, bx + 6 + t * 14 + R() * 3, bz + pad + 1.0, 0, .45, .8 + R() * .4);
+    if (park) for (let t = 0; t < 16; t++) { const x = bx + INSETPARK + R() * (B - 2 * INSETPARK), z = bz + INSETPARK + R() * (B - 2 * INSETPARK); R() < .35 ? place(pines, x, z, R() * 6, .5, .9 + R() * .5) : place(trees, x, z, R() * 6, .55, .9 + R() * .5); }
+  }
+  [hyd, trash, meters, bench, dump, trees, pines, lights].forEach(p => p.done()); pools.count = pn; pools.instanceMatrix.needsUpdate = true;
+
+  // traffic lights at every intersection: poles with two heads, lamp colours updated as the phase changes
+  const poles = new Prop([{ geo: G.tlPole, mat: vcLambert }], (N + 1) * (N + 1) * 4);
+  const lampGeo = new THREE.BoxGeometry(.2, .24, .06), lampCount = (N + 1) * (N + 1) * 4 * 6;
+  const lampMesh = new THREE.InstancedMesh(lampGeo, new THREE.MeshBasicMaterial(), lampCount); lampMesh.frustumCulled = false; scene.add(lampMesh);
+  lampMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(lampCount * 3), 3);
+  let ln = 0;
+  for (let a = 0; a <= N; a++) for (let b = 0; b <= N; b++) {
+    const entry = { a, b, base: ln, last: '' };
+    for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const x = rc(a) + sx * (RD / 2 + .5), z = rc(b) + sz * (RD / 2 + .5);
+      poles.place(x, z, 0, 1); addCircle(x, z, .22);
+      // head facing the z-traffic (approaching from sz side) and head facing the x-traffic
+      [[0, sz, 'z'], [sx, 0, 'x']].forEach(([dx, dz, axis]) => {
+        for (let k = 0; k < 3; k++) {
+          q.setFromAxisAngle(up, Math.atan2(dx, dz)); pos.set(x + dx * .17 + (dx ? 0 : 0), 4.5 + (1 - k) * .36, z + dz * .17); sc.set(1, 1, 1); mat4.compose(pos, q, sc);
+          lampMesh.setMatrixAt(ln, mat4); entry[axis] = entry[axis] || []; entry[axis].push(ln); ln++;
+        }
+      });
+    }
+    tl.nodes.push(entry);
+  }
+  poles.done(); lampMesh.count = ln; lampMesh.instanceMatrix.needsUpdate = true; tl.lamps = lampMesh;
+
+  // road signs: speed limits and one-way arrows on posts
+  const signs = [['30', '#f4f4f4', '#111', 'round'], ['P', '#2a5ac8', '#fff', 'sq'], ['→', '#111', '#fff', 'sq']].map(s => ({ mat: plateGeo(...s), n: 0 }));
+  const posts = new Prop([{ geo: POLE_GEO, mat: vcLambert }], 120);
+  const plates = signs.map(s => { const m = new THREE.InstancedMesh(PLATE, s.mat, 60); m.count = 0; m.frustumCulled = false; scene.add(m); return m; });
+  for (let k = 0; k < 90; k++) {
+    const i = Math.floor(R() * N), j = Math.floor(R() * N), side = Math.floor(R() * 4), t = 6 + R() * (B - 12);
+    const x = side < 2 ? blockX(i) + t : side === 2 ? blockX(i) + .5 : blockX(i) + B - .5, z = side === 0 ? blockZ(j) + .5 : side === 1 ? blockZ(j) + B - .5 : blockZ(j) + t;
+    const yaw = Math.atan2(toRoad[side][0], toRoad[side][1]), idx = k % 3; if (plates[idx].count >= 60) continue;
+    posts.place(x, z, yaw, 1); q.setFromAxisAngle(up, yaw); pos.set(x, 0, z); sc.set(1, 1, 1); mat4.compose(pos, q, sc); plates[idx].setMatrixAt(plates[idx].count++, mat4); addCircle(x, z, .12);
+  }
+  posts.done(); plates.forEach(p => { p.instanceMatrix.needsUpdate = true; });
+}
+const INSETPARK = 4;
+let lastKey = '';
+const c3 = new THREE.Color();
+/** Update traffic-light colours (cheap: only when a phase changes). */
+export function updateTrafficLights(t) {
+  if (!tl.lamps) return;
+  let changed = false;
+  for (const e of tl.nodes) {
+    const ph = lightPhase(e.a, e.b, t), key = ph.x + ph.z;
+    if (key === e.last) continue; e.last = key; changed = true;
+    ['x', 'z'].forEach(ax => { const cols = LC[ph[ax]]; e[ax].forEach((li, n) => { c3.setHex(cols[n % 3]); tl.lamps.setColorAt(li, c3); }); });
+  }
+  if (changed) tl.lamps.instanceColor.needsUpdate = true;
+}
+/** night 0..1: street lamps glow, light pools appear */
+export function setNightProps(n) { lightMats.bulb.color.setRGB(.6 + .4 * n, .6 + .35 * n, .55 + .1 * n); if (n > .05) lightMats.bulb.color.lerp(new THREE.Color(0xffe2a0), n); poolMat.opacity = Math.min(.8, n * .9); }

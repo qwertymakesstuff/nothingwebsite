@@ -2,7 +2,9 @@
 import { N, P } from './layout.js';
 import { DIRS, LANE, nodePos, nearestNode, inGrid } from './roads.js';
 import { clamp, rand, pick, angDiff } from './util.js';
-import { cars, makeCar } from './vehicles.js';
+import { cars, makeCar, showDriver } from './vehicles.js';
+import { lightPhase } from './signals.js';
+import { G } from './state.js';
 import { player } from './player.js';
 import { peds } from './people.js';
 import { officers } from './police.js';
@@ -17,7 +19,7 @@ export function spawnTraffic() {
     const x = p[0] + d[0] * s + r[0] * LANE, z = p[1] + d[1] * s + r[1] * LANE;
     if (Math.hypot(x - player.x, z - player.z) < 45 || cars.some(c => Math.hypot(c.x - x, c.z - z) < 8)) continue;
     const c = makeCar(x, z, Math.atan2(d[0], d[1]), 'traffic');
-    c.ai = { a, b, d, s, cruise: rand(8, 14), stopT: 0, ghost: 0 }; c.driver = 'ai'; return c;
+    c.ai = { a, b, d, s, cruise: rand(8, 14), stopT: 0, ghost: 0 }; c.driver = 'ai'; showDriver(c, true); return c;
   }
   return null;
 }
@@ -42,6 +44,8 @@ export function updateTraffic(c, dt) {
     cars.forEach(o => { if (o !== c) look(o.x, o.z, 2.4); }); peds.forEach(p => { if (!p.dead) look(p.x, p.z, 1.6); });
     look(player.x, player.z, 2); officers.forEach(o => { if (!o.dead) look(o.x, o.z, 1.6); });
   }
+  // stop at red: look at the signal of the intersection ahead, for this car's direction of travel
+  { const ahead = P - A.s, na = A.a + A.d[0], nb = A.b + A.d[1]; if (ahead > 8 && ahead < 22 && A.ghost <= 0) { const ph = lightPhase(na, nb, G.time), st = A.d[0] ? ph.x : ph.z; if (st === 'red' || (st === 'yellow' && ahead > 12)) target = Math.min(target, Math.max(0, (ahead - 9) * 1.5)); } }
   c.speed += clamp(target - c.speed, -26 * dt, 7 * dt);
   A.stopT = c.speed < .5 ? A.stopT + dt : 0; if (A.stopT > 5) { A.ghost = 2.5; A.stopT = 0; }
   A.s += Math.max(0, c.speed) * dt;

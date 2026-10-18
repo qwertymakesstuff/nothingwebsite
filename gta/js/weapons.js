@@ -3,7 +3,7 @@ import { pushOut } from './city.js';
 import { G, canAct, addHeat } from './state.js';
 import { angDiff } from './util.js';
 import { sfx } from './audio.js';
-import { tracer } from './effects.js';
+import { tracer, muzzleFlash } from './effects.js';
 import { cars, hurtCar } from './vehicles.js';
 import { player } from './player.js';
 import { peds, damagePed } from './people.js';
@@ -12,7 +12,7 @@ import { officers, damageOfficer } from './police.js';
 const RANGE = 40, COOLDOWN = .3;
 export function shoot() {
   if (!canAct() || player.car || player.shootCd > 0) return false;
-  player.shootCd = COOLDOWN; sfx.shot();
+  player.shootCd = COOLDOWN; player.aimT = 1.2; sfx.shot();
   let yaw = G.camYaw, best = null, bd = 1e9;
   const consider = (x, z) => { const dx = x - player.x, dz = z - player.z, d = Math.hypot(dx, dz); if (d > RANGE || d < .5) return; const a = Math.abs(angDiff(Math.atan2(dx, dz), G.camYaw)); if (a < .3 && a * d < bd) { bd = a * d; best = [x, z]; } };
   peds.forEach(p => { if (!p.dead) consider(p.x, p.z); }); officers.forEach(o => { if (!o.dead) consider(o.x, o.z); });
@@ -24,7 +24,8 @@ export function shoot() {
   let hit = null, hd = maxD;
   const test = (x, z, rad, ref, kind) => { const dx = x - player.x, dz = z - player.z, al = dx * fx + dz * fz, lat = Math.abs(dx * fz - dz * fx); if (al > 0 && al < hd && lat < rad) { hd = al; hit = { ref, kind }; } };
   peds.forEach(p => { if (!p.dead) test(p.x, p.z, .6, p, 'ped'); }); officers.forEach(o => { if (!o.dead) test(o.x, o.z, .6, o, 'cop'); });
-  cars.forEach(c => { if (!c.wreck && c.driver !== 'player') test(c.x, c.z, 1.5, c, 'car'); });
+  cars.forEach(c => { if (!c.wreck && c.driver !== 'player') test(c.x, c.z, c.cr + .3, c, 'car'); });
+  muzzleFlash(player.x + fx * .7, 1.25, player.z + fz * .7);
   tracer(player.x + fx * .6, 1.3, player.z + fz * .6, player.x + fx * hd, 1.2, player.z + fz * hd);
   peds.forEach(p => { if (!p.dead && Math.hypot(p.x - player.x, p.z - player.z) < 28) p.panic = 6; });
   if (hit) {

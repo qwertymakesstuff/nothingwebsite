@@ -21,3 +21,6 @@ export function updateFx(dt) {
   }
 }
 export function clearFx() { fx.forEach(f => scene.remove(f.mesh)); fx.length = 0; }
+
+const flashMat = new THREE.SpriteMaterial({ color: 0xffd070, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+export function muzzleFlash(x, y, z) { const s = new THREE.Sprite(flashMat); s.scale.set(.7, .7, 1); s.position.set(x, y, z); addFx(s, .06, 0); }

@@ -4,6 +4,7 @@ import { pushOut } from './city.js';
 import { G } from './state.js';
 import { clamp, angDiff } from './util.js';
 import { player } from './player.js';
+import { cars, carDist } from './vehicles.js';
 import { setEngine } from './audio.js';
 
 const focus = { x: 0, z: 0, set: false }, cam = { dist: 6.5, shake: 0 };
@@ -18,18 +19,19 @@ export function updateCamera(dt) {
   const k = 1 - Math.exp(-dt * (c ? 9 : 14));
   focus.x += (player.x - focus.x) * k; focus.z += (player.z - focus.z) * k;
   if (Math.hypot(player.x - focus.x, player.z - focus.z) > 12) { focus.x = player.x; focus.z = player.z; } // teleport (respawn)
-  const want = c ? 9.5 + Math.min(4, Math.abs(c.speed) * .1) : 6.5, ty = c ? 1.4 : 1.5;
+  const inside = !!G.interior, want = inside ? 6.2 : c ? 9.5 + Math.min(4, Math.abs(c.speed) * .1) : 6.5, ty = c ? 1.4 : 1.5;
   const cp = Math.cos(G.camPitch), sp = Math.sin(G.camPitch), fx = Math.sin(G.camYaw), fz = Math.cos(G.camYaw);
   // march from the player back towards the camera and stop before the first wall
   let free = want;
-  for (let d = 1.2; d <= want; d += .8) { if (pushOut(focus.x - fx * cp * d, focus.z - fz * cp * d, .5)[2]) { free = Math.max(1, d - .8); break; } }
+  if (!inside) for (let d = 1.2; d <= want; d += .8) { { const sx = focus.x - fx * cp * d, sz = focus.z - fz * cp * d; if (pushOut(sx, sz, .5)[2] || cars.some(k => k !== c && Math.abs(k.x - sx) < 8 && Math.abs(k.z - sz) < 8 && carDist(k, sx, sz) < .9)) { free = Math.max(1, d - .8); break; } } }
   cam.dist += (free - cam.dist) * (free < cam.dist ? 1 : Math.min(1, dt * 4));  // snap in, ease out
+  if (inside) cam.dist += (want - cam.dist) * .5;
   camera.position.set(focus.x - fx * cp * cam.dist, Math.max(.8, ty + sp * cam.dist + 1.2), focus.z - fz * cp * cam.dist);
   if (G.shake) { cam.shake = G.shake; G.shake = 0; } cam.shake = Math.max(0, cam.shake - dt * 2.5);
   camera.position.x += (Math.random() - .5) * cam.shake; camera.position.y += (Math.random() - .5) * cam.shake;
   camera.lookAt(focus.x, ty + .6, focus.z);
   const fov = 65 + (c ? Math.min(14, Math.abs(c.speed) * .35) : 0);
   if (Math.abs(camera.fov - fov) > .1) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 4); camera.updateProjectionMatrix(); }
-  if (player.mesh && !c) player.mesh.visible = cam.dist > 1.7 || G.camPitch > .9; // too close: get out of the way of the lens
+  if (player.mesh && !c && !player.vis) player.mesh.visible = cam.dist > 1.7 || G.camPitch > .9; // too close: get out of the way of the lens
   setEngine(c && !c.wreck ? c.speed : null);
 }
