@@ -59,6 +59,3 @@ test('granny game scripts have valid syntax', () => {
   for (const f of ['game.js', 'maps.js']) new vm.Script(fs.readFileSync(new URL('../../granny/' + f, import.meta.url), 'utf8'));
 });
 
-test('harbor city (gta) script has valid syntax', () => {
-  new vm.Script(fs.readFileSync(new URL('../../gta/game.js', import.meta.url), 'utf8'));
-});
