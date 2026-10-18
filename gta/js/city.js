@@ -1,7 +1,9 @@
 // Static city: solid footprints and obstacles (for collisions), ground texture, buildings, trees and street lamps.
 import { scene } from './render.js';
 import { N, B, RD, P, WORLD, INSET, rc, blockX, blockZ, isPark, HOSPITAL, STATION } from './layout.js';
-import { clamp, rand, pick } from './util.js';
+import { clamp, rng } from './util.js';
+import { quality } from './settings.js';
+import { buildBlock, ENTERABLE_BLOCKS } from './models/buildings.js';
 
 const rectGrid = {};
 for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
@@ -10,7 +12,7 @@ for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
 }
 // small round obstacles (trees, lamp posts) in a coarse hash so lookups stay cheap
 const CELLSZ = 20, circleGrid = {};
-function addCircle(x, z, r) { const k = Math.floor(x / CELLSZ) + ',' + Math.floor(z / CELLSZ); (circleGrid[k] = circleGrid[k] || []).push({ x, z, r }); }
+export function addCircle(x, z, r) { const k = Math.floor(x / CELLSZ) + ',' + Math.floor(z / CELLSZ); (circleGrid[k] = circleGrid[k] || []).push({ x, z, r }); }
 
 /** Push a circle (x,z,rad) out of every solid thing. Returns [x, z, hit, nx, nz]. */
 export function pushOut(x, z, rad) {
@@ -46,86 +48,53 @@ export function lineClear(ax, az, bx, bz) {
   for (let i = 1; i < n; i++) { const t = i / n, bi = Math.floor((ax + (bx - ax) * t - RD / 2) / P), bj = Math.floor((az + (bz - az) * t - RD / 2) / P); const r = rectGrid[bi + ',' + bj]; if (!r) continue; const x = ax + (bx - ax) * t, z = az + (bz - az) * t; if (x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1) return false; }
   return true;
 }
+function groundTex() {
+  const S = quality === 'high' ? 4096 : 2048, k = S / WORLD, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'), R = rng(7);
+  const grain = (x, y, w, h, n, a) => { for (let i = 0; i < n; i++) { g.fillStyle = (R() < .5 ? 'rgba(0,0,0,' : 'rgba(255,255,255,') + R() * a + ')'; g.fillRect(x + R() * w, y + R() * h, 2, 2); } };
+  g.fillStyle = '#34353a'; g.fillRect(0, 0, S, S); grain(0, 0, S, S, S * 12, .05);
+  for (let t = 0; t < 70; t++) { g.fillStyle = 'rgba(0,0,0,' + (.04 + R() * .05) + ')'; g.fillRect(R() * S, R() * S, (4 + R() * 30) * k, (1 + R() * 3) * k); }         // patched asphalt
+  const line = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x * k, y * k, w * k, h * k); };
+  const Y = '#d8b84a', Wh = '#e4e4e0';
+  for (let a = 0; a <= N; a++) {
+    const c0 = rc(a);
+    line(c0 - .3, 0, .12, WORLD, Y); line(c0 + .18, 0, .12, WORLD, Y); line(0, c0 - .3, WORLD, .12, Y); line(0, c0 + .18, WORLD, .12, Y);                  // double yellow
+    for (const o of [-4.6, 4.6]) { line(c0 + o, 0, .15, WORLD, Wh); line(0, c0 + o, WORLD, .15, Wh); }                                                     // edge lines
+    for (let t = 0; t < WORLD; t += 10) for (const o of [-2.8, 2.8]) { line(c0 + o - .07, t, .14, 3.5, 'rgba(228,228,224,.55)'); line(t, c0 + o - .07, 3.5, .14, 'rgba(228,228,224,.55)'); } // lane dashes
+  }
+  // intersections: clean asphalt over the lines, then crossings and stop lines
+  for (let a = 0; a <= N; a++) for (let b = 0; b <= N; b++) {
+    const cx = rc(a), cz = rc(b); g.fillStyle = '#34353a'; g.fillRect((cx - RD / 2) * k, (cz - RD / 2) * k, RD * k, RD * k); grain((cx - RD / 2) * k, (cz - RD / 2) * k, RD * k, RD * k, 900, .05);
+    g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect((cx - 3) * k, (cz - 3) * k, 6 * k, 6 * k);
+    for (let s = -5.6; s <= 5.6; s += 1.2) {
+      line(cx + s - .3, cz - RD / 2 - 2.4, .6, 2, Wh); line(cx + s - .3, cz + RD / 2 + .4, .6, 2, Wh);
+      line(cx - RD / 2 - 2.4, cz + s - .3, 2, .6, Wh); line(cx + RD / 2 + .4, cz + s - .3, 2, .6, Wh);
+    }
+    line(cx + .4, cz - RD / 2 - 3.4, 4.2, .4, Wh); line(cx - 4.6, cz + RD / 2 + 3, 4.2, .4, Wh); line(cx + RD / 2 + 3, cz + .4, .4, 4.2, Wh); line(cx - RD / 2 - 3.4, cz - 4.6, .4, 4.2, Wh); // stop lines
+  }
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const x = blockX(i), z = blockZ(j);
+    g.fillStyle = '#9a9a94'; g.fillRect(x * k, z * k, B * k, B * k); grain(x * k, z * k, B * k, B * k, 2200, .07);                       // pavement
+    g.fillStyle = 'rgba(0,0,0,.16)'; for (let t = 3; t < B; t += 3) { g.fillRect((x + t) * k, z * k, .06 * k, B * k); g.fillRect(x * k, (z + t) * k, B * k, .06 * k); } // paving joints
+    g.fillStyle = '#c4c4be'; g.fillRect(x * k, z * k, B * k, .3 * k); g.fillRect(x * k, (z + B - .3) * k, B * k, .3 * k); g.fillRect(x * k, z * k, .3 * k, B * k); g.fillRect((x + B - .3) * k, z * k, .3 * k, B * k); // curb
+    g.fillStyle = 'rgba(0,0,0,.22)'; g.fillRect(x * k, (z - .4) * k, B * k, .4 * k); g.fillRect(x * k, (z + B) * k, B * k, .4 * k); g.fillRect((x - .4) * k, z * k, .4 * k, B * k); g.fillRect((x + B) * k, z * k, .4 * k, B * k); // gutter shadow
+    const ix = (x + INSET) * k, iz = (z + INSET) * k, is = (B - 2 * INSET) * k;
+    if (isPark(i, j)) { g.fillStyle = '#4a8a42'; g.fillRect(ix, iz, is, is); grain(ix, iz, is, is, 3000, .09); g.strokeStyle = '#b8a888'; g.lineWidth = 1.6 * k; g.beginPath(); g.moveTo(ix, iz); g.lineTo(ix + is, iz + is); g.moveTo(ix + is, iz); g.lineTo(ix, iz + is); g.stroke(); g.fillStyle = '#3a78a8'; g.beginPath(); g.arc(ix + is / 2, iz + is / 2, 4 * k, 0, 7); g.fill(); }
+    else { g.fillStyle = '#4a4a46'; g.fillRect(ix, iz, is, is); }
+  }
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 8; return t;
+}
+export const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD), new THREE.MeshLambertMaterial({ map: groundTex() }));
+ground.rotation.x = -Math.PI / 2; ground.position.set(WORLD / 2, 0, WORLD / 2); ground.receiveShadow = true; scene.add(ground);
+const sea = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x2c6a88, roughness: .25, metalness: .2 }));
+sea.rotation.x = -Math.PI / 2; sea.position.set(WORLD / 2, -.4, WORLD / 2); scene.add(sea);
+export { sea };
+
+/* the blocks themselves */
+export function buildCity() {
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (isPark(i, j)) addCircle(blockX(i) + B / 2, blockZ(j) + B / 2, 4.2); // the pond
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (!isPark(i, j)) buildBlock(i, j, ENTERABLE_BLOCKS[i + ',' + j]);
+}
 export function beam(x, z, col, h) {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, h || 30, 14, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .28, side: THREE.DoubleSide, depthWrite: false }));
   m.position.set(x, (h || 30) / 2, z); scene.add(m); return m;
 }
-
-/* ---------- ground texture ---------- */
-function groundTex() {
-  const S = 2048, k = S / WORLD, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
-  g.fillStyle = '#2d2e31'; g.fillRect(0, 0, S, S);
-  for (let i = 0; i < 4000; i++) { g.fillStyle = 'rgba(0,0,0,' + Math.random() * .08 + ')'; g.fillRect(Math.random() * S, Math.random() * S, 3, 3); }
-  // dashed centre lines
-  g.fillStyle = '#c9b44a';
-  for (let a = 0; a <= N; a++) for (let t = 0; t < WORLD; t += 8) {
-    g.fillRect((rc(a) - .15) * k, t * k, .3 * k, 4 * k);
-    g.fillRect(t * k, (rc(a) - .15) * k, 4 * k, .3 * k);
-  }
-  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
-    const x = blockX(i) * k, z = blockZ(j) * k;
-    g.fillStyle = '#8c8c86'; g.fillRect(x, z, B * k, B * k);                          // pavement
-    g.fillStyle = '#6f6f6a'; g.fillRect(x, z, B * k, .5 * k); g.fillRect(x, z + (B - .5) * k, B * k, .5 * k); g.fillRect(x, z, .5 * k, B * k); g.fillRect(x + (B - .5) * k, z, .5 * k, B * k);
-    g.fillStyle = isPark(i, j) ? '#3f7a3a' : '#4d4d49'; g.fillRect((blockX(i) + INSET) * k, (blockZ(j) + INSET) * k, (B - 2 * INSET) * k, (B - 2 * INSET) * k);
-  }
-  // zebra crossings
-  g.fillStyle = 'rgba(235,235,235,.8)';
-  for (let a = 0; a <= N; a++) for (let b = 0; b <= N; b++) {
-    const cx = rc(a), cz = rc(b);
-    for (let s = -5.5; s <= 5.5; s += 1.4) {
-      g.fillRect((cx + s - .35) * k, (cz - RD / 2 - 3) * k, .7 * k, 2.2 * k); g.fillRect((cx + s - .35) * k, (cz + RD / 2 + .8) * k, .7 * k, 2.2 * k);
-      g.fillRect((cx - RD / 2 - 3) * k, (cz + s - .35) * k, 2.2 * k, .7 * k); g.fillRect((cx + RD / 2 + .8) * k, (cz + s - .35) * k, 2.2 * k, .7 * k);
-    }
-  }
-  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
-}
-export const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD), new THREE.MeshLambertMaterial({ map: groundTex() }));
-ground.rotation.x = -Math.PI / 2; ground.position.set(WORLD / 2, 0, WORLD / 2); scene.add(ground);
-const outer = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshLambertMaterial({ color: 0x2c5f78 }));
-outer.rotation.x = -Math.PI / 2; outer.position.set(WORLD / 2, -.3, WORLD / 2); scene.add(outer);
-
-/* ---------- buildings ---------- */
-function windowTex(tint) {
-  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
-  g.fillStyle = tint; g.fillRect(0, 0, 64, 64);
-  for (let y = 4; y < 64; y += 16) for (let x = 4; x < 64; x += 16) { g.fillStyle = Math.random() < .25 ? '#f0d98a' : '#27323d'; g.fillRect(x, y, 9, 10); }
-  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
-}
-const TINTS = ['#8a7f73', '#7b8591', '#9a8a7a', '#6f7a70', '#a39587', '#78707f'];
-const bMats = TINTS.map(t => new THREE.MeshLambertMaterial({ map: windowTex(t) }));
-const roofMat = new THREE.MeshLambertMaterial({ color: 0x3d3d3d });
-function building(x0, z0, w, d, h, mat) {
-  const geo = new THREE.BoxGeometry(w, h, d), uv = geo.attributes.uv;
-  const dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
-  for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) { const i = f * 4 + v; uv.setXY(i, uv.getX(i) * dims[f][0] / 8, uv.getY(i) * dims[f][1] / 8); }
-  const m = new THREE.Mesh(geo, [mat, mat, roofMat, roofMat, mat, mat]);
-  m.position.set(x0 + w / 2, h / 2, z0 + d / 2); scene.add(m); return m;
-}
-const treeGeo = new THREE.ConeGeometry(1.6, 5, 7), trunkGeo = new THREE.CylinderGeometry(.25, .3, 1.5, 6);
-const treeMat = new THREE.MeshLambertMaterial({ color: 0x2f6a35 }), trunkMat = new THREE.MeshLambertMaterial({ color: 0x5a3d22 });
-for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
-  const x0 = blockX(i) + INSET, z0 = blockZ(j) + INSET, S = B - 2 * INSET;
-  if (isPark(i, j)) {
-    for (let t = 0; t < 14; t++) { const x = x0 + 2 + Math.random() * (S - 4), z = z0 + 2 + Math.random() * (S - 4); const c = new THREE.Mesh(treeGeo, treeMat); c.position.set(x, 3.8, z); const tr = new THREE.Mesh(trunkGeo, trunkMat); tr.position.set(x, .75, z); scene.add(c, tr); addCircle(x, z, .7); }
-    continue;
-  }
-  const special = (i === HOSPITAL[0] && j === HOSPITAL[1]) ? 'hospital' : (i === STATION[0] && j === STATION[1]) ? 'station' : null;
-  if (special) {
-    const mat = new THREE.MeshLambertMaterial({ color: special === 'hospital' ? 0xe8e8ec : 0x3a5a9a });
-    building(x0, z0, S, S, 20, mat);
-    const sign = new THREE.Mesh(new THREE.BoxGeometry(6, 6, .3), new THREE.MeshBasicMaterial({ color: special === 'hospital' ? 0xcc2222 : 0xdddddd }));
-    sign.position.set(x0 + S / 2, 23, z0 + S + .2 - S / 2 * 0 - 0); sign.position.z = z0 + S / 2; scene.add(sign);
-    continue;
-  }
-  const mat = pick(bMats), split = Math.random() < .55, tall = Math.random() < .3;
-  if (!split) building(x0, z0, S, S, tall ? rand(30, 55) : rand(10, 22), mat);
-  else {
-    const hw = S / 2 - 1;
-    [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([a, b]) => building(x0 + a * (hw + 2), z0 + b * (hw + 2), hw, hw, rand(8, tall ? 45 : 26), pick(bMats)));
-  }
-}
-// street lamps (decoration only)
-const lampGeo = new THREE.CylinderGeometry(.12, .12, 6, 5), lampMat = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
-for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const m = new THREE.Mesh(lampGeo, lampMat); m.position.set(blockX(i) + 1.2, 3, blockZ(j) + 1.2); scene.add(m); addCircle(blockX(i) + 1.2, blockZ(j) + 1.2, .3); }
-
-

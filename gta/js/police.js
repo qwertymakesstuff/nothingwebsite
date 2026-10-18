@@ -7,9 +7,10 @@ import { G, STAR_AT, starsOf, addHeat, bump } from './state.js';
 import { clamp, rand, angDiff } from './util.js';
 import { sfx, setSiren } from './audio.js';
 import { tracer } from './effects.js';
-import { cars, makeCar, removeCar, driveCar } from './vehicles.js';
+import { cars, makeCar, removeCar, driveCar, showDriver } from './vehicles.js';
 import { player, hurtPlayer } from './player.js';
-import { personMesh, animLegs, layDown, dropItem } from './people.js';
+import { layDown, dropItem } from './people.js';
+import { createCharacter, officerSpec } from './models/characters.js';
 import { busted } from './lifecycle.js';
 import { banner, say } from './ui.js';
 
@@ -23,12 +24,13 @@ export function spawnCop() {
     const n = [Math.floor(Math.random() * (N + 1)), Math.floor(Math.random() * (N + 1))], p = nodePos(n[0], n[1]);
     const d = Math.hypot(p[0] - player.x, p[1] - player.z);
     if (d < 90 || d > 190) continue;
-    const c = makeCar(p[0] + 2.8, p[1], 0, 'cop', 0x1c2a4a); c.driver = 'cop'; c.cop = { path: [], rep: 0, out: null }; return c;
+    const c = makeCar(p[0] + 2.8, p[1], 0, 'cop', 0x1c2a4a); c.driver = 'cop'; c.cop = { path: [], rep: 0, out: null }; showDriver(c, true); return c;
   }
   return null;
 }
 function officerFrom(c) {
-  const o = { x: c.x + Math.cos(c.yaw) * 2, z: c.z - Math.sin(c.yaw) * 2, hp: 60, mesh: personMesh(0x1a2a6a, 0xe0b898), shotCd: 1, car: c, yaw: 0, dead: 0 };
+  const ch = createCharacter(officerSpec()), o = { x: c.x + Math.cos(c.yaw) * 2, z: c.z - Math.sin(c.yaw) * 2, hp: 60, ch, mesh: ch.root, shotCd: 1, car: c, yaw: 0, dead: 0, cur: 0 };
+  scene.add(ch.root); showDriver(c, false);
   const r = pushOut(o.x, o.z, .5); o.x = r[0]; o.z = r[1]; officers.push(o); c.cop.out = o;
 }
 export function updateCop(c, dt) {
@@ -55,13 +57,14 @@ function updateOfficer(o, dt) {
   const [tx, tz] = targetPos(), dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz) || .001;
   if (!G.stars) { if (o.car && o.car.cop) o.car.cop.out = null; o.dead = 2; return; }
   if (G.stars >= 3 && d < 24 && o.shotCd <= 0) { o.shotCd = rand(.6, 1.1); sfx.shot(); if (Math.random() < .45) hurtPlayer(player.car ? 3 : 6); tracer(o.x, 1.4, o.z, tx, 1.2, tz); }
-  if (d > 1.3 && !(G.stars >= 3 && d < 14)) { const r = pushOut(o.x + dx / d * 5.6 * dt, o.z + dz / d * 5.6 * dt, .45); o.x = r[0]; o.z = r[1]; o.yaw = Math.atan2(dx, dz); }
-  else if (d <= 1.4 && !player.car) busted();
-  o.mesh.position.set(o.x, Math.abs(Math.sin(G.time * 10)) * .04, o.z); o.mesh.rotation.y = o.yaw; animLegs(o.mesh, G.time * 10, 1);
+  o.cur = 0;
+  if (d > 1.3 && !(G.stars >= 3 && d < 14)) { const r = pushOut(o.x + dx / d * 5.6 * dt, o.z + dz / d * 5.6 * dt, .45); o.x = r[0]; o.z = r[1]; o.yaw = Math.atan2(dx, dz); o.cur = 5.6; }
+  else { o.yaw = Math.atan2(dx, dz); if (d <= 1.4 && !player.car) busted(); }
+  o.mesh.position.set(o.x, 0, o.z); o.mesh.rotation.y = o.yaw; o.ch.update(dt, o.cur, { run: true, aim: G.stars >= 3 && d < 24 && o.shotCd > .2 && o.cur === 0 });
 }
 export function damageOfficer(o, dmg) {
   if (o.dead) return; o.hp -= dmg; addHeat(12);
-  if (o.hp <= 0) { o.dead = 1; layDown(o.mesh); dropItem('cash', o.x, o.z, 60); addHeat(40); bump('copsKilled'); }
+  if (o.hp <= 0) { o.dead = 1; layDown(o.ch); dropItem('cash', o.x, o.z, 60); addHeat(40); bump('copsKilled'); }
 }
 
 export function updatePolice(dt) {

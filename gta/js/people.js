@@ -4,25 +4,17 @@ import { N, blockX, blockZ, corner } from './layout.js';
 import { G, addMoney, addHeat, bump } from './state.js';
 import { rand, pick } from './util.js';
 import { sfx } from './audio.js';
-import { cars } from './vehicles.js';
+import { cars, carDist } from './vehicles.js';
 import { player } from './player.js';
 
-const skinCols = [0xe0b898, 0xc89870, 0x8a5a3a, 0xf0d0b0], clothCols = [0x3a6ab8, 0xb83a3a, 0x3a8a5a, 0xc8b030, 0x6a3a8a, 0x2a2a2a, 0xdddddd];
-const legMat = new THREE.MeshLambertMaterial({ color: 0x2a2a35 }), bodyGeo = new THREE.BoxGeometry(.55, .75, .3), headGeo = new THREE.SphereGeometry(.22, 8, 8), legGeo = new THREE.BoxGeometry(.2, .8, .22);
-export function personMesh(cloth, skin) {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(bodyGeo, new THREE.MeshLambertMaterial({ color: cloth })); body.position.y = 1.15;
-  const head = new THREE.Mesh(headGeo, new THREE.MeshLambertMaterial({ color: skin })); head.position.y = 1.78;
-  const l1 = new THREE.Mesh(legGeo, legMat), l2 = new THREE.Mesh(legGeo, legMat); l1.position.set(-.14, .4, 0); l2.position.set(.14, .4, 0);
-  g.add(body, head, l1, l2); g.userData.legs = [l1, l2]; scene.add(g); return g;
-}
-export function animLegs(m, t, amp) { m.userData.legs[0].rotation.x = Math.sin(t) * .6 * amp; m.userData.legs[1].rotation.x = -Math.sin(t) * .6 * amp; }
-export function layDown(mesh) { mesh.rotation.x = -Math.PI / 2; mesh.position.y = .25; }
+import { createCharacter, civilianSpec } from './models/characters.js';
+export function layDown(ch) { ch.update(0, 0, { dead: true }); }
 
 export const peds = [], items = [];
 export function makePed(at) {
   const i = Math.floor(Math.random() * N), j = Math.floor(Math.random() * N), c = Math.floor(Math.random() * 4), p = corner(i, j, c);
-  const q = { x: at ? at[0] : p[0] + rand(-2, 2), z: at ? at[1] : p[1] + rand(-2, 2), i, j, c, dir: Math.random() < .5 ? 1 : -1, hp: 30, dead: 0, panic: 0, speed: rand(1.2, 1.9), mesh: personMesh(pick(clothCols), pick(skinCols)), ph: Math.random() * 6, tgt: null, yaw: 0 };
+  const q = { x: at ? at[0] : p[0] + rand(-2, 2), z: at ? at[1] : p[1] + rand(-2, 2), i, j, c, dir: Math.random() < .5 ? 1 : -1, hp: 30, dead: 0, panic: 0, speed: rand(1.2, 1.9), ch: null, mesh: null, tgt: null, yaw: 0 };
+  q.ch = createCharacter(civilianSpec()); q.mesh = q.ch.root; scene.add(q.mesh); q.ph = 0;
   q.nc = (c + q.dir + 4) % 4; q.tgt = corner(i, j, q.nc); q.mesh.position.set(q.x, 0, q.z); peds.push(q); return q;
 }
 function pedNext(p) { // arrived at a corner: keep going round the block, turn back, or cross the road
@@ -33,24 +25,25 @@ function pedNext(p) { // arrived at a corner: keep going round the block, turn b
   p.c = p.nc; p.nc = (p.c + p.dir + 4) % 4; p.tgt = corner(p.i, p.j, p.nc);
 }
 export function killPed(p, by) {
-  if (p.dead) return; p.dead = 1; layDown(p.mesh); dropItem('cash', p.x, p.z, Math.floor(rand(15, 70))); sfx.scream(); bump('kills');
+  if (p.dead) return; p.dead = 1; layDown(p.ch); dropItem('cash', p.x, p.z, Math.floor(rand(15, 70))); sfx.scream(); bump('kills');
 }
 export function damagePed(p, dmg) { p.hp -= dmg; p.panic = 6; if (p.hp <= 0) { killPed(p, 'gun'); addHeat(20); } }
 
 export function updatePeds(dt) {
   for (let i = peds.length - 1; i >= 0; i--) {
     const p = peds[i];
-    if (p.dead) { p.dead += dt; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); makePed(); } continue; }
+    if (p.dead) { p.dead += dt; p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); makePed(); } continue; }
     if (p.panic > 0) p.panic -= dt;
     const dx = p.tgt[0] - p.x, dz = p.tgt[1] - p.z, d = Math.hypot(dx, dz);
     if (d < .6) pedNext(p);
-    else { const sp = p.speed * (p.panic > 0 ? 3.4 : 1); p.x += dx / d * sp * dt; p.z += dz / d * sp * dt; p.yaw = Math.atan2(dx, dz); p.ph += dt * sp * 4; }
-    p.mesh.position.set(p.x, 0, p.z); p.mesh.rotation.y = p.yaw; animLegs(p.mesh, p.ph, 1);
+    else { const sp = p.speed * (p.panic > 0 ? 3.4 : 1); p.x += dx / d * sp * dt; p.z += dz / d * sp * dt; p.yaw = Math.atan2(dx, dz); p.cur = sp; }
+    p.mesh.position.set(p.x, 0, p.z); p.mesh.rotation.y = p.yaw;
     p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140;
+    if (p.mesh.visible) p.ch.update(dt, p.cur || 0, { run: p.panic > 0 });
     for (const c of cars) { // cars hit people; fast cars scare them
-      if (c.wreck) continue; const dd = Math.hypot(c.x - p.x, c.z - p.z), spd = Math.abs(c.speed) + Math.hypot(c.vx || 0, c.vz || 0);
+      if (c.wreck) continue; const dd = carDist(c, p.x, p.z) + 1.2, spd = Math.abs(c.speed) + Math.hypot(c.vx || 0, c.vz || 0);
       if (dd < 14 && spd > 8 && p.panic <= 0) p.panic = 3;
-      if (dd < 1.9 && spd > 5) { killPed(p, 'car'); if (c.driver === 'player') addHeat(12); break; }
+      if (dd < 1.4 && spd > 5) { killPed(p, 'car'); if (c.driver === 'player') addHeat(12); break; }
     }
   }
 }

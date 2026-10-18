@@ -7,7 +7,7 @@ export const G = {
   mode: 'menu', time: 0, heat: 0, fuzz: 0, stars: 0,
   mission: null, missionCd: 0,
   camYaw: 0, camPitch: .35, camDrag: 0, shake: 0,
-  respawnT: 0, pendingRespawn: null
+  respawnT: 0, pendingRespawn: null, interior: null
 };
 export const STAR_AT = [15, 45, 90, 150, 230];
 export const inWorld = () => G.mode === 'playing' || G.mode === 'wasted' || G.mode === 'busted'; // simulation runs

@@ -9,7 +9,9 @@ globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setI
 const dir = new URL('../../gta/js/', import.meta.url);
 
 test('every gta module has valid syntax', () => {
-  for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.js'))) {
+  const files = fs.readdirSync(dir, { recursive: true }).filter(f => String(f).endsWith('.js'));
+  assert.ok(files.length >= 25);
+  for (const f of files) {
     const r = spawnSync(process.execPath, ['--check', new URL(f, dir).pathname]);
     assert.equal(r.status, 0, `${f}: ${r.stderr}`);
   }
@@ -53,4 +55,25 @@ test('layout: hospital and station are on real, non-park blocks and corners lie 
   const L = await import(new URL('layout.js', dir));
   assert.ok(!L.isPark(...L.HOSPITAL) && !L.isPark(...L.STATION));
   for (let c = 0; c < 4; c++) { const [x, z] = L.corner(2, 2, c); assert.ok(x > L.blockX(2) && x < L.blockX(2) + L.B && z > L.blockZ(2) && z < L.blockZ(2) + L.B); }
+});
+
+test('signals: never green both ways, every road gets green and yellow, and the cycle repeats', async () => {
+  const { lightPhase, CYCLE } = await import(new URL('signals.js', dir));
+  for (const [a, b] of [[0, 0], [3, 4], [7, 7]]) {
+    const seen = { x: new Set(), z: new Set() };
+    for (let t = 0; t < CYCLE; t += .25) {
+      const p = lightPhase(a, b, t);
+      assert.ok(!(p.x === 'green' && p.z === 'green') && !(p.x !== 'red' && p.z !== 'red'), `conflict at ${t}`);
+      seen.x.add(p.x); seen.z.add(p.z);
+      assert.deepEqual(lightPhase(a, b, t + CYCLE), p);
+    }
+    for (const ax of ['x', 'z']) assert.deepEqual([...seen[ax]].sort(), ['green', 'red', 'yellow']);
+  }
+});
+
+test('util.rng is deterministic (textures and buildings look the same on every load)', async () => {
+  const { rng } = await import(new URL('util.js', dir));
+  const a = rng(42), b = rng(42), c = rng(43);
+  const sa = Array.from({ length: 5 }, a), sb = Array.from({ length: 5 }, b), sc = Array.from({ length: 5 }, c);
+  assert.deepEqual(sa, sb); assert.notDeepEqual(sa, sc); assert.ok(sa.every(v => v >= 0 && v < 1));
 });
