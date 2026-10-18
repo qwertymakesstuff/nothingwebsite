@@ -8,7 +8,7 @@ import { G, addHeat, bump } from './state.js';
 import { clamp, pick } from './util.js';
 import { zoneAt, nextLayer, heightFor, groundBlocked, deckSlope, HW_Z, HW_HALF } from './highway.js';
 import { sfx } from './audio.js';
-import { fireball, smoke } from './effects.js';
+import { fireball, smoke, splash } from './effects.js';
 import { player, leaveCar, hurtPlayer } from './player.js';
 import { peds, killPed } from './people.js';
 import { updateTraffic } from './traffic.js';
@@ -52,7 +52,11 @@ export function moveCarBy(c, dx, dz, bounce) {
   for (const o of [[c.cl, c.cr], [-c.cl, c.cr]]) { // two circles along the body
     const px = c.x + dx + Math.sin(c.yaw) * o[0], pz = c.z + dz + Math.cos(c.yaw) * o[0];
     const r = pushOut(px, pz, o[1]);
-    if (r[2]) {
+    if (r[2] && r[5]) { // reached the water: no crash, the car just can't go on; it slows and splashes
+      dx += r[0] - px; dz += r[1] - pz;
+      if (Math.abs(c.speed) > 5 && c.hitCd <= 0) { c.hitCd = .6; splash(c.x + dx, c.z + dz, Math.abs(c.speed)); }
+      c.speed *= .93;
+    } else if (r[2]) {
       dx += r[0] - px; dz += r[1] - pz;
       const imp = Math.abs(c.speed);
       if (bounce && imp > 3 && c.hitCd <= 0) { c.hitCd = .3; hurtCar(c, Math.max(0, imp - 7) * 1.5); sfx.crash(imp / 40); c.speed *= -.25; if (c === player.car) G.shake = clamp(imp / 20, 0, 1); }

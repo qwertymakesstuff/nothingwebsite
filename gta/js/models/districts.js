@@ -265,14 +265,6 @@ function docks(a, R, x0, z0, i, j) {
   for (let k = 0; k < 3; k++) container(a, pick(CONT), x0 + 8 + k * 9, 0, z0 + d + 6, false);
   const cx = x0 + S - 5, cz = z0 + S - 4; a.b(0xe0a020, .7, 18, .7, cx, 0, cz); a.b(0xe0a020, .5, .5, 14, cx, 17, cz + 3); circles.push([cx, cz, .8]);
 }
-export function shipAndQuay(R) {
-  const a = new Acc(), qz = WORLD;
-  a.b(0x8a8a86, WORLD, .5, 14, WORLD / 2, -.1, qz + 7);
-  a.b(0x3a4048, 150, 6, 22, 430, 0, qz + 30); a.b(0xb8322f, 150, 1.2, 22.2, 430, 0, qz + 30); a.b(0xe8e8e4, 40, 12, 18, 380, 6, qz + 30); a.b(0x2a2a30, 8, 5, 8, 380, 18, qz + 30); a.c(0xc02a2a, 2, 2.4, 6, 380, 18, qz + 30);
-  for (let k = 0; k < 5; k++) for (let n = 0; n < 3; n++) container(a, pick(CONT), 450 + k * 6.4, 6 + n * 2.6, qz + 30, false);
-  a.flush(true);
-}
-
 export const BUILDERS = {
   o: outskirt, f: farm, c: construction, l: lighthouse, a: apartmentsAlley, s: cornerStores, p: park, w: waterfront,
   T: tower, B: bank, G: garage, Z: plaza, M: supermarket, N: carPark, F: gas, V: dealership,

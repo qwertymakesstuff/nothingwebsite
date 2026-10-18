@@ -21,7 +21,8 @@ export const sfx = {
   cash: () => { tone(988, .1, 'sine', .12); setTimeout(() => tone(1319, .18, 'sine', .12), 90); },
   horn: () => { tone(330, .35, 'sawtooth', .08); tone(415, .35, 'sawtooth', .08); },
   door: () => { noise(.1, .15, 900); },
-  scream: () => tone(900, .35, 'sawtooth', .05, 500)
+  scream: () => tone(900, .35, 'sawtooth', .05, 500),
+  splash: v => { noise(.5, v || .2, 2200); }
 };
 
 /** Engine hum for the driven car (speed in m/s, or null when on foot) and the siren while police are close. */

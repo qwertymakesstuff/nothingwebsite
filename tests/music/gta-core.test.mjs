@@ -121,13 +121,13 @@ test('roads: the whole graph stays connected with the highway rules, and the dec
 });
 
 test('POIs: unique ids, inside the world, never inside a building, and reachable from a road', async () => {
-  const P = await import(new URL('pois.js', dir)), L = await import(new URL('layout.js', dir));
+  const P = await import(new URL('pois.js', dir)), L = await import(new URL('layout.js', dir)), C = await import(new URL('coast.js', dir));
   const ids = P.POIS.map(p => p.id); assert.equal(new Set(ids).size, ids.length, 'duplicate POI ids');
   for (const p of P.POIS) {
     assert.ok(p.name && p.category && P.CATEGORIES[p.category] && p.glyph && p.icon, p.id + ' is missing a field');
-    assert.ok(p.x > 0 && p.x < L.WORLD && p.z > 0 && p.z < L.WORLD, p.id + ' outside the world');
+    assert.ok(p.kind === 'coast' ? C.isLand(p.x, p.z) || C.onPier(p.x, p.z) : p.x > 0 && p.x < L.WORLD && p.z > 0 && p.z < L.WORLD, p.id + ' outside the world');
     assert.ok(!P.insideBuilding(p.x, p.z), p.id + ' is inside a building');
-    if (p.category !== 'mission' && p.category !== 'health') { // somewhere a car can stop: within a road's width of a road centre line
+    if (p.category !== 'mission' && p.category !== 'health' && p.kind !== 'coast') { // somewhere a car can stop: within a road's width of a road centre line
       const [rx, rz] = p.road, dx = Math.min(...Array.from({ length: L.N + 1 }, (_, k) => Math.abs(rx - L.rc(k)))), dz = Math.min(...Array.from({ length: L.N + 1 }, (_, k) => Math.abs(rz - L.rc(k))));
       assert.ok(Math.min(dx, dz) <= L.RD / 2, p.id + ' has no road access (' + rx.toFixed(0) + ',' + rz.toFixed(0) + ')');
     }
@@ -148,4 +148,15 @@ test('mission definitions only refer to places that exist, and every giver is a 
   }
   for (const g of P.poisOfCategory('mission')) assert.ok(M.defsFor(g.id).length >= 1);
   assert.deepEqual(P.resolveTarget('deck:3').y > 0, true); assert.equal(P.resolveTarget('nope:1'), null);
+});
+
+test('coast: land inside the city, an irregular shoreline, and walls that only exist at the water', async () => {
+  const C = await import(new URL('coast.js', dir)), L = await import(new URL('layout.js', dir));
+  for (let x = 5; x < L.WORLD; x += 60) for (let z = 5; z < L.WORLD; z += 60) assert.ok(C.isLand(x, z), 'city ground is land');
+  const far = C.limitToLand(-2000, 300, 1); assert.ok(far.hit && C.isLand(far.x, far.z), 'a point far out at sea is pushed back to shore');
+  const free = C.limitToLand(300, 300, 1); assert.equal(free.hit, false);
+  const poly = C.shorePolygon(6), dists = poly.map(p => Math.hypot(p[0] - L.WORLD / 2, p[1] - L.WORLD / 2));
+  assert.ok(poly.length > 40 && Math.max(...dists) - Math.min(...dists) > 40, 'the shoreline is not a straight square');
+  assert.ok(C.heightFromD(10) > C.SEA_LEVEL && C.heightFromD(-1) < C.SEA_LEVEL && C.heightFromD(0) >= C.SEA_LEVEL - .001, 'terrain crosses the sea level at the waterline');
+  assert.ok(C.heightFromD(-30) > C.heightFromD(-60), 'the sea floor slopes down gradually');
 });
