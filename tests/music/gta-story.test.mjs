@@ -490,3 +490,16 @@ test('story steps trigger only when you reach the mission point (not from down t
   assert.equal(w.story.s.active.id, 'M00'); assert.equal(w.story.s.active.step, 2, 'nine metres out: the scene has not started');
   w.p.x = t.x - 5; for (let i = 0; i < 6; i++) w.story.update(.5); assert.ok(w.story.s.done.M00 || w.story.s.active.id !== 'M00' || w.scenes.includes('M00_EDDIE'), 'five metres out: it starts');
 });
+
+test('car radio: both stations always have something eligible to play, and the talk show is only its three voices', () => {
+  const order = ['M00', 'M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09'];
+  for (const code of ['X01', 'X02']) for (let k = -1; k < order.length; k++) for (const end of [null, 'A', 'B', 'C']) for (const walt of [false, true]) {
+    const st = S.createState(); order.slice(0, k + 1).forEach(m => { st.done[m] = { n: 1 }; }); if (k === 9) st.ending = end; if (walt) st.flags.walt_alive = true;
+    const ok = Object.values(SCENES).filter(x => x.mission === code && (!x.if || S.evalCond(x.if, st)));
+    assert.ok(ok.length >= 1, code + ' has nothing to play after ' + (order[k] || 'the start'));
+  }
+  const talk = Object.values(SCENES).filter(x => x.mission === 'X02'); assert.ok(talk.length >= 14);
+  for (const sc of talk) { assert.equal(sc.via, 'radio'); for (const id of sceneLineIds(sc)) assert.ok(['DUKE', 'ROLLO', 'MAGS'].includes(LINES[id].char), id); }
+  const lighthouse = SCENES.X02_LIGHTHOUSE, alive = S.createState(), dead = S.createState(); alive.flags.walt_alive = true;
+  assert.notDeepEqual(runScene(alive, 'X02_LIGHTHOUSE'), runScene(dead, 'X02_LIGHTHOUSE')); assert.ok(lighthouse);
+});

@@ -2,7 +2,7 @@
 
 Every line of spoken dialogue in the game, by character, with its ID, performance direction and where it is heard. **No line is recorded yet** unless the manifest says so; the game is fully playable with subtitles only.
 
-Lines: **692** across **16** characters. Recorded so far: **0** of 692.
+Lines: **832** across **19** characters. Recorded so far: **0** of 832.
 
 ## How to deliver recordings
 
@@ -32,6 +32,9 @@ Lines: **692** across **16** characters. Recorded so far: **0** of 692.
 | Dale Pruitt-Moss (landlord) (`DALE`) | landlord (voicemail only) | 3 | 87 | 1 min |
 | Marty Quill (radio host) (`HOST`) | radio host, Alder FM | 14 | 356 | 2 min |
 | Police dispatcher (`DISPATCH`) | police radio | 2 | 32 | 0 min |
+| Duke Pelletier (talk host) (`DUKE`) | host of the Dead Air Hour, Harbor AM 1190 | 77 | 1267 | 8 min |
+| Rollo Teague (camera guy) (`ROLLO`) | camera operator for the Dead Air Hour video stream | 29 | 198 | 1 min |
+| Mags Fenwick (producer) (`MAGS`) | producer, sound desk and caller screener | 34 | 239 | 2 min |
 | Depot guard (`GUARD`) | guard at Darius's depot | 3 | 7 | 0 min |
 
 ## Ash (`ASH`)
@@ -2792,7 +2795,7 @@ Lines: **692** across **16** characters. Recorded so far: **0** of 692.
   **Say:** That is, I think, rather foolish.
 
 ### X01_AD
-*CAR RADIO (ambient broadcasts); heard over the radio*
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
 
 - `SLOANE_X01_AD_001`  
   *Direction:* Polished, warm.  
@@ -3746,28 +3749,28 @@ Lines: **692** across **16** characters. Recorded so far: **0** of 692.
   **Say:** Victor Sloane's office has issued a statement. It says only: "We are deeply saddened."
 
 ### X01_CITY
-*CAR RADIO (ambient broadcasts); heard over the radio*
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
 
 - `HOST_X01_CITY_001`  
   *Direction:* Easy, warm, in no hurry.  
   **Say:** You're listening to Alder FM. If you're stuck on the highway, relax. It's a very nice highway to be stuck on.
 
 ### X01_NEWS1
-*CAR RADIO (ambient broadcasts); heard over the radio*
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
 
 - `HOST_X01_NEWS1_001`  
   *Direction:* Mock-casual.  
   **Say:** Port police have confirmed a break-in at a port warehouse and reported that, quote, nothing of value was taken. Unquote. Which is the best kind of break-in, if you ask a certain kind of person.
 
 ### X01_NEWS2
-*CAR RADIO (ambient broadcasts); heard over the radio*
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
 
 - `HOST_X01_NEWS2_001`  
   *Direction:* More careful.  
   **Say:** The Port Alder Ledger is promising a series on waterfront redevelopment. Sloane Development says it welcomes, quote, "any good faith inquiry."
 
 ### X01_NEWS3
-*CAR RADIO (ambient broadcasts); heard over the radio*
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
 
 - `HOST_X01_NEWS3_001`  
   *Direction:* Flat. Reading what has been handed to him.  
@@ -3797,6 +3800,755 @@ Lines: **692** across **16** characters. Recorded so far: **0** of 692.
 - `DISPATCH_M03_POLICE_002`  
   *Direction:* Same flat tone, repeating after a pause.  
   **Say:** Dispatch to Unit twelve. You are the first in, report on arrival.
+
+## Duke Pelletier (talk host) (`DUKE`)
+
+**Role:** host of the Dead Air Hour, Harbor AM 1190  
+**Voice:** Mid fifties, gravelly, warm, permanently indignant.  
+**Direction:** A man who has been awake thirty hours and thinks it is a talent. Commit completely to every absurd claim; never wink. The one serious moment (the lighthouse segment) drops the whole act.  
+**Accent:** Port-town American, a little theatrical.  
+**Pace:** Rolling and rambling; speeds up when outraged, slows right down for the punchline.  
+**Range:** Wide: whisper to bellow.  
+**Pronunciation:** Pelletier: "PEL-uh-tee-ay" (he insists); Tibbets: "TIB-its"  
+**Recording notes:** Close, warm, loud-ish. Record each line with full commitment, then one calmer take.
+
+**Who they are:** A former ferry purser turned late-night broadcaster. Believes everything is connected and nothing is his fault. Radio only: he is never seen.
+
+77 lines, 1267 words.
+
+### X02_ALDERPOINT
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_ALDERPOINT_001`  
+  *Direction:* Rolling out the name like a man ordering wine in a haunted house.  
+  **Say:** Alder Point. "A waterfront for everyone." Mr. Victor Sloane, who sounds like a man you'd meet in a very expensive elevator, says it's for everyone.
+
+- `DUKE_X02_ALDERPOINT_002`  
+  *Direction:* Warming up.  
+  **Say:** Wharf Street gets "relocated," which is a word that means "a van arrives." Lucille at the corner mart has been selling milk on that street since before you could legally own a sandwich.
+
+- `DUKE_X02_ALDERPOINT_003`  
+  *Direction:* Indignant.  
+  **Say:** And Sloane sends her an ENVELOPE. You know who sends envelopes? Villains and grandmas. And my grandmother was not a villain.
+
+- `DUKE_X02_ALDERPOINT_004`  
+  *Direction:* Pointing at her.  
+  **Say:** Over a casserole. Context matters, Mags.
+
+- `DUKE_X02_ALDERPOINT_005`  
+  *Direction:* Whispering, truly frightened.  
+  **Say:** A lighthouse with arms. That's not a development. That is a warning.
+
+### X02_BADGE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_BADGE_001`  
+  *Direction:* Hushed, enjoying himself terribly.  
+  **Say:** A source inside the department, whom I'll call Cheryl, because that is her name, tells me one of our detectives has been "writing his own incident reports."
+
+- `DUKE_X02_BADGE_002`  
+  *Direction:* Ignoring her.  
+  **Say:** Cheryl says this fella talks like a terms-and-conditions page. "Let's be precise." Folks, anyone who says "let's be precise" at a party has never once been invited back.
+
+- `DUKE_X02_BADGE_003`  
+  *Direction:* Reverent.  
+  **Say:** That's not a man. That is a rider on a contract. Rollo, you've said more tonight than you have since the fish thing.
+
+- `DUKE_X02_BADGE_004`  
+  *Direction:* Solemn.  
+  **Say:** We will never talk about the fish thing.
+
+- `DUKE_X02_BADGE_005`  
+  *Direction:* Instantly.  
+  **Say:** Burn the archive.
+
+### X02_CALLER
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_CALLER_001`  
+  *Direction:* Slowly, suspicious.  
+  **Say:** Lorraine. You sound exactly like Mags.
+
+- `DUKE_X02_CALLER_002`  
+  *Direction:* Generous.  
+  **Say:** Lorraine, what's on your mind tonight?
+
+- `DUKE_X02_CALLER_003`  
+  *Direction:* Moved.  
+  **Say:** Controversial. Bold. Lorraine, you are a brave woman, and a possibly invented one.
+
+- `DUKE_X02_CALLER_004`  
+  *Direction:* Pressing on, regal.  
+  **Say:** Lorraine, hold, please. ... We lost Lorraine. She's gone where all the good callers go. The other line.
+
+### X02_CARPARK
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_CARPARK_001`  
+  *Direction:* Reporting, magisterial.  
+  **Say:** Update from the public car park, where last night a gathering of gentlemen in matching dark sedans "discussed parking." Witnesses describe it as the most coordinated thing to happen in a car park since never.
+
+- `DUKE_X02_CARPARK_002`  
+  *Direction:* Ecstatic.  
+  **Say:** IN UNISON, Mags. They signalled. That's not crime, that's choreography. I want to see the dance.
+
+- `DUKE_X02_CARPARK_003`  
+  *Direction:* Reverent.  
+  **Say:** A spot! Folks, that's the oldest war in the world. "That's my spot." They've been doing it since the Romans.
+
+- `DUKE_X02_CARPARK_004`  
+  *Direction:* Honestly curious.  
+  **Say:** What's suitable for a car park, Mags? Four? Five? A brisk shuffle?
+
+- `DUKE_X02_CARPARK_005`  
+  *Direction:* Chastened.  
+  **Say:** Then I stand corrected. I've been driving like a man in a hurry for years.
+
+### X02_END_A
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_END_A_001`  
+  *Direction:* Pounding the desk, vindicated.  
+  **Say:** Folks, the Ledger published the Alder Point investigation. Seven pages. I've read four. The rest are in a font I associate with divorces.
+
+- `DUKE_X02_END_A_002`  
+  *Direction:* Beaming.  
+  **Say:** And let the record show, I called it. I called it eleven years ago.
+
+- `DUKE_X02_END_A_003`  
+  *Direction:* Without missing a beat.  
+  **Say:** It was fraud AND a shipment of left shoes. I contain multitudes.
+
+- `DUKE_X02_END_A_004`  
+  *Direction:* Intimate, to the audience.  
+  **Say:** Whoever you are, listener, you magnificent weirdo, Gulliver's will send you a mattress. Previously enjoyed.
+
+- `DUKE_X02_END_A_005`  
+  *Direction:* Tender.  
+  **Say:** It's the thought, Rollo.
+
+### X02_END_B
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_END_B_001`  
+  *Direction:* Mournful, in a velvet way.  
+  **Say:** Alder Point is open to the public. I went. It's a fence. With a gift shop. The gift shop sells the fence. In miniature.
+
+- `DUKE_X02_END_B_002`  
+  *Direction:* Spreading his hands.  
+  **Say:** It's a lovely fence! And the investigation we were all so excited about? Gone. Like a sandwich on a quay.
+
+- `DUKE_X02_END_B_003`  
+  *Direction:* Wistful.  
+  **Say:** Rich, mysterious, and I bet he owns a robe. I envy him with the part of me that's a coward.
+
+- `DUKE_X02_END_B_004`  
+  *Direction:* Serene.  
+  **Say:** I'm saying it at the beginning. Now I'm free.
+
+### X02_END_C
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_END_C_001`  
+  *Direction:* Over the sound of a distant siren he is clearly enjoying.  
+  **Say:** The container yard fire is still going. The mayor calls it "a learning opportunity." The insurance companies call it "a bigger learning opportunity."
+
+- `DUKE_X02_END_C_002`  
+  *Direction:* Flat, delighted.  
+  **Say:** Of course you did.
+
+- `DUKE_X02_END_C_003`  
+  *Direction:* Electrified.  
+  **Say:** Is it Gerald?
+
+- `DUKE_X02_END_C_004`  
+  *Direction:* On his feet.  
+  **Say:** Gerald has the evidence! Rollo, zoom in! GERALD HAS THE EVIDENCE!
+
+- `DUKE_X02_END_C_005`  
+  *Direction:* Sinking back, a man at peace with the universe.  
+  **Say:** Of course he did. He's represented.
+
+### X02_FOG
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_FOG_001`  
+  *Direction:* Booming, scandalised.  
+  **Say:** Now, the city council, bless their laminated hearts, is floating a fog tax.
+
+- `DUKE_X02_FOG_002`  
+  *Direction:* Waving it off.  
+  **Say:** Fee, tax, fog. Same shape. Residents who "benefit from fog" will pay eleven dollars a month.
+
+- `DUKE_X02_FOG_003`  
+  *Direction:* Counting on his fingers.  
+  **Say:** Ambience. Mystery. Plausible deniability when you miss your exit. Councilman Tibbets says fog is, quote, "a municipal asset we've been giving away for free."
+
+- `DUKE_X02_FOG_004`  
+  *Direction:* Pointing at the ceiling.  
+  **Say:** You want to tax weather, Tibbets, start with the weather you caused. The rain that fell on my toast. Billing department, are you there.
+
+- `DUKE_X02_FOG_005`  
+  *Direction:* A beat. Then, with full resolve.  
+  **Say:** Then we're taxing the drawer.
+
+### X02_GULL
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_GULL_001`  
+  *Direction:* Wounded. A man about to explain a grudge.  
+  **Say:** Quick personal update. This morning on the quay, a seagull took my entire sandwich. Not a bite. The sandwich, the wax paper, my dignity.
+
+- `DUKE_X02_GULL_002`  
+  *Direction:* Offended, rising.  
+  **Say:** I extended a hand of friendship, Rollo, and he responded with a hostile takeover.
+
+- `DUKE_X02_GULL_003`  
+  *Direction:* Stunned, slow.  
+  **Say:** I owe a bird. Folks, sit with that. I sat with it for six hours, and I came out the other side a changed man. No. Same man. Angrier at bread.
+
+- `DUKE_X02_GULL_004`  
+  *Direction:* Proud and furious.  
+  **Say:** Form eleven-B, "Complaint Against Wildlife With A Union." They're represented, folks. They have a rep. His name is Gerald. He is also a gull.
+
+- `DUKE_X02_GULL_005`  
+  *Direction:* Hushed.  
+  **Say:** He looked at me like a man who bills by the hour.
+
+### X02_LIGHTHOUSE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_LIGHTHOUSE_001`  
+  *Direction:* Newsreader again, but warmer.  
+  **Say:** Shots reported at North Point Lighthouse last night. Residents describe "a significant amount of noise and one unusually motivated seagull."
+
+- `DUKE_X02_LIGHTHOUSE_002`  
+  *Direction:* Moved.  
+  **Say:** Union professionals. Bullets flying, light stays on. That is the dedication I want in a plumber.
+
+- `DUKE_X02_LIGHTHOUSE_003`  
+  *Direction:* Quietly.  
+  **Say:** There's always a thermos.
+
+- `DUKE_X02_LIGHTHOUSE_004`  
+  *Direction:* Rolling again, warm, relieved.  
+  **Say:** Good. Good! Somebody give that man a sandwich. Not a gull.
+
+- `DUKE_X02_LIGHTHOUSE_005`  
+  *Direction:* Quiet. The act has gone out of him. This is the other man, the one under the show.  
+  **Say:** Rollo. Kill the sound effects.
+
+- `DUKE_X02_LIGHTHOUSE_006`  
+  *Direction:* Slow.  
+  **Say:** There was a man out there. A dockworker. Folks, I make jokes about this city. The fog, the pigeons, the councilmen. And I'll keep making them, because that is the job. But a man who kept a logbook for twenty years and did the right thing late, he is gone. Mags, play the quiet one.
+
+- `DUKE_X02_LIGHTHOUSE_007`  
+  *Direction:* After a moment.  
+  **Say:** Then everybody just be quiet. Ten seconds.
+
+- `DUKE_X02_LIGHTHOUSE_008`  
+  *Direction:* Clearing his throat. Almost himself.  
+  **Say:** Okay. Thank you. We'll be right back.
+
+### X02_OPEN
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_OPEN_001`  
+  *Direction:* Rolling, gravelly, delighted with himself. A man who has been awake for thirty hours and considers it a talent.  
+  **Say:** You are listening to Harbor AM eleven-ninety, the Dead Air Hour, where the dead air is the content and the content is, frankly, also dead. I'm Duke Pelletier. It's a beautiful night in Port Alder, I'm told. I haven't been outside since Tuesday.
+
+- `DUKE_X02_OPEN_002`  
+  *Direction:* Not even slowed down.  
+  **Say:** Rollo is our camera guy. Say hello to the camera, Rollo.
+
+- `DUKE_X02_OPEN_003`  
+  *Direction:* Warm.  
+  **Say:** Great energy. Rollo films this show for the video stream. We have four viewers.
+
+- `DUKE_X02_OPEN_004`  
+  *Direction:* Grave.  
+  **Say:** And one is a man in Duluth who I believe is lost.
+
+- `DUKE_X02_OPEN_005`  
+  *Direction:* Leaning into the mic, tender, as if to the man himself.  
+  **Say:** Everybody's asking, Duluth. Everybody's asking.
+
+### X02_ROOM
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_ROOM_001`  
+  *Direction:* Gleeful, the way a man is when a story contains a villain he can pronounce.  
+  **Say:** Housing news. A landlord on Cedar Street named Dale rented the same room to two different people. And a cousin.
+
+- `DUKE_X02_ROOM_002`  
+  *Direction:* Wheezing.  
+  **Say:** A hybrid arrangement. It's a room, Dale! It's a room with three people in it and a lie!
+
+- `DUKE_X02_ROOM_003`  
+  *Direction:* Fond.  
+  **Say:** Port Alder real estate, folks. If you can find it, you can lose it to a cousin.
+
+### X02_SPONSOR
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_SPONSOR_001`  
+  *Direction:* The golden, trusted voice of a man reading something he has never read before.  
+  **Say:** This segment is brought to you by Gulliver's Discount Mattresses. Do you sleep? Gulliver's has a mattress for that. Do you not sleep? Gulliver's has a mattress for THAT.
+
+- `DUKE_X02_SPONSOR_002`  
+  *Direction:* Appalled.  
+  **Say:** Enjoyed by WHO, Mags? That is a love story I did not ask for.
+
+- `DUKE_X02_SPONSOR_003`  
+  *Direction:* Triumphant.  
+  **Say:** That's not a flaw, that's a feature. Gulliver's. Lie Down Somewhere. Offer not valid in fog.
+
+### X02_TRUCKS
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_TRUCKS_001`  
+  *Direction:* Conspiratorial.  
+  **Say:** Listener mail. A caller points out there are far too many grey sedans in Port Alder. Not variety. Not color. Sedans, grey.
+
+- `DUKE_X02_TRUCKS_002`  
+  *Direction:* A man cracking open a case.  
+  **Say:** Is it? Or is it ONE car, in a trench coat, going around very fast?
+
+- `DUKE_X02_TRUCKS_003`  
+  *Direction:* Delighted.  
+  **Say:** That is exactly what the car wants you to say.
+
+- `DUKE_X02_TRUCKS_004`  
+  *Direction:* Rubbing his temples.  
+  **Say:** Four-four-seven-one. That's twice this week. That is either a clue or my birthday.
+
+- `DUKE_X02_TRUCKS_005`  
+  *Direction:* Pointing, victorious.  
+  **Say:** Then it's a clue!
+
+### X02_WAREHOUSE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_WAREHOUSE_001`  
+  *Direction:* Newsreader voice, badly worn.  
+  **Say:** Breaking news. Which I am legally required to say is not breaking, it's lightly cracking. Port police responded to a silent alarm at the Port Warehouse complex in ninety seconds.
+
+- `DUKE_X02_WAREHOUSE_002`  
+  *Direction:* Rising.  
+  **Say:** Ninety seconds! Folks, these are the same officers who took forty minutes to find a parade. A PARADE. It had a float.
+
+- `DUKE_X02_WAREHOUSE_003`  
+  *Direction:* Thoughtful, dangerous.  
+  **Say:** My theory: the alarm called the police itself. From the inside. Smart alarm. Woke up one morning, felt something, dialed.
+
+- `DUKE_X02_WAREHOUSE_004`  
+  *Direction:* Pained.  
+  **Say:** Mags. You can't just say normal things. We have a format.
+
+- `DUKE_X02_WAREHOUSE_005`  
+  *Direction:* Gasping, thrilled.  
+  **Say:** Four-four-seven-one. Which is also my locker at the Y, which I will now be checking, with a flashlight and a lawyer.
+
+### X02_WHEEL
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `DUKE_X02_WHEEL_001`  
+  *Direction:* Lowering his voice to a stage whisper that is louder than his normal voice.  
+  **Say:** Listener theory of the week. The Harbor Wheel. Is it a ride? Or is it, and I'm just asking questions, a very slow antenna?
+
+- `DUKE_X02_WHEEL_002`  
+  *Direction:* Pouncing.  
+  **Say:** Were you looking at the city, Mags, or was the city looking at you?
+
+- `DUKE_X02_WHEEL_003`  
+  *Direction:* Triumphant.  
+  **Say:** That's what they WANT you to be doing.
+
+- `DUKE_X02_WHEEL_004`  
+  *Direction:* Astonished, delighted.  
+  **Say:** Rollo. Rollo, that is a conspiracy with a MENU. Mags, put that on a mug.
+
+- `DUKE_X02_WHEEL_005`  
+  *Direction:* Resolute.  
+  **Say:** We have a wheel and we have a pretzel. We're a brand.
+
+## Rollo Teague (camera guy) (`ROLLO`)
+
+**Role:** camera operator for the Dead Air Hour video stream  
+**Voice:** Thirties, low, tired.  
+**Direction:** Deadpan. Never plays the joke; says it like a weather report. Does not look up.  
+**Accent:** Local, flat.  
+**Pace:** Slow, with long pauses.  
+**Range:** Very narrow.  
+**Pronunciation:** Teague: "teeg"  
+**Recording notes:** Slightly off mic, as if across the studio. Keep the boredom.
+
+**Who they are:** Films the show for the four people who watch it. Speaks rarely, flatly and usually at exactly the wrong moment. Radio only.
+
+29 lines, 198 words.
+
+### X02_ALDERPOINT
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_ALDERPOINT_001`  
+  *Direction:* Quietly, for once, not joking.  
+  **Say:** Thirty years.
+
+- `ROLLO_X02_ALDERPOINT_002`  
+  *Direction:* Dry.  
+  **Say:** I toured the site. They have a mascot. It's a lighthouse with arms.
+
+### X02_BADGE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_BADGE_001`  
+  *Direction:* Flat.  
+  **Say:** I've heard him at the diner. He asked for the salt in a subordinate clause.
+
+- `ROLLO_X02_BADGE_002`  
+  *Direction:* Instantly, quietly alarmed.  
+  **Say:** I don't want to talk about the fish thing.
+
+### X02_CALLER
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_CALLER_001`  
+  *Direction:* Flat.  
+  **Say:** Her number is the studio number.
+
+### X02_CARPARK
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_CARPARK_001`  
+  *Direction:* Flat.  
+  **Say:** I have footage. It's dark. There's a lot of shouting about a spot.
+
+### X02_END_A
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_END_A_001`  
+  *Direction:* Flat.  
+  **Say:** You called it a shipment of left shoes.
+
+- `ROLLO_X02_END_A_002`  
+  *Direction:* Flat.  
+  **Say:** Nobody wants that prize.
+
+### X02_END_B
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_END_B_001`  
+  *Direction:* Flat.  
+  **Say:** Somebody's moved into the tower. High floor. Nobody's seen them.
+
+### X02_END_C
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_END_C_001`  
+  *Direction:* Flat.  
+  **Say:** I filmed it.
+
+- `ROLLO_X02_END_C_002`  
+  *Direction:* Quietly proud.  
+  **Say:** It's very good footage. There's a seagull in it.
+
+- `ROLLO_X02_END_C_003`  
+  *Direction:* Flat.  
+  **Say:** It's carrying something. Could be a sandwich. Could be paperwork.
+
+### X02_FOG
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_FOG_001`  
+  *Direction:* Genuinely curious, for him.  
+  **Say:** What's the benefit?
+
+- `ROLLO_X02_FOG_002`  
+  *Direction:* Quiet.  
+  **Say:** There's no billing department. It's a drawer.
+
+### X02_GULL
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_GULL_001`  
+  *Direction:* Dry.  
+  **Say:** You fed him a chip first.
+
+- `ROLLO_X02_GULL_002`  
+  *Direction:* Flat.  
+  **Say:** He's been filing paperwork.
+
+### X02_LIGHTHOUSE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_LIGHTHOUSE_001`  
+  *Direction:* Flat.  
+  **Say:** Gerald.
+
+- `ROLLO_X02_LIGHTHOUSE_002`  
+  *Direction:* Looking at the photo.  
+  **Say:** There's a thermos on the step.
+
+- `ROLLO_X02_LIGHTHOUSE_003`  
+  *Direction:* Flat, but pleased.  
+  **Say:** Not a gull.
+
+- `ROLLO_X02_LIGHTHOUSE_004`  
+  *Direction:* Quietly.  
+  **Say:** They're off.
+
+### X02_OPEN
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_OPEN_001`  
+  *Direction:* Flat. Does not look up from whatever he is eating.  
+  **Say:** It's Thursday.
+
+- `ROLLO_X02_OPEN_002`  
+  *Direction:* A long pause.  
+  **Say:** No.
+
+### X02_ROOM
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_ROOM_001`  
+  *Direction:* Flat.  
+  **Say:** I've been in that room. It has a very strong opinion about itself.
+
+### X02_SPONSOR
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_SPONSOR_001`  
+  *Direction:* Dry.  
+  **Say:** Mine has a water stain shaped like Ohio.
+
+### X02_TRUCKS
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_TRUCKS_001`  
+  *Direction:* Quiet.  
+  **Say:** Cars don't wear trench coats.
+
+- `ROLLO_X02_TRUCKS_002`  
+  *Direction:* Flat.  
+  **Say:** It's not your birthday.
+
+### X02_WAREHOUSE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_WAREHOUSE_001`  
+  *Direction:* Flat.  
+  **Say:** It was on a bridge. It was a hard parade to find.
+
+- `ROLLO_X02_WAREHOUSE_002`  
+  *Direction:* Reading from his phone.  
+  **Say:** The container number's on the news. P-A-C, four-four-seven-one.
+
+### X02_WHEEL
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `ROLLO_X02_WHEEL_001`  
+  *Direction:* Flat, from behind the camera.  
+  **Say:** The pretzel guy is the same guy who runs the wheel.
+
+## Mags Fenwick (producer) (`MAGS`)
+
+**Role:** producer, sound desk and caller screener  
+**Voice:** Forties, brisk, dry.  
+**Direction:** The professional in a room of children. Her "caller" voices are deliberately terrible and she does not care.  
+**Accent:** Local, clipped.  
+**Pace:** Quick, efficient.  
+**Range:** Medium; one comic falsetto for the callers.  
+**Pronunciation:** Fenwick: "FEN-wick"  
+**Recording notes:** Record each caller line twice: once in the bad falsetto, once as Mags (the game uses the falsetto).
+
+**Who they are:** Runs the studio: the board, the phones, the schedule, and every caller (all of them are her). Typing throughout. Radio only.
+
+34 lines, 239 words.
+
+### X02_ALDERPOINT
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_ALDERPOINT_001`  
+  *Direction:* Dry.  
+  **Say:** Everyone who can afford the fence.
+
+- `MAGS_X02_ALDERPOINT_002`  
+  *Direction:* Flat.  
+  **Say:** She once bit a priest.
+
+### X02_BADGE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_BADGE_001`  
+  *Direction:* Without looking up.  
+  **Say:** That's most of them.
+
+- `MAGS_X02_BADGE_002`  
+  *Direction:* Typing.  
+  **Say:** The fish thing is in the archive.
+
+### X02_CALLER
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_CALLER_001`  
+  *Direction:* Bright, professional, the studio voice.  
+  **Say:** Line two, we have Lorraine from Cedar Street.
+
+- `MAGS_X02_CALLER_002`  
+  *Direction:* Now an extremely unconvincing high, quavering older lady. She is clearly doing a voice and is not trying very hard.  
+  **Say:** Hi, Duke, long-time listener, first-time caller.
+
+- `MAGS_X02_CALLER_003`  
+  *Direction:* Back to herself, instantly.  
+  **Say:** It's a very bad line.
+
+- `MAGS_X02_CALLER_004`  
+  *Direction:* The voice again, a little too close to the mic.  
+  **Say:** I just think pigeons should have to carry ID.
+
+### X02_CARPARK
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_CARPARK_001`  
+  *Direction:* Reading.  
+  **Say:** Three cars left at once.
+
+- `MAGS_X02_CARPARK_002`  
+  *Direction:* Reading from the report.  
+  **Say:** Police say the cars left at "speeds unsuitable for a car park."
+
+- `MAGS_X02_CARPARK_003`  
+  *Direction:* Gravely.  
+  **Say:** A brisk shuffle, yes.
+
+### X02_END_A
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_END_A_001`  
+  *Direction:* Reading.  
+  **Say:** Warrants for Victor Sloane.
+
+- `MAGS_X02_END_A_002`  
+  *Direction:* Quietly impressed.  
+  **Say:** Somebody gave the paper the whole file.
+
+### X02_END_B
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_END_B_001`  
+  *Direction:* Fair.  
+  **Say:** It's very nice.
+
+- `MAGS_X02_END_B_002`  
+  *Direction:* Gently.  
+  **Say:** You said you'd say that at the end of the show.
+
+### X02_END_C
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_END_C_001`  
+  *Direction:* Quietly.  
+  **Say:** He ate it.
+
+### X02_FOG
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_FOG_001`  
+  *Direction:* Correcting, bored.  
+  **Say:** A fog assessment fee.
+
+- `MAGS_X02_FOG_002`  
+  *Direction:* Flat.  
+  **Say:** He also said that about Tuesdays.
+
+### X02_GULL
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_GULL_001`  
+  *Direction:* Not looking up.  
+  **Say:** The harbor commission says gulls are "a protected local community." So technically you owe him.
+
+- `MAGS_X02_GULL_002`  
+  *Direction:* Without conviction.  
+  **Say:** That's not confirmed.
+
+### X02_LIGHTHOUSE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_LIGHTHOUSE_001`  
+  *Direction:* Reading.  
+  **Say:** The lighthouse keepers' union says the light "stayed on throughout, as per contract."
+
+- `MAGS_X02_LIGHTHOUSE_002`  
+  *Direction:* Reading.  
+  **Say:** The dockworker who was out there is reportedly fine. He asked for a blanket and a sandwich.
+
+- `MAGS_X02_LIGHTHOUSE_003`  
+  *Direction:* Gently.  
+  **Say:** We don't have a quiet one.
+
+### X02_OPEN
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_OPEN_001`  
+  *Direction:* Brisk, the voice of someone with three other jobs. Typing as she talks.  
+  **Say:** Two are me. One is my other phone.
+
+- `MAGS_X02_OPEN_002`  
+  *Direction:* Reading off a screen.  
+  **Say:** He left a comment. It says "where is this."
+
+### X02_ROOM
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_ROOM_001`  
+  *Direction:* Reading from a screen.  
+  **Say:** He's calling it, quote, "a hybrid arrangement."
+
+### X02_SPONSOR
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_SPONSOR_001`  
+  *Direction:* Reading from a card.  
+  **Say:** Legal wants me to say they're "previously enjoyed."
+
+### X02_TRUCKS
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_TRUCKS_001`  
+  *Direction:* Shrugging audibly.  
+  **Say:** It's the most common car.
+
+- `MAGS_X02_TRUCKS_002`  
+  *Direction:* Scrolling.  
+  **Say:** Another caller says a plate near the King Haulage depot ends in four-four-seven-one.
+
+### X02_WAREHOUSE
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_WAREHOUSE_001`  
+  *Direction:* Reading it again, in case it was a typo.  
+  **Say:** Ninety.
+
+- `MAGS_X02_WAREHOUSE_002`  
+  *Direction:* Mild.  
+  **Say:** Or somebody phoned it in before anyone got there.
+
+### X02_WHEEL
+*CAR RADIO (Alder FM and Harbor AM broadcasts); heard over the radio*
+
+- `MAGS_X02_WHEEL_001`  
+  *Direction:* Patient.  
+  **Say:** It's a ride. I've been on it.
+
+- `MAGS_X02_WHEEL_002`  
+  *Direction:* Deadpan.  
+  **Say:** I was eating a pretzel.
+
+- `MAGS_X02_WHEEL_003`  
+  *Direction:* Typing.  
+  **Say:** We don't have mugs.
 
 ## Depot guard (`GUARD`)
 
@@ -3854,7 +4606,7 @@ Which recordings each part of the story needs.
 - **R01_CLEAN_MONEY**: 6 lines, 0 recorded
 - **R02_MATEO**: 12 lines, 0 recorded
 - **R03_THE_PLAN**: 9 lines, 0 recorded
-- **CAR RADIO (ambient broadcasts)**: 5 lines, 0 recorded
+- **CAR RADIO (Alder FM and Harbor AM broadcasts)**: 145 lines, 0 recorded
 - **W01_WINDOWS**: 7 lines, 0 recorded
 - **W02_SIGNATURES**: 6 lines, 0 recorded
 - **W03_THE_PERMIT**: 5 lines, 0 recorded

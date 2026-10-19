@@ -27,6 +27,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyH') actions.horn && actions.horn();
   if (e.code === 'KeyP') actions.pause && actions.pause();
   if (e.code === 'KeyM') actions.map && actions.map();
+  if (e.code === 'KeyR') actions.radio && actions.radio();
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 window.addEventListener('blur', () => { clearInput(); actions.blur && actions.blur(); });
@@ -52,6 +53,7 @@ function enableTouch() {
     el.addEventListener('touchstart', on, { passive: false }); el.addEventListener('touchend', off); el.addEventListener('touchcancel', off);
   };
   hold('tBrake', 'brake'); hold('tRun', 'run'); hold('tFire', 'fire');
+  $('tRadio').addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); if (G.mode === 'playing') actions.radio && actions.radio(); }, { passive: false });
   $('tCar').addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); if (G.mode === 'playing') actions.interact && actions.interact(); }, { passive: false });
   window.addEventListener('touchstart', e => {
     if (G.mode !== 'playing') return;

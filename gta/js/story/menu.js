@@ -1,6 +1,6 @@
 // LAST EXIT: the start and pause menus' story parts: begin / continue / new story / free roam, voice and subtitle settings, the
 // journal (mission progress and relationships) and a tool for hearing one line by ID. Plain DOM, no state of its own beyond the DOM.
-import { story, runtime, progress, journal } from './runtime.js';
+import { story, runtime, progress, journal, cycleRadio, station, STATIONS } from './runtime.js';
 import * as voice from './voice.js';
 import { LINES } from './dialogue.js';
 import { testLine } from './conversation.js';
@@ -14,9 +14,9 @@ function settingsBlock() {
   vol.type = 'range'; vol.min = 0; vol.max = 100; vol.value = Math.round(voice.volume() * 100); vol.setAttribute('aria-label', 'voice volume');
   vol.addEventListener('input', () => voice.setVolume(vol.value / 100));
   subs.type = radio.type = 'button';
-  const paint = () => { subs.textContent = 'subtitles: ' + (voice.subtitlesOn() ? 'on' : 'off'); radio.textContent = 'car radio: ' + (data.radio === false ? 'off' : 'on'); vol.value = Math.round(voice.volume() * 100); };
+  const paint = () => { subs.textContent = 'subtitles: ' + (voice.subtitlesOn() ? 'on' : 'off'); radio.textContent = 'car radio: ' + STATIONS[station()].name; vol.value = Math.round(voice.volume() * 100); };
   subs.addEventListener('click', () => { voice.setSubtitles(!voice.subtitlesOn()); paint(); });
-  radio.addEventListener('click', () => { data.radio = data.radio === false; persist(); paint(); });
+  radio.addEventListener('click', () => { cycleRadio(); paint(); });
   lab.appendChild(vol); box.append(lab, subs, radio); box.paint = paint; paint(); return box;
 }
 const blocks = [];

@@ -75,6 +75,12 @@ The last decision in Sloane's office sets **A**, **B** or **C**. The epilogue (t
 
 Darius's fate (arrested / let go / killed) and Rowan's (arrested / flips / free) are layered on top, so there are many combinations of words and outcomes.
 
+## The car radio
+
+Press **R** in a car (or tap RADIO, or use the pause menu) to change station: **Alder FM** (the host, news and Sloane's adverts, an occasional voice), **Harbor AM 1190** (a talk show) or off. The radio only plays while you are in a car, goes quiet for cutscenes and stops when you get out.
+
+**The Dead Air Hour** is the talk show: **Duke Pelletier** (host: a former ferry purser, sure everything is connected and nothing is his fault), **Rollo Teague** (the camera guy, who films it for a video stream with four viewers and speaks only to say something flat at the wrong moment) and **Mags Fenwick** (producer, sound desk, caller screener and, suspiciously, every caller). It is a comedy of absurdity: a gull with a union rep named Gerald, a fog tax, a Ferris wheel that might be an antenna, a pigeon-ID caller who sounds exactly like Mags. It reacts to the story without ever showing it, and gets it almost right: the ninety-second police response, container 4471, a detective who talks like terms and conditions, Alder Point, the car park, the lighthouse (a serious moment if Walt did not survive), and a different reaction to each of the three endings. 16 segments, 140 lines (`js/story/lines/talk.js`); they play least-heard-first and only when the story has reached them.
+
 ## Optional chains (all skippable)
 
 | Chain | Missions | Notes |
