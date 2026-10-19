@@ -64,7 +64,21 @@ export function buildBeach() {
   }
   // umbrellas, towels and chairs on the beach in front of each car park
   for (const l of LOTS) { const cx = l.cx + l.dx * 30, cz = l.cz + l.dz * 30; for (let k = 0; k < 7; k++) { const x = cx + (R() - .5) * 38 * (l.dz ? 1 : .35) + (l.dx ? R() * 14 : 0), z = cz + (R() - .5) * 38 * (l.dx ? 1 : .35) + (l.dz ? R() * 14 : 0), d = shoreDist(x, z); if (d < 5 || d > 60 || reserved(x, z)) continue; umb[k % 5].place(x, z, R() * 3, 1, 0); tow[k % 4].place(x + 1.6, z + .4, R() * 3, 1, 0); if (R() < .6) chairs.place(x - 1.2, z + 1, R() * 6, 1, 0); } }
-  [rocks, [wood, grassP, grassQ, palms, dunes, shrubs, stacks], umb, tow, [chairs]].flat().forEach(p => p.done());
+  // groves and hedgerows inland of the dunes, in clumps (noise decides where), so the land between the city and the coast reads as landscape
+  const RG = rng(909), TR = [
+    merge([part(CYL(.16, .24, 2.4, 5), 0x5a3d22, { y: 1.2 }), part(SPH(1.5, 6, 4), 0x3a7a3a, { y: 3.4, sy: 1.05 }), part(SPH(1.05, 5, 4), 0x4a8a3a, { x: .7, y: 4.4, z: .2 }), part(SPH(.95, 5, 4), 0x2f6a35, { x: -.6, y: 4.1, z: -.4 })]),
+    merge([part(CYL(.14, .2, 3.2, 5), 0x4a3320, { y: 1.6 }), part(SPH(1.0, 6, 4), 0x2f6a35, { y: 4.3, sy: 2.0 }), part(SPH(.75, 6, 4), 0x3a7a3a, { y: 6.1, sy: 1.5 })]),
+    merge([part(CYL(.22, .3, 1.9, 5), 0x5a3d22, { y: .95 }), part(SPH(2.3, 7, 4), 0x4a8a3a, { y: 3.2, sy: .75 }), part(SPH(1.5, 6, 4), 0x5a9a3f, { x: 1.3, y: 3.8, z: .5, sy: .8 }), part(SPH(1.4, 6, 4), 0x3a7a3a, { x: -1.2, y: 3.6, z: -.7, sy: .8 })])
+  ].map(g => new Prop([{ geo: g, mat: vcLambert }])), hedge = new Prop([{ geo: shrub, mat: vcLambert }]);
+  let nt = 0, nh = 0;
+  for (let x = -400; x < W + 400; x += 8) for (let z = -400; z < W + 400; z += 8) {
+    const px = x + RG() * 8, pz = z + RG() * 8; if (px > -6 && px < W + 6 && pz > -6 && pz < W + 6) continue;
+    const d = shoreDist(px, pz), bw = beachWidth(px, pz); if (d < bw + 16 || d > 170 || reserved(px, pz)) continue;
+    const cl = vnoise(px / 40 + 3, pz / 40 - 8);
+    if (cl > .6 && RG() < .5 && nt < 260) { const v = Math.floor(RG() * 3); TR[v].place(px, pz, RG() * 6, .85 + RG() * .5, 0); addCircle(px, pz, v === 2 ? .6 : .45); nt++; }
+    else if (cl > .46 && RG() < .22 && nh < 340) { hedge.place(px, pz, RG() * 6, 1 + RG() * .9, 0); nh++; }
+  }
+  [rocks, [wood, grassP, grassQ, palms, dunes, shrubs, stacks], umb, tow, [chairs], TR, [hedge]].flat().forEach(p => p.done());
 
   // static structures, merged into one mesh each
   const S = [], L = [], B = [];

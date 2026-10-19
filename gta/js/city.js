@@ -9,15 +9,19 @@ import { clamp, rng } from './util.js';
 import { quality } from './settings.js';
 import { buildBlock, circles, spinners } from './models/buildings.js';
 import { decor, lots } from './models/kit.js';
+import { part, merge, BOX } from './models/mesh.js';
+import { vcLambert } from './models/materials.js';
 
 const rectGrid = {};
 for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const fps = footprints(i, j).map(f => ({ x0: f[0], z0: f[1], x1: f[2], z1: f[3] })); if (fps.length) rectGrid[i + ',' + j] = fps; }
 // small round obstacles (trees, lamp posts) in a coarse hash so lookups stay cheap
 const CELLSZ = 20, circleGrid = {};
-export function addCircle(x, z, r) { const k = Math.floor(x / CELLSZ) + ',' + Math.floor(z / CELLSZ); (circleGrid[k] = circleGrid[k] || []).push({ x, z, r }); }
+export function addCircle(x, z, r, ref) { const k = Math.floor(x / CELLSZ) + ',' + Math.floor(z / CELLSZ), c = { x, z, r, ref: ref || null, off: false }; (circleGrid[k] = circleGrid[k] || []).push(c); return c; }
+/** the round obstacles around a point (the physics props use this to find what a car touches) */
+export function circlesNear(x, z) { const out = [], ci = Math.floor(x / CELLSZ), cj = Math.floor(z / CELLSZ); for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) { const l = circleGrid[i + ',' + j]; if (l) for (const c of l) out.push(c); } return out; }
 
 /** Push a circle (x,z,rad) out of every solid thing. Returns [x, z, hit, nx, nz]. */
-export function pushOut(x, z, rad) {
+export function pushOut(x, z, rad, skipSoft) {
   const bi = Math.floor((x - RD / 2) / P), bj = Math.floor((z - RD / 2) / P);
   let hit = false, nx = 0, nz = 0, wall = false;
   for (let i = bi - 1; i <= bi + 1; i++) for (let j = bj - 1; j <= bj + 1; j++) {
@@ -38,6 +42,7 @@ export function pushOut(x, z, rad) {
   for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
     const list = circleGrid[i + ',' + j]; if (!list) continue;
     for (const c of list) {
+      if (c.off || (skipSoft && c.ref)) continue;                                   // knocked-over props don't block; cars deal with physics props themselves
       const dx = x - c.x, dz = z - c.z, m = rad + c.r, d2 = dx * dx + dz * dz;
       if (d2 < m * m) { const d = Math.sqrt(d2) || .001; x = c.x + dx / d * m; z = c.z + dz / d * m; hit = true; nx += dx / d; nz += dz / d; }
     }
@@ -59,6 +64,9 @@ function groundTex() {
   for (let t = 0; t < 70; t++) { g.fillStyle = 'rgba(0,0,0,' + (.04 + R() * .05) + ')'; g.fillRect(R() * S, R() * S, (4 + R() * 30) * k, (1 + R() * 3) * k); }         // patched asphalt
   const line = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x * k, y * k, w * k, h * k); };
   const Y = '#d8b84a', Wh = '#e4e4e0';
+  // asphalt wear: lighter polished tyre tracks in every lane, a darker oily strip between them, and soft large-scale blotches
+  for (let a = 0; a <= N; a++) { const c0 = rc(a); for (const o of [-2.8, 2.8]) for (const tr of [-.85, .85]) { line(c0 + o + tr - .25, 0, .5, WORLD, 'rgba(255,255,255,.028)'); line(0, c0 + o + tr - .25, WORLD, .5, 'rgba(255,255,255,.028)'); } for (const o of [-2.8, 2.8]) { line(c0 + o - .3, 0, .6, WORLD, 'rgba(0,0,0,.05)'); line(0, c0 + o - .3, WORLD, .6, 'rgba(0,0,0,.05)'); } }
+  for (let t = 0; t < 420; t++) { const a = Math.floor(R() * (N + 1)), alongX = R() < .5, p0 = R() * WORLD, ww = (3 + R() * 9) * k, hh = (1.2 + R() * 2.4) * k; g.fillStyle = 'rgba(' + (R() < .5 ? '0,0,0,' : '255,255,255,') + (.025 + R() * .03) + ')'; g.beginPath(); if (alongX) g.ellipse(p0 * k, (rc(a) + (R() - .5) * 10) * k, ww, hh, 0, 0, 7); else g.ellipse((rc(a) + (R() - .5) * 10) * k, p0 * k, hh, ww, 0, 0, 7); g.fill(); }
   for (let a = 0; a <= N; a++) {
     const c0 = rc(a);
     line(c0 - .3, 0, .12, WORLD, Y); line(c0 + .18, 0, .12, WORLD, Y); line(0, c0 - .3, WORLD, .12, Y); line(0, c0 + .18, WORLD, .12, Y);                  // double yellow
@@ -75,6 +83,24 @@ function groundTex() {
     }
     line(cx + .4, cz - RD / 2 - 3.4, 4.2, .4, Wh); line(cx - 4.6, cz + RD / 2 + 3, 4.2, .4, Wh); line(cx + RD / 2 + 3, cz + .4, .4, 4.2, Wh); line(cx - RD / 2 - 3.4, cz - 4.6, .4, 4.2, Wh); // stop lines
   }
+  // turn arrows in the lanes approaching each junction (straight, left or right, repeatable per junction)
+  const arrow = (x, z, ang, kind) => {
+    g.save(); g.translate(x * k, z * k); g.rotate(ang); g.scale(k, k); g.fillStyle = 'rgba(232,232,226,.82)';
+    g.fillRect(-1.6, -.14, 2.2, .28);
+    g.beginPath(); g.moveTo(1.5, 0); g.lineTo(.5, -.6); g.lineTo(.5, .6); g.closePath(); g.fill();   // head
+    if (kind) { const s = kind > 0 ? 1 : -1; g.fillRect(-.14, 0, .28, s * 1.1); g.beginPath(); g.moveTo(0, s * 1.8); g.lineTo(-.55, s * 1.0); g.lineTo(.55, s * 1.0); g.closePath(); g.fill(); g.fillStyle = 'rgba(52,53,58,1)'; g.fillRect(.45, -.2, 1.3, .4); }
+    g.restore();
+  };
+  for (let a = 1; a < N; a++) for (let b = 1; b < N; b++) {
+    const cx = rc(a), cz = rc(b), off = RD / 2 + 11.5, kinds = [0, 0, 0, -1, 1];
+    arrow(cx - off, cz + 2.8, 0, kinds[Math.floor(R() * 5)]); arrow(cx + off, cz - 2.8, Math.PI, kinds[Math.floor(R() * 5)]);
+    arrow(cx - 2.8, cz - off, Math.PI / 2, kinds[Math.floor(R() * 5)]); arrow(cx + 2.8, cz + off, -Math.PI / 2, kinds[Math.floor(R() * 5)]);
+  }
+  // utility covers: manholes on the lanes and storm drains in the gutters
+  const cover = (x, z, r, hex, ring) => { g.fillStyle = hex; g.beginPath(); g.arc(x * k, z * k, r * k, 0, 7); g.fill(); g.strokeStyle = ring; g.lineWidth = .08 * k; g.stroke(); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect((x - r * .8) * k, (z - .03) * k, 1.6 * r * k, .06 * k); g.fillRect((x - .03) * k, (z - r * .8) * k, .06 * k, 1.6 * r * k); };
+  for (let t = 0; t < 130; t++) { const a = Math.floor(R() * (N + 1)), s = 8 + R() * (P - 16), blk = Math.floor(R() * N), lane = R() < .5 ? -2.8 : 2.8, p = blockX(blk) + s % B; if (R() < .5) cover(p, rc(a) + lane + (R() - .5) * .6, .42, '#2b2c30', '#4a4b50'); else cover(rc(a) + lane + (R() - .5) * .6, p, .42, '#2b2c30', '#4a4b50'); }
+  const drain = (x, z, horiz) => { const w = horiz ? .9 : .4, h = horiz ? .4 : .9; g.fillStyle = '#17181a'; g.fillRect((x - w / 2) * k, (z - h / 2) * k, w * k, h * k); g.fillStyle = '#4c4d52'; for (let q = 0; q < 5; q++) { if (horiz) g.fillRect((x - w / 2 + .1 + q * .17) * k, (z - h / 2) * k, .06 * k, h * k); else g.fillRect((x - w / 2) * k, (z - h / 2 + .1 + q * .17) * k, w * k, .06 * k); } };
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const x = blockX(i), z = blockZ(j); drain(x + 6, z - .25, true); drain(x + B - 6, z + B + .25, true); drain(x - .25, z + B - 6, false); drain(x + B + .25, z + 6, false); }
   // the closed ground road beneath each ramp becomes a grassy embankment
   for (const [x0, x1] of [[HW.w0, HW.w1], [HW.e0, HW.e1]]) { g.fillStyle = '#4f7f40'; g.fillRect(x0 * k, (HW_Z - HW_HALF) * k, (x1 - x0) * k, 2 * HW_HALF * k); grain(x0 * k, (HW_Z - HW_HALF) * k, (x1 - x0) * k, 2 * HW_HALF * k, 1500, .1); }
   const bays = (x0, z0, w, rows) => { g.fillStyle = 'rgba(235,235,230,.85)'; for (let r = 0; r < rows; r++) { const zc = z0 + 3 + r * 11.2; for (let q = 0; q <= Math.floor(w / 2.8); q++) g.fillRect((x0 + q * 2.8 + (w - Math.floor(w / 2.8) * 2.8) / 2 - .06) * k, (zc - 2.7) * k, .12 * k, 5.4 * k); } };
@@ -105,10 +131,27 @@ export function buildCity() {
   buildTerrain();
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) if (blockType(i, j) && true) buildBlock(i, j);
   circles.forEach(c => addCircle(c[0], c[1], c[2]));
-  ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD), new THREE.MeshLambertMaterial({ map: groundTex() }));
+  const gm = new THREE.MeshLambertMaterial({ map: groundTex() });
+  gm.onBeforeCompile = sh => {                                   // fine surface grain that stays sharp up close, where the 6 px/m texture goes soft
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;\nfloat gh(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }')
+      .replace('#include <map_fragment>', '#include <map_fragment>\n float near = 1.0 - smoothstep(25.0, 110.0, length(vWp.xz - cameraPosition.xz));\n float gr = gh(floor(vWp.xz * 7.0)) - .5, gb = gh(floor(vWp.xz * .9)) - .5;\n diffuseColor.rgb *= 1.0 + gr * .17 * near + gb * .07;');
+  };
+  ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD, WORLD), gm);
   ground.rotation.x = -Math.PI / 2; ground.position.set(WORLD / 2, 0, WORLD / 2); ground.receiveShadow = true; scene.add(ground);
-  buildBeach();
+  buildBeach(); buildCurbs();
   for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (blockChar(i, j) === 'p') addCircle(blockX(i) + B / 2, blockZ(j) + B / 2, 4.2); // the pond
+}
+/** raised kerbs along the pavement edges, with gaps at the corners where the crossings are (one merged mesh) */
+function buildCurbs() {
+  const geos = [], H = .15, col = 0xb2b2ac;
+  const strip = (x, z, w, d) => geos.push(part(BOX, col, { sx: w, sy: H, sz: d, x, y: H / 2, z }));
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const ch = blockChar(i, j); if (ch === 'o' || ch === 'l') continue;
+    const x = blockX(i), z = blockZ(j), c0 = 7, len = B - 2 * c0;
+    strip(x + B / 2, z - .1, len, .28); strip(x + B / 2, z + B + .1, len, .28); strip(x - .1, z + B / 2, .28, len); strip(x + B + .1, z + B / 2, .28, len);
+  }
+  const m = new THREE.Mesh(merge(geos), vcLambert); m.castShadow = false; m.receiveShadow = true; scene.add(m);
 }
 export function beam(x, z, col, h) {
   const m = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, h || 30, 14, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .28, side: THREE.DoubleSide, depthWrite: false }));

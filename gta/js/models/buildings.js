@@ -3,41 +3,35 @@
 import { INSET, blockX, blockZ, blockChar, blockType, S, entrance, doorAt } from '../layout.js';
 import { rng, pick } from '../util.js';
 import { part, BOX, CYL, SPH } from './mesh.js';
-import { track, Acc, D, BRICKS, PLASTERS, CONCRETES, GLASSES, FLOOR, prism, sign, roofClutter, decor, circles } from './kit.js';
+import { fenceSegs, track, Acc, D, BRICKS, PLASTERS, CONCRETES, GLASSES, FLOOR, prism, sign, roofClutter, decor, circles } from './kit.js';
 import { BUILDERS } from './districts.js';
+import { glassTower, concreteSlab, classic, mixedUse, groundFloor, house } from './archetypes.js';
+import { STYLE } from './style.js';
+const ARCH = { ground: STYLE.scale.ground };
 export { doors, parkingSpots, staticCars, circles, spinners, signMat } from './kit.js';
 
+const OFFICE_NAMES = [['MERIDIAN', '#14202a', '#7fd0ff'], ['HARBOR TRUST', '#2a1f14', '#f0d890'], ['PACIFIC LAW', '#1a2a1f', '#d8f0d8'], ['OMNICORP', '#1f1f28', '#ff9a60'], ['SEAVIEW HOTEL', '#2a1424', '#ffb0e0'], ['DELTA BANK', '#142a2a', '#a0f0d8']];
+/** a downtown block: a storefront ground floor with one or two buildings of different character on top */
 function office(acc, R, x0, z0) {
-  const cx = x0 + S / 2, cz = z0 + S / 2, base = pick(CONCRETES), glass = pick(GLASSES);
-  acc.box(S - 2, 6.4, S - 2, cx, 0, cz, 'concrete', base);                         // podium
-  const n = 1 + Math.floor(R() * 2);
-  for (let t = 0; t < n; t++) {
-    const w = 12 + R() * 8, d = 12 + R() * 8, h = 30 + R() * 45, tx = n === 1 ? cx : cx + (t ? 7 : -7), tz = n === 1 ? cz : cz + (t ? -5 : 5);
-    acc.box(w, h, d, tx, 6.4, tz, 'glass', glass);
-    const w2 = w * .7, d2 = d * .7, h2 = 6 + R() * 10;
-    acc.box(w2, h2, d2, tx, 6.4 + h, tz, 'glass', glass);
-    const top = 6.4 + h + h2;
-    acc.vc(part(CYL(.12, .2, 10 + R() * 8, 5), 0xb0b4b8, { x: tx, y: top + 6, z: tz })); acc.vc(part(SPH(.25, 6, 4), 0xff3030, { x: tx, y: top + 11, z: tz }));
-    roofClutter(acc, R, tx, tz, top, w2, d2);
-  }
-  roofClutter(acc, R, cx, cz, 6.4, S - 4, S - 4);
+  const cx = x0 + S / 2, cz = z0 + S / 2;
+  groundFloor(acc, R, cx, cz, S - 2, S - 2, pick(OFFICE_NAMES));
+  const base = ARCH.ground, kinds = [['tower', .35], ['slab', .25], ['classic', .2], ['mixed', .2]];
+  const choose = () => { let r = R(), k = 0; for (const [n, p] of kinds) { r -= p; if (r <= 0) return n; k = n; } return k; };
+  const build = (kind, x, z, w, d) => kind === 'tower' ? glassTower(acc, R, x, z, base, w, d, 10 + Math.floor(R() * 12), { helipad: R() < .15 }) : kind === 'slab' ? concreteSlab(acc, R, x, z, base, w, d, 5 + Math.floor(R() * 4)) : kind === 'classic' ? classic(acc, R, x, z, base, w, d, 6 + Math.floor(R() * 4)) : mixedUse(acc, R, x, z, base, w, d, 5 + Math.floor(R() * 4));
+  if (R() < .4) { const k = choose(); build(k, cx, cz, k === 'slab' ? S - 8 : 15 + R() * 7, k === 'slab' ? 13 + R() * 6 : 15 + R() * 7); }
+  else { build(choose(), cx - 6.5, cz + 5.5, 12 + R(), 12 + R()); build(choose(), cx + 7, cz - 5.5, 12 + R(), 12 + R()); }
 }
 function houses(acc, R, x0, z0, safe, bi, bj) {
   const lot = S / 2;
   for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) {
     const lx = x0 + a * lot, lz = z0 + b * lot, cx = lx + lot / 2, cz = lz + lot / 2;
     acc.vc(part(BOX, 0x4f8a45, { sx: lot - .4, sy: .04, sz: lot - .4, x: cx, y: .02, z: cz }));                  // lawn
-    const w = 8 + R() * 2.5, d = 7 + R() * 2, h = 3.4 + R() * 1.2, wall = pick(PLASTERS), roof = pick([0x7a3a2a, 0x4a4a52, 0x5a3a28, 0x3a4a5a]);
+    const w = 8 + R() * 2.5, d = 7 + R() * 2, h = 3.4 + R() * 1.2, wall = pick(STYLE.building.plaster), roof = pick(STYLE.building.roofAlt);
     const hz = lz + lot * .32, hx = cx;
-    acc.box(w, h, d, hx, .04, hz, 'house', wall);
-    acc.vc(part(prism(w + .8, 2.2, d + .8), roof, { x: hx, y: h + .04, z: hz }));                               // gable roof
-    acc.vc(part(BOX, D(wall, .8), { sx: 1.2, sy: 2.6, sz: 1.2, x: hx + w / 2 - 1.5, y: h + 1.9, z: hz - d / 4 }));  // chimney
-    acc.vc(part(BOX, 0x5a3a28, { sx: 1.1, sy: 2.2, sz: .12, x: hx - w / 4, y: 1.15, z: hz + d / 2 + .03 }));       // front door
-    acc.vc(part(BOX, 0x8a8a86, { sx: 2.6, sy: .2, sz: 1.6, x: hx - w / 4, y: .12, z: hz + d / 2 + .9 }));          // step / porch
+    house(acc, R, safe ? 'gable' : pick(['gable', 'gable', 'modern', 'duplex', 'twostory']), hx, hz, w, d, h, wall, roof);
     acc.vc(part(BOX, 0x6a6a6c, { sx: 3.2, sy: .04, sz: lot * .5, x: hx + w / 2 + 1.4, y: .05, z: lz + lot * .72 })); // driveway
     // picket fence along the lot front
-    for (let p = 0; p < 10; p++) acc.vc(part(BOX, 0xf0eee8, { sx: .12, sy: .9, sz: .1, x: lx + .8 + p * (lot - 1.6) / 9, y: .45, z: lz + lot - .5 }));
-    acc.vc(part(BOX, 0xf0eee8, { sx: lot - 1.6, sy: .08, sz: .08, x: cx, y: .7, z: lz + lot - .5 }));
+    for (let p = 0; p < 4; p++) fenceSegs.push({ x: lx + .8 + (p + .5) * (lot - 1.6) / 4, z: lz + lot - .5, yaw: 0 });
     // a bush and a tree
     acc.vc(part(SPH(.7, 7, 5), 0x3a7a3a, { x: hx + w / 2 + .4, y: .5, z: hz + d / 2 + .2, sy: .8 }));
     const tx = lx + (a ? 2 : lot - 2), tz = lz + lot * .75;

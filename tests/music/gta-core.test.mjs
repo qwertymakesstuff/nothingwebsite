@@ -239,3 +239,35 @@ test('dispatch: one response per incident, nearby patrol first, otherwise a unit
   assert.equal(D.pickSpawn(nodes, { px: 0, pz: 0, band: [100, 200], visible: () => true }), null);
   assert.ok(D.pickSpawn(nodes, { px: 0, pz: 0, band: [100, 200], visible: () => true, relax: true }), 'relaxed: never silently fails');
 });
+
+test('prop physics: light props yield, tall props fall past a threshold, heavy and static things stay solid', async () => {
+  const P = await import(new URL('propPhysics.js', dir));
+  const r = (k, v) => P.resolveImpact(k, v);
+  assert.equal(r('cone', 1).outcome, 'push'); assert.ok(r('cone', 12).keep > .97, 'a cone barely slows the car');
+  assert.equal(r('trash', 6).outcome, 'push');
+  assert.equal(r('dumpster', 3).outcome, 'solid', 'a heavy bin hit gently is a wall'); assert.equal(r('dumpster', 9).outcome, 'push');
+  assert.equal(r('lamp', 5).outcome, 'solid'); assert.equal(r('lamp', 9).outcome, 'bend'); assert.equal(r('lamp', 15).outcome, 'fall');
+  assert.ok(r('lamp', 15).keep > .6 && r('lamp', 15).keep < 1, 'a lamp post takes some speed off the car but does not stop it');
+  assert.equal(r('fence', 3).outcome, 'solid'); assert.equal(r('fence', 8).outcome, 'break');
+  assert.equal(r('tree', 40).outcome, 'solid'); assert.equal(r('building', 40).outcome, 'solid', 'static things never move');
+  assert.equal(r('sapling', 8).outcome, 'solid'); assert.equal(r('sapling', 17).outcome, 'fall');
+  assert.equal(P.approachSpeed(10, 1, 0, 0, 1), 0, 'sideways contact does not count'); assert.ok(P.approachSpeed(10, 1, 0, 3, 0) === 10);
+  // a falling pole ends lying flat and stops; a bend settles at a lean; nothing spins forever
+  const f = { th: 0, w: 1.5, mode: 'fall', rest: false }; let n = 0; while (P.stepFall(f, 1 / 60, 6.4) && n++ < 2000);
+  assert.ok(n < 600 && f.rest && Math.abs(f.th - Math.PI / 2) < 1e-6, 'falls and rests flat in ' + n + ' steps');
+  const b = { th: 0, w: 1, mode: 'bend', target: .4, rest: false }; n = 0; while (P.stepFall(b, 1 / 60, 6.4) && n++ < 2000);
+  assert.ok(b.rest && Math.abs(b.th - .4) < .02);
+  const s = { x: 0, z: 0, vx: 8, vz: 0, spin: 3 }; n = 0; while (P.stepSlide(s, 1 / 60, 2.4) && n++ < 2000);
+  assert.ok(s.rest && s.x > 1 && s.x < 8, 'a pushed prop slides to a stop: ' + s.x.toFixed(1));
+  const v = P.pushVelocity('cone', 30, 1, 0); assert.ok(Math.hypot(v[0], v[1]) <= 14, 'nothing is launched');
+});
+
+test('style guide: palettes are valid and the scale numbers are the ones the generators rely on', async () => {
+  const S = await import(new URL('models/style.js', dir)), L = await import(new URL('layout.js', dir));
+  const hexes = [...S.STYLE.building.concrete, ...S.STYLE.building.plaster, ...S.STYLE.building.brick, ...S.STYLE.building.stone, ...S.STYLE.building.glass, ...S.STYLE.building.metal, ...S.STYLE.veg.leaf, ...S.STYLE.veg.trunk];
+  assert.ok(hexes.length > 30 && hexes.every(h => Number.isInteger(h) && h >= 0 && h <= 0xffffff));
+  assert.equal(S.STYLE.scale.floor, 3.2); assert.ok(S.STYLE.scale.ground > S.STYLE.scale.floor);
+  assert.ok(S.STYLE.road.curbH < .3 && L.RD === 14, 'kerbs are low, roads are 14 m');
+  const R = (() => { let a = 1; return () => (a = (a * 16807) % 2147483647) / 2147483647; })();
+  assert.ok(S.pickFrom([1, 2, 3], R) >= 1);
+});

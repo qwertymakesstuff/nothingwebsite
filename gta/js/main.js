@@ -2,7 +2,7 @@
 import { renderer, render } from './render.js';
 import { buildCity, cullBlocks } from './city.js';
 import { buildHighway } from './models/highwayModel.js';
-import { buildProps, updateTrafficLights, cullProps } from './models/props.js';
+import { buildProps, updateTrafficLights, cullProps, placedLog } from './models/props.js';
 import { updateEnvironment, updateHeadlights, env, setHour } from './environment.js';
 import { updateWater } from './terrain.js';
 import { quality, setQuality } from './settings.js';
@@ -23,6 +23,8 @@ import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem } from '
 import { player, initPlayer, updatePlayer, syncPlayerMesh, hurtPlayer } from './player.js';
 import { updatePolice, spawnCop, officers, dispatcher, intel, copCars } from './police.js';
 import { reportCrime, ledger, visibleToPlayer, los } from './reporting.js';
+import * as phys from './physprops.js';
+import { buildDistant } from './distant.js';
 import { updateMission, startMission } from './missions.js';
 import { updateLifecycle, busted, wasted } from './lifecycle.js';
 import { updateFx } from './effects.js';
@@ -38,7 +40,7 @@ const $ = id => document.getElementById(id);
 initPlayer();
 
 /* build the city, then populate it */
-buildCity(); buildHighway(); buildProps(); registerPoiMarkers(); buildZones(); updateEnvironment(0, 0, 0, false);
+buildCity(); buildHighway(); buildProps(); buildDistant(); registerPoiMarkers(); buildZones(); updateEnvironment(0, 0, 0, false);
 for (let i = 0; i < 56; i++) makePed();
 for (let i = 0; i < 14; i++) makeBeachPed();
 for (let i = 0; i < 46; i++) spawnParked();
@@ -95,7 +97,7 @@ function frame(now) {
     if (G.interior) { // inside a shop the street is frozen: only the player, effects and the timers that matter run
       updatePlayer(dt, inp); updateFx(dt); updateLifecycle(dt, afterRespawn); updateInteraction(); G.interior.room.clerk.update(dt, 0, {});
     } else {
-      updatePlayer(dt, inp); updateCars(dt); updatePeds(dt); updatePolice(dt); updateItems(dt, it => { if (it.kind === 'cash') sfx.cash(); else say('health', 1.2); });
+      updatePlayer(dt, inp); updateCars(dt); phys.updatePhysProps(dt, player.x, player.z); updatePeds(dt); updatePolice(dt); updateItems(dt, it => { if (it.kind === 'cash') sfx.cash(); else say('health', 1.2); });
       updateFx(dt); updateMission(dt); updateLifecycle(dt, afterRespawn);
       if (trafficCount() < 30 && Math.random() < dt * 2) spawnTraffic(); if (highwayCount() < 6 && Math.random() < dt) spawnHighwayCar();
       updateInteraction();
@@ -112,4 +114,4 @@ function frame(now) {
 if (renderer) requestAnimationFrame(frame);
 
 // handles for the automated tests
-window.__gta = { removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los };
+window.__gta = { removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los, phys, renderer, placedLog };

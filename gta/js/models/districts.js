@@ -7,6 +7,8 @@ import { part, merge, xf, BOX, CYL, SPH } from './mesh.js';
 import { facadeMat } from './facades.js';
 import { put, Acc, D, BRICKS, PLASTERS, CONCRETES, GLASSES, FLOOR, prism, sign, signMat, shopStrip, roofClutter, parkingBays, parkingSpots, staticCars, circles, spinners, doors } from './kit.js';
 import { APARTMENT_SHOP_BLOCKS } from '../pois.js';
+import { scaffold, rooftop, balcony, awning, gantryCrane, floodlight, gatehouse, loadingBay, parapet, hvac, ledge } from './archetypes.js';
+import { STYLE } from './style.js';
 
 const H2 = S / 2;
 const fence = (a, x0, z0, x1, z1, hex, gap) => { // posts + rails along a rectangle outline; gap = {side:'s', c, w} leaves an opening
@@ -19,8 +21,9 @@ const fence = (a, x0, z0, x1, z1, hex, gap) => { // posts + rails along a rectan
   run(x0, z0, x0, z1); run(x1, z0, x1, z1);
 };
 const tree = (a, x, z, s) => { s = s || 1; a.c(0x5a3d22, .16 * s, .24 * s, 2.2 * s, x, 0, z, 6); a.s(pick([0x3a7a3a, 0x4a8a3a, 0x2f6a35]), 1.5 * s, x, 3.4 * s, z, 1.05); a.s(0x4a8a3a, 1.0 * s, x + .7 * s, 4.3 * s, z + .2 * s); };
-const container = (a, hex, x, y, z, rot) => { const w = rot ? 2.5 : 6, d = rot ? 6 : 2.5; a.b(hex, w, 2.6, d, x, y, z); for (let k = 0; k < 5; k++) a.b(D(hex, .8), rot ? 2.52 : .08, 2.5, rot ? .08 : 2.52, x + (rot ? 0 : -2.4 + k * 1.2), y + .05, z + (rot ? -2.4 + k * 1.2 : 0)); };
+const container = (a, hex, x, y, z, rot) => { const w = rot ? 2.5 : 6, d = rot ? 6 : 2.5; a.b(hex, w, 2.6, d, x, y, z); for (let k = 0; k < 3; k++) a.b(D(hex, .78), rot ? 2.52 : .08, 2.5, rot ? .08 : 2.52, x + (rot ? 0 : -2.4 + k * 2.4), y + .05, z + (rot ? -2.4 + k * 2.4 : 0)); a.b(D(hex, .6), rot ? 2.3 : .1, 2.3, rot ? .1 : 2.3, x + (rot ? 0 : 3), y + .15, z + (rot ? 3 : 0)); };
 const CONT = [0xb8322f, 0x2f5fb8, 0xd2a52f, 0x2f9a58, 0x8a8e96, 0xe0702a, 0x6a2430];
+const LINES = [[0xb8322f, 0xd04a3f], [0x2f5fb8, 0x4a78d0], [0xd2a52f, 0xe4bc4a], [0x2f9a58, 0x4ab070], [0x8a8e96, 0xa4a8b0], [0xe0702a, 0xf08a40], [0x6a2430, 0x8a3a48]];   // shipping lines: a main colour and a lighter one
 const wheelOfPoints = []; // keeps nothing; here to make the intent obvious: only the Ferris wheel spins
 
 /* ---------- outskirts ---------- */
@@ -47,6 +50,7 @@ function construction(a, R, x0, z0) {
   const fx = x0 + 14, fz = z0 + 12;
   for (let lv = 0; lv < 3; lv++) { a.b(0x9a9a94, 12, .4, 10, fx, lv * 3.4 + 3, fz); for (const [dx, dz] of [[-5.5, -4.5], [5.5, -4.5], [-5.5, 4.5], [5.5, 4.5], [0, -4.5], [0, 4.5]]) a.b(0x8a8a84, .5, 3.4, .5, fx + dx, lv * 3.4, fz + dz); }
   for (let k = 0; k < 8; k++) a.b(0xe0702a, .08, .5, .08, fx - 5.5 + k * 1.6, 10.2, fz - 4.8);
+  scaffold(a, fx, fz + 5.2, 12, 10.2, 1.1);
   const cx = x0 + 27, cz = z0 + 12; a.b(0xe8b020, 1.6, 30, 1.6, cx, 0, cz); a.b(0xe8b020, 1, 1, 30, cx, 30, cz - 8); a.b(0x55585e, 2.4, 2.4, 3, cx, 29, cz + 8); a.b(0x2a2a2e, .1, 8, .1, cx, 20, cz - 14); circles.push([cx, cz, 1.2]);
   a.b(0xdedede, 6, 2.6, 2.4, x0 + 26, 0, z0 + 27); a.b(0x2a4a8a, 6.02, .2, 2.42, x0 + 26, 1.1, z0 + 27);
   for (let k = 0; k < 4; k++) for (let n = 0; n < 4; n++) a.b(n % 2 ? 0xf4f4f0 : 0xe05020, .5, .8, .08, x0 + 3 + k * 2.6 + n * .5, 0, z0 + S - 3 + (n % 2) * .01);
@@ -66,8 +70,8 @@ function apartmentsAlley(a, R, x0, z0, i, j) {
     const base = kind === 'brick' ? pick(BRICKS) : pick(PLASTERS), floors = 4 + Math.floor(R() * 4), h = floors * FLOOR + 3.6, cx = side ? x0 + S - w / 2 : x0 + w / 2;
     a.box(w, h, S, cx, 0, z0 + S / 2, kind, base);
     a.b(0x56565a, w, .5, .6, cx, h, z0 + .3); a.b(0x56565a, w, .5, .6, cx, h, z0 + S - .3);
-    for (let f = 1; f < floors; f++) for (let k = 0; k < 3; k++) { const bz = z0 + S + .6 - 0, bx = cx - w / 3 + k * w / 3; a.b(0x8a8a86, 3, .12, 1.2, bx, 3.6 + f * FLOOR - 1.2, z0 + S + .6); a.b(0x2a2a2e, 3, .8, .05, bx, 3.6 + f * FLOOR - 1.2, z0 + S + 1.15); }
-    roofClutter(a, R, cx, z0 + S / 2, h, w, S);
+    for (let f = 1; f < floors; f++) for (let k = 0; k < 3; k++) balcony(a, cx - w / 3 + k * w / 3, 3.6 + f * FLOOR - 1.2, z0 + S, 2.8, [0, 1]);
+    ledge(a, STYLE.building.trim, cx, z0 + S / 2, 3.6, w, S, .35, .2); rooftop(a, R, cx, z0 + S / 2, h + .5, w, S);
     const inner = side ? cx - w / 2 : cx + w / 2; // fire escape on the alley wall
     for (let f = 1; f < floors; f++) { a.b(0x2a2a2e, 1.4, .1, 3, inner + (side ? -.7 : .7), 3.6 + f * FLOOR - 1, z0 + 8 + (f % 2) * 10); a.b(0x2a2a2e, .1, FLOOR, .1, inner + (side ? -1.3 : 1.3), 3.6 + (f - 1) * FLOOR, z0 + 8 + (f % 2) * 10); }
     if (side === 0) { const en = entrance(i, j); shopStrip(a, R, en.origin, en.n, en.len, shop ? { kind: shop.interior, title: shop.title, name: shop.name, poi: i + ',' + j } : null); }
@@ -222,15 +226,18 @@ function fireStation(a, R, x0, z0, i, j) {
 
 /* ---------- industrial ---------- */
 function warehouses(a, R, x0, z0) {
-  const dock = (cx, z, facing) => { for (let k = 0; k < 3; k++) { a.b(0x3a4048, 4, 4.4, .2, cx - 9 + k * 9, 0, z); a.b(0x7a7e84, 4.6, .9, 1.6, cx - 9 + k * 9, 0, z + facing * .9); } };
   [0, 1].forEach(side => {
-    const z = side ? z0 + S - 7 : z0 + 7, base = pick([0x8a949c, 0x7a8a84, 0x9a8a78]);
+    const z = side ? z0 + S - 7 : z0 + 7, base = pick(STYLE.building.metal), facing = side ? -1 : 1;
     a.box(S - 2, 8, 14, x0 + S / 2, 0, z, 'metal', base);
     for (let k = 0; k < 4; k++) a.vc(part(prism(S / 4, 1.8, 14.6), D(base, .75), { x: x0 + 4.5 + k * (S - 2) / 4, y: 8, z }));
-    dock(x0 + S / 2, side ? z - 7.1 : z + 7.1, side ? -1 : 1);
+    for (let k = 0; k < 3; k++) loadingBay(a, x0 + S / 2 - 9 + k * 9, z + facing * 7.1, facing, 4);
+    for (let k = 0; k < 4; k++) { a.c(0x9a9ea2, .35, .35, .9, x0 + 4.5 + k * 7.5, 9.7, z, 8); a.c(0x6a6e72, .5, .5, .1, x0 + 4.5 + k * 7.5, 10.6, z, 8); }         // ridge vents
+    if (side === 0) { a.box(8, 4.5, 11, x0 + 5, 8.4, z, 'plaster', 0xd0c8b8); parapet(a, 0x8a8a86, x0 + 5, z, 12.9, 8, 11); hvac(a, R, x0 + 4, 12.9, z); }   // the office section rising over the shed
+    a.b(0xe0b020, 3, .03, 9, x0 + S / 2 + 4, .03, z + facing * 12); a.b(0xe0b020, 3, .03, 9, x0 + S / 2 - 14, .03, z + facing * 12);                                    // marked bays
   });
   for (let k = 0; k < 4; k++) a.c(pick([0x2f5fb8, 0xb8322f, 0x777b82]), .45, .45, .9, x0 + 8 + k * .8, 0, z0 + H2 + 1, 8);
   a.b(0xa0824a, 1.2, .15, 1.2, x0 + 24, 0, z0 + H2 - 1); a.b(0xa0824a, 1.2, 1, 1.2, x0 + 24, .15, z0 + H2 - 1); a.b(0x2f6a3f, 1.9, 1.1, 1.0, x0 + 28, 0, z0 + H2 + 1.5);
+  floodlight(a, x0 + S - 2, z0 + H2, 11);
 }
 function factory(a, R, x0, z0) {
   a.box(S - 6, 12, 22, x0 + S / 2, 0, z0 + 14, 'metal', 0x8a8e96); a.b(0x55585e, S - 5.6, .5, 22.4, x0 + S / 2, 12, z0 + 14);
@@ -245,25 +252,36 @@ function depot(a, R, x0, z0, i, j) {
   a.b(0x3a3a3c, S - 1, .03, S - d - 2, x0 + S / 2, 0, z0 + d + 1 + (S - d - 2) / 2);
   for (let k = 0; k < 4; k++) staticCars.push({ x: x0 + 5 + k * 7.5, z: z0 + d + 8 + (k % 2) * 8, yaw: k % 2 ? Math.PI : 0, type: 'truck', color: pick([0xdcdee2, 0x2f5fb8, 0xb8322f, 0xd2a52f]), kind: 'parked', chance: .9 });
   for (let k = 0; k < 3; k++) a.b(pick([0xdcdee2, 0x8a8e96]), 2.5, 2.8, 8, x0 + 6 + k * 9, 0, z0 + S - 5);
+  gatehouse(a, x0 + S / 2 + 5.5, z0 + S - 2.6, 0); floodlight(a, x0 + 2, z0 + d + 4, 10);
   a.c(0xb8bcc0, 1.5, 1.5, 4, x0 + S - 3, 0, z0 + d + 4, 12); circles.push([x0 + S - 3, z0 + d + 4, 1.6]);
 }
 
 /* ---------- port ---------- */
 function containerYard(a, R, x0, z0) {
-  [0, 1].forEach(side => { const cx = side ? x0 + S - 7 : x0 + 7; for (let r = 0; r < 5; r++) { const stack = 1 + Math.floor(R() * 3), c = pick(CONT); for (let lv = 0; lv < stack; lv++) container(a, pick(CONT), cx - (R() < .5 ? 0 : 0), lv * 2.6, z0 + 3.4 + r * 6.4, true); } });
-  const gz = z0 + S / 2; for (const dx of [-14, 14]) { a.b(0xe0a020, .8, 14, .8, x0 + S / 2 + dx, 0, gz - 3); a.b(0xe0a020, .8, 14, .8, x0 + S / 2 + dx, 0, gz + 3); } a.b(0xe0a020, 30, 1.2, 1.2, x0 + S / 2, 14, gz - 3); a.b(0xe0a020, 30, 1.2, 1.2, x0 + S / 2, 14, gz + 3); a.b(0x2a2a2e, 3, 2, 8, x0 + S / 2 + 4, 12, gz);
+  // two stacking areas either side of the lane. Rows share a shipping line, stacks step down towards the lane, and the odd slot is empty
+  [0, 1].forEach(side => {
+    const cx = side ? x0 + S - 7 : x0 + 7;
+    for (let c = 0; c < 3; c++) for (let r = 0; r < 5; r++) {
+      if (R() < .1) continue; const line = LINES[(r + c * 3 + side * 2) % LINES.length], stack = Math.max(1, 3 - Math.abs(c - (side ? 0 : 2)) - (r % 2 ? 0 : 0) + (R() < .3 ? 1 : 0) - (R() < .3 ? 1 : 0));
+      for (let lv = 0; lv < Math.min(3, stack); lv++) container(a, R() < .8 ? line[0] : line[1], cx + (c - 1) * 3.4, lv * 2.6, z0 + 3.4 + r * 6.4, true);
+    }
+  });
+  const gz = z0 + S / 2; for (const dx of [-14, 14]) { a.b(0xe0a020, .8, 14, .8, x0 + S / 2 + dx, 0, gz - 3); a.b(0xe0a020, .8, 14, .8, x0 + S / 2 + dx, 0, gz + 3); } a.b(0xe0a020, 30, 1.2, 1.2, x0 + S / 2, 14, gz - 3); a.b(0xe0a020, 30, 1.2, 1.2, x0 + S / 2, 14, gz + 3); a.b(0x2a2a2e, 3, 2, 8, x0 + S / 2 + 4, 12, gz); a.b(0x2a2a2e, .2, 4, .2, x0 + S / 2 + 4, 8, gz - 2.5); a.b(0x2a2a2e, .2, 4, .2, x0 + S / 2 + 4, 8, gz + 2.5);
+  floodlight(a, x0 + 1.5, z0 + 1.5, 14); floodlight(a, x0 + S - 1.5, z0 + S - 1.5, 14);
 }
 function portWarehouse(a, R, x0, z0) {
-  a.b(0x4a6a8a, S - 2, 8, S - 2, x0 + S / 2, 0, z0 + S / 2); a.vc(part(CYL(S / 2 - .5, S / 2 - .5, S - 2, 14), 0x5a7a9a, { x: x0 + S / 2, y: 8, z: z0 + S / 2, rx: Math.PI / 2, sy: 1, sz: .35 }));
+  a.box(S - 2, 8, S - 2, x0 + S / 2, 0, z0 + S / 2, 'metal', 0x6a8aa8); a.vc(part(CYL(S / 2 - .5, S / 2 - .5, S - 2, 14), 0x5a7a9a, { x: x0 + S / 2, y: 8, z: z0 + S / 2, rx: Math.PI / 2, sy: 1, sz: .35 }));
   for (let k = 0; k < 4; k++) a.b(0x3a4048, 5, 4.6, .2, x0 + 5 + k * 8, 0, z0 + S - .9); sign('PORT AUTHORITY 7', '#14202a', '#40d0ff', 14, 2, x0 + S / 2, 7, z0 + S - .85, 0);
 }
 function docks(a, R, x0, z0, i, j) {
   const [w, d] = blockType(i, j).bld;
-  a.b(0x6a7078, w, 7, d, x0 + w / 2, 0, z0 + d / 2); a.vc(part(prism(w, 2, d + .6), 0x4a4e54, { x: x0 + w / 2, y: 7, z: z0 + d / 2 }));
+  a.box(w, 7, d, x0 + w / 2, 0, z0 + d / 2, 'metal', 0x7a828c); a.vc(part(prism(w, 2, d + .6), 0x4a4e54, { x: x0 + w / 2, y: 7, z: z0 + d / 2 }));
+  for (let k = 0; k < 3; k++) loadingBay(a, x0 + 6 + k * 9, z0 + d + .1, 1, 4); for (let k = 0; k < 4; k++) { a.c(0x9a9ea2, .35, .35, .9, x0 + 5 + k * 8, 8.6, z0 + d / 2, 8); a.c(0x6a6e72, .5, .5, .1, x0 + 5 + k * 8, 9.5, z0 + d / 2, 8); }
   a.b(0x9a9a94, S, .3, S - d - 2, x0 + S / 2, 0, z0 + d + 1 + (S - d - 2) / 2);
   for (let k = 0; k < 7; k++) a.c(0x2a2a30, .3, .35, .8, x0 + 2 + k * 5, 0, z0 + S - 1, 8);
   for (let k = 0; k < 3; k++) container(a, pick(CONT), x0 + 8 + k * 9, 0, z0 + d + 6, false);
-  const cx = x0 + S - 5, cz = z0 + S - 4; a.b(0xe0a020, .7, 18, .7, cx, 0, cz); a.b(0xe0a020, .5, .5, 14, cx, 17, cz + 3); circles.push([cx, cz, .8]);
+  const cx = x0 + S - 10, cz = z0 + S - 6; gantryCrane(a, cx, cz, 0, 1, 0xe0a020); for (const sx of [-1, 1]) for (const sz of [-1, 1]) circles.push([cx + sx * 5, cz + sz * 2.6, .7]);
+  floodlight(a, x0 + 3, z0 + d + 3, 12); a.b(0xe0b020, S - 2, .03, .3, x0 + S / 2, .32, z0 + S - 2.2);
 }
 export const BUILDERS = {
   o: outskirt, f: farm, c: construction, l: lighthouse, a: apartmentsAlley, s: cornerStores, p: park, w: waterfront,

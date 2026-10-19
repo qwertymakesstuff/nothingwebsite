@@ -24,7 +24,7 @@ export function updateCamera(dt) {
   const cp = Math.cos(G.camPitch), sp = Math.sin(G.camPitch), fx = Math.sin(G.camYaw), fz = Math.cos(G.camYaw);
   // march from the player back towards the camera and stop before the first wall
   let free = want;
-  if (!inside) for (let d = 1.2; d <= want; d += .8) { { const sx = focus.x - fx * cp * d, sz = focus.z - fz * cp * d; if (pushOut(sx, sz, .5)[2] || cars.some(k => k !== c && Math.abs(k.x - sx) < 8 && Math.abs(k.z - sz) < 8 && carDist(k, sx, sz) < .9)) { free = Math.max(1, d - .8); break; } } }
+  if (!inside) for (let d = 1.2; d <= want; d += .8) { { const sx = focus.x - fx * cp * d, sz = focus.z - fz * cp * d; if (pushOut(sx, sz, .5, true)[2] || cars.some(k => k !== c && Math.abs(k.x - sx) < 8 && Math.abs(k.z - sz) < 8 && carDist(k, sx, sz) < .9)) { free = Math.max(1, d - .8); break; } } }
   cam.dist += (free - cam.dist) * (free < cam.dist ? 1 : Math.min(1, dt * 4));  // snap in, ease out
   if (inside) cam.dist += (want - cam.dist) * .5;
   let camY = Math.max(.8, focus.y + ty + sp * cam.dist + 1.2);

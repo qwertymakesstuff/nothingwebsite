@@ -43,10 +43,10 @@ for (const [type, attrs] of [['webgl2', { antialias: true }], ['webgl', { antial
   catch (e) { ctxErr.push('three on ' + type + ': ' + e.message); }
 }
 if (!renderer) failStart(ctxErr.join(' | ') || 'no WebGL context available');
-if (renderer) { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setClearColor(0x9fb8c8); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05; if (quality === 'high') { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; } }
+if (renderer) { renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setClearColor(0x9fb8c8); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12; if (quality === 'high') { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; } }
 export const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x9fb8c8, 70, 340);
-export const camera = new THREE.PerspectiveCamera(65, 1, 0.3, 340);
+scene.fog = new THREE.Fog(0x9fb8c8, 80, 380);
+export const camera = new THREE.PerspectiveCamera(65, 1, 0.3, 400);
 
 scene.add(camera);
 function resize() {

@@ -6,21 +6,22 @@ import { setWindowGlow } from './models/facades.js';
 import { setWaterEnv } from './terrain.js';
 import { setNightProps } from './models/props.js';
 import { lampTint } from './models/vehicles3d.js';
+import { updateDistant } from './distant.js';
 
 export const env = { hour: 16.4, night: 0, sunY: 1, daySeconds: 600 };   // a full day takes 10 minutes
 const C = h => new THREE.Color(h);
 // keyframes by hour: sky top, horizon, fog, sun colour+intensity, hemisphere sky/ground + intensity
 const KF = [
-  [0,    0x070b22, 0x1a2444, 0x131b30, 0x7a8ab8, .42, 0x3a4a7a, 0x1c2028, .8],
-  [5,    0x0a1030, 0x1f2a4c, 0x182038, 0x7a8ab8, .38, 0x3a4a7a, 0x1c2028, .75],
-  [6.6,  0x4a6a9a, 0xf0a070, 0xc09a88, 0xffb070, .6, 0xa0a8c0, 0x504840, .62],
-  [8.2,  0x5a9ad8, 0xc4dcf0, 0xb4cce0, 0xfff0d8, .95, 0xdfe9f2, 0x59605a, .9],
-  [12,   0x3f8ee0, 0xb8d8f4, 0xaccce8, 0xffffff, 1.05, 0xdfe9f2, 0x59605a, .95],
-  [16.5, 0x5a8ed0, 0xe8d4b8, 0xd8c8b0, 0xffd8a0, .95, 0xe0e4ee, 0x5a5a54, .9],
-  [18.8, 0x4a5a9a, 0xff8a50, 0xd09068, 0xff8a40, .65, 0x9a90b0, 0x5a4840, .62],
-  [20.4, 0x1c2450, 0x6a4a6a, 0x4a3a5a, 0x8a6a8a, .3, 0x4a4a7a, 0x2a2630, .5],
-  [22,   0x0a1030, 0x1f2a4c, 0x182038, 0x7a8ab8, .4, 0x3a4a7a, 0x1c2028, .78],
-  [24,   0x070b22, 0x1a2444, 0x131b30, 0x7a8ab8, .42, 0x3a4a7a, 0x1c2028, .8]
+  [0,    0x060a20, 0x1c2850, 0x18223e, 0x8a9ccc, .62, 0x4a5c92, 0x242a3a, 1.0],
+  [5,    0x0a1030, 0x24305a, 0x1c2644, 0x8a9ccc, .56, 0x4a5c92, 0x242a3a, .95],
+  [6.6,  0x4a6a9a, 0xf0a070, 0xd0a088, 0xffb878, .85, 0xa0a8c8, 0x5a5048, .62],
+  [8.2,  0x4f8fe0, 0xb4d4f0, 0xa8c8e4, 0xfff0d0, 1.5, 0xb4cdea, 0x6a6558, .62],
+  [12,   0x2f7fe0, 0xa8cdf2, 0x9cc2e8, 0xffffff, 1.65, 0xb0cbee, 0x6a6558, .62],
+  [16.5, 0x4a82d0, 0xe4cdb0, 0xd0c0aa, 0xffd09a, 1.45, 0xc4cce6, 0x66594c, .6],
+  [18.8, 0x4a5a9a, 0xff8a50, 0xd09068, 0xff8a40, .9, 0x9a90b8, 0x5a4840, .6],
+  [20.4, 0x1c2450, 0x6a4a6a, 0x4a3a5a, 0x8a6a9a, .5, 0x5a5a8a, 0x2c2832, .72],
+  [22,   0x0a1030, 0x24305a, 0x1c2644, 0x8a9ccc, .58, 0x4a5c92, 0x242a3a, .98],
+  [24,   0x060a20, 0x1c2850, 0x18223e, 0x8a9ccc, .62, 0x4a5c92, 0x242a3a, 1.0]
 ];
 export const hemi = new THREE.HemisphereLight(0xdfe9f2, 0x59605a, .9);
 export const sun = new THREE.DirectionalLight(0xfff1d6, 1);
@@ -33,7 +34,7 @@ if (renderer && quality === 'high') {
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
   uniforms: { top: { value: C(0x3f8ee0) }, hor: { value: C(0xb8d8f4) }, sunDir: { value: new THREE.Vector3(0, 1, 0) }, sunCol: { value: C(0xffffff) }, night: { value: 0 }, time: { value: 0 } },
-  vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); vec4 p = projectionMatrix * modelViewMatrix * vec4(position,1.0); gl_Position = p.xyww; }',   // xyww: drawn at the far plane, behind everything, whatever the camera range
   fragmentShader: `varying vec3 vD; uniform vec3 top, hor, sunDir, sunCol; uniform float night, time;
     float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
     float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(h(i),h(i+vec2(1,0)),f.x), mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x), f.y); }
@@ -81,7 +82,7 @@ export function updateEnvironment(dt, fx, fz, play) {
   // the shadow box follows the player, snapped to shadow texels so edges don't crawl
   const snap = 150 / 2048, sx = Math.round(fx / snap) * snap, sz = Math.round(fz / snap) * snap;
   sun.target.position.set(sx, 0, sz); sun.position.set(sx + sdir.x * 160, sdir.y * 160, sz + sdir.z * 160);
-  setWaterEnv(sdir, tmp.sunC, tmp.hor, env.night);
+  setWaterEnv(sdir, tmp.sunC, tmp.hor, env.night); updateDistant(tmp.fog, env.night);
   setWindowGlow(env.night * 1.15);
   setNightProps(env.night);
   const g = .5 + .5 * env.night; lampTint.color.setRGB(g, g * .97, g * .88);

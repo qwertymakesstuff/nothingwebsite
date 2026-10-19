@@ -19,6 +19,7 @@ export const lots = [];          // car parks { x0, z0, w, rows } so the ground 
 export const circles = [];       // solid round obstacles [x, z, r] registered by builders
 export const spinners = [];      // things that rotate: { mesh, speed, axis }
 export const decor = { blocks: [] };
+export const fenceSegs = [];     // wooden fence sections { x, z, yaw }, drawn and made breakable by props.js
 export const track = [];          // loose meshes (signs, clock faces...) made while one block is built, so the block can hide them with the rest
 export function put(m) { scene.add(m); track.push(m); return m; }
 
@@ -43,7 +44,8 @@ export const prism = (w, h, d) => { // gable roof: triangle across x, extruded a
 const signTex = (text, bg, fg) => {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d');
   g.fillStyle = bg; g.fillRect(0, 0, 256, 64); g.strokeStyle = fg; g.lineWidth = 4; g.strokeRect(4, 4, 248, 56);
-  g.fillStyle = fg; g.font = 'bold 34px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 128, 34);
+  g.fillStyle = fg; let fs = 34; g.font = 'bold ' + fs + 'px monospace'; while (fs > 14 && g.measureText(text).width > 228) { fs -= 2; g.font = 'bold ' + fs + 'px monospace'; }   // long names shrink to fit the plate
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 128, 34);
   return new THREE.CanvasTexture(c);
 };
 const signMats = {};

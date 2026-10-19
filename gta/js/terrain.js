@@ -108,7 +108,21 @@ export function buildTerrain() {
   for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) { const x = REGION.x0 + i * STEP, z = REGION.z0 + j * STEP, inside = x > 0 && x < W && z > 0 && z < W, d = inside ? 1000 : shoreDist(x, z); pos.push(x, heightFromD(d), z); uv.push((x - REGION.x0) / REGION.size, (z - REGION.z0) / REGION.size); }
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) { const x0 = REGION.x0 + i * STEP, z0 = REGION.z0 + j * STEP; if (x0 > -2 && z0 > -2 && x0 + STEP < W + 2 && z0 + STEP < W + 2) continue; const a = vid(i, j), b = vid(i + 1, j), c = vid(i, j + 1), e = vid(i + 1, j + 1); idx.push(a, c, b, b, c, e); }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
-  terrain = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: paintTexture(T) })); terrain.receiveShadow = false; scene.add(terrain);
+  const tm = new THREE.MeshLambertMaterial({ map: paintTexture(T) });
+  tm.onBeforeCompile = sh => {                                   // procedural ground detail: grain up close, grass tones, dry patches and a few wildflowers (the 1.5 m/px texture can't carry these)
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;\nfloat gh(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }\nfloat gn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(gh(i),gh(i+vec2(1.,0.)),f.x), mix(gh(i+vec2(0.,1.)),gh(i+vec2(1.,1.)),f.x), f.y); }')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+ float near = 1.0 - smoothstep(20.0, 120.0, length(vWp.xz - cameraPosition.xz));
+ float grass = smoothstep(.015, .09, diffuseColor.g - max(diffuseColor.r * .92, diffuseColor.b));
+ float big = gn(vWp.xz * .045), mid = gn(vWp.xz * .22), fine = gh(floor(vWp.xz * 5.0));
+ diffuseColor.rgb *= 1.0 + (fine - .5) * .2 * near + (mid - .5) * .16;
+ diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.22, 1.06, .72), grass * smoothstep(.55, .85, big) * .8);   // sun-dried patches
+ diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(.78, .96, .8), grass * smoothstep(.6, .15, big) * .6);       // lush patches
+ float fl = gh(floor(vWp.xz * 1.6)); vec3 fc = gh(floor(vWp.xz * 1.6) + 7.3) < .5 ? vec3(1., .86, .3) : vec3(.96, .62, .72);
+ diffuseColor.rgb = mix(diffuseColor.rgb, fc, grass * near * step(.985, fl) * step(.45, gn(vWp.xz * .3)) * .9);`);
+  };
+  terrain = new THREE.Mesh(geo, tm); terrain.receiveShadow = false; scene.add(terrain);
   sea = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000), waterMat); sea.rotation.x = -Math.PI / 2; sea.position.set(W / 2, SEA_LEVEL, W / 2); sea.renderOrder = 2; scene.add(sea);
   return terrain;
 }
