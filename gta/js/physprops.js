@@ -71,11 +71,11 @@ function shove(o, fx, fz, speed) {
   start(o, { x: o.x, z: o.z, vx: v[0], vz: v[1], spin: (Math.random() - .5) * 5, th: 0, dx: fx, dz: fz, rest: false }, 'sliding');
   stats.pushed++; if (o.def.mass > 30) sfx.crash(.25); alarm(o.x, o.z, 12);
 }
-const PIECE_COL = { fence: 0xe8e2d0, kiosk: 0x6a7a8a };
+const PIECE_COL = { fence: 0xe8e2d0, kiosk: 0x6a7a8a, shelter: 0x9ac8e0 };
 function shatter(o, fx, fz, speed, car) {
   if (o.state !== 'standing') return;
   o.hide(); setOff(o, true); o.state = 'broken'; o.since = G.time; stats.broken++; sfx.crash(Math.min(.6, speed / 24)); alarm(o.x, o.z, 20);
-  const n = o.type === 'kiosk' ? 5 : 3;
+  const n = o.type === 'kiosk' || o.type === 'shelter' ? 5 : 3;
   for (let k = 0; k < n; k++) spawnPiece(o, fx, fz, speed, k, n);
   if (car && car.driver === 'player') reportCrime('vandalism', o.x, o.z);
 }

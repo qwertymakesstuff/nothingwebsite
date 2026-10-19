@@ -19,6 +19,7 @@ export const DEFS = {
   lamp:     { cat: 'destructible', mass: 110, r: .28, h: 6.4, bend: 7, fall: 11 },
   tlight:   { cat: 'destructible', mass: 90, r: .24, h: 4.6, bend: 8,  fall: 12.5 },
   sapling:  { cat: 'destructible', mass: 80, r: .45, h: 4,   bend: 11, fall: 16 },
+  shelter:  { cat: 'breakable',   mass: 160, r: 1.5, h: 2.6, brk: 9 },
   kiosk:    { cat: 'breakable',   mass: 120, r: .9,  h: 2.2, brk: 11 },
   fence:    { cat: 'breakable',   mass: 25,  r: .35, h: 1,   brk: 5 },
   tree:     { cat: 'static', r: .5 },

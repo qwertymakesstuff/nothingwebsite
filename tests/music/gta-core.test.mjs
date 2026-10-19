@@ -261,3 +261,13 @@ test('prop physics: light props yield, tall props fall past a threshold, heavy a
   assert.ok(s.rest && s.x > 1 && s.x < 8, 'a pushed prop slides to a stop: ' + s.x.toFixed(1));
   const v = P.pushVelocity('cone', 30, 1, 0); assert.ok(Math.hypot(v[0], v[1]) <= 14, 'nothing is launched');
 });
+
+test('style guide: palettes are valid and the scale numbers are the ones the generators rely on', async () => {
+  const S = await import(new URL('models/style.js', dir)), L = await import(new URL('layout.js', dir));
+  const hexes = [...S.STYLE.building.concrete, ...S.STYLE.building.plaster, ...S.STYLE.building.brick, ...S.STYLE.building.stone, ...S.STYLE.building.glass, ...S.STYLE.building.metal, ...S.STYLE.veg.leaf, ...S.STYLE.veg.trunk];
+  assert.ok(hexes.length > 30 && hexes.every(h => Number.isInteger(h) && h >= 0 && h <= 0xffffff));
+  assert.equal(S.STYLE.scale.floor, 3.2); assert.ok(S.STYLE.scale.ground > S.STYLE.scale.floor);
+  assert.ok(S.STYLE.road.curbH < .3 && L.RD === 14, 'kerbs are low, roads are 14 m');
+  const R = (() => { let a = 1; return () => (a = (a * 16807) % 2147483647) / 2147483647; })();
+  assert.ok(S.pickFrom([1, 2, 3], R) >= 1);
+});

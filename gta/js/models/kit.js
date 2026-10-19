@@ -44,7 +44,8 @@ export const prism = (w, h, d) => { // gable roof: triangle across x, extruded a
 const signTex = (text, bg, fg) => {
   const c = document.createElement('canvas'); c.width = 256; c.height = 64; const g = c.getContext('2d');
   g.fillStyle = bg; g.fillRect(0, 0, 256, 64); g.strokeStyle = fg; g.lineWidth = 4; g.strokeRect(4, 4, 248, 56);
-  g.fillStyle = fg; g.font = 'bold 34px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 128, 34);
+  g.fillStyle = fg; let fs = 34; g.font = 'bold ' + fs + 'px monospace'; while (fs > 14 && g.measureText(text).width > 228) { fs -= 2; g.font = 'bold ' + fs + 'px monospace'; }   // long names shrink to fit the plate
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 128, 34);
   return new THREE.CanvasTexture(c);
 };
 const signMats = {};
