@@ -21,7 +21,8 @@ import { cars, makeCar, updateCars, removeCar } from './vehicles.js';
 import { spawnTraffic, spawnParked, spawnHighwayCar, trafficCount, highwayCount } from './traffic.js';
 import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem } from './people.js';
 import { player, initPlayer, updatePlayer, syncPlayerMesh, hurtPlayer } from './player.js';
-import { updatePolice, spawnCop, officers } from './police.js';
+import { updatePolice, spawnCop, officers, dispatcher, intel, copCars } from './police.js';
+import { reportCrime, ledger, visibleToPlayer, los } from './reporting.js';
 import { updateMission, startMission } from './missions.js';
 import { updateLifecycle, busted, wasted } from './lifecycle.js';
 import { updateFx } from './effects.js';
@@ -106,9 +107,9 @@ function frame(now) {
   updateTrafficLights(G.time); updateHeadlights(G.interior ? null : player.car);
   updateEnvironment(dt, player.x, player.z, inWorld());
   syncPlayerMesh(dt); updateCamera(dt); updateHud(dt);
-  render();
+  if (!window.__noRender) render();   // __noRender is only set by the automated tests
 }
 if (renderer) requestAnimationFrame(frame);
 
 // handles for the automated tests
-window.__gta = { removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted };
+window.__gta = { removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los };

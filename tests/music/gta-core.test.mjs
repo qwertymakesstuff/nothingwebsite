@@ -160,3 +160,82 @@ test('coast: land inside the city, an irregular shoreline, and walls that only e
   assert.ok(C.heightFromD(10) > C.SEA_LEVEL && C.heightFromD(-1) < C.SEA_LEVEL && C.heightFromD(0) >= C.SEA_LEVEL - .001, 'terrain crosses the sea level at the waterline');
   assert.ok(C.heightFromD(-30) > C.heightFromD(-60), 'the sea floor slopes down gradually');
 });
+
+test('crime ledger: unseen crimes report nothing, a witnessed shot is one star, repeats and chases escalate', async () => {
+  const C = await import(new URL('crime.js', dir)), L = new C.CrimeLedger();
+  assert.equal(L.report('gunshot', { x: 1, z: 1, time: 0 }), null, 'nobody saw or heard it');
+  const shot = L.report('gunshot', { x: 1, z: 1, time: 1, witnesses: 2, visible: true });
+  assert.ok(shot && C.starsFor(shot.heat) === 1, 'a witnessed gunshot is exactly one star');
+  const burst = L.report('gunshot', { x: 1, z: 1, time: 2, witnesses: 2, visible: true });
+  assert.ok(burst.heat < shot.heat / 2, 'a burst of the same crime adds little');
+  const heard = new C.CrimeLedger().report('assault', { x: 0, z: 0, time: 0, heard: 3 });
+  const seen = new C.CrimeLedger().report('assault', { x: 0, z: 0, time: 0, witnesses: 1, visible: true });
+  assert.ok(heard.heat < seen.heat, 'only heard counts for less than seen');
+  const chased = new C.CrimeLedger().report('assault', { x: 0, z: 0, time: 0, witnesses: 1, visible: true, pursued: true });
+  assert.ok(chased.heat > seen.heat, 'crimes during a pursuit escalate');
+  assert.ok(new C.CrimeLedger().report('assault_cop', { x: 0, z: 0, time: 0 }), 'attacking an officer is always reported');
+  assert.ok(C.CRIMES.kill_cop.heat >= 45 && C.CRIMES.collision.heat < 15, 'killing a cop is serious, a bump is not a star by itself');
+  assert.ok(L.report('steal_car', { x: 0, z: 0, time: 9, witnesses: 1, visible: true }).crime.suspect === 'player');
+});
+
+test('police state machine: warn, arrest, chase, search and shoot only when the offence warrants it', async () => {
+  const A = await import(new URL('copAI.js', dir)), S = A.S;
+  const w = (o = {}) => ({ stars: 1, dist: 20, sees: true, speed: 0, inCar: false, driving: false, canArrest: false, copAttackAgo: 999, ...o });
+  const off = (st, o = {}) => ({ state: st, stT: 0, unseenT: 0, ...o });
+  assert.equal(A.officerNext(off(S.INVESTIGATING), w({ dist: 30 })), S.APPROACHING_SUSPECT, 'walks up to a nonviolent suspect');
+  assert.equal(A.officerNext(off(S.APPROACHING_SUSPECT), w({ dist: 12 })), S.ISSUING_WARNING);
+  assert.equal(A.officerNext(off(S.ISSUING_WARNING), w({ dist: 2, canArrest: true })), S.ATTEMPTING_ARREST);
+  assert.equal(A.officerNext(off(S.ISSUING_WARNING), w({ dist: 12, speed: 8 })), S.PURSUING_ON_FOOT, 'running makes them give chase');
+  assert.equal(A.officerNext(off(S.ATTEMPTING_ARREST), w({ dist: 7, speed: 8 })), S.PURSUING_ON_FOOT, 'fleeing the arrest');
+  assert.notEqual(A.officerNext(off(S.APPROACHING_SUSPECT), w({ dist: 10 })), S.ENGAGING_ACTIVE_THREAT, 'no gunfire for a minor offence');
+  assert.equal(A.officerNext(off(S.APPROACHING_SUSPECT), w({ stars: 3, dist: 20 })), S.ENGAGING_ACTIVE_THREAT, 'three stars: active threat');
+  assert.equal(A.officerNext(off(S.APPROACHING_SUSPECT), w({ stars: 2, dist: 20, copAttackAgo: 5 })), S.ENGAGING_ACTIVE_THREAT, 'attacking an officer escalates two stars');
+  assert.equal(A.officerNext(off(S.PURSUING_ON_FOOT, { unseenT: 3 }), w({ sees: false, dist: 30 })), S.SEARCHING_LAST_KNOWN_LOCATION, 'lost sight: search');
+  assert.equal(A.officerNext(off(S.SEARCHING_LAST_KNOWN_LOCATION, { stT: 99 }), w({ sees: false })), S.RETURNING_TO_PATROL, 'search ends');
+  assert.equal(A.officerNext(off(S.ATTEMPTING_ARREST), w({ stars: 0 })), S.RETURNING_TO_PATROL, 'no stars: back to the cruiser');
+  assert.equal(A.officerNext(off(S.APPROACHING_SUSPECT), w({ inCar: true, speed: 20 })), S.RETURNING_TO_PATROL, 'a speeding car cannot be chased on foot');
+  // arrest needs the suspect to stand still, close and in the open
+  let h = 0; for (let i = 0; i < 30; i++) h = A.arrestStep(h, { canArrest: true, speed: 0, dist: 2 }, .1);
+  assert.ok(h >= A.TUNE.holdTime - 1e-9, 'standing still completes the arrest');
+  assert.equal(A.arrestStep(1, { canArrest: false, speed: 0, dist: 2 }, .1) < 1, true, 'through a wall: no progress');
+  assert.equal(A.arrestStep(1, { canArrest: true, speed: 5, dist: 2 }, .1) < 1, true, 'moving: no progress');
+  assert.equal(A.arrestStep(1, { canArrest: true, speed: 0, dist: 9 }, .1) < 1, true, 'across the street: no progress');
+  // cruisers
+  const car = (st, o = {}) => ({ state: st, stT: 0, unseenT: 0, deployed: false, crewOut: 0, ...o });
+  assert.equal(A.carNext(car(S.RESPONDING), w({ driving: false, dist: 30 })), S.INVESTIGATING, 'suspect on foot: park and send the crew');
+  assert.equal(A.carNext(car(S.RESPONDING), w({ driving: true, speed: 20, dist: 60 })), S.PURSUING_IN_VEHICLE);
+  assert.equal(A.carNext(car(S.PURSUING_IN_VEHICLE, { unseenT: 5 }), w({ sees: false, driving: true })), S.SEARCHING_LAST_KNOWN_LOCATION);
+  assert.equal(A.carNext(car(S.PATROLLING), w()), S.RESPONDING);
+  assert.equal(A.carNext(car(S.PURSUING_IN_VEHICLE), w({ stars: 0 })), S.RETURNING_TO_PATROL);
+  // losing the police: higher stars take longer, being seen sets the clock back
+  assert.ok(A.TUNE.loseTime[5] > A.TUNE.loseTime[1] * 2 && A.TUNE.vision[5] > A.TUNE.vision[1]);
+  let e = 0; for (let i = 0; i < 100; i++) e = A.evadeStep(e, false, 2, .1);
+  assert.ok(e > 9.9 && !A.evadedEnough(e, 2) && A.evadedEnough(e + 20, 2) && A.evadeStep(e, true, 2, .1) < e);
+});
+
+test('dispatch: one response per incident, nearby patrol first, otherwise a unit out of sight; the force is capped', async () => {
+  const D = await import(new URL('dispatch.js', dir)), d = new D.Dispatcher();
+  const crime = { type: 'gunshot', sev: 1, x: 100, z: 100, suspect: 'player' };
+  const a = d.report(crime, 0), b = d.report({ ...crime, x: 110, z: 95 }, 5);
+  assert.equal(a, b, 'the same incident is merged, not dispatched twice'); assert.equal(a.count, 2);
+  assert.notEqual(d.report({ ...crime, x: 900, z: 900 }, 6), a, 'a far-away crime is its own incident');
+  const d2 = new D.Dispatcher(); d2.report(crime, 0);
+  const units = [{ id: 1, x: 150, z: 100, state: 'PATROLLING', inc: null, patrol: true, alive: true }, { id: 2, x: 700, z: 700, state: 'PATROLLING', inc: null, patrol: true, alive: true }];
+  let spawned = 0; const W = { stars: 1, now: 1, suspect: { x: 100, z: 100 }, units, seen: false, carCount: 2, spawn: () => { spawned++; return null; } };
+  d2.tick(.1, W);
+  assert.equal(units[0].inc, 1, 'the nearby patrol is assigned'); assert.equal(units[1].inc, null); assert.equal(spawned, 0, 'no spawn when a patrol can take it');
+  const d3 = new D.Dispatcher(); d3.report(crime, 0); const empty = []; let made = 0;
+  const W3 = { stars: 2, now: 1, suspect: { x: 100, z: 100 }, units: empty, seen: false, carCount: 0, spawn: inc => { made++; const u = { id: 9 + made, x: 0, z: 0, state: 'RESPONDING', inc: null, alive: true }; empty.push(u); return u; } };
+  for (let i = 0; i < 40; i++) { W3.now += .5; d3.tick(.5, W3); }
+  assert.equal(made, D.FLEET.want[2], 'with no patrol a unit is spawned up to the wanted level, no more');
+  const d4 = new D.Dispatcher(); d4.report(crime, 0); let m4 = 0; const u4 = [];
+  for (let i = 0; i < 200; i++) d4.tick(.5, { stars: 5, now: i * .5, suspect: { x: 100, z: 100 }, units: u4, seen: false, carCount: u4.length, spawn: () => { m4++; const u = { id: m4, x: 0, z: 0, state: 'RESPONDING', inc: null, alive: true }; u4.push(u); return u; } });
+  assert.ok(u4.length <= D.FLEET.cap[5] + 3 && u4.length >= D.FLEET.want[5], 'five stars: many units, but bounded: ' + u4.length);
+  assert.ok(D.FLEET.cap.every((c, i) => i === 0 || c >= D.FLEET.cap[i - 1]) && D.FLEET.cap[5] <= 8);
+  // spawn points: in the band, never in the player's view
+  const nodes = [{ x: 50, z: 0 }, { x: 150, z: 0 }, { x: 160, z: 0 }, { x: 400, z: 0 }];
+  const pick = D.pickSpawn(nodes, { px: 0, pz: 0, band: [100, 200], visible: x => x === 150 });
+  assert.equal(pick.x, 160, 'skips the visible node, stays inside the distance band');
+  assert.equal(D.pickSpawn(nodes, { px: 0, pz: 0, band: [100, 200], visible: () => true }), null);
+  assert.ok(D.pickSpawn(nodes, { px: 0, pz: 0, band: [100, 200], visible: () => true, relax: true }), 'relaxed: never silently fails');
+});

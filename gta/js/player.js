@@ -1,6 +1,7 @@
 // The player: on-foot movement, getting in and out of cars, driving input and taking damage.
 import { pushOut } from './city.js';
-import { G, canAct, addHeat } from './state.js';
+import { G, canAct } from './state.js';
+import { reportCrime } from './reporting.js';
 import { angDiff } from './util.js';
 import { sfx } from './audio.js';
 import { cars, driveCar, carDist, showDriver } from './vehicles.js';
@@ -45,8 +46,10 @@ export function nearestCar() {
 export function enterCar(c) {
   if (!c || c.wreck || player.car || !canAct()) return false;
   if (c.kind === 'display') { say('for sale: talk to the dealer first', 2); return false; }
-  if (c.driver === 'ai') { addHeat(c.kind === 'cop' ? 40 : 14); say('carjacked', 1.5); ejectDriver(c); }
-  else if (c.kind === 'cop' || c.type === 'cruiser') addHeat(40);
+  if (c.kind === 'cop' || c.type === 'cruiser') reportCrime('steal_cop_car', c.x, c.z);
+  else if (c.driver === 'ai') reportCrime('carjack', c.x, c.z);
+  else if (c.kind === 'parked' || c.kind === 'traffic') reportCrime('steal_car', c.x, c.z);
+  if (c.driver === 'ai') { say('carjacked', 1.5); ejectDriver(c); }
   if (c.kind === 'cop') { if (c.cop && c.cop.out) c.cop.out.car = null; c.cop = null; }
   c.ai = null; c.driver = 'player'; c.kind = c.kind === 'parked' || c.kind === 'cop' || c.kind === 'traffic' ? 'owned' : c.kind;
   c.vx = c.vz = c.spin = 0; c.despawn = 0;
@@ -134,5 +137,5 @@ export function syncPlayerMesh(dt) {
   }
   if (root.parent !== scene) { if (root.parent) root.parent.remove(root); scene.add(root); }
   root.position.set(player.x, 0, player.z); root.rotation.y = player.yaw;
-  ch.update(dt, Math.hypot(player.vx, player.vz), { aim: player.aimT > 0, run: player.sprinting });
+  ch.update(dt, Math.hypot(player.vx, player.vz), { aim: player.aimT > 0, run: player.sprinting, hands: G.mode === 'busted' });
 }

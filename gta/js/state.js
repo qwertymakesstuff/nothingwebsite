@@ -9,7 +9,8 @@ export const G = {
   camYaw: 0, camPitch: .35, camDrag: 0, shake: 0,
   respawnT: 0, pendingRespawn: null, interior: null
 };
-export const STAR_AT = [15, 45, 90, 150, 230];
+import { STAR_AT } from './crime.js';
+export { STAR_AT };
 export const inWorld = () => G.mode === 'playing' || G.mode === 'wasted' || G.mode === 'busted'; // simulation runs
 export const canAct = () => G.mode === 'playing';                                                  // player input is live
 export const starsOf = heat => STAR_AT.filter(t => heat >= t).length;

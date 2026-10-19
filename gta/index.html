@@ -54,6 +54,7 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 #money{position:absolute;top:14px;right:16px;font:2rem "VT323",monospace;color:#7ae27a;text-shadow:0 0 6px #000}
 #stars{position:absolute;top:50px;right:16px;font-size:1.4rem;letter-spacing:.1em;text-shadow:0 0 6px #000}
 #stars i{font-style:normal;color:#333}#stars i.on{color:#ffd23f}#stars i.on.dim{color:#8a6a20}
+#wanted{position:absolute;top:82px;right:16px;font-size:.78rem;letter-spacing:.08em;font-weight:700;color:#cfd8ff;text-shadow:0 0 5px #000;text-align:right}#wanted.arrest{color:#ffd23f}#wanted.warning{color:#7fb0ff}#wanted.searching{color:#b9b2a0}
 #hp{position:absolute;left:16px;bottom:18px;width:min(180px,40vw);height:8px;background:rgba(0,0,0,.5);border:1px solid #555}
 #hp i{display:block;height:100%;width:100%;background:#d33a4a}
 #speed{position:absolute;left:16px;bottom:34px;font:1.3rem "VT323",monospace;text-shadow:0 0 6px #000}
@@ -79,7 +80,7 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="hud" hidden>
   <canvas id="minimap" width="300" height="300"></canvas>
   <div id="mission" hidden></div>
-  <div id="money">$0</div><div id="stars"></div>
+  <div id="money">$0</div><div id="stars"></div><div id="wanted"></div>
   <div id="speed"></div><div id="hp"><i></i></div>
   <div id="prompt"></div><div id="district"></div><button id="mapBtn" type="button" aria-label="open the map">MAP</button><div id="msg"></div><div class="big" id="banner"></div>
 </div>
@@ -118,56 +119,60 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 <script type="importmap">
 {
  "imports": {
-  "/gta/js/camera.js": "/gta/js/camera.js?v=45",
-  "/gta/js/interaction.js": "/gta/js/interaction.js?v=45",
-  "/gta/js/highway.js": "/gta/js/highway.js?v=45",
-  "/gta/js/util.js": "/gta/js/util.js?v=45",
-  "/gta/js/traffic.js": "/gta/js/traffic.js?v=45",
-  "/gta/js/audio.js": "/gta/js/audio.js?v=45",
-  "/gta/js/terrain.js": "/gta/js/terrain.js?v=45",
-  "/gta/js/locations.js": "/gta/js/locations.js?v=45",
-  "/gta/js/ui.js": "/gta/js/ui.js?v=45",
-  "/gta/js/city.js": "/gta/js/city.js?v=45",
-  "/gta/js/render.js": "/gta/js/render.js?v=45",
-  "/gta/js/coast.js": "/gta/js/coast.js?v=45",
-  "/gta/js/settings.js": "/gta/js/settings.js?v=45",
-  "/gta/js/zones.js": "/gta/js/zones.js?v=45",
-  "/gta/js/map.js": "/gta/js/map.js?v=45",
-  "/gta/js/effects.js": "/gta/js/effects.js?v=45",
-  "/gta/js/environment.js": "/gta/js/environment.js?v=45",
-  "/gta/js/missions.js": "/gta/js/missions.js?v=45",
-  "/gta/js/shops.js": "/gta/js/shops.js?v=45",
-  "/gta/js/signals.js": "/gta/js/signals.js?v=45",
-  "/gta/js/state.js": "/gta/js/state.js?v=45",
-  "/gta/js/markers.js": "/gta/js/markers.js?v=45",
-  "/gta/js/missionDefs.js": "/gta/js/missionDefs.js?v=45",
-  "/gta/js/police.js": "/gta/js/police.js?v=45",
-  "/gta/js/layout.js": "/gta/js/layout.js?v=45",
-  "/gta/js/lifecycle.js": "/gta/js/lifecycle.js?v=45",
-  "/gta/js/roads.js": "/gta/js/roads.js?v=45",
-  "/gta/js/save.js": "/gta/js/save.js?v=45",
-  "/gta/js/main.js": "/gta/js/main.js?v=45",
-  "/gta/js/people.js": "/gta/js/people.js?v=45",
-  "/gta/js/pois.js": "/gta/js/pois.js?v=45",
-  "/gta/js/vehicles.js": "/gta/js/vehicles.js?v=45",
-  "/gta/js/player.js": "/gta/js/player.js?v=45",
-  "/gta/js/input.js": "/gta/js/input.js?v=45",
-  "/gta/js/weapons.js": "/gta/js/weapons.js?v=45",
-  "/gta/js/models/kit.js": "/gta/js/models/kit.js?v=45",
-  "/gta/js/models/characters.js": "/gta/js/models/characters.js?v=45",
-  "/gta/js/models/props.js": "/gta/js/models/props.js?v=45",
-  "/gta/js/models/highwayModel.js": "/gta/js/models/highwayModel.js?v=45",
-  "/gta/js/models/interiors.js": "/gta/js/models/interiors.js?v=45",
-  "/gta/js/models/districts.js": "/gta/js/models/districts.js?v=45",
-  "/gta/js/models/materials.js": "/gta/js/models/materials.js?v=45",
-  "/gta/js/models/buildings.js": "/gta/js/models/buildings.js?v=45",
-  "/gta/js/models/vehicles3d.js": "/gta/js/models/vehicles3d.js?v=45",
-  "/gta/js/models/facades.js": "/gta/js/models/facades.js?v=45",
-  "/gta/js/models/mesh.js": "/gta/js/models/mesh.js?v=45",
-  "/gta/js/models/beach.js": "/gta/js/models/beach.js?v=45"
+  "/gta/js/audio.js": "/gta/js/audio.js?v=59",
+  "/gta/js/camera.js": "/gta/js/camera.js?v=59",
+  "/gta/js/city.js": "/gta/js/city.js?v=59",
+  "/gta/js/coast.js": "/gta/js/coast.js?v=59",
+  "/gta/js/copAI.js": "/gta/js/copAI.js?v=59",
+  "/gta/js/crime.js": "/gta/js/crime.js?v=59",
+  "/gta/js/dispatch.js": "/gta/js/dispatch.js?v=59",
+  "/gta/js/effects.js": "/gta/js/effects.js?v=59",
+  "/gta/js/environment.js": "/gta/js/environment.js?v=59",
+  "/gta/js/highway.js": "/gta/js/highway.js?v=59",
+  "/gta/js/input.js": "/gta/js/input.js?v=59",
+  "/gta/js/interaction.js": "/gta/js/interaction.js?v=59",
+  "/gta/js/layout.js": "/gta/js/layout.js?v=59",
+  "/gta/js/lifecycle.js": "/gta/js/lifecycle.js?v=59",
+  "/gta/js/locations.js": "/gta/js/locations.js?v=59",
+  "/gta/js/main.js": "/gta/js/main.js?v=59",
+  "/gta/js/map.js": "/gta/js/map.js?v=59",
+  "/gta/js/markers.js": "/gta/js/markers.js?v=59",
+  "/gta/js/missionDefs.js": "/gta/js/missionDefs.js?v=59",
+  "/gta/js/missions.js": "/gta/js/missions.js?v=59",
+  "/gta/js/models/beach.js": "/gta/js/models/beach.js?v=59",
+  "/gta/js/models/buildings.js": "/gta/js/models/buildings.js?v=59",
+  "/gta/js/models/characters.js": "/gta/js/models/characters.js?v=59",
+  "/gta/js/models/districts.js": "/gta/js/models/districts.js?v=59",
+  "/gta/js/models/facades.js": "/gta/js/models/facades.js?v=59",
+  "/gta/js/models/highwayModel.js": "/gta/js/models/highwayModel.js?v=59",
+  "/gta/js/models/interiors.js": "/gta/js/models/interiors.js?v=59",
+  "/gta/js/models/kit.js": "/gta/js/models/kit.js?v=59",
+  "/gta/js/models/materials.js": "/gta/js/models/materials.js?v=59",
+  "/gta/js/models/mesh.js": "/gta/js/models/mesh.js?v=59",
+  "/gta/js/models/props.js": "/gta/js/models/props.js?v=59",
+  "/gta/js/models/vehicles3d.js": "/gta/js/models/vehicles3d.js?v=59",
+  "/gta/js/people.js": "/gta/js/people.js?v=59",
+  "/gta/js/player.js": "/gta/js/player.js?v=59",
+  "/gta/js/pois.js": "/gta/js/pois.js?v=59",
+  "/gta/js/police.js": "/gta/js/police.js?v=59",
+  "/gta/js/render.js": "/gta/js/render.js?v=59",
+  "/gta/js/reporting.js": "/gta/js/reporting.js?v=59",
+  "/gta/js/roads.js": "/gta/js/roads.js?v=59",
+  "/gta/js/save.js": "/gta/js/save.js?v=59",
+  "/gta/js/settings.js": "/gta/js/settings.js?v=59",
+  "/gta/js/shops.js": "/gta/js/shops.js?v=59",
+  "/gta/js/signals.js": "/gta/js/signals.js?v=59",
+  "/gta/js/state.js": "/gta/js/state.js?v=59",
+  "/gta/js/terrain.js": "/gta/js/terrain.js?v=59",
+  "/gta/js/traffic.js": "/gta/js/traffic.js?v=59",
+  "/gta/js/ui.js": "/gta/js/ui.js?v=59",
+  "/gta/js/util.js": "/gta/js/util.js?v=59",
+  "/gta/js/vehicles.js": "/gta/js/vehicles.js?v=59",
+  "/gta/js/weapons.js": "/gta/js/weapons.js?v=59",
+  "/gta/js/zones.js": "/gta/js/zones.js?v=59"
  }
 }
 </script>
-<script type="module" src="js/main.js?v=45"></script>
+<script type="module" src="js/main.js?v=59"></script>
 </body>
 </html>

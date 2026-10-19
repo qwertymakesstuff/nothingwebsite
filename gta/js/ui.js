@@ -70,7 +70,7 @@ export function updateHud(dt) {
   const blink = copsNearby() || Math.sin(G.time * 8) > 0, key = G.stars + (blink ? 'b' : 'd');
   if (key !== lastStars) { lastStars = key; $('stars').innerHTML = [0, 1, 2, 3, 4].map(i => '<i class="' + (i < G.stars ? (blink ? 'on' : 'on dim') : '') + '">★</i>').join(''); }
   const c = player.car; setText('speed', c ? Math.round(Math.abs(c.speed) * 3.6) + ' km/h' + (c.hp < 100 ? '  car ' + Math.max(0, Math.round(c.hp)) + '%' : '') : '');
-  setText('prompt', interaction.text);
+  setText('prompt', interaction.text); setText('wanted', G.wantedText || ''); $('wanted').className = G.wantedPhase || '';
   const mt = missionText(); $('mission').hidden = !mt; setText('mission', mt);
   drawMinimap(); showDistrict();
 }

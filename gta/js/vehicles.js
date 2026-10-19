@@ -4,7 +4,8 @@ import { env } from './environment.js';
 import { createCarMesh, animateCarModel, CAR_TYPES, CAR_COLORS, pickCarType } from './models/vehicles3d.js';
 import { createBust } from './models/characters.js';
 import { pushOut } from './city.js';
-import { G, addHeat, bump } from './state.js';
+import { G, bump } from './state.js';
+import { reportCrime } from './reporting.js';
 import { clamp, pick } from './util.js';
 import { zoneAt, nextLayer, heightFor, groundBlocked, deckSlope, HW_Z, HW_HALF } from './highway.js';
 import { sfx } from './audio.js';
@@ -59,7 +60,7 @@ export function moveCarBy(c, dx, dz, bounce) {
     } else if (r[2]) {
       dx += r[0] - px; dz += r[1] - pz;
       const imp = Math.abs(c.speed);
-      if (bounce && imp > 3 && c.hitCd <= 0) { c.hitCd = .3; hurtCar(c, Math.max(0, imp - 7) * 1.5); sfx.crash(imp / 40); c.speed *= -.25; if (c === player.car) G.shake = clamp(imp / 20, 0, 1); }
+      if (bounce && imp > 3 && c.hitCd <= 0) { c.hitCd = .3; hurtCar(c, Math.max(0, imp - 7) * 1.5 * (c.cop ? .5 : 1)); sfx.crash(imp / 40); c.speed *= -.25; if (c === player.car) G.shake = clamp(imp / 20, 0, 1); }
       else if (bounce) c.speed *= .8;
     }
   }
@@ -76,7 +77,7 @@ export function explodeCar(c) {
   cars.forEach(o => { if (o !== c && !o.wreck && Math.abs(o.y - c.y) < 3 && Math.hypot(o.x - c.x, o.z - c.z) < 7) hurtCar(o, 45); });
   if (player.car === c) { leaveCar(true); hurtPlayer(28); }
   else if (!player.car && Math.hypot(player.x - c.x, player.z - c.z) < 6) hurtPlayer(35);
-  if (c.kind === 'cop') { addHeat(30); bump('copsKilled'); }
+  if (c.kind === 'cop') { reportCrime('destroy_cop_car', c.x, c.z); bump('copsKilled'); }
   c.ai = null; c.cop = null; c.driver = null;
 }
 
@@ -91,7 +92,8 @@ export function carVsCar(a, b) {
   if (hit && a.hitCd <= 0 && b.hitCd <= 0) {
     const rel = Math.abs(a.speed) + Math.abs(b.speed) * (b.ai || b.kind === 'parked' ? 0 : .7);
     a.hitCd = b.hitCd = .35;
-    if (rel > 4) { sfx.crash(rel / 40); hurtCar(a, Math.max(0, rel - 6) * 1.1); hurtCar(b, Math.max(0, rel - 6) * 1.1); }
+    const dmg = a.cop && b.cop ? .12 : 1.1;   // cruisers in one convoy only scrape each other; they don't wreck themselves
+    if (rel > 4) { sfx.crash(rel / 40); hurtCar(a, Math.max(0, rel - 6) * dmg); hurtCar(b, Math.max(0, rel - 6) * dmg); }
     const t = a.speed; a.speed = a.speed * -.15 + b.speed * .1; b.speed = b.speed * .5 + t * .35;
   }
   return hit;
@@ -115,7 +117,7 @@ export function updateCars(dt) {
     const mover = b.driver === 'player' ? b : a, other = mover === a ? b : a;
     const rel = Math.abs(mover.speed) + Math.hypot(other.vx || 0, other.vz || 0);
     if (!carVsCar(mover, other)) continue;
-    if (mover.driver === 'player' && rel > 8 && other.kind === 'traffic' && other.hitCd > .2) addHeat(10);
+    if (mover.driver === 'player' && other.hitCd > .2) { if (rel > 5 && other.kind === 'cop') reportCrime('attack_cop_car', other.x, other.z); else if (rel > 12 && other.kind === 'traffic') reportCrime('collision', other.x, other.z); }
     if (other.driver !== 'player' && rel > 5 && !(other.cop && G.stars)) {
       const dx = other.x - mover.x, dz = other.z - mover.z, d = Math.hypot(dx, dz) || 1;
       other.vx += dx / d * rel * .45; other.vz += dz / d * rel * .45; other.spin = (Math.random() - .5) * 3;
