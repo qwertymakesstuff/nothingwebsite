@@ -10,15 +10,16 @@ import { CAST, HAS_BODY, nameOf } from './cast.js';
 export const npcs = new Map();
 const FAR = 140;
 
+/** o.ch: a ready-made character (for example a rigged model from glbChar.js) used instead of the cast profile's blocky body */
 export function spawn(id, o) {
-  o = o || {}; if (!HAS_BODY(id)) return null;
+  o = o || {}; if (!o.ch && !HAS_BODY(id)) return null;
   let n = npcs.get(id);
   if (!n) {
-    const ch = createCharacter(CAST[id].look); scene.add(ch.root);
-    n = { id, name: nameOf(id), x: 0, z: 0, yaw: 0, ch, root: ch.root, hp: 100, dead: false, hang: false, face: true };
+    const ch = o.ch || createCharacter(CAST[id].look); scene.add(ch.root);
+    n = { id, name: o.name || nameOf(id), x: 0, z: 0, yaw: 0, ch, root: ch.root, hp: 100, dead: false, hang: false, face: true, keep: !!o.keep };
     npcs.set(id, n);
   }
-  n.hang = !!o.hang; n.hp = o.hp != null ? o.hp : 100; n.dead = false; n.root.visible = true; n.ch.update(0, 0, {});
+  n.hang = !!o.hang; if (o.keep != null) n.keep = !!o.keep; n.hp = o.hp != null ? o.hp : 100; n.dead = false; n.root.visible = true; n.ch.update(0, 0, {});
   place(n, o.x, o.z, o.yaw);
   return n;
 }
@@ -33,10 +34,10 @@ export const get = id => npcs.get(id) || null;
 export const posOf = id => { const n = npcs.get(id); return n ? { x: n.x, z: n.z } : null; };
 export function remove(id) {
   const n = npcs.get(id); if (!n) return; scene.remove(n.root); npcs.delete(id);
-  n.root.traverse(o => { if (o.isMesh && o !== n.ch.gun && o.geometry) o.geometry.dispose(); });          // the body geometry is built per person; the shared pistol and the materials stay
+  if (n.ch.dispose) n.ch.dispose(); else n.root.traverse(o => { if (o.isMesh && o !== n.ch.gun && o.geometry) o.geometry.dispose(); });          // the body geometry is built per person; the shared pistol and the materials stay
 }
 /** everyone put there by a mission step (hangout people stay as long as the player is near) */
-export function clearStory() { for (const n of [...npcs.values()]) if (!n.hang) remove(n.id); }
+export function clearStory() { for (const n of [...npcs.values()]) if (!n.hang && !n.keep) remove(n.id); }
 export function clearAll() { for (const id of [...npcs.keys()]) remove(id); }
 export function hurt(id, d) { const n = npcs.get(id); if (!n || n.dead) return; n.hp -= d; if (n.hp <= 0) { n.hp = 0; n.dead = true; layDown(n.ch); } }
 export function nearest(maxDist, filter) {

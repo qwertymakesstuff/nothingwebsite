@@ -462,3 +462,31 @@ test('hangouts: whenever a person is in the world and eligible, they always have
     }
   }
 });
+
+test('cheat code: "kaidin" is recognised from a typed stream (and nothing else)', async () => {
+  const { feed, CODES } = await imp('cheat.js'); assert.deepEqual(CODES, ['kaidin']);
+  const type = text => { let buf = '', hit = []; for (const ch of text) { const r = feed(buf, ch); buf = r.buf; if (r.code) hit.push(r.code); } return hit; };
+  assert.deepEqual(type('kaidin'), ['kaidin']); assert.deepEqual(type('xxKAIDINxx'), ['kaidin']); assert.deepEqual(type('kaidin kaidin'), ['kaidin', 'kaidin']);
+  assert.deepEqual(type('kaidi'), []); assert.deepEqual(type('kaiXdin'), []); assert.deepEqual(type('wasd e shift'), []);
+  assert.deepEqual(feed('', 'Shift').code, null);
+});
+test('the rigged model is never part of the story or the world unless typed in: no mission, hangout or scene places KAIDIN', () => {
+  for (const m of MISSION_LIST) for (const st of m.steps) for (const n of st.npcs || []) assert.notEqual(n.id, 'KAIDIN');
+  for (const h of HANGOUTS) assert.notEqual(h.id, 'KAIDIN');
+  assert.ok(!SPEAKERS.includes('KAIDIN'));
+});
+test('the rigged model file is a valid glTF with the Walking and Running clips, and small enough to ship', async () => {
+  const fs = await import('node:fs'); const f = fs.readFileSync(new URL('../../gta/models/kaidin.glb', import.meta.url));
+  assert.equal(f.toString('latin1', 0, 4), 'glTF'); assert.equal(f.readUInt32LE(4), 2); assert.equal(f.readUInt32LE(8), f.length);
+  const jl = f.readUInt32LE(12), j = JSON.parse(f.toString('utf8', 20, 20 + jl));
+  assert.deepEqual(j.animations.map(a => a.name).sort(), ['Running', 'Walking']); assert.equal(j.skins.length, 1);
+  assert.ok(f.length < 8e6, 'model is ' + f.length + ' bytes: keep the texture small'); assert.ok(!(j.extensionsRequired || []).length);
+  assert.ok(fs.readFileSync(new URL('../../gta/lib/GLTFLoader.js', import.meta.url), 'utf8').includes('class GLTFLoader'));
+});
+test('story steps trigger only when you reach the mission point (not from down the road)', async () => {
+  const w = makeWorld(); w.story.start('M00'); let g = 0;
+  while (!(w.story.cur && w.story.cur.t === 'goto') && g++ < 200) stepWorld(w, .5);
+  const t = w.story.target; w.p.x = t.x - 9; w.p.z = t.z; w.p.inCar = false; for (let i = 0; i < 6; i++) w.story.update(.5);
+  assert.equal(w.story.s.active.id, 'M00'); assert.equal(w.story.s.active.step, 2, 'nine metres out: the scene has not started');
+  w.p.x = t.x - 5; for (let i = 0; i < 6; i++) w.story.update(.5); assert.ok(w.story.s.done.M00 || w.story.s.active.id !== 'M00' || w.scenes.includes('M00_EDDIE'), 'five metres out: it starts');
+});

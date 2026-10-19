@@ -13,7 +13,7 @@ import { SCENES } from './dialogue.js';
 import { evalCond, applyEffects, createState } from './state.js';
 import { MISSIONS, MISSION_LIST } from './missions.js';
 
-const STEP_RADIUS = 9;
+const STEP_RADIUS = 7;                                                                  // you have to actually reach the mission point: the cutscene starts there, not from down the road
 export class Story {
   constructor(env, state) { this.env = env; this.s = state || createState(); this.block = null; this.cur = null; this.ctx = null; this.target = null; this.idle = 0; }
   get active() { return this.s.active ? MISSIONS[this.s.active.id] : null; }
@@ -104,7 +104,7 @@ export class Story {
     }
     const st = this.cur; if (!st) return; this.ctx.t += dt;
     if (this.ctx.handle) return this.advance();                                                         // a scene we started has finished
-    const near = (r) => this.target && Math.hypot(this.target.x - p.x, this.target.z - p.z) < (r || STEP_RADIUS);
+    const near = (r) => this.target && Math.hypot(this.target.x - p.x, this.target.z - p.z) < Math.min(r || STEP_RADIUS, STEP_RADIUS);
     const talk = (ids) => { this.ctx.handle = this.block = this.playList(ids); };
     switch (st.t) {
       case 'scene': case 'call': talk(st.scene); break;

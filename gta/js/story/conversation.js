@@ -14,14 +14,15 @@ import { HAS_BODY } from './cast.js';
 import { hooks } from './hooks.js';
 import { cine, endCine } from '../camera.js';
 import { G } from '../state.js';
-import { player } from '../player.js';
+import { player, leaveCar } from '../player.js';
+import { setSiren } from '../audio.js';
 import { pushOut } from '../city.js';
 import { clearInput, lockPointer, hasLock, isTouch } from '../input.js';
 import { interaction } from '../interaction.js';
 
 const $ = id => document.getElementById(id);
 const subsEl = $('subs'), subName = subsEl.querySelector('b'), subText = subsEl.querySelector('span');
-const cineEl = $('cine'), choicesEl = $('choices'), choiceQ = $('choiceQ'), choiceList = $('choiceList');
+const fadeEl = $('fade'), cineEl = $('cine'), choicesEl = $('choices'), choiceQ = $('choiceQ'), choiceList = $('choiceList');
 let stateGetter = () => null, capItem = null;
 
 export const queue = new VoiceQueue({
@@ -49,7 +50,7 @@ class ScenePlayer {
   lineEnded(item, reason) {
     if (this.finished || item.line !== this.line) return;
     if (reason === 'interrupted') { this.play(this.line); return; }                         // something more important spoke first: say it again afterwards
-    if (reason === 'cleared') { this.finish(); return; }
+    if (reason === 'cleared') { if (this.suspended) { this.resumeLine = this.line; this.line = null; this.mode = 'held'; } else this.finish(); return; }   // (a cutscene silenced this call: it carries on afterwards)
     this.line = null; this.mode = 'gap'; this.wait = this.fast ? 0 : this.direct ? .2 : .5;
   }
   play(line) {
@@ -81,7 +82,7 @@ class ScenePlayer {
     this.run.choose(n); this.choice = null; choicesEl.hidden = true; this.mode = 'next';
   }
   update(dt) {
-    if (this.finished) return;
+    if (this.finished || this.suspended) return;
     if (!this.started) { this.started = true; this.mode = 'next'; }
     if (this.mode === 'choice') {
       this.choiceT += dt;
@@ -154,31 +155,60 @@ export function play(id) {
   const dead = { done: () => true, cancel() {} };
   if (!sc || !st) return dead;
   if (sc.if && !evalCond(sc.if, st)) return dead;
-  const p = new ScenePlayer(id, sc.via === 'direct'), h = { done: () => p.finished, cancel: () => { p.finish(); if (direct === p) leave(p); } };
+  const p = new ScenePlayer(id, sc.via === 'direct'), h = { done: () => p.finished, cancel: () => { p.finish(); if (direct === p) { teardown(p); trans = null; setFade(0); } } };
   if (p.direct) pendingDirect.push(p); else players.push(p);
   return h;
 }
 function ready() { return G.mode === 'playing' && !G.interior && !direct; }
-function enter(p) {
-  direct = p; G.mode = 'scene'; clearInput(); if (player.car) player.car.speed = 0;
-  interaction.kind = null; interaction.text = ''; stage(p.scene);
-  document.body.classList.add('cine'); cineEl.hidden = false; cine.on = true; cine.shot = null; cine.pos = null; p.frame({ char: (p.scene.cast || ['ASH'])[0] });
-  $('skipScene').hidden = p.scene.skip === false;
+
+/* ---- arriving at a cutscene: the world stops, the car goes quiet, the screen fades to black, Ash gets out, the scene fades in ---- */
+const FADE = .5;
+let trans = null;                                                                          // { phase: 'out' | 'hold' | 'in' | 'out2' | 'in2', t, dur }
+const setFade = v => { fadeEl.style.opacity = String(Math.max(0, Math.min(1, v))); };
+/** phone calls and the radio fall silent for the cutscene; a call carries on afterwards, the ambient radio does not */
+function silenceBackground() {
+  for (const p of players) { if (p.scene.mission === 'X01') { p.finish(); continue; } p.suspended = true; queue.clear(p.tag); }
+  queue.clear(); capItem = null; subsEl.classList.remove('on');
 }
-function leave(p) {
+function resumeBackground() {
+  for (const p of players) { if (!p.suspended) continue; p.suspended = false; if (p.resumeLine) { const l = p.resumeLine; p.resumeLine = null; p.play(l); } else if (p.mode === 'held') p.mode = 'next'; }
+}
+function begin(p) {
+  direct = p; G.mode = 'scene'; clearInput(); if (player.car) player.car.speed = 0;
+  interaction.kind = null; interaction.text = ''; setSiren(false, 0);                    // the engine hum is silenced by the cinematic camera
+  document.body.classList.add('cine'); silenceBackground(); cine.on = true; cine.shot = null; cine.pos = null;   // the camera holds still (and the hum stays off) while the screen fades
+  trans = { phase: 'out', t: 0, dur: FADE };
+}
+function onBlack(p) {
+  if (player.car) leaveCar(true);                                                          // Ash gets out of the car
+  stage(p.scene);
+  cineEl.hidden = false; cine.on = true; cine.shot = null; cine.pos = null; p.frame({ char: (p.scene.cast || ['ASH'])[0] }); cine.snap = true;
+  $('skipScene').hidden = p.scene.skip === false; trans = { phase: 'hold', t: 0, dur: .25 };
+}
+function teardown(p) {
   if (direct !== p) return; direct = null; document.body.classList.remove('cine'); cineEl.hidden = true; choicesEl.hidden = true;
-  endCine(); if (G.mode === 'scene') G.mode = 'playing'; clearInput(); if (!isTouch()) lockPointer();
+  endCine(); if (G.mode === 'scene') G.mode = 'playing'; clearInput(); if (!isTouch()) lockPointer(); resumeBackground();
+}
+function leave(p) { if (direct !== p || p.leaving) return; p.leaving = true; trans = { phase: 'out2', t: 0, dur: FADE * .8 }; }
+function tickTrans(dt) {
+  const T = trans; T.t += dt; const u = Math.min(1, T.t / T.dur);
+  if (T.phase === 'out') { setFade(u); if (u >= 1) onBlack(direct); }
+  else if (T.phase === 'hold') { setFade(1); if (u >= 1) trans = { phase: 'in', t: 0, dur: FADE }; }
+  else if (T.phase === 'in') { setFade(1 - u); if (u >= 1) { trans = null; setFade(0); } }
+  else if (T.phase === 'out2') { setFade(u); if (u >= 1) { teardown(direct); trans = { phase: 'in2', t: 0, dur: FADE * .8 }; } }
+  else if (T.phase === 'in2') { setFade(1 - u); if (u >= 1) { trans = null; setFade(0); } }
 }
 export function update(dt) {
   if (paused) return;
-  if (!direct && pendingDirect.length && ready()) { const p = pendingDirect.shift(); enter(p); }
+  if (!direct && (!trans || trans.phase === 'in2') && pendingDirect.length && ready()) begin(pendingDirect.shift());
   queue.update(dt);
   if (queue.cur && capItem !== queue.cur) maybeCaption(queue.cur);                       // a recording that failed to load: now show the subtitle
   if (capItem && !queue.cur) { capItem = null; subsEl.classList.remove('on'); }
-  if (direct) { direct.update(dt); if (direct.finished) leave(direct); }
+  if (trans) tickTrans(dt);
+  if (direct && !direct.leaving && (!trans || trans.phase === 'in')) { direct.update(dt); if (direct.finished) leave(direct); }
   for (let i = players.length - 1; i >= 0; i--) { const p = players[i]; p.update(dt); if (p.finished) players.splice(i, 1); }
   watch = direct ? watch + dt : 0;
-  if (watch > 600) { direct.finish(); leave(direct); }                                    // nothing may hold the game for ever
+  if (watch > 600) { direct.finish(); teardown(direct); trans = null; setFade(0); }       // nothing may hold the game for ever
 }
 /** E / click / Enter / Space during a conversation: next line (or answer the highlighted choice) */
 export function advance() {
@@ -189,7 +219,7 @@ export function advance() {
 export function skipScene() { if (direct) direct.skipScene(); }
 /** drop every scene and line that belongs to a mission that ended */
 export function cancelAll() {
-  const d = direct; pendingDirect.length = 0; players.forEach(p => p.finish()); players.length = 0; queue.clear(); if (d) { d.finish(); leave(d); }
+  const d = direct; pendingDirect.length = 0; players.forEach(p => p.finish()); players.length = 0; queue.clear(); if (d) { d.finish(); teardown(d); } trans = null; setFade(0);
   choicesEl.hidden = true; subsEl.classList.remove('on'); capItem = null;
 }
 export function setPaused(on) { paused = on; if (on) voice.suspendAudio(); else voice.resumeAudio(); }
