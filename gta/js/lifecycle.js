@@ -4,6 +4,7 @@ import { player, leaveCar } from './player.js';
 import { cars, removeCar } from './vehicles.js';
 import { spawnPoint } from './locations.js';
 import { clearPolice } from './police.js';
+import { resetPhysProps } from './physprops.js';
 import { cancelMission } from './missions.js';
 import { banner, say, clearBanners } from './ui.js';
 import { sfx } from './audio.js';
@@ -27,7 +28,7 @@ export function respawn(where) {
   if (player.car) leaveCar(true);
   player.vis = null;
   const at = spawnPoint(where);
-  clearPolice(); cancelMission(); clearBanners();
+  clearPolice(); cancelMission(); clearBanners(); resetPhysProps();
   cars.filter(c => !c.wreck && c.driver !== 'player' && Math.hypot(c.x - at[0], c.z - at[1]) < 8).forEach(removeCar); // keep the spawn spot clear
   player.x = at[0]; player.z = at[1]; player.vx = player.vz = 0; player.hp = 100; player.hurt = 0; player.shootCd = 0; player.mesh.visible = true; player.ch.update(0, 0, {});
   G.heat = 0; G.stars = 0; G.wantedText = ''; G.camYaw = where === 'station' ? Math.PI : 0; G.mode = 'playing';

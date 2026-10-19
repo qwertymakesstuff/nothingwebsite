@@ -14,10 +14,12 @@ const rectGrid = {};
 for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const fps = footprints(i, j).map(f => ({ x0: f[0], z0: f[1], x1: f[2], z1: f[3] })); if (fps.length) rectGrid[i + ',' + j] = fps; }
 // small round obstacles (trees, lamp posts) in a coarse hash so lookups stay cheap
 const CELLSZ = 20, circleGrid = {};
-export function addCircle(x, z, r) { const k = Math.floor(x / CELLSZ) + ',' + Math.floor(z / CELLSZ); (circleGrid[k] = circleGrid[k] || []).push({ x, z, r }); }
+export function addCircle(x, z, r, ref) { const k = Math.floor(x / CELLSZ) + ',' + Math.floor(z / CELLSZ), c = { x, z, r, ref: ref || null, off: false }; (circleGrid[k] = circleGrid[k] || []).push(c); return c; }
+/** the round obstacles around a point (the physics props use this to find what a car touches) */
+export function circlesNear(x, z) { const out = [], ci = Math.floor(x / CELLSZ), cj = Math.floor(z / CELLSZ); for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) { const l = circleGrid[i + ',' + j]; if (l) for (const c of l) out.push(c); } return out; }
 
 /** Push a circle (x,z,rad) out of every solid thing. Returns [x, z, hit, nx, nz]. */
-export function pushOut(x, z, rad) {
+export function pushOut(x, z, rad, skipSoft) {
   const bi = Math.floor((x - RD / 2) / P), bj = Math.floor((z - RD / 2) / P);
   let hit = false, nx = 0, nz = 0, wall = false;
   for (let i = bi - 1; i <= bi + 1; i++) for (let j = bj - 1; j <= bj + 1; j++) {
@@ -38,6 +40,7 @@ export function pushOut(x, z, rad) {
   for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
     const list = circleGrid[i + ',' + j]; if (!list) continue;
     for (const c of list) {
+      if (c.off || (skipSoft && c.ref)) continue;                                   // knocked-over props don't block; cars deal with physics props themselves
       const dx = x - c.x, dz = z - c.z, m = rad + c.r, d2 = dx * dx + dz * dz;
       if (d2 < m * m) { const d = Math.sqrt(d2) || .001; x = c.x + dx / d * m; z = c.z + dz / d * m; hit = true; nx += dx / d; nz += dz / d; }
     }

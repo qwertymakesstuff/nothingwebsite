@@ -3,7 +3,7 @@
 import { INSET, blockX, blockZ, blockChar, blockType, S, entrance, doorAt } from '../layout.js';
 import { rng, pick } from '../util.js';
 import { part, BOX, CYL, SPH } from './mesh.js';
-import { track, Acc, D, BRICKS, PLASTERS, CONCRETES, GLASSES, FLOOR, prism, sign, roofClutter, decor, circles } from './kit.js';
+import { fenceSegs, track, Acc, D, BRICKS, PLASTERS, CONCRETES, GLASSES, FLOOR, prism, sign, roofClutter, decor, circles } from './kit.js';
 import { BUILDERS } from './districts.js';
 export { doors, parkingSpots, staticCars, circles, spinners, signMat } from './kit.js';
 
@@ -36,8 +36,7 @@ function houses(acc, R, x0, z0, safe, bi, bj) {
     acc.vc(part(BOX, 0x8a8a86, { sx: 2.6, sy: .2, sz: 1.6, x: hx - w / 4, y: .12, z: hz + d / 2 + .9 }));          // step / porch
     acc.vc(part(BOX, 0x6a6a6c, { sx: 3.2, sy: .04, sz: lot * .5, x: hx + w / 2 + 1.4, y: .05, z: lz + lot * .72 })); // driveway
     // picket fence along the lot front
-    for (let p = 0; p < 10; p++) acc.vc(part(BOX, 0xf0eee8, { sx: .12, sy: .9, sz: .1, x: lx + .8 + p * (lot - 1.6) / 9, y: .45, z: lz + lot - .5 }));
-    acc.vc(part(BOX, 0xf0eee8, { sx: lot - 1.6, sy: .08, sz: .08, x: cx, y: .7, z: lz + lot - .5 }));
+    for (let p = 0; p < 4; p++) fenceSegs.push({ x: lx + .8 + (p + .5) * (lot - 1.6) / 4, z: lz + lot - .5, yaw: 0 });
     // a bush and a tree
     acc.vc(part(SPH(.7, 7, 5), 0x3a7a3a, { x: hx + w / 2 + .4, y: .5, z: hz + d / 2 + .2, sy: .8 }));
     const tx = lx + (a ? 2 : lot - 2), tz = lz + lot * .75;

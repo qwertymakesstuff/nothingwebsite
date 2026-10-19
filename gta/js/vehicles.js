@@ -14,6 +14,7 @@ import { player, leaveCar, hurtPlayer } from './player.js';
 import { peds, killPed } from './people.js';
 import { updateTraffic } from './traffic.js';
 import { updateCop } from './police.js';
+import { carVsProps } from './physprops.js';
 
 const burntMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 });
 export const cars = [];
@@ -52,7 +53,11 @@ export function driveCar(c, thr, steer, brake, dt) {
 export function moveCarBy(c, dx, dz, bounce) {
   for (const o of [[c.cl, c.cr], [-c.cl, c.cr]]) { // two circles along the body
     const px = c.x + dx + Math.sin(c.yaw) * o[0], pz = c.z + dz + Math.cos(c.yaw) * o[0];
-    const r = pushOut(px, pz, o[1]);
+    const r = pushOut(px, pz, o[1], true);
+    if (!c.ai && Math.abs(c.speed) > .4 && !r[2]) {          // street props: light ones are pushed aside, weak ones knocked over, sturdy ones stay solid
+      const sp = carVsProps(c, px, pz, o[1]);
+      if (sp) { dx += sp.x; dz += sp.z; if (Math.abs(c.speed) > 3 && c.hitCd <= 0) { c.hitCd = .3; hurtCar(c, Math.max(0, Math.abs(c.speed) - 6) * .8 * (c.cop ? .5 : 1)); sfx.crash(Math.abs(c.speed) / 40); if (c === player.car) G.shake = clamp(Math.abs(c.speed) / 25, 0, 1); } c.speed *= .8; }
+    }
     if (r[2] && r[5]) { // reached the water: no crash, the car just can't go on; it slows and splashes
       dx += r[0] - px; dz += r[1] - pz;
       if (Math.abs(c.speed) > 5 && c.hitCd <= 0) { c.hitCd = .6; splash(c.x + dx, c.z + dz, Math.abs(c.speed)); }

@@ -19,6 +19,7 @@ export const lots = [];          // car parks { x0, z0, w, rows } so the ground 
 export const circles = [];       // solid round obstacles [x, z, r] registered by builders
 export const spinners = [];      // things that rotate: { mesh, speed, axis }
 export const decor = { blocks: [] };
+export const fenceSegs = [];     // wooden fence sections { x, z, yaw }, drawn and made breakable by props.js
 export const track = [];          // loose meshes (signs, clock faces...) made while one block is built, so the block can hide them with the rest
 export function put(m) { scene.add(m); track.push(m); return m; }
 

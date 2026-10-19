@@ -14,6 +14,7 @@ export const CRIMES = {
   attack_cop_car:  { sev: 3, heat: 22, violent: true,  label: 'attack on a police vehicle', cop: true },
   destroy_cop_car: { sev: 4, heat: 40, violent: true,  label: 'police vehicle destroyed', cop: true },
   steal_cop_car:   { sev: 3, heat: 40, violent: false, label: 'stolen police car', cop: true },
+  vandalism:       { sev: 1, heat: 6,  violent: false, label: 'property damage' },
   resist_arrest:   { sev: 1, heat: 12, violent: false, label: 'fleeing arrest', cop: true }
 };
 export const STAR_AT = [15, 45, 90, 150, 230];
