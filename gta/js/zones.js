@@ -9,6 +9,7 @@ import { cars } from './vehicles.js';
 import { say, flash } from './ui.js';
 import { sfx } from './audio.js';
 import { enterShop } from './shops.js';
+import { hooks } from './story/hooks.js';
 
 export const zones = [];
 const PRICES = { sports: 900, suv: 600, sedan: 350, hatch: 250, van: 400, pickup: 450, truck: 700 };
@@ -29,7 +30,7 @@ export function describe(z, key) {
   if (z.kind === 'safehouse') return player.car ? null : { kind: 'zone', text: key + ': rest and save' };
   return null;
 }
-export const repairCost = c => Math.max(10, Math.round((100 - c.hp) * .8));
+export const repairCost = c => Math.max(10, Math.round((100 - c.hp) * .8 * hooks.repairFactor()));
 export function act(z) {
   if (z.kind === 'shop') { enterShop(z.door); return true; }
   if (z.kind === 'repair') { const c = player.car; if (!c || c.hp >= 100) return false; const cost = repairCost(c); if (!spend(cost)) { say('not enough money ($' + cost + ')', 2); return false; } c.hp = 100; c.wreck = false; sfx.cash(); say('repaired (-$' + cost + ')', 2.5); return true; }

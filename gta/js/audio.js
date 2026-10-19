@@ -28,4 +28,19 @@ export const sfx = {
 /** Engine hum for the driven car (speed in m/s, or null when on foot) and the siren while police are close. */
 export function setEngine(speed) { if (!ac || !engGain) return; engGain.gain.value = speed == null ? 0 : .04 + Math.min(.05, Math.abs(speed) * .0012); engOsc.frequency.value = 45 + Math.abs(speed || 0) * 3.2; }
 export function setSiren(on, t) { if (!ac || !sirenGain) return; sirenGain.gain.value = on ? .018 : 0; sirenOsc.frequency.value = 650 + Math.sin(t * 6) * 220; }
+/* dialogue: its own volume, and a band-pass chain for phone and radio voices */
+let voiceGain = null, radioIn = null, voiceVol = .9;
+export function voiceBus(radio) {
+  if (!ac || !master) return null;
+  if (!voiceGain) {
+    voiceGain = ac.createGain(); voiceGain.gain.value = voiceVol; voiceGain.connect(master);
+    const hp = ac.createBiquadFilter(), pk = ac.createBiquadFilter(), lp = ac.createBiquadFilter(), ws = ac.createWaveShaper(), curve = new Float32Array(257);
+    hp.type = 'highpass'; hp.frequency.value = 430; pk.type = 'peaking'; pk.frequency.value = 1700; pk.gain.value = 6; lp.type = 'lowpass'; lp.frequency.value = 3200;
+    for (let i = 0; i < 257; i++) { const x = i / 128 - 1; curve[i] = Math.tanh(x * 1.8) / Math.tanh(1.8); } ws.curve = curve;
+    hp.connect(pk); pk.connect(lp); lp.connect(ws); ws.connect(voiceGain); radioIn = hp;
+  }
+  return radio ? radioIn : voiceGain;
+}
+export function setVoiceVolume(v) { voiceVol = Math.max(0, Math.min(1, v)); if (voiceGain) voiceGain.gain.value = voiceVol; }
+export function suspendAudio() { if (ac && ac.state === 'running') ac.suspend(); }
 export function resumeAudio() { if (ac && ac.state === 'suspended') ac.resume(); }

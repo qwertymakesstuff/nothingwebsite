@@ -379,3 +379,6 @@ export function clearPolice() {
   Object.assign(intel, { tipT: -99, contact: false, lastKnown: null, seen: false, evade: 0, hold: 0, warnT: -99, rbCd: 8, patrolCd: 2, phase: 'none' });
   G.heat = 0; G.stars = 0; G.fuzz = 0; G.wantedText = ''; G.wantedPhase = 'none'; setSiren(false, 0);
 }
+
+/* story crew cars drive with the same road-graph navigation as the cruisers */
+export { navTo, newCop };

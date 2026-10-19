@@ -10,6 +10,8 @@ import { sfx } from './audio.js';
 import { player } from './player.js';
 import { banner, say } from './ui.js';
 
+/** the story campaign (story/runtime.js) plugs in here: while one of its missions runs, the old random jobs stay quiet and its objective takes the mission strip */
+export const storyHud = { busy: false, title: '', text: '', target: null };
 const where = () => player.car ? [player.car.x, player.car.z, player.car.y] : [player.x, player.z, 0];
 export function cancelMission() { G.mission = null; removeMarker('mission'); }
 function farTarget(refFrom, refTo) { // pick a destination that is not right next to the start
@@ -34,6 +36,7 @@ export function startMission(defId, giverId) {
 const needsCar = m => m.need && !player.car;
 /** Text for the mission strip, or '' when no job is running. */
 export function missionText() {
+  if (storyHud.busy) { const t = storyHud.target, [x, z] = where(); return storyHud.title + (storyHud.text ? ' - ' + storyHud.text : '') + (t ? ' - ' + Math.ceil(Math.hypot(t.x - x, t.z - z)) + 'm' : ''); }
   const m = G.mission; if (!m) return '';
   const t = m.pts[m.idx], [x, z] = where(), d = Math.ceil(Math.hypot(t.x - x, t.z - z));
   const stage = m.type === 'race' ? 'checkpoint ' + (m.idx + 1) + '/' + m.pts.length + ': ' + t.name : m.idx === 0 ? m.text + ' at ' + t.name : 'deliver to ' + t.name;
@@ -44,7 +47,7 @@ export function updateMission(dt) {
   const m = G.mission; G.missionCd -= dt;
   const [px, pz, py] = where();
   if (!m) {
-    if (G.missionCd <= 0 && canAct()) for (const p of POIS) if (p.category === 'mission' && Math.hypot(p.x - px, p.z - pz) < 3.5) { startMission(null, p.id); break; }
+    if (G.missionCd <= 0 && canAct() && !storyHud.busy) for (const p of POIS) if (p.category === 'mission' && Math.hypot(p.x - px, p.z - pz) < 3.5) { startMission(null, p.id); break; }
     return;
   }
   if (!canAct()) return;

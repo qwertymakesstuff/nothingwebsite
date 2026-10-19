@@ -1,11 +1,11 @@
-# Harbor City (`/gta/`)
+# Last Exit / Harbor City (`/gta/`)
 
-A GTA-style open-world sandbox: three.js (local `three.min.js`, no other dependencies), plain ES modules, no build step.
+A GTA-style open-world sandbox with a story campaign (*Last Exit*, see `STORY.md`): three.js (local `three.min.js`, no other dependencies), plain ES modules, no build step.
 
 | Module (`js/`) | Job |
 | --- | --- |
 | `main.js` | entry point: populates the world, frame loop, pause/begin wiring |
-| `state.js` | game mode (`menu / playing / paused / wasted / busted`), money, wanted heat |
+| `state.js` | game mode (`menu / playing / paused / scene / wasted / busted`; `scene` = a conversation, the world is frozen), money, wanted heat |
 | `save.js` | versioned save (`localStorage` key `gta:save`), migrates the older separate keys |
 | `layout.js`, `roads.js` | pure city numbers and the road graph (unit-tested) |
 | `render.js`, `city.js`, `camera.js` | renderer + WebGL help, static city and collision (`pushOut`), third-person camera |
@@ -52,6 +52,13 @@ Every wrong-doing goes through `reporting.js`: `reportCrime(type)` gathers witne
 - **Losing them**: units only know where the suspect was last *seen* (witness tips count for a short while after the crime). Without sight they drive/walk to that spot and search. The hiding clock then runs (12/18/26/36/46 s by star level) and drops the wanted level one star at a time. The HUD shows `SEARCHING n%`, the warning prompt or the hold-still bar.
 - **Arrest**: ARRESTED banner, fine (10% of cash, at least $50, +$25/star), respawn at the police station with wanted cleared, an active job fails. Death or respawn clears every officer, cruiser, incident and the crime ledger.
 - Debug/test handles on `window.__gta`: `dispatcher`, `intel`, `ledger`, `copCars()`, `reportCrime()`; `window.__noRender` skips drawing (used by the browser tests).
+
+### Story campaign and voice acting (phase 5): *Last Exit*
+A nine-mission crime drama set in Port Alder, five optional story chains, three endings, a relationship system and a data-driven dialogue system with a voice-acting pipeline. All of it lives in `js/story/` (pure logic, unit-tested and played headlessly by `tests/music/gta-story.test.mjs`) and is described in **`STORY.md`**.
+- **Dialogue** is a database (`js/story/lines/`): 692 lines, each with a unique ID such as `EDDIE_M01_GARAGE_001`, speaker, text, performance direction, priority and conditions. Conversations frame speakers with a cinematic camera; phone, radio and car dialogue play while you drive. Subtitles always work, with or without audio.
+- **Voice:** no recordings exist yet, and the game never generates or imitates voices. `node gta/tools/voice.mjs` writes `VOICE_SCRIPT.md` (the master script for actors) and `voice/manifest.json` (every line, whether a recording exists, which missions use it). Drop real recordings in `voice/<CHARACTER>/<LINE_ID>.ogg` and they play automatically (see `voice/README.md`).
+- **Saves:** story progress lives in the normal save (`data.story`); missions resume at their checkpoint; rewards are paid once.
+- `window.__gta.story`, `.conv`, `.crew`, `.npcs`, `.voice` are handles for the automated tests.
 
 ### Coast, beaches and ocean (phase 4.5)
 The old square edge is gone. `js/coast.js` (pure, tested) defines the shoreline as a signed distance field: an irregular perimeter with bays, headlands and rocky stretches. `terrain.js` builds a sloping sand/rock/grass terrain mesh and a shader ocean (waves, foam line, wet sand, depth colour) that runs to the horizon. `models/beach.js` adds dunes, rocks, driftwood, beach grass, palms, umbrellas, boardwalks, piers, lifeguard towers, car parks and the port quay.

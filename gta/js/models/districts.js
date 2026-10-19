@@ -195,7 +195,7 @@ function repairGarage(a, R, x0, z0, i, j) {
   const [w, d] = blockType(i, j).bld, bx = x0;
   a.box(w, 6, d, bx + w / 2, 0, z0 + d / 2, 'concrete', 0xc8c2b0); a.b(0xc02a2a, w + .4, .8, d + .4, bx + w / 2, 6, z0 + d / 2);
   for (const k of [0, 1]) a.b(0x3a4048, 5, 4.4, .2, bx + 6 + k * 8, 0, z0 + d + .1);
-  sign('QUICK FIX', '#1f2a3a', '#ffd23f', 10, 2, bx + w / 2, 7.3, z0 + d + .05, 0);
+  sign('VALE AUTO', '#1f2a3a', '#ffd23f', 10, 2, bx + w / 2, 7.3, z0 + d + .05, 0);
   staticCars.push({ x: bx + 6, z: z0 + d - 4, yaw: Math.PI, type: 'sedan', color: 0x9aa0a8, kind: 'display', y: 1.1 }); a.b(0x55585e, 3, 1.1, 5, bx + 6, 0, z0 + d - 4);
   for (let k = 0; k < 3; k++) a.c(0x15151a, .5, .5, .35, bx + w + 3, k * .36, z0 + 6, 10); for (let k = 0; k < 2; k++) a.c(0x15151a, .5, .5, .35, bx + w + 4, k * .36, z0 + 7.2, 10);
   a.b(0x2f6a3f, 1.9, 1.1, 1.0, bx + w + 5, 0, z0 + 3); circles.push([bx + w + 3, z0 + 6, .9]);
