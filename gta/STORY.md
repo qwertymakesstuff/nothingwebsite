@@ -117,7 +117,7 @@ The story logic is pure (no rendering) so a headless test plays the same campaig
 
 ## The rigged model (`kaidin`)
 
-`gta/models/kaidin.glb` is a rigged character (Walking and Running clips; the 22 MB source texture was shrunk to a 2048 px JPEG so the file is 4 MB) meant to become Darius King's body. It is **not** part of the story or the world yet. Type **`kaidin`** while playing to put him in front of you as an NPC (same NPC base as everyone else: facing, health, hangout rules; only the body differs); type it again to send him away. The model and `lib/GLTFLoader.js` (three.js r128, unchanged) are downloaded only then. With no idle clip he stands in the walk cycle's neutral frame and breathes; he walks or runs when something moves him. `js/story/glbChar.js` is the loader; `js/story/cheat.js` the typed-code matcher.
+`gta/models/kaidin.glb` is a rigged character (Walking and Running clips; the 22 MB source texture was shrunk to a 2048 px JPEG so the file is 4 MB) meant to become Darius King's body. It is **not** part of the story or the world yet. Type **`kaidin`** while playing and he appears on the pavement nearby as an ordinary pedestrian: he walks the blocks, panics and runs when scared, can be shot or run over (which counts as a crime like any other), and is not replaced when he is gone. Type it again to send him away. The model and `lib/GLTFLoader.js` (three.js r128, unchanged) are downloaded only then. With no idle clip, a standing pose is the walk cycle's neutral frame with a little breathing; his soles are measured over every pose so he stands on the ground. `js/story/glbChar.js` is the loader; `js/story/cheat.js` the typed-code matcher.
 
 ## Adding things
 

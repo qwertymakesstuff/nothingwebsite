@@ -15,12 +15,13 @@ import { createCharacter, civilianSpec } from './models/characters.js';
 export function layDown(ch) { ch.update(0, 0, { dead: true }); }
 
 export const peds = [], items = [];
-export function makePed(at) {
+/** o.ch: a ready-made character (for example the rigged model) instead of a random civilian; o.keep: never replaced by a new random pedestrian when it is removed */
+export function makePed(at, o) {
   let i = 0, j = 0;
   for (let t = 0; t < 30; t++) { i = Math.floor(Math.random() * N); j = Math.floor(Math.random() * N); if (Math.random() * 1.8 <= DISTRICTS[blockType(i, j).district].peds) break; }  // busier districts get more people
   const c = Math.floor(Math.random() * 4), p = corner(i, j, c);
   const q = { x: at ? at[0] : p[0] + rand(-.7, .7), z: at ? at[1] : p[1] + rand(-.7, .7), i, j, c, dir: Math.random() < .5 ? 1 : -1, hp: 30, dead: 0, panic: 0, speed: rand(1.2, 1.9), ch: null, mesh: null, tgt: null, yaw: 0 };
-  q.ch = createCharacter(civilianSpec()); q.mesh = q.ch.root; scene.add(q.mesh); q.ph = 0;
+  q.ch = (o && o.ch) || createCharacter(civilianSpec()); q.mesh = q.ch.root; if (o && o.keep) q.keep = true; scene.add(q.mesh); q.ph = 0;
   q.nc = (c + q.dir + 4) % 4; q.tgt = corner(i, j, q.nc); q.mesh.position.set(q.x, 0, q.z); peds.push(q); return q;
 }
 function pedNext(p) { // arrived at a corner: keep going round the block, turn back, or cross the road
@@ -49,7 +50,7 @@ export function damagePed(p, dmg) { p.hp -= dmg; p.panic = 6; if (p.hp <= 0) { k
 export function updatePeds(dt) {
   for (let i = peds.length - 1; i >= 0; i--) {
     const p = peds[i];
-    if (p.dead) { p.dead += dt; p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); if (p.free) makeBeachPed(); else makePed(); } continue; }
+    if (p.dead) { p.dead += dt; p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); if (p.ch.dispose) p.ch.dispose(); if (p.keep) continue; if (p.free) makeBeachPed(); else makePed(); } continue; }
     if (p.panic > 0) p.panic -= dt;
     const dx = p.tgt[0] - p.x, dz = p.tgt[1] - p.z, d = Math.hypot(dx, dz);
     if (d < .6) { if (p.free) p.tgt = beachPoint(p.x, p.z) || [p.x + (Math.random() - .5) * 8, p.z + (Math.random() - .5) * 8]; else pedNext(p); }
@@ -81,3 +82,11 @@ export function updateItems(dt, onPickup) {
   if (G.pendingHealth && G.pendingHealth.length && G.pendingHealth[0].at <= G.time) { const h = G.pendingHealth.shift(); dropItem('health', h.x, h.z, 0); }
 }
 export function clearPeds() { peds.forEach(p => scene.remove(p.mesh)); peds.length = 0; }
+
+/** a pedestrian that starts on the pavement corner nearest to (x, z), then walks the blocks like any other (the rigged model uses this) */
+export function makePedNear(x, z, o) {
+  let best = null, bd = 1e9;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) for (let c = 0; c < 4; c++) { const p = corner(i, j, c), d = Math.hypot(p[0] - x, p[1] - z); if (d < bd) { bd = d; best = [i, j, c, p]; } }
+  const q = makePed(best[3], o); q.i = best[0]; q.j = best[1]; q.c = best[2]; q.nc = (q.c + q.dir + 4) % 4; q.tgt = corner(q.i, q.j, q.nc); return q;
+}
+export function removePed(p) { const i = peds.indexOf(p); if (i < 0) return; scene.remove(p.mesh); peds.splice(i, 1); if (p.ch.dispose) p.ch.dispose(); }

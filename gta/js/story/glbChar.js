@@ -23,11 +23,20 @@ export async function loadRigged(opts) {
   const bone = n => { let f = null; model.traverse(o => { if (!f && o.name.replace(/^mixamorig:?/, '') === n) f = o; }); return f; };   // the loader strips the ':' from node names
   const lf = bone('LeftFoot'), rf = bone('RightFoot'), spine = bone('Spine1'), V = THREE.Vector3;
   if (!lf || !rf) throw new Error('the model has no foot bones');
-  // idle pose: the moment in the walk cycle when the feet are closest together and level
-  let idleT = 0, best = 1e9; const a = new V(), b = new V(), dur = walk.getClip().duration;
+  // idle pose: the moment in the walk cycle when the feet are together and level and the hands hang closest to the body
+  const lh = bone('LeftHand'), rh = bone('RightHand'), hips = bone('Hips'); let idleT = 0, best = 1e9; const a = new V(), b = new V(), c = new V(), d = new V(), e = new V(), dur = walk.getClip().duration;
   for (let t = 0; t < dur; t += dur / 40) {
-    walk.time = t; mixer.update(0); model.updateMatrixWorld(true); lf.getWorldPosition(a); rf.getWorldPosition(b);
-    const sc = Math.hypot(a.x - b.x, a.z - b.z) + Math.abs(a.y - b.y) * 2; if (sc < best) { best = sc; idleT = t; }
+    walk.time = t; mixer.update(0); model.updateMatrixWorld(true); lf.getWorldPosition(a); rf.getWorldPosition(b); lh.getWorldPosition(c); rh.getWorldPosition(d); hips.getWorldPosition(e);
+    const sc = Math.hypot(a.x - b.x, a.z - b.z) + Math.abs(a.y - b.y) * 2 + 1.4 * (Math.abs(c.x - e.x) + Math.abs(d.x - e.x)); if (sc < best) { best = sc; idleT = t; }
+  }
+  // stand on the ground: the lowest sole over every pose of both clips (and the idle pose) sits exactly on y = 0
+  let skinned = null; model.traverse(o => { if (o.isSkinnedMesh && !skinned) skinned = o; });
+  if (skinned) {
+    const pos = skinned.geometry.attributes.position, soles = []; for (let i = 0; i < pos.count && soles.length < 3000; i++) if (pos.getY(i) < .14) soles.push(i);
+    let low = 1e9; const p = new V(), lowest = () => { model.updateMatrixWorld(true); skinned.skeleton.update(); for (const i of soles) { skinned.boneTransform(i, p); p.applyMatrix4(skinned.matrixWorld); if (p.y < low) low = p.y; } };
+    for (const act of [walk, run]) { const du = act.getClip().duration; for (let t = 0; t < du; t += du / 24) { act.time = t; mixer.update(0); lowest(); } }
+    walk.time = idleT; mixer.update(0); lowest(); run.time = 0;
+    model.position.y = -low / root.scale.y + .015;
   }
   walk.time = idleT; walk.paused = true; mixer.update(0);
   const ch = { root, model, mixer, state: 'idle', t: Math.random() * 6, spec: { rigged: true }, gun: null };
