@@ -26,6 +26,7 @@ import { STAR_AT } from '../crime.js';
 import { nodePos, nearestNode } from '../roads.js';
 import { setHour } from '../environment.js';
 import { snapCamera } from '../camera.js';
+import { isTouch } from '../input.js';
 import { feed } from './cheat.js';
 import { peds, makePedNear, removePed } from '../people.js';
 import { loadRigged } from './glbChar.js';
@@ -107,7 +108,7 @@ export function startCampaign(mode) {
 }
 
 /* ---- the world around the story: markers, hangouts, talk, ambient radio ---- */
-let sig = '', tickT = 0, radioT = 30, radioI = 0;
+let sig = '', tickT = 0, radioT = 4;
 function syncMarkers() {
   const pts = runtime.enabled ? story.startPoints() : [], s = pts.map(p => p.id + p.label).join('|');
   if (s === sig) return; sig = s;
@@ -138,13 +139,25 @@ hooks.talker = key => {
 };
 hooks.repairFactor = () => !runtime.enabled ? 1 : story.s.flags.eddie_closure ? .5 : levelName(getRel(story.s, 'EDDIE')) === 'TRUSTED' ? .7 : 1;
 
-/** radio between the stories: the host, the news and Sloane's adverts change as the campaign moves on */
+/** the car radio: two stations (Alder FM, and Harbor AM's talk show, the Dead Air Hour) or off. R / the RADIO button changes it. */
+export const STATIONS = { alder: { name: 'Alder FM', code: 'X01', gap: [55, 95] }, talk: { name: 'Harbor AM 1190: the Dead Air Hour', code: 'X02', gap: [5, 12] }, off: { name: 'off', code: null } };
+const ORDER = ['alder', 'talk', 'off'];
+export const station = () => (STATIONS[data.station] ? data.station : data.radio === false ? 'off' : 'alder');
+export function cycleRadio() {
+  const next = ORDER[(ORDER.indexOf(station()) + 1) % ORDER.length]; data.station = next; data.radio = next !== 'off'; persist();
+  conv.cancelRadio(); radioT = 1.5; say('radio: ' + STATIONS[next].name, 2.2); return next;
+}
+/** what the radio says changes as the story does; the talk show is nearly continuous, Alder FM is an occasional voice */
+let radioWas = false;
 function ambientRadio(dt) {
-  if (!player.car || data.radio === false || !runtime.enabled) { radioT = Math.max(radioT, 12); return; }
+  if (!player.car) { if (radioWas) { radioWas = false; conv.cancelRadio(); } radioT = Math.max(radioT, 3); return; }
+  if (!radioWas) { radioWas = true; if (!data.radioHint) { data.radioHint = true; persist(); say(isTouch() ? 'tap RADIO to change the station' : 'R: change the radio station', 4); } }
+  const st = STATIONS[station()]; if (!st.code) return;
   radioT -= dt; if (radioT > 0 || conv.conv.busy || G.stars > 0 || G.mode !== 'playing') return;
-  radioT = rand(55, 95);
-  const list = Object.values(SCENES).filter(s => s.mission === 'X01' && (!s.if || evalCond(s.if, story.s)));
-  if (list.length) conv.play(list[radioI++ % list.length].id);
+  const heard = id => story.s.played['R:' + id] || 0;
+  let best = null; for (const s of Object.values(SCENES)) if (s.mission === st.code && (!s.if || evalCond(s.if, story.s)) && (!best || heard(s.id) < heard(best.id))) best = s;
+  radioT = rand(st.gap[0], st.gap[1]);
+  if (best) { story.s.played['R:' + best.id] = heard(best.id) + 1; conv.play(best.id); }
 }
 /** after the ending the city shows it: the fires of ending C never go out */
 let fxT = 0;
@@ -180,9 +193,10 @@ export function updateStory(dt) {
 /** every frame (menus excluded): conversation timing, people, markers, ambient things */
 export function tickStory(dt) {
   conv.update(dt); npcs.update(dt);
+  if (G.mode === 'playing') ambientRadio(dt);                                                  // the car radio works in free roam too
   if (!runtime.enabled) return;
   tickT -= dt; if (tickT <= 0) { tickT = .5; syncMarkers(); hangoutTick(); }
-  if (G.mode === 'playing') { ambientRadio(dt); worldFx(dt); }
+  if (G.mode === 'playing') worldFx(dt);
 }
 
 /* ---- for menus and tests ---- */

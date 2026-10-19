@@ -111,6 +111,21 @@ export const CAST = {
     name: 'Police dispatcher', short: 'Dispatch', role: 'police radio', color: '#8ab0ff',
     bio: 'Port Alder PD dispatch.', voice: { description: 'Any adult.', direction: 'Clipped, procedural, bored.', accent: 'Neutral.', pace: 'Fast.', range: 'Narrow.', pronunciation: [], recording: 'Flat. The game adds the radio filter.' }
   },
+  DUKE: {
+    name: 'Duke Pelletier (talk host)', short: 'Duke', role: 'host of the Dead Air Hour, Harbor AM 1190', color: '#ffb35c',
+    bio: 'A former ferry purser turned late-night broadcaster. Believes everything is connected and nothing is his fault. Radio only: he is never seen.',
+    voice: { description: 'Mid fifties, gravelly, warm, permanently indignant.', direction: 'A man who has been awake thirty hours and thinks it is a talent. Commit completely to every absurd claim; never wink. The one serious moment (the lighthouse segment) drops the whole act.', accent: 'Port-town American, a little theatrical.', pace: 'Rolling and rambling; speeds up when outraged, slows right down for the punchline.', range: 'Wide: whisper to bellow.', pronunciation: ['Pelletier: "PEL-uh-tee-ay" (he insists)', 'Tibbets: "TIB-its"'], recording: 'Close, warm, loud-ish. Record each line with full commitment, then one calmer take.' }
+  },
+  ROLLO: {
+    name: 'Rollo Teague (camera guy)', short: 'Rollo', role: 'camera operator for the Dead Air Hour video stream', color: '#9fc8a0',
+    bio: 'Films the show for the four people who watch it. Speaks rarely, flatly and usually at exactly the wrong moment. Radio only.',
+    voice: { description: 'Thirties, low, tired.', direction: 'Deadpan. Never plays the joke; says it like a weather report. Does not look up.', accent: 'Local, flat.', pace: 'Slow, with long pauses.', range: 'Very narrow.', pronunciation: ['Teague: "teeg"'], recording: 'Slightly off mic, as if across the studio. Keep the boredom.' }
+  },
+  MAGS: {
+    name: 'Mags Fenwick (producer)', short: 'Mags', role: 'producer, sound desk and caller screener', color: '#e08acb',
+    bio: 'Runs the studio: the board, the phones, the schedule, and every caller (all of them are her). Typing throughout. Radio only.',
+    voice: { description: 'Forties, brisk, dry.', direction: 'The professional in a room of children. Her "caller" voices are deliberately terrible and she does not care.', accent: 'Local, clipped.', pace: 'Quick, efficient.', range: 'Medium; one comic falsetto for the callers.', pronunciation: ['Fenwick: "FEN-wick"'], recording: 'Record each caller line twice: once in the bad falsetto, once as Mags (the game uses the falsetto).' }
+  },
   GUARD: {
     name: 'Depot guard', short: 'Guard', role: 'guard at Darius\'s depot', color: '#c0b090',
     bio: 'Not an ordinary employee.', voice: { description: 'Thirties, gruff.', direction: 'Suspicious, nervous around police.', accent: 'Local.', pace: 'Medium.', range: 'Narrow.', pronunciation: [], recording: 'Close.' },

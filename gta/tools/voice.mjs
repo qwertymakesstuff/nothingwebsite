@@ -22,8 +22,8 @@ for (const m of MISSION_LIST) {
   for (const st of m.steps) for (const sc of [].concat(st.scene || [], st.radio || [])) use(sc, m.id);
 }
 for (const h of HANGOUTS) for (const x of h.scenes) use(x.s, 'HANGOUT');
-for (const sc of Object.values(SCENES)) if (!usedBy[sc.id]) (usedBy[sc.id] = new Set()).add(sc.mission === 'X01' ? 'RADIO' : sc.mission);
-const missionTitle = id => { const m = MISSION_LIST.find(x => x.id === id); return m ? m.code : id === 'HANGOUT' ? 'HANGOUT (talk to people in the city)' : id === 'RADIO' ? 'CAR RADIO (ambient broadcasts)' : id; };
+for (const sc of Object.values(SCENES)) if (!usedBy[sc.id]) (usedBy[sc.id] = new Set()).add(/^X0\d$/.test(sc.mission) ? 'RADIO' : sc.mission);
+const missionTitle = id => { const m = MISSION_LIST.find(x => x.id === id); return m ? m.code : id === 'HANGOUT' ? 'HANGOUT (talk to people in the city)' : id === 'RADIO' ? 'CAR RADIO (Alder FM and Harbor AM broadcasts)' : id; };
 
 /* recordings on disk */
 const voiceDir = new URL('voice/', root), found = new Map();

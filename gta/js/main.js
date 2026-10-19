@@ -12,7 +12,7 @@ import { lightPhase } from './signals.js';
 import { G, inWorld, canAct } from './state.js';
 import { data, persist } from './save.js';
 import { initAudio, resumeAudio } from './audio.js';
-import { story, runtime, startCampaign, loadStory, updateStory, tickStory, journal } from './story/runtime.js';
+import { story, runtime, startCampaign, loadStory, updateStory, tickStory, journal, cycleRadio } from './story/runtime.js';
 import { initMenu, refreshPause } from './story/menu.js';
 import * as conv from './story/conversation.js';
 import * as npcs from './story/npcs.js';
@@ -87,6 +87,7 @@ bindActions({
   horn() { if (canAct() && player.car) { sfx.horn(); player.car.honk = 1; } },
   pause() { if (isMapOpen()) closeMap(); else pause(G.mode === 'playing' || (G.mode === 'scene' && !scenePaused)); },
   map: toggleMap,
+  radio() { if (G.mode === 'playing') { if (player.car) cycleRadio(); else say('get in a car to use the radio', 1.8); } },
   blur() { if ((G.mode === 'playing' && !isTouch()) || G.mode === 'scene') pause(true); },
   lockLost() { if (G.mode === 'playing') pause(true); }
 });

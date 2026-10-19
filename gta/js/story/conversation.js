@@ -165,9 +165,13 @@ function ready() { return G.mode === 'playing' && !G.interior && !direct; }
 const FADE = .5;
 let trans = null;                                                                          // { phase: 'out' | 'hold' | 'in' | 'out2' | 'in2', t, dur }
 const setFade = v => { fadeEl.style.opacity = String(Math.max(0, Math.min(1, v))); };
+const isRadioShow = p => /^X0\d$/.test(p.scene.mission);
+/** the car radio goes quiet (the station was changed, or Ash left the car) */
+export function cancelRadio() { for (const p of players) if (isRadioShow(p)) { p.finish(); queue.clear(p.tag); } }
+export const radioPlaying = () => players.some(isRadioShow);
 /** phone calls and the radio fall silent for the cutscene; a call carries on afterwards, the ambient radio does not */
 function silenceBackground() {
-  for (const p of players) { if (p.scene.mission === 'X01') { p.finish(); continue; } p.suspended = true; queue.clear(p.tag); }
+  for (const p of players) { if (isRadioShow(p)) { p.finish(); continue; } p.suspended = true; queue.clear(p.tag); }
   queue.clear(); capItem = null; subsEl.classList.remove('on');
 }
 function resumeBackground() {

@@ -59,6 +59,7 @@ A nine-mission crime drama set in Port Alder, five optional story chains, three 
 - **Voice:** no recordings exist yet, and the game never generates or imitates voices. `node gta/tools/voice.mjs` writes `VOICE_SCRIPT.md` (the master script for actors) and `voice/manifest.json` (every line, whether a recording exists, which missions use it). Drop real recordings in `voice/<CHARACTER>/<LINE_ID>.ogg` and they play automatically (see `voice/README.md`).
 - **Saves:** story progress lives in the normal save (`data.story`); missions resume at their checkpoint; rewards are paid once.
 - **Cutscene arrival:** reach the mission point, then fade to black, Ash steps out of the car, engine and radio go quiet, fade in. Typing `kaidin` adds the rigged `models/kaidin.glb` as an ordinary pedestrian (see `STORY.md`).
+- **Car radio:** `R` in a car switches Alder FM / Harbor AM (a comic talk show, *The Dead Air Hour*) / off.
 - `window.__gta.story`, `.conv`, `.crew`, `.npcs`, `.voice` are handles for the automated tests.
 
 ### Coast, beaches and ocean (phase 4.5)
