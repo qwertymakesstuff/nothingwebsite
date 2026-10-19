@@ -11,10 +11,12 @@ import { setEngine } from './audio.js';
 const focus = { x: 0, z: 0, y: 0, set: false }, cam = { dist: 6.5, shake: 0 };
 export function snapCamera() { focus.set = false; cam.dist = 6.5; }
 /** cinematic shot: set `on` and a shot { x, y, z, tx, ty, tz, fov }; the camera eases there instead of following the player */
-export const cine = { on: false, shot: null, pos: null, look: null };
+export const cine = { on: false, shot: null, pos: null, look: null, snap: false };
 function cinematic(dt) {
+  setEngine(null);                                                                                         // the engine hum stays off for the whole scene
   const s = cine.shot; if (!s) return;
   if (!cine.pos) { cine.pos = camera.position.clone(); cine.look = new THREE.Vector3(focus.x, 1.5, focus.z); }
+  if (cine.snap) { cine.snap = false; cine.pos.set(s.x, s.y, s.z); cine.look.set(s.tx, s.ty, s.tz); }              // the first shot of a scene cuts straight in (the screen is black)
   const k = 1 - Math.exp(-dt * 3.2);
   cine.pos.x += (s.x - cine.pos.x) * k; cine.pos.y += (s.y - cine.pos.y) * k; cine.pos.z += (s.z - cine.pos.z) * k;
   const kl = Math.min(1, k * 1.4);

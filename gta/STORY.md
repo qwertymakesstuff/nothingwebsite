@@ -109,9 +109,15 @@ The story logic is pure (no rendering) so a headless test plays the same campaig
 
 **Dialogue modes.** `direct` (people together: the world pauses, letterbox bars, the camera frames each speaker over the other's shoulder), `phone` and `radio` (heard while you play, with a phone/radio filter on a recording), `car` (a passenger).
 
+**Arriving at a cutscene.** You have to reach the mission point (about 7 m). The world then stops, the engine hum and any phone call or radio go quiet, the screen fades to black, Ash gets out of the car, and the scene fades in. A phone call that was cut off carries on afterwards; the ambient car radio does not.
+
 **Controls in a conversation.** E, Enter, Space or click: next line. X or the *skip scene* button: skip the scene (a choice is still asked). 1-4 or click: answer. P: pause (the conversation waits). Nothing can hold the player: every line can be skipped.
 
 **Saves.** Completed missions, the current mission and its checkpoint, flags, relationships, choices, unlocked chains, played hangouts and the ending live in `data.story` inside the normal save (`gta:save`). Old, partial or newer-version saves are repaired or reset, never thrown on. A mission in progress resumes from its checkpoint.
+
+## The rigged model (`kaidin`)
+
+`gta/models/kaidin.glb` is a rigged character (Walking and Running clips; the 22 MB source texture was shrunk to a 2048 px JPEG so the file is 4 MB) meant to become Darius King's body. It is **not** part of the story or the world yet. Type **`kaidin`** while playing to put him in front of you as an NPC (same NPC base as everyone else: facing, health, hangout rules; only the body differs); type it again to send him away. The model and `lib/GLTFLoader.js` (three.js r128, unchanged) are downloaded only then. With no idle clip he stands in the walk cycle's neutral frame and breathes; he walks or runs when something moves him. `js/story/glbChar.js` is the loader; `js/story/cheat.js` the typed-code matcher.
 
 ## Adding things
 

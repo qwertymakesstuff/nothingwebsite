@@ -26,6 +26,8 @@ import { STAR_AT } from '../crime.js';
 import { nodePos, nearestNode } from '../roads.js';
 import { setHour } from '../environment.js';
 import { snapCamera } from '../camera.js';
+import { feed } from './cheat.js';
+import { loadRigged } from './glbChar.js';
 import { fireball, smoke } from '../effects.js';
 import { rand } from '../util.js';
 
@@ -196,3 +198,21 @@ export function journal() {
   };
 }
 export function abandonStory() { if (story.s.active) story.abandon(); }
+
+/* ---- typed codes ---- */
+// Type "kaidin" while playing to put the rigged model in the world as an NPC (same NPC base, different body); type it again to send him away.
+// He is never placed by the story or the world, only by this code, and the model is only downloaded then.
+let cheatBuf = '', kaidinBusy = false;
+async function kaidin() {
+  if (npcs.get('KAIDIN')) { npcs.remove('KAIDIN'); say('kaidin: gone', 2); return; }
+  if (kaidinBusy) return; kaidinBusy = true; say('kaidin: loading...', 4);
+  try {
+    const ch = await loadRigged({ scale: 1.05 }), f = [Math.sin(G.camYaw), Math.cos(G.camYaw)], x = player.x + f[0] * 3.4, z = player.z + f[1] * 3.4;
+    npcs.spawn('KAIDIN', { ch, name: 'Kaidin', keep: true, x, z, yaw: Math.atan2(player.x - x, player.z - z) }); say('kaidin', 2);
+  } catch (e) { say('kaidin: could not load the model', 3); console.warn('[kaidin]', e); } finally { kaidinBusy = false; }
+}
+window.addEventListener('keydown', e => {
+  if (G.mode !== 'playing' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target; if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+  const r = feed(cheatBuf, e.key); cheatBuf = r.buf; if (r.code === 'kaidin') kaidin();
+});
