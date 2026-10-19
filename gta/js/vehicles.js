@@ -14,6 +14,7 @@ import { player, leaveCar, hurtPlayer } from './player.js';
 import { peds, killPed } from './people.js';
 import { updateTraffic } from './traffic.js';
 import { updateCop } from './police.js';
+import { updateCrew } from './story/crew.js';
 import { carVsProps } from './physprops.js';
 
 const burntMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 });
@@ -111,10 +112,11 @@ export function updateCars(dt) {
     else if (c.driver === 'player') { /* the player's update drives it */ }
     else if (c.ai) updateTraffic(c, dt);
     else if (c.cop) updateCop(c, dt);
+    else if (c.crew) updateCrew(c, dt);
     if (c.driver !== 'player' && (c.vx || c.vz)) { // knocked about by a crash
       moveCarBy(c, c.vx * dt, c.vz * dt, false); c.yaw += c.spin * dt; const f = Math.exp(-1.8 * dt); c.vx *= f; c.vz *= f; c.spin *= f;
       if (Math.hypot(c.vx, c.vz) < .3) c.vx = c.vz = c.spin = 0;
-    } else if (c.driver !== 'player' && !c.ai && !c.cop && Math.abs(c.speed) > .2) driveCar(c, 0, 0, true, dt);
+    } else if (c.driver !== 'player' && !c.ai && !c.cop && !c.crew && Math.abs(c.speed) > .2) driveCar(c, 0, 0, true, dt);
     if (c.wreck && c.burn > 0 && Math.random() < dt * 3) smoke(c.x + (Math.random() - .5) * 1.6, c.z + (Math.random() - .5) * 1.6);
   }
   for (let i = 0; i < cars.length; i++) for (let j = i + 1; j < cars.length; j++) {

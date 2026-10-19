@@ -43,7 +43,7 @@ const SPEC = {
   E: [{ id: 'fire_station', name: 'Fire Station 3', category: 'fire', face: FACE.S, exteriorOnly: true }],
   H: [{ id: 'hospital', name: "St. Mary's Hospital", category: 'hospital', face: FACE.S, exteriorOnly: true, respawn: 'hospital' }],
   V: [{ id: 'dealership', name: 'Harbor Motors', category: 'dealership', face: FACE.S, zone: 'dealership' }],
-  X: [{ id: 'repair_garage', name: 'Quick Fix Garage', category: 'garage', face: FACE.S, zone: 'repair' }],
+  X: [{ id: 'repair_garage', name: 'Vale Auto (Eddie\'s garage)', category: 'garage', face: FACE.S, zone: 'repair' }],
   F: [{ name: 'Petro Stop', category: 'gas', face: FACE.S, exteriorOnly: true }],
   M: [{ id: 'supermarket', name: 'Fresh Market', category: 'supermarket', face: FACE.S, interior: 'mart', title: 'SUPERMARKET' }],
   s: [{ name: 'Corner Mart', category: 'store', face: FACE.S, interior: 'mart', title: '24H MART' }],

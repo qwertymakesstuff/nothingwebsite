@@ -1,6 +1,6 @@
 // Versioned save data. Everything that must survive a reload lives in `data`; call persist() after changing it.
 const KEY = 'gta:save', VERSION = 1;
-const fresh = () => ({ v: VERSION, money: 0, bestRace: null, quality: null, outfit: 0, stats: { kills: 0, copsKilled: 0, jobs: 0, deaths: 0, busts: 0 } });
+const fresh = () => ({ v: VERSION, money: 0, bestRace: null, quality: null, outfit: 0, story: null, voiceVol: .9, subs: true, radio: true, stats: { kills: 0, copsKilled: 0, jobs: 0, deaths: 0, busts: 0 } });
 export let data = fresh();
 function read(k) { try { const v = localStorage.getItem(k); return v == null ? null : JSON.parse(v); } catch (e) { return null; } }
 export function load() {

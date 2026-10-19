@@ -10,7 +10,21 @@ import { setEngine } from './audio.js';
 
 const focus = { x: 0, z: 0, y: 0, set: false }, cam = { dist: 6.5, shake: 0 };
 export function snapCamera() { focus.set = false; cam.dist = 6.5; }
+/** cinematic shot: set `on` and a shot { x, y, z, tx, ty, tz, fov }; the camera eases there instead of following the player */
+export const cine = { on: false, shot: null, pos: null, look: null };
+function cinematic(dt) {
+  const s = cine.shot; if (!s) return;
+  if (!cine.pos) { cine.pos = camera.position.clone(); cine.look = new THREE.Vector3(focus.x, 1.5, focus.z); }
+  const k = 1 - Math.exp(-dt * 3.2);
+  cine.pos.x += (s.x - cine.pos.x) * k; cine.pos.y += (s.y - cine.pos.y) * k; cine.pos.z += (s.z - cine.pos.z) * k;
+  const kl = Math.min(1, k * 1.4);
+  cine.look.x += (s.tx - cine.look.x) * kl; cine.look.y += (s.ty - cine.look.y) * kl; cine.look.z += (s.tz - cine.look.z) * kl;
+  camera.position.copy(cine.pos); camera.lookAt(cine.look);
+  const fov = s.fov || 48; if (Math.abs(camera.fov - fov) > .1) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 3); camera.updateProjectionMatrix(); }
+}
+export function endCine() { cine.on = false; cine.shot = null; cine.pos = null; cine.look = null; snapCamera(); }
 export function updateCamera(dt) {
+  if (cine.on) { cinematic(dt); return; }
   const c = player.car;
   if (c) { // behind the car, unless the player is looking around
     G.camDrag -= dt;

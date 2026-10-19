@@ -12,6 +12,12 @@ import { lightPhase } from './signals.js';
 import { G, inWorld, canAct } from './state.js';
 import { data, persist } from './save.js';
 import { initAudio, resumeAudio } from './audio.js';
+import { story, runtime, startCampaign, loadStory, updateStory, tickStory, journal } from './story/runtime.js';
+import { initMenu, refreshPause } from './story/menu.js';
+import * as conv from './story/conversation.js';
+import * as npcs from './story/npcs.js';
+import * as crew from './story/crew.js';
+import * as voice from './story/voice.js';
 import { POIS, spawnHospital, getPoi } from './locations.js';
 import { registerPoiMarkers, updateMarkers, setWaypoint } from './markers.js';
 import { buildZones } from './zones.js';
@@ -51,11 +57,14 @@ for (const s of staticCars) { if (s.chance != null && Math.random() > s.chance) 
 { const c = makeCar(spawnHospital[0] + 6, spawnHospital[1] + 1.5, Math.PI / 2, 'owned', 0xc8a23a); c.driver = null; }
 
 /* pause / resume. The pause menu is the single way out of play; losing focus or the mouse lock always lands there. */
+let scenePaused = false;   // the pause menu opened during a conversation: the conversation stays as it is underneath
 function pause(on) {
   if (on) {
+    if (G.mode === 'scene') { if (scenePaused) return; scenePaused = true; clearInput(); showPause(true); refreshPause(); if (document.exitPointerLock && hasLock()) document.exitPointerLock(); return; }
     if (G.mode !== 'playing') return;
-    G.mode = 'paused'; clearInput(); showPause(true); if (document.exitPointerLock && hasLock()) document.exitPointerLock();
+    G.mode = 'paused'; clearInput(); showPause(true); refreshPause(); if (document.exitPointerLock && hasLock()) document.exitPointerLock();
   } else {
+    if (scenePaused) { scenePaused = false; showPause(false); lastT = performance.now(); resumeAudio(); return; }
     if (G.mode !== 'paused') return;
     showPause(false); G.mode = 'playing'; lastT = performance.now(); lockPointer(); resumeAudio();
   }
@@ -66,27 +75,30 @@ function toggleMap() {
   G.mode = 'paused'; clearInput(); if (document.exitPointerLock && hasLock()) document.exitPointerLock();
   openMap(() => { if (G.mode === 'paused') { G.mode = 'playing'; lastT = performance.now(); lockPointer(); } });
 }
-function begin() {
+/** mode: 'new' | 'continue' (the story) or 'free' (just the city) */
+function begin(mode) {
+  mode = typeof mode === 'string' ? mode : 'free';
   initAudio(); lockPointer(); showStart(false); showHud(true); G.mode = 'playing'; lastT = performance.now(); snapCamera();
-  say(isTouch() ? 'find a car and drive. yellow beams are jobs' : 'E: get in a car. yellow beams are jobs. click to shoot', 6);
+  startCampaign(mode);
+  if (mode === 'free') say(isTouch() ? 'find a car and drive. yellow beams are jobs' : 'E: get in a car. yellow beams are jobs. click to shoot', 6);
 }
 bindActions({
   interact, shoot,
   horn() { if (canAct() && player.car) { sfx.horn(); player.car.honk = 1; } },
-  pause() { if (isMapOpen()) closeMap(); else pause(G.mode === 'playing'); },
+  pause() { if (isMapOpen()) closeMap(); else pause(G.mode === 'playing' || (G.mode === 'scene' && !scenePaused)); },
   map: toggleMap,
-  blur() { if (G.mode === 'playing' && !isTouch()) pause(true); },
+  blur() { if ((G.mode === 'playing' && !isTouch()) || G.mode === 'scene') pause(true); },
   lockLost() { if (G.mode === 'playing') pause(true); }
 });
-$('go').addEventListener('click', begin);
+loadStory(); initMenu(begin);
 $('mapBtn').addEventListener('click', toggleMap);
 const qb = $('qual'); qb.textContent = 'graphics: ' + quality; qb.addEventListener('click', () => { setQuality(quality === 'high' ? 'low' : 'high'); location.reload(); });
 $('resume').addEventListener('click', () => pause(false));
-document.addEventListener('visibilitychange', () => { if (document.hidden && G.mode === 'playing') pause(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && (G.mode === 'playing' || G.mode === 'scene')) pause(true); });
 window.addEventListener('pagehide', persist);
 
 /* the frame loop */
-let lastT = performance.now(), cullT = 0;
+let lastT = performance.now(), cullT = 0, wasFrozen = false;
 function afterRespawn() { snapCamera(); clearInput(); if (!isTouch() && !hasLock()) pause(true); } // after dying the mouse lock is gone: land on the pause menu
 function frame(now) {
   requestAnimationFrame(frame);
@@ -98,12 +110,15 @@ function frame(now) {
       updatePlayer(dt, inp); updateFx(dt); updateLifecycle(dt, afterRespawn); updateInteraction(); G.interior.room.clerk.update(dt, 0, {});
     } else {
       updatePlayer(dt, inp); updateCars(dt); phys.updatePhysProps(dt, player.x, player.z); updatePeds(dt); updatePolice(dt); updateItems(dt, it => { if (it.kind === 'cash') sfx.cash(); else say('health', 1.2); });
-      updateFx(dt); updateMission(dt); updateLifecycle(dt, afterRespawn);
+      updateFx(dt); updateMission(dt); updateStory(dt); updateLifecycle(dt, afterRespawn);
       if (trafficCount() < 30 && Math.random() < dt * 2) spawnTraffic(); if (highwayCount() < 6 && Math.random() < dt) spawnHighwayCar();
       updateInteraction();
       if (G.mode === 'playing' && inp.fire) shoot();
     }
   }
+  const frozen = G.mode === 'paused' || G.mode === 'menu' || scenePaused;   // dialogue timing and audio stop with the game
+  if (frozen !== wasFrozen) { wasFrozen = frozen; conv.setPaused(frozen); }
+  if (!frozen) tickStory(dt);
   updateWater(performance.now() / 1000); updateMarkers(dt, player.x, player.z); spinners.forEach(s => { s.mesh.rotation[s.axis || 'z'] += s.speed * dt; });
   cullT -= dt; if (cullT <= 0) { cullT = .4; cullBlocks(player.x, player.z, quality === 'low' ? 200 : 250); cullProps(player.x, player.z, quality === 'low' ? 170 : 220); }
   updateTrafficLights(G.time); updateHeadlights(G.interior ? null : player.car);
@@ -114,4 +129,4 @@ function frame(now) {
 if (renderer) requestAnimationFrame(frame);
 
 // handles for the automated tests
-window.__gta = { removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los, phys, renderer, placedLog };
+window.__gta = { story, runtime, journal, conv, npcs, crew, voice, updateStory, tickStory, removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los, phys, renderer, placedLog };
