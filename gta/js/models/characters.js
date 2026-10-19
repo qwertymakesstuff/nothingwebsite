@@ -95,7 +95,7 @@ export function createCharacter(spec) {
   const gun = new THREE.Mesh(pistolGeo, vcLambert); gun.position.set(0, -.6, .02); gun.rotation.x = Math.PI / 2; gun.visible = false; armR.add(gun);
   body.add(upper, legL, legR, armL, armR);
   root.scale.setScalar(s.h);
-  const ch = { root, body, upper, legL, legR, armL, armR, gun, spec: s, phase: Math.random() * 6, blend: 0, aimBlend: 0, seatBlend: 0 };
+  const ch = { root, body, upper, legL, legR, armL, armR, gun, spec: s, phase: Math.random() * 6, blend: 0, aimBlend: 0, seatBlend: 0, handsBlend: 0 };
   ch.update = function (dt, speed, f) {
     f = f || {};
     const moving = speed > .25 ? 1 : 0;
@@ -109,7 +109,9 @@ export function createCharacter(spec) {
     armL.rotation.x = (-sw * amp * .9) * (1 - sb) * (1 - ab * .6) + -.9 * sb + -1.2 * ab * (1 - sb);
     armR.rotation.x = (sw * amp * .9) * (1 - ab) * (1 - sb) + -1.0 * sb + -1.52 * ab * (1 - sb);
     armL.rotation.z = .03 + .03 * (1 - ab); armR.rotation.z = -.03 - .03 * (1 - ab);
-    gun.visible = ab > .5 && !f.seated;
+    ch.handsBlend += ((f.hands ? 1 : 0) - ch.handsBlend) * Math.min(1, dt * 10);
+    if (ch.handsBlend > .01) { const hb = ch.handsBlend; armL.rotation.x += (-2.9 - armL.rotation.x) * hb; armR.rotation.x += (-2.9 - armR.rotation.x) * hb; armL.rotation.z -= .35 * hb; armR.rotation.z += .35 * hb; }
+    gun.visible = ab > .5 && !f.seated && ch.handsBlend < .5;
     const idle = (1 - ch.blend) * Math.sin(t * 1.8 + ch.phase) * .006;
     body.position.y = Math.abs(Math.cos(ch.phase)) * .035 * ch.blend * Math.min(1.4, speed / 4) - .42 * sb + idle;
     body.rotation.x = (f.run ? .16 : .04) * ch.blend + (ab ? .0 : 0);

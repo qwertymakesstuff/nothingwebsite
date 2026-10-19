@@ -1,6 +1,7 @@
 // Pistol: auto-aims at the best target in front of the camera, hit-scan, stopped by buildings.
 import { pushOut } from './city.js';
-import { G, canAct, addHeat } from './state.js';
+import { G, canAct } from './state.js';
+import { reportCrime } from './reporting.js';
 import { angDiff } from './util.js';
 import { sfx } from './audio.js';
 import { tracer, muzzleFlash } from './effects.js';
@@ -12,7 +13,7 @@ import { officers, damageOfficer } from './police.js';
 const RANGE = 40, COOLDOWN = .3;
 export function shoot() {
   if (!canAct() || player.car || player.shootCd > 0) return false;
-  player.shootCd = COOLDOWN; player.aimT = 1.2; sfx.shot();
+  player.shootCd = COOLDOWN; player.aimT = 1.2; sfx.shot(); reportCrime('gunshot');
   let yaw = G.camYaw, best = null, bd = 1e9;
   const consider = (x, z) => { const dx = x - player.x, dz = z - player.z, d = Math.hypot(dx, dz); if (d > RANGE || d < .5) return; const a = Math.abs(angDiff(Math.atan2(dx, dz), G.camYaw)); if (a < .3 && a * d < bd) { bd = a * d; best = [x, z]; } };
   peds.forEach(p => { if (!p.dead) consider(p.x, p.z); }); officers.forEach(o => { if (!o.dead) consider(o.x, o.z); });
@@ -31,7 +32,7 @@ export function shoot() {
   if (hit) {
     if (hit.kind === 'ped') damagePed(hit.ref, 30);
     else if (hit.kind === 'cop') damageOfficer(hit.ref, 22);
-    else { hurtCar(hit.ref, 14); if (hit.ref.kind === 'cop') addHeat(25); else if (hit.ref.driver === 'ai') addHeat(8); }
+    else { hurtCar(hit.ref, 14); if (hit.ref.kind === 'cop') reportCrime('attack_cop_car', hit.ref.x, hit.ref.z); else if (hit.ref.driver === 'ai') reportCrime('assault', hit.ref.x, hit.ref.z); }
   }
   return true;
 }

@@ -4,7 +4,8 @@ import { N, blockX, blockZ, corner, blockType, DISTRICTS } from './layout.js';
 import { walkBlocked } from './highway.js';
 import { shoreDist } from './coast.js';
 import { WORLD } from './layout.js';
-import { G, addMoney, addHeat, bump } from './state.js';
+import { G, addMoney, bump } from './state.js';
+import { reportCrime } from './reporting.js';
 import { rand, pick } from './util.js';
 import { sfx } from './audio.js';
 import { cars, carDist } from './vehicles.js';
@@ -43,7 +44,7 @@ export function makeBeachPed() {
 export function killPed(p, by) {
   if (p.dead) return; p.dead = 1; layDown(p.ch); dropItem('cash', p.x, p.z, Math.floor(rand(15, 70))); sfx.scream(); bump('kills');
 }
-export function damagePed(p, dmg) { p.hp -= dmg; p.panic = 6; if (p.hp <= 0) { killPed(p, 'gun'); addHeat(20); } }
+export function damagePed(p, dmg) { p.hp -= dmg; p.panic = 6; if (p.hp <= 0) { killPed(p, 'gun'); reportCrime('murder', p.x, p.z); } else reportCrime('assault', p.x, p.z); }
 
 export function updatePeds(dt) {
   for (let i = peds.length - 1; i >= 0; i--) {
@@ -59,7 +60,7 @@ export function updatePeds(dt) {
     for (const c of cars) { // cars hit people; fast cars scare them
       if (c.wreck || Math.abs(c.y) > 1.5) continue; const dd = carDist(c, p.x, p.z) + 1.2, spd = Math.abs(c.speed) + Math.hypot(c.vx || 0, c.vz || 0);
       if (dd < 14 && spd > 8 && p.panic <= 0) p.panic = 3;
-      if (dd < 1.4 && spd > 5) { killPed(p, 'car'); if (c.driver === 'player') addHeat(12); break; }
+      if (dd < 1.4 && spd > 5) { killPed(p, 'car'); if (c.driver === 'player') reportCrime('hit_and_run', p.x, p.z); break; }
     }
   }
 }

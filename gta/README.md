@@ -11,7 +11,9 @@ A GTA-style open-world sandbox: three.js (local `three.min.js`, no other depende
 | `render.js`, `city.js`, `camera.js` | renderer + WebGL help, static city and collision (`pushOut`), third-person camera |
 | `player.js`, `input.js`, `interaction.js` | on-foot movement, getting in/out, controls, the single "what can I do now" decision |
 | `vehicles.js`, `traffic.js`, `people.js` | cars and driving physics, civilian cars, pedestrians and pickups |
-| `police.js`, `weapons.js`, `lifecycle.js` | wanted level + cops, pistol, death/arrest/respawn |
+| `police.js`, `weapons.js`, `lifecycle.js` | police units (patrols, cruisers, officers), pistol, death/arrest/respawn |
+| `crime.js`, `reporting.js` | crime catalogue + ledger (pure), and who saw/heard what in the world |
+| `copAI.js`, `dispatch.js` | the police state machine and the dispatcher (both pure and unit-tested) |
 | `missions.js`, `locations.js`, `ui.js`, `audio.js`, `effects.js` | jobs, points of interest, HUD/menus/minimap, sound, visuals |
 
 ### The world (phase 3)
@@ -36,6 +38,16 @@ An 11 x 11 grid of blocks. `layout.js` has the map (`MAP`, one character per blo
 * **Layers**: cars have a level (`y`, `layer`). Ground traffic can't climb a ramp from underneath, deck cars stay between the barriers, and people can't walk onto ramps.
 * **Population**: traffic, pedestrians and parked cars are weighted by district (`DISTRICTS` in `layout.js`), plus a few cars on the highway.
 * **Culling**: blocks and prop chunks beyond ~200-250 m are hidden; instanced props are split into chunks so the camera can skip them.
+
+### Wanted level and police (phase 4)
+Every wrong-doing goes through `reporting.js`: `reportCrime(type)` gathers witnesses (people who can see the spot), people who only hear it, and any cop nearby, then `crime.js` turns that into heat. Nobody saw or heard it = no crime, no stars. Harmless bumps are not crimes. Crimes: gunshot, assault, murder, hit-and-run, car theft/carjack, serious collisions, attacking/killing officers, attacking/destroying/stealing police cars, resisting arrest. Repeats within a few seconds count for less; crimes during a pursuit count 1.5x. Stars come from the heat (15/45/90/150/230).
+- **Dispatch** (`dispatch.js`): reported crime -> incident (`REPORTED, ASSIGNED, EN_ROUTE, ON_SCENE, CONTACT, SEARCH, CLOSED`). The same incident is merged, never dispatched twice. A nearby patrol (up to three ambient patrol cruisers drive the streets at zero stars) takes it first; otherwise a cruiser appears on a road node out of the player's sight, at a distance that depends on the star level. Units wanted: 1/2/3/5/6 cruisers by stars, hard cap 2/3/5/6/7 (+3 for a roadblock) and at most 10 officers on foot. An overdue incident (nobody reached the scene) brings another unit.
+- **State machine** (`copAI.js`): `PATROLLING, RESPONDING, INVESTIGATING, APPROACHING_SUSPECT, ISSUING_WARNING, ATTEMPTING_ARREST, PURSUING_ON_FOOT, PURSUING_IN_VEHICLE, ENGAGING_ACTIVE_THREAT, SEARCHING_LAST_KNOWN_LOCATION, RETURNING_TO_PATROL` (+`BLOCKING` for roadblock cruisers). Transitions depend only on what the unit can see, distances, speeds and what the player did.
+- **One star**: a cruiser comes, the officer gets out and walks (never runs) up while facing you, shouts a warning, and arrests you after you stay still for ~2 s within arm's reach with a clear line. Walk away or run and they chase on foot (and fleeing adds heat); attack or draw down on an officer and it escalates. Officers never shoot for a minor offence: gunfire starts at three stars, or at two stars once a cop has been attacked.
+- **Pursuits**: cruisers follow the road graph, brake for corners and for cars ahead, back out when wedged, and are replaced if hopelessly stuck out of sight. Chasers take different roles (chase / cut in ahead / run alongside). At four stars and up a three-car roadblock is set ahead. Cruisers with too much damage are disabled and the crew continues on foot.
+- **Losing them**: units only know where the suspect was last *seen* (witness tips count for a short while after the crime). Without sight they drive/walk to that spot and search. The hiding clock then runs (12/18/26/36/46 s by star level) and drops the wanted level one star at a time. The HUD shows `SEARCHING n%`, the warning prompt or the hold-still bar.
+- **Arrest**: ARRESTED banner, fine (10% of cash, at least $50, +$25/star), respawn at the police station with wanted cleared, an active job fails. Death or respawn clears every officer, cruiser, incident and the crime ledger.
+- Debug/test handles on `window.__gta`: `dispatcher`, `intel`, `ledger`, `copCars()`, `reportCrime()`; `window.__noRender` skips drawing (used by the browser tests).
 
 ### Coast, beaches and ocean (phase 4.5)
 The old square edge is gone. `js/coast.js` (pure, tested) defines the shoreline as a signed distance field: an irregular perimeter with bays, headlands and rocky stretches. `terrain.js` builds a sloping sand/rock/grass terrain mesh and a shader ocean (waves, foam line, wet sand, depth colour) that runs to the horizon. `models/beach.js` adds dunes, rocks, driftwood, beach grass, palms, umbrellas, boardwalks, piers, lifeguard towers, car parks and the port quay.
