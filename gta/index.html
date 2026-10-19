@@ -13,10 +13,11 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#050303;color:#d5cccc;font-family:"Special Elite",ui-monospace,monospace;user-select:none;-webkit-user-select:none;touch-action:none}
 canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
-.overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:rgba(5,3,3,.9)}
+.overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:safe center;text-align:center;padding:clamp(10px,3vh,24px) 24px;background:rgba(5,3,3,.9);overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.overlay>*{flex-shrink:0}
 .overlay[hidden]{display:none}
-.overlay h1{margin:0 0 6px;font:400 clamp(3.4rem,13vw,7rem)/1 "VT323",monospace;letter-spacing:.2em;color:#b83a3a;text-shadow:0 0 22px rgba(184,58,58,.45)}
-.overlay h2{margin:0 0 10px;font:400 clamp(2.2rem,8vw,4rem)/1 "VT323",monospace;letter-spacing:.14em}
+.overlay h1{margin:0 0 6px;font:400 clamp(2.4rem,min(13vw,15vh),7rem)/1 "VT323",monospace;letter-spacing:.2em;color:#b83a3a;text-shadow:0 0 22px rgba(184,58,58,.45)}
+.overlay h2{margin:0 0 10px;font:400 clamp(1.8rem,min(8vw,9vh),4rem)/1 "VT323",monospace;letter-spacing:.14em}
 .overlay p{margin:6px 0;color:#8e8585;max-width:520px;line-height:1.5}
 .btn{margin-top:22px;border:1px solid #665b5b;background:#0b0b0b;color:#d5cccc;font:inherit;font-size:1.05rem;padding:13px 30px;cursor:pointer;text-decoration:none;display:inline-block}
 .btn:hover{border-color:#b8a1a1;background:#141010}
@@ -70,6 +71,9 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 #map{background:rgba(5,5,8,.94);z-index:12}.mapwrap{display:flex;gap:18px;align-items:flex-start;max-width:96vw;max-height:94vh;overflow:auto;text-align:left}
 #mapCanvas{width:min(78vh,66vw);height:min(78vh,66vw);background:#1d4660;border:1px solid #444;cursor:crosshair}
 .mapwrap aside{min-width:170px}.mapwrap h2{margin:0 0 6px;font-size:2rem}#mapLegend{list-style:none;margin:10px 0;padding:0;font-size:.8rem;column-count:1}#mapLegend li{margin:3px 0;display:flex;align-items:center;gap:8px}#mapLegend b{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;color:#0b0b0b;font:700 11px sans-serif}
+/* short screens (Chromebooks, small laptops, landscape phones): tighten the menus so nothing is cut off, and let them scroll if it still doesn't fit */
+@media (max-height:760px){.overlay p{margin:4px 0;line-height:1.35;font-size:.92rem}.keys-help{grid-template-columns:repeat(4,auto);gap:3px 14px;margin-top:10px;font-size:.82rem}.btn{margin-top:12px;padding:9px 26px;font-size:1rem}.overlay h1{margin-bottom:2px}.small{margin:2px 0}.back{margin-top:8px}.mapwrap{max-height:90vh}}
+@media (max-height:520px){.overlay p{font-size:.82rem}.keys-help{font-size:.74rem;margin-top:6px}.btn{margin-top:8px;padding:7px 22px}.opt{padding:5px 10px;font-size:.8rem}}
 @media (max-width:700px){#mapBtn{top:130px}.mapwrap{flex-direction:column}#mapCanvas{width:90vw;height:90vw}#district{top:150px;font-size:1.2rem}}
 @media (max-width:700px){#minimap{width:110px;height:110px}#mission{top:130px;max-width:90vw}}
 </style>
