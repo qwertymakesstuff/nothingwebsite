@@ -23,9 +23,16 @@ export function initPlayer() { dressPlayer(); }
 export function dressPlayer() {
   const old = player.ch, parent = old && old.root.parent;
   if (old && parent) parent.remove(old.root);
-  player.ch = createCharacter(playerSpec(data.outfit)); player.mesh = player.ch.root;
+  if (riggedBody) { player.ch = riggedBody; riggedBody.setTint(OUTFIT_TINT[data.outfit || 0]); }       // Ash's own model; the jacket choices tint it
+  else player.ch = createCharacter(playerSpec(data.outfit));
+  player.mesh = player.ch.root;
   (parent || scene).add(player.mesh);
+  if (old && old !== player.ch && old.dispose) old.dispose();
 }
+/** the rigged model of Ash (story/glbChar.js loadBody) takes over from the blocky body once it has loaded */
+let riggedBody = null;
+const OUTFIT_TINT = [0xffffff, 0xff8c8c, 0x99ffb3, 0x8c8c9a];
+export function adoptRiggedPlayer(ch) { riggedBody = ch; dressPlayer(); }
 const seatWorld = c => { const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); return [c.x + fx * c.seat[2] + rx * c.seat[0], c.z + fz * c.seat[2] + rz * c.seat[0]]; };
 function seatPlayer(c) { // the character climbs in: walk to the door side, then sit behind the wheel
   const [sx, sz] = seatWorld(c); player.vis = { fx: player.x, fz: player.z, t: 0, dur: .28, mode: 'enter', car: c };
@@ -133,7 +140,7 @@ export function syncPlayerMesh(dt) {
   }
   if (c) {
     if (root.parent !== c.model.pivot) { if (root.parent) root.parent.remove(root); c.model.pivot.add(root); }
-    root.position.set(c.seat[0], c.seat[1] - .54, c.seat[2]); root.rotation.set(0, 0, 0);
+    root.position.set(c.seat[0], c.seat[1] - .54 - (ch.seatDrop || 0), c.seat[2] - (ch.seatBack || 0)); root.rotation.set(0, 0, 0);
     ch.update(dt, 0, { seated: true }); return;
   }
   if (root.parent !== scene) { if (root.parent) root.parent.remove(root); scene.add(root); }
