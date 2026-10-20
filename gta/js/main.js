@@ -130,7 +130,7 @@ let lastT = performance.now(), cullT = 0, wasFrozen = false;
 function afterRespawn() { snapCamera(); clearInput(); if (!isTouch() && !hasLock()) pause(true); } // after dying the mouse lock is gone: land on the pause menu
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(window.__maxDt || .05, (now - lastT) / 1000); lastT = now; // __maxDt is only for the automated tests, which run on a software renderer
+  const dt = Math.max(0, Math.min(window.__maxDt || .05, (now - lastT) / 1000)); lastT = now; // __maxDt is only for the automated tests, which run on a software renderer
   if (inWorld()) {
     G.time += dt;
     const inp = readInput(); updateNav(dt);
