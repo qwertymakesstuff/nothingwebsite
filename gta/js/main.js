@@ -28,8 +28,9 @@ import { openMap, closeMap, isMapOpen } from './map.js';
 import { staticCars, spinners } from './models/kit.js';
 import { cars, makeCar, updateCars, removeCar } from './vehicles.js';
 import { spawnTraffic, spawnParked, spawnHighwayCar, trafficCount, highwayCount } from './traffic.js';
-import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem, makePairs } from './people.js';
-import { player, initPlayer, updatePlayer, syncPlayerMesh, hurtPlayer } from './player.js';
+import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem, makePairs, useCrowdBodies } from './people.js';
+import { loadBody, BODIES } from './story/glbChar.js';
+import { player, initPlayer, updatePlayer, syncPlayerMesh, hurtPlayer, adoptRiggedPlayer } from './player.js';
 import { updatePolice, spawnCop, officers, dispatcher, intel, copCars } from './police.js';
 import { reportCrime, ledger, visibleToPlayer, los } from './reporting.js';
 import * as phys from './physprops.js';
@@ -60,6 +61,10 @@ for (let i = 0; i < 6; i++) spawnHighwayCar();
 POIS.filter(p => p.category === 'health').forEach(p => dropItem('health', p.x, p.z, 0));
 for (const s of staticCars) { if (s.chance != null && Math.random() > s.chance) continue; const c = makeCar(s.x, s.z, s.yaw, s.kind === 'display' ? 'display' : 'parked', s.color, s.type); if (s.y) { c.y = s.y; c.mesh.position.y = s.y; } if (s.kind === 'display') c.forSale = true; }
 { const c = makeCar(spawnHospital[0] + 6, spawnHospital[1] + 1.5, Math.PI / 2, 'owned', 0xc8a23a); c.driver = null; }
+
+/* the rigged models: Ash for the player and the crowd model for some pedestrians. Both load in the background; the blocky bodies stand in until then (and for good if a file fails). */
+loadBody({ url: BODIES.ash, boost: 2 }).then(adoptRiggedPlayer).catch(e => console.warn('[ash model]', e));
+useCrowdBodies(true);
 
 /* pause / resume. The pause menu is the single way out of play; losing focus or the mouse lock always lands there. While it (or the
    map) is open the world is frozen (nothing in the frame loop that moves, times or decides runs) and the keyboard belongs to the menu. */
