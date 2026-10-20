@@ -67,10 +67,8 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 .big.on{opacity:1}
 .touch #msg{bottom:30%}.touch #prompt{bottom:38%}
 #district{position:absolute;left:50%;top:78px;transform:translateX(-50%);font:1.6rem "VT323",monospace;letter-spacing:.16em;text-transform:uppercase;color:#f0e6c8;text-shadow:0 0 8px #000;opacity:0;transition:opacity .5s}#district.on{opacity:1}
+#pauseBtn{position:absolute;left:62px;top:172px;pointer-events:auto;background:rgba(0,0,0,.55);color:#d5cccc;border:1px solid #665b5b;font:inherit;font-size:.75rem;padding:5px 10px;cursor:pointer}
 #mapBtn{position:absolute;left:14px;top:172px;pointer-events:auto;background:rgba(0,0,0,.55);color:#d5cccc;border:1px solid #665b5b;font:inherit;font-size:.75rem;padding:5px 10px;cursor:pointer}
-#map{background:rgba(5,5,8,.94);z-index:12}.mapwrap{display:flex;gap:18px;align-items:flex-start;max-width:96vw;max-height:94vh;overflow:auto;text-align:left}
-#mapCanvas{width:min(78vh,66vw);height:min(78vh,66vw);background:#1d4660;border:1px solid #444;cursor:crosshair}
-.mapwrap aside{min-width:170px}.mapwrap h2{margin:0 0 6px;font-size:2rem}#mapLegend{list-style:none;margin:10px 0;padding:0;font-size:.8rem;column-count:1}#mapLegend li{margin:3px 0;display:flex;align-items:center;gap:8px}#mapLegend b{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;color:#0b0b0b;font:700 11px sans-serif}
 
 /* LAST EXIT: dialogue, subtitles, cutscene bars, choices, journal */
 #subs{position:fixed;left:50%;bottom:5.5%;transform:translateX(-50%);z-index:9;width:min(760px,calc(100% - 32px));text-align:center;font-size:clamp(.95rem,2.4vh,1.25rem);line-height:1.35;padding:7px 14px;background:rgba(0,0,0,.62);border-radius:3px;text-shadow:0 0 4px #000;pointer-events:none;opacity:0;transition:opacity .18s}
@@ -101,8 +99,40 @@ body.cine #hud{opacity:0;transition:opacity .3s}body.cine #touch{display:none}
 /* short screens (Chromebooks, small laptops, landscape phones): tighten the menus so nothing is cut off, and let them scroll if it still doesn't fit */
 @media (max-height:760px){.overlay p{margin:4px 0;line-height:1.35;font-size:.92rem}.keys-help{grid-template-columns:repeat(4,auto);gap:3px 14px;margin-top:10px;font-size:.82rem}.btn{margin-top:12px;padding:9px 26px;font-size:1rem}.overlay h1{margin-bottom:2px}.small{margin:2px 0}.back{margin-top:8px}.mapwrap{max-height:90vh}}
 @media (max-height:520px){.overlay p{font-size:.82rem}.keys-help{font-size:.74rem;margin-top:6px}.btn{margin-top:8px;padding:7px 22px}.opt{padding:5px 10px;font-size:.8rem}}
-@media (max-width:700px){#mapBtn{top:130px}.mapwrap{flex-direction:column}#mapCanvas{width:90vw;height:90vw}#district{top:150px;font-size:1.2rem}}
+@media (max-width:700px){#mapBtn,#pauseBtn{top:130px}#district{top:150px;font-size:1.2rem}}
 @media (max-width:700px){#minimap{width:110px;height:110px}#mission{top:130px;max-width:90vw}}
+
+/* nav HUD, pause menu and full-screen map (phase 6) */
+#nav{position:absolute;left:14px;top:206px;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.55);border:1px solid #6a2f60;padding:4px 10px 4px 6px;font-size:.78rem;color:#ffb8f0}#nav[hidden]{display:none}
+#navArrow{width:22px;height:22px;display:block;background:#ff4fd8;clip-path:polygon(50% 0,100% 100%,50% 76%,0 100%);transition:transform .08s linear}
+#pause{background:rgba(5,3,3,.8);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:pmIn .18s ease-out}
+@keyframes pmIn{from{opacity:0}to{opacity:1}}
+.pm{display:grid;grid-template-columns:minmax(190px,250px) minmax(0,1fr);gap:clamp(14px,3vw,34px);width:min(1020px,96vw);max-height:92vh;text-align:left;align-items:start}
+.pm{min-height:min(560px,88vh)}.pm-nav{display:flex;flex-direction:column;gap:4px}.pm-nav h2{margin:0;font-size:clamp(1.8rem,3.4vw,2.8rem);letter-spacing:.1em}.pm-nav .small{margin:0 0 10px}
+.pm-item{background:none;border:0;border-left:3px solid transparent;color:#a89c9c;font:400 1.5rem "VT323",monospace;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:5px 12px;cursor:pointer;transition:background .12s,color .12s,border-color .12s,transform .12s}
+.pm-item u{text-decoration:none}.pm-item:hover,.pm-item:focus-visible{background:rgba(232,176,48,.1);color:#f0e6c8;outline:none;transform:translateX(3px)}
+.pm-item.on{border-left-color:#e8b030;color:#ffd23f;background:rgba(232,176,48,.14)}.pm-danger{color:#b86a6a}.pm-hint{margin-top:12px}
+.pm-panel{background:rgba(11,9,9,.82);border:1px solid #3a3333;padding:clamp(12px,2.2vw,22px);overflow-y:auto;max-height:88vh;outline:none;animation:pmIn .16s ease-out}
+.pm-panel h3{margin:0 0 10px;font:400 1.7rem "VT323",monospace;letter-spacing:.12em;text-transform:uppercase;color:#e8b030}.pm-panel h4{margin:14px 0 4px;font:400 1.1rem "VT323",monospace;letter-spacing:.1em;text-transform:uppercase;color:#a89c9c}
+.pm-panel p{max-width:none}.pm-panel .row{justify-content:flex-start}
+.pm-set{display:grid;grid-template-columns:minmax(120px,210px) 1fr 52px;gap:8px 12px;align-items:center;margin:6px 0;font-size:.92rem}.pm-set input[type=range]{width:100%;accent-color:#e8b030}.pm-set output{color:#8e8585;text-align:right}
+.pm-seg{display:inline-flex}.pm-seg .opt{margin-right:-1px}
+.pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.pm-card{border:1px solid #3a3333;background:#0b0909;padding:10px 12px}.pm-card b{display:block;font:400 1.9rem "VT323",monospace;color:#f0e6c8}.pm-card span{font-size:.8rem;color:#8e8585}
+.pm-keys{display:grid;grid-template-columns:1fr auto;gap:5px 14px;align-items:center;font-size:.92rem}.pm-keys .opt{min-width:92px;text-align:center}.pm-keys .opt.wait{border-color:#e8b030;color:#ffd23f}
+kbd{font:inherit;border:1px solid #4a4242;background:#141010;padding:1px 7px;color:#d5cccc;border-radius:2px}
+.pm-ms{display:grid;grid-template-columns:minmax(190px,280px) minmax(0,1fr);gap:16px}.pm-list{list-style:none;margin:0;padding:0}.pm-list li{margin:0}
+.pm-mi{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #1e1a1a;color:#d5cccc;font:inherit;font-size:.9rem;padding:6px 6px;cursor:pointer}.pm-mi:hover,.pm-mi:focus-visible,.pm-mi.on{background:rgba(232,176,48,.1);outline:none}
+.pm-mi i{font-style:normal;color:#665b5b;font-size:.78rem;align-self:center}.pm-mi.s-active span{color:#ffd23f}.pm-mi.s-done span{color:#7ae27a}.pm-mi.s-retry span{color:#d96a6a}.pm-mi.s-locked span{color:#6a6060}.pm-mi.s-open span{color:#d5cccc}
+.pm-obj{list-style:none;margin:6px 0;padding:0}.pm-obj li{padding:2px 0 2px 22px;position:relative;color:#a89c9c}.pm-obj li:before{content:"\25CB";position:absolute;left:3px;color:#665b5b}.pm-obj li.d{color:#6a8a6a;text-decoration:line-through}.pm-obj li.d:before{content:"\2713";color:#7ae27a}.pm-obj li.c{color:#ffd23f}.pm-obj li.c:before{content:"\25B6";color:#ffd23f}
+.pm-confirm{position:fixed;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.6);z-index:2}.pm-confirm[hidden]{display:none}.pm-confirm>div{background:#0b0909;border:1px solid #6a4a4a;padding:22px 28px;max-width:min(440px,92vw);text-align:center}
+#map{background:#0a1f2e;z-index:12;padding:0;display:block}#map[hidden]{display:none}#mapCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none;display:block}
+#mapBar{position:absolute;left:12px;right:12px;top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;pointer-events:none}#mapBar>*{pointer-events:auto}#mapBar b{font:400 1.9rem "VT323",monospace;letter-spacing:.14em;color:#f0e6c8;text-shadow:0 0 6px #000;margin-right:8px}#mapBar .opt{background:rgba(8,6,6,.85)}
+#mapLegend{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 24px)}.chip{border:1px solid #4a4242;background:rgba(8,6,6,.85);color:#8e8585;font:inherit;font-size:.78rem;padding:5px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}.chip.on{color:#f0e6c8;border-color:#b8a1a1}.chip s{width:10px;height:10px;border-radius:50%;display:inline-block}.chip:not(.on) s{opacity:.35}
+#mapInfo{position:absolute;right:12px;bottom:12px;width:min(300px,calc(100% - 24px));background:rgba(8,6,6,.94);border:1px solid #5a4a4a;padding:12px 14px;text-align:left}#mapInfo[hidden]{display:none}#mapInfo b{display:block;font:400 1.5rem "VT323",monospace;letter-spacing:.06em;color:#f0e6c8}#mapInfo span,#mapInfo i{display:block;font-size:.82rem;color:#8e8585;font-style:normal}#mapInfo .row{margin-top:8px;justify-content:flex-start}
+#mapHint{position:absolute;right:12px;top:14px;margin:0;max-width:min(420px,40vw);text-align:right;text-shadow:0 0 4px #000;color:#a8b8c0}
+@media (max-width:760px){.pm{grid-template-columns:1fr;gap:10px;min-height:0}.pm-nav{flex-direction:row;flex-wrap:wrap;gap:2px}.pm-nav h2,.pm-nav .small{display:none}.pm-item{font-size:1.15rem;padding:4px 9px;border-left:0;border-bottom:2px solid transparent}.pm-item.on{border-bottom-color:#e8b030}.pm-hint{display:none}.pm-panel{max-height:70vh}.pm-ms{grid-template-columns:1fr}.pm-set{grid-template-columns:1fr 52px}.pm-set label{grid-column:1/-1}#mapHint{display:none}#nav{top:164px}}
+@media (max-height:520px){.pm-item{font-size:1.1rem;padding:2px 10px}.pm-panel{max-height:84vh}}
+@media (prefers-reduced-motion:reduce){#pause,.pm-panel{animation:none}.pm-item,#navArrow{transition:none}}
 </style>
 </head>
 <body>
@@ -111,9 +141,10 @@ body.cine #hud{opacity:0;transition:opacity .3s}body.cine #touch{display:none}
 <div id="hud" hidden>
   <canvas id="minimap" width="300" height="300"></canvas>
   <div id="mission" hidden></div>
+  <div id="nav" hidden><i id="navArrow" aria-hidden="true"></i><span id="navText"></span></div>
   <div id="money">$0</div><div id="stars"></div><div id="wanted"></div>
   <div id="speed"></div><div id="hp"><i></i></div>
-  <div id="prompt"></div><div id="district"></div><button id="mapBtn" type="button" aria-label="open the map">MAP</button><div id="msg"></div><div class="big" id="banner"></div>
+  <div id="prompt"></div><div id="district"></div><button id="mapBtn" type="button" aria-label="open the map">MAP</button><button id="pauseBtn" type="button" aria-label="pause menu">PAUSE</button><div id="msg"></div><div class="big" id="banner"></div>
 </div>
 <div id="subs" aria-live="polite"><b></b><span></span></div>
 <div id="fade"></div>
@@ -139,119 +170,141 @@ body.cine #hud{opacity:0;transition:opacity .3s}body.cine #touch{display:none}
     <b>space</b><span>handbrake</span>
     <b>click</b><span>shoot (on foot)</span>
     <b>shift</b><span>run &nbsp; <b>H</b> horn</span>
+    <b>Esc</b><span>pause menu</span>
+    <b>M</b><span>map and waypoint</span>
   </div>
   <button class="btn" id="goStory">begin the story</button> <button class="btn alt" id="goNew" hidden>new story</button> <button class="btn alt" id="go">free roam</button>
   <p class="small"><button class="opt" id="qual" type="button">graphics</button> <span style="opacity:.6">changing it reloads the page</span></p>
   <p class="back"><a href="/">← back to missing.website</a></p>
 </div>
-<div class="overlay" id="pause" hidden>
-  <h2>paused</h2><p id="pauseStat"></p>
-  <details id="pauseJournal"></details>
-  <details id="vtest"><summary>test a line of dialogue</summary><p>Type a line ID (for example <code>EDDIE_M01_GARAGE_001</code>) to hear its recording, or see its subtitle if none exists.</p><input id="vtestId" placeholder="LINE_ID" autocomplete="off" spellcheck="false"> <button class="opt" id="vtestGo" type="button">play</button><p id="vtestOut" class="small"></p></details>
-  <p id="pauseStory"><button class="opt" id="quitStory" type="button" hidden>abandon this mission</button></p>
-  <button class="btn" id="resume">resume</button>
-  <p class="back"><a href="/">← back to missing.website</a></p>
+<div class="overlay" id="pause" hidden role="dialog" aria-modal="true" aria-label="pause menu">
+  <div class="pm">
+    <nav class="pm-nav" id="pmNav" aria-label="pause menu">
+      <h2>paused</h2><p id="pauseStat" class="small"></p>
+      <button class="pm-item" id="resume" type="button" data-tab="resume"><u>Resume</u></button>
+      <button class="pm-item" type="button" data-tab="map"><u>Map</u></button>
+      <button class="pm-item" type="button" data-tab="missions"><u>Missions</u></button>
+      <button class="pm-item" type="button" data-tab="stats"><u>Player stats</u></button>
+      <button class="pm-item" type="button" data-tab="settings"><u>Settings</u></button>
+      <button class="pm-item" type="button" data-tab="controls"><u>Controls</u></button>
+      <button class="pm-item" type="button" data-tab="save"><u>Save game</u></button>
+      <button class="pm-item pm-danger" type="button" data-tab="menu"><u>Main menu</u></button>
+      <p class="pm-hint small">Esc: resume &nbsp; ↑ ↓ and Enter to choose</p>
+    </nav>
+    <section class="pm-panel" id="pmPanel" tabindex="-1" aria-live="polite"></section>
+  </div>
+  <div class="pm-confirm" id="pmConfirm" hidden role="alertdialog" aria-modal="true"><div><p id="pmConfirmText"></p><button class="btn" id="pmConfirmNo" type="button">cancel</button> <button class="btn alt pm-danger" id="pmConfirmYes" type="button">yes</button></div></div>
 </div>
-<div class="overlay" id="map" hidden>
-  <div class="mapwrap"><canvas id="mapCanvas" width="760" height="760"></canvas>
-    <aside><h2>Harbor City</h2><p class="small">click the map to set a waypoint, right-click to clear it. M or Esc closes.</p><ul id="mapLegend"></ul><button class="opt" id="mapClear" type="button">clear waypoint</button> <button class="opt" id="mapClose" type="button">close</button></aside></div>
+<div class="overlay" id="map" hidden role="dialog" aria-label="map">
+  <canvas id="mapCanvas" aria-label="city map"></canvas>
+  <div id="mapBar"><b>Harbor City</b>
+    <button class="opt" id="mapClose" type="button">&larr; back</button><button class="opt" id="mapCenter" type="button" title="centre on you (C)">find me</button>
+    <button class="opt" id="mapOut" type="button" aria-label="zoom out" title="zoom out (-)">&minus;</button><button class="opt" id="mapIn" type="button" aria-label="zoom in" title="zoom in (+)">+</button>
+    <button class="opt" id="mapClear" type="button" title="remove the waypoint (Delete)">clear waypoint</button></div>
+  <div id="mapLegend" role="group" aria-label="show on the map"></div>
+  <div id="mapInfo" hidden><b></b><span></span><i></i><div class="row"><button class="opt on" id="mapSet" type="button">set waypoint</button><button class="opt" id="mapRemove" type="button">remove waypoint</button></div></div>
+  <p id="mapHint" class="small">drag to move &middot; wheel or +/&minus; to zoom &middot; click a place to inspect it &middot; right-click sets a waypoint &middot; Esc goes back</p>
 </div>
 <script src="three.min.js"></script>
 <script type="importmap">
 {
  "imports": {
-  "/gta/js/audio.js": "/gta/js/audio.js?v=78",
-  "/gta/js/camera.js": "/gta/js/camera.js?v=78",
-  "/gta/js/city.js": "/gta/js/city.js?v=78",
-  "/gta/js/coast.js": "/gta/js/coast.js?v=78",
-  "/gta/js/copAI.js": "/gta/js/copAI.js?v=78",
-  "/gta/js/crime.js": "/gta/js/crime.js?v=78",
-  "/gta/js/dispatch.js": "/gta/js/dispatch.js?v=78",
-  "/gta/js/distant.js": "/gta/js/distant.js?v=78",
-  "/gta/js/effects.js": "/gta/js/effects.js?v=78",
-  "/gta/js/environment.js": "/gta/js/environment.js?v=78",
-  "/gta/js/highway.js": "/gta/js/highway.js?v=78",
-  "/gta/js/input.js": "/gta/js/input.js?v=78",
-  "/gta/js/interaction.js": "/gta/js/interaction.js?v=78",
-  "/gta/js/layout.js": "/gta/js/layout.js?v=78",
-  "/gta/js/lifecycle.js": "/gta/js/lifecycle.js?v=78",
-  "/gta/js/locations.js": "/gta/js/locations.js?v=78",
-  "/gta/js/main.js": "/gta/js/main.js?v=78",
-  "/gta/js/map.js": "/gta/js/map.js?v=78",
-  "/gta/js/markers.js": "/gta/js/markers.js?v=78",
-  "/gta/js/missionDefs.js": "/gta/js/missionDefs.js?v=78",
-  "/gta/js/missions.js": "/gta/js/missions.js?v=78",
-  "/gta/js/models/archetypes.js": "/gta/js/models/archetypes.js?v=78",
-  "/gta/js/models/beach.js": "/gta/js/models/beach.js?v=78",
-  "/gta/js/models/buildings.js": "/gta/js/models/buildings.js?v=78",
-  "/gta/js/models/characters.js": "/gta/js/models/characters.js?v=78",
-  "/gta/js/models/districts.js": "/gta/js/models/districts.js?v=78",
-  "/gta/js/models/facades.js": "/gta/js/models/facades.js?v=78",
-  "/gta/js/models/highwayModel.js": "/gta/js/models/highwayModel.js?v=78",
-  "/gta/js/models/interiors.js": "/gta/js/models/interiors.js?v=78",
-  "/gta/js/models/kit.js": "/gta/js/models/kit.js?v=78",
-  "/gta/js/models/materials.js": "/gta/js/models/materials.js?v=78",
-  "/gta/js/models/mesh.js": "/gta/js/models/mesh.js?v=78",
-  "/gta/js/models/props.js": "/gta/js/models/props.js?v=78",
-  "/gta/js/models/style.js": "/gta/js/models/style.js?v=78",
-  "/gta/js/models/vehicles3d.js": "/gta/js/models/vehicles3d.js?v=78",
-  "/gta/js/pedAI.js": "/gta/js/pedAI.js?v=78",
-  "/gta/js/pedBrain.js": "/gta/js/pedBrain.js?v=78",
-  "/gta/js/people.js": "/gta/js/people.js?v=78",
-  "/gta/js/physprops.js": "/gta/js/physprops.js?v=78",
-  "/gta/js/player.js": "/gta/js/player.js?v=78",
-  "/gta/js/pois.js": "/gta/js/pois.js?v=78",
-  "/gta/js/police.js": "/gta/js/police.js?v=78",
-  "/gta/js/propPhysics.js": "/gta/js/propPhysics.js?v=78",
-  "/gta/js/render.js": "/gta/js/render.js?v=78",
-  "/gta/js/reporting.js": "/gta/js/reporting.js?v=78",
-  "/gta/js/roads.js": "/gta/js/roads.js?v=78",
-  "/gta/js/save.js": "/gta/js/save.js?v=78",
-  "/gta/js/settings.js": "/gta/js/settings.js?v=78",
-  "/gta/js/shops.js": "/gta/js/shops.js?v=78",
-  "/gta/js/signals.js": "/gta/js/signals.js?v=78",
-  "/gta/js/state.js": "/gta/js/state.js?v=78",
-  "/gta/js/story/cast.js": "/gta/js/story/cast.js?v=78",
-  "/gta/js/story/cheat.js": "/gta/js/story/cheat.js?v=78",
-  "/gta/js/story/conversation.js": "/gta/js/story/conversation.js?v=78",
-  "/gta/js/story/crew.js": "/gta/js/story/crew.js?v=78",
-  "/gta/js/story/dialogue.js": "/gta/js/story/dialogue.js?v=78",
-  "/gta/js/story/engine.js": "/gta/js/story/engine.js?v=78",
-  "/gta/js/story/glbChar.js": "/gta/js/story/glbChar.js?v=78",
-  "/gta/js/story/hooks.js": "/gta/js/story/hooks.js?v=78",
-  "/gta/js/story/lines/index.js": "/gta/js/story/lines/index.js?v=78",
-  "/gta/js/story/lines/m00_m01.js": "/gta/js/story/lines/m00_m01.js?v=78",
-  "/gta/js/story/lines/m02.js": "/gta/js/story/lines/m02.js?v=78",
-  "/gta/js/story/lines/m03.js": "/gta/js/story/lines/m03.js?v=78",
-  "/gta/js/story/lines/m04.js": "/gta/js/story/lines/m04.js?v=78",
-  "/gta/js/story/lines/m05.js": "/gta/js/story/lines/m05.js?v=78",
-  "/gta/js/story/lines/m06.js": "/gta/js/story/lines/m06.js?v=78",
-  "/gta/js/story/lines/m07.js": "/gta/js/story/lines/m07.js?v=78",
-  "/gta/js/story/lines/m08.js": "/gta/js/story/lines/m08.js?v=78",
-  "/gta/js/story/lines/m09.js": "/gta/js/story/lines/m09.js?v=78",
-  "/gta/js/story/lines/side_eddie_mara.js": "/gta/js/story/lines/side_eddie_mara.js?v=78",
-  "/gta/js/story/lines/side_other.js": "/gta/js/story/lines/side_other.js?v=78",
-  "/gta/js/story/lines/talk.js": "/gta/js/story/lines/talk.js?v=78",
-  "/gta/js/story/lines/world.js": "/gta/js/story/lines/world.js?v=78",
-  "/gta/js/story/menu.js": "/gta/js/story/menu.js?v=78",
-  "/gta/js/story/missions.js": "/gta/js/story/missions.js?v=78",
-  "/gta/js/story/npcs.js": "/gta/js/story/npcs.js?v=78",
-  "/gta/js/story/places.js": "/gta/js/story/places.js?v=78",
-  "/gta/js/story/runtime.js": "/gta/js/story/runtime.js?v=78",
-  "/gta/js/story/sceneRunner.js": "/gta/js/story/sceneRunner.js?v=78",
-  "/gta/js/story/state.js": "/gta/js/story/state.js?v=78",
-  "/gta/js/story/voice.js": "/gta/js/story/voice.js?v=78",
-  "/gta/js/story/voiceQueue.js": "/gta/js/story/voiceQueue.js?v=78",
-  "/gta/js/terrain.js": "/gta/js/terrain.js?v=78",
-  "/gta/js/traffic.js": "/gta/js/traffic.js?v=78",
-  "/gta/js/ui.js": "/gta/js/ui.js?v=78",
-  "/gta/js/util.js": "/gta/js/util.js?v=78",
-  "/gta/js/vehicles.js": "/gta/js/vehicles.js?v=78",
-  "/gta/js/weapons.js": "/gta/js/weapons.js?v=78",
-  "/gta/js/zones.js": "/gta/js/zones.js?v=78"
+  "/gta/js/audio.js": "/gta/js/audio.js?v=79",
+  "/gta/js/camera.js": "/gta/js/camera.js?v=79",
+  "/gta/js/city.js": "/gta/js/city.js?v=79",
+  "/gta/js/coast.js": "/gta/js/coast.js?v=79",
+  "/gta/js/copAI.js": "/gta/js/copAI.js?v=79",
+  "/gta/js/crime.js": "/gta/js/crime.js?v=79",
+  "/gta/js/dispatch.js": "/gta/js/dispatch.js?v=79",
+  "/gta/js/distant.js": "/gta/js/distant.js?v=79",
+  "/gta/js/effects.js": "/gta/js/effects.js?v=79",
+  "/gta/js/environment.js": "/gta/js/environment.js?v=79",
+  "/gta/js/highway.js": "/gta/js/highway.js?v=79",
+  "/gta/js/input.js": "/gta/js/input.js?v=79",
+  "/gta/js/interaction.js": "/gta/js/interaction.js?v=79",
+  "/gta/js/layout.js": "/gta/js/layout.js?v=79",
+  "/gta/js/lifecycle.js": "/gta/js/lifecycle.js?v=79",
+  "/gta/js/locations.js": "/gta/js/locations.js?v=79",
+  "/gta/js/main.js": "/gta/js/main.js?v=79",
+  "/gta/js/map.js": "/gta/js/map.js?v=79",
+  "/gta/js/markers.js": "/gta/js/markers.js?v=79",
+  "/gta/js/missionDefs.js": "/gta/js/missionDefs.js?v=79",
+  "/gta/js/missions.js": "/gta/js/missions.js?v=79",
+  "/gta/js/models/archetypes.js": "/gta/js/models/archetypes.js?v=79",
+  "/gta/js/models/beach.js": "/gta/js/models/beach.js?v=79",
+  "/gta/js/models/buildings.js": "/gta/js/models/buildings.js?v=79",
+  "/gta/js/models/characters.js": "/gta/js/models/characters.js?v=79",
+  "/gta/js/models/districts.js": "/gta/js/models/districts.js?v=79",
+  "/gta/js/models/facades.js": "/gta/js/models/facades.js?v=79",
+  "/gta/js/models/highwayModel.js": "/gta/js/models/highwayModel.js?v=79",
+  "/gta/js/models/interiors.js": "/gta/js/models/interiors.js?v=79",
+  "/gta/js/models/kit.js": "/gta/js/models/kit.js?v=79",
+  "/gta/js/models/materials.js": "/gta/js/models/materials.js?v=79",
+  "/gta/js/models/mesh.js": "/gta/js/models/mesh.js?v=79",
+  "/gta/js/models/props.js": "/gta/js/models/props.js?v=79",
+  "/gta/js/models/style.js": "/gta/js/models/style.js?v=79",
+  "/gta/js/models/vehicles3d.js": "/gta/js/models/vehicles3d.js?v=79",
+  "/gta/js/nav.js": "/gta/js/nav.js?v=79",
+  "/gta/js/navroute.js": "/gta/js/navroute.js?v=79",
+  "/gta/js/pausemenu.js": "/gta/js/pausemenu.js?v=79",
+  "/gta/js/pedAI.js": "/gta/js/pedAI.js?v=79",
+  "/gta/js/pedBrain.js": "/gta/js/pedBrain.js?v=79",
+  "/gta/js/people.js": "/gta/js/people.js?v=79",
+  "/gta/js/physprops.js": "/gta/js/physprops.js?v=79",
+  "/gta/js/player.js": "/gta/js/player.js?v=79",
+  "/gta/js/pois.js": "/gta/js/pois.js?v=79",
+  "/gta/js/police.js": "/gta/js/police.js?v=79",
+  "/gta/js/prefs.js": "/gta/js/prefs.js?v=79",
+  "/gta/js/propPhysics.js": "/gta/js/propPhysics.js?v=79",
+  "/gta/js/render.js": "/gta/js/render.js?v=79",
+  "/gta/js/reporting.js": "/gta/js/reporting.js?v=79",
+  "/gta/js/roads.js": "/gta/js/roads.js?v=79",
+  "/gta/js/save.js": "/gta/js/save.js?v=79",
+  "/gta/js/settings.js": "/gta/js/settings.js?v=79",
+  "/gta/js/shops.js": "/gta/js/shops.js?v=79",
+  "/gta/js/signals.js": "/gta/js/signals.js?v=79",
+  "/gta/js/state.js": "/gta/js/state.js?v=79",
+  "/gta/js/story/cast.js": "/gta/js/story/cast.js?v=79",
+  "/gta/js/story/cheat.js": "/gta/js/story/cheat.js?v=79",
+  "/gta/js/story/conversation.js": "/gta/js/story/conversation.js?v=79",
+  "/gta/js/story/crew.js": "/gta/js/story/crew.js?v=79",
+  "/gta/js/story/dialogue.js": "/gta/js/story/dialogue.js?v=79",
+  "/gta/js/story/engine.js": "/gta/js/story/engine.js?v=79",
+  "/gta/js/story/glbChar.js": "/gta/js/story/glbChar.js?v=79",
+  "/gta/js/story/hooks.js": "/gta/js/story/hooks.js?v=79",
+  "/gta/js/story/lines/index.js": "/gta/js/story/lines/index.js?v=79",
+  "/gta/js/story/lines/m00_m01.js": "/gta/js/story/lines/m00_m01.js?v=79",
+  "/gta/js/story/lines/m02.js": "/gta/js/story/lines/m02.js?v=79",
+  "/gta/js/story/lines/m03.js": "/gta/js/story/lines/m03.js?v=79",
+  "/gta/js/story/lines/m04.js": "/gta/js/story/lines/m04.js?v=79",
+  "/gta/js/story/lines/m05.js": "/gta/js/story/lines/m05.js?v=79",
+  "/gta/js/story/lines/m06.js": "/gta/js/story/lines/m06.js?v=79",
+  "/gta/js/story/lines/m07.js": "/gta/js/story/lines/m07.js?v=79",
+  "/gta/js/story/lines/m08.js": "/gta/js/story/lines/m08.js?v=79",
+  "/gta/js/story/lines/m09.js": "/gta/js/story/lines/m09.js?v=79",
+  "/gta/js/story/lines/side_eddie_mara.js": "/gta/js/story/lines/side_eddie_mara.js?v=79",
+  "/gta/js/story/lines/side_other.js": "/gta/js/story/lines/side_other.js?v=79",
+  "/gta/js/story/lines/talk.js": "/gta/js/story/lines/talk.js?v=79",
+  "/gta/js/story/lines/world.js": "/gta/js/story/lines/world.js?v=79",
+  "/gta/js/story/menu.js": "/gta/js/story/menu.js?v=79",
+  "/gta/js/story/missions.js": "/gta/js/story/missions.js?v=79",
+  "/gta/js/story/npcs.js": "/gta/js/story/npcs.js?v=79",
+  "/gta/js/story/places.js": "/gta/js/story/places.js?v=79",
+  "/gta/js/story/runtime.js": "/gta/js/story/runtime.js?v=79",
+  "/gta/js/story/sceneRunner.js": "/gta/js/story/sceneRunner.js?v=79",
+  "/gta/js/story/state.js": "/gta/js/story/state.js?v=79",
+  "/gta/js/story/voice.js": "/gta/js/story/voice.js?v=79",
+  "/gta/js/story/voiceQueue.js": "/gta/js/story/voiceQueue.js?v=79",
+  "/gta/js/terrain.js": "/gta/js/terrain.js?v=79",
+  "/gta/js/traffic.js": "/gta/js/traffic.js?v=79",
+  "/gta/js/ui.js": "/gta/js/ui.js?v=79",
+  "/gta/js/util.js": "/gta/js/util.js?v=79",
+  "/gta/js/vehicles.js": "/gta/js/vehicles.js?v=79",
+  "/gta/js/weapons.js": "/gta/js/weapons.js?v=79",
+  "/gta/js/zones.js": "/gta/js/zones.js?v=79"
  }
 }
 </script>
-<script type="module" src="js/main.js?v=78"></script>
+<script type="module" src="js/main.js?v=79"></script>
 </body>
 </html>

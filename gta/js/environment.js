@@ -1,6 +1,7 @@
 // Sun, sky, fog, time of day and the night-time look (lit windows, street lamps, headlights).
 import { scene, camera, renderer } from './render.js';
 import { quality } from './settings.js';
+import { prefs } from './prefs.js';
 import { clamp } from './util.js';
 import { setWindowGlow } from './models/facades.js';
 import { setWaterEnv } from './terrain.js';
@@ -28,8 +29,14 @@ export const sun = new THREE.DirectionalLight(0xfff1d6, 1);
 export const headlights = [new THREE.SpotLight(0xfff0cf, 0, 55, .55, .6, 1.2), new THREE.SpotLight(0xfff0cf, 0, 55, .55, .6, 1.2)];
 scene.add(hemi, sun, sun.target);
 headlights.forEach(h => { scene.add(h, h.target); });
+/** shadows: 'off', 'medium' (1024 map) or 'high' (2048). Only on high graphics quality, where the renderer has shadow maps at all. */
+export function setShadowQuality(q) {
+  if (!renderer || quality !== 'high') return;
+  sun.castShadow = q !== 'off'; const n = q === 'medium' ? 1024 : 2048;
+  if (sun.shadow.mapSize.x !== n) { sun.shadow.mapSize.set(n, n); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+}
 if (renderer && quality === 'high') {
-  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const c = sun.shadow.camera; c.left = c.bottom = -75; c.right = c.top = 75; c.near = 10; c.far = 420; sun.shadow.bias = -.0006; sun.shadow.normalBias = .4;
+  sun.castShadow = prefs.shadows !== 'off'; sun.shadow.mapSize.set(prefs.shadows === 'medium' ? 1024 : 2048, prefs.shadows === 'medium' ? 1024 : 2048); const c = sun.shadow.camera; c.left = c.bottom = -75; c.right = c.top = 75; c.near = 10; c.far = 420; sun.shadow.bias = -.0006; sun.shadow.normalBias = .4;
 }
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
@@ -80,7 +87,7 @@ export function updateEnvironment(dt, fx, fz, play) {
   hemi.color.copy(tmp.hs); hemi.groundColor.copy(tmp.hg); hemi.intensity = k.hemiI;
   sun.color.copy(tmp.sunC); sun.intensity = k.sunI;
   // the shadow box follows the player, snapped to shadow texels so edges don't crawl
-  const snap = 150 / 2048, sx = Math.round(fx / snap) * snap, sz = Math.round(fz / snap) * snap;
+  const snap = 150 / (sun.shadow.mapSize.x || 2048), sx = Math.round(fx / snap) * snap, sz = Math.round(fz / snap) * snap;
   sun.target.position.set(sx, 0, sz); sun.position.set(sx + sdir.x * 160, sdir.y * 160, sz + sdir.z * 160);
   setWaterEnv(sdir, tmp.sunC, tmp.hor, env.night); updateDistant(tmp.fog, env.night);
   setWindowGlow(env.night * 1.15);

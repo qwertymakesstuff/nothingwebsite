@@ -3,7 +3,7 @@ import { renderer, render } from './render.js';
 import { buildCity, cullBlocks } from './city.js';
 import { buildHighway } from './models/highwayModel.js';
 import { buildProps, updateTrafficLights, cullProps, placedLog } from './models/props.js';
-import { updateEnvironment, updateHeadlights, env, setHour } from './environment.js';
+import { updateEnvironment, updateHeadlights, env, setHour, setShadowQuality } from './environment.js';
 import { updateWater } from './terrain.js';
 import { quality, setQuality } from './settings.js';
 import { enterShop, leaveShop } from './shops.js';
@@ -11,9 +11,12 @@ import { doors } from './models/buildings.js';
 import { lightPhase } from './signals.js';
 import { G, inWorld, canAct } from './state.js';
 import { data, persist } from './save.js';
-import { initAudio, resumeAudio } from './audio.js';
+import { initAudio, resumeAudio, setLevels } from './audio.js';
 import { story, runtime, startCampaign, loadStory, updateStory, tickStory, journal, cycleRadio } from './story/runtime.js';
-import { initMenu, refreshPause } from './story/menu.js';
+import { initMenu } from './story/menu.js';
+import { initPauseMenu, refreshPause, handleEscape } from './pausemenu.js';
+import { nav, updateNav } from './nav.js';
+import { prefs, onPref } from './prefs.js';
 import * as conv from './story/conversation.js';
 import * as npcs from './story/npcs.js';
 import * as crew from './story/crew.js';
@@ -38,7 +41,7 @@ import { updateInteraction, interact } from './interaction.js';
 import { shoot, punch } from './weapons.js';
 import { updateAI, debugInfo as pedDebug, cfg as pedCfg, reset as resetPedAI } from './pedAI.js';
 import { sfx } from './audio.js';
-import { readInput, bindActions, clearInput, lockPointer, hasLock, isTouch } from './input.js';
+import { readInput, bindActions, clearInput, lockPointer, hasLock, isTouch, setInputBlocked } from './input.js';
 import { updateCamera, snapCamera } from './camera.js';
 import { updateHud, showHud, showStart, showPause, say } from './ui.js';
 import { addHeat } from './state.js';
@@ -58,24 +61,37 @@ POIS.filter(p => p.category === 'health').forEach(p => dropItem('health', p.x, p
 for (const s of staticCars) { if (s.chance != null && Math.random() > s.chance) continue; const c = makeCar(s.x, s.z, s.yaw, s.kind === 'display' ? 'display' : 'parked', s.color, s.type); if (s.y) { c.y = s.y; c.mesh.position.y = s.y; } if (s.kind === 'display') c.forSale = true; }
 { const c = makeCar(spawnHospital[0] + 6, spawnHospital[1] + 1.5, Math.PI / 2, 'owned', 0xc8a23a); c.driver = null; }
 
-/* pause / resume. The pause menu is the single way out of play; losing focus or the mouse lock always lands there. */
+/* pause / resume. The pause menu is the single way out of play; losing focus or the mouse lock always lands there. While it (or the
+   map) is open the world is frozen (nothing in the frame loop that moves, times or decides runs) and the keyboard belongs to the menu. */
 let scenePaused = false;   // the pause menu opened during a conversation: the conversation stays as it is underneath
+const releaseMouse = () => { if (document.exitPointerLock && hasLock()) document.exitPointerLock(); };
 function pause(on) {
   if (on) {
-    if (G.mode === 'scene') { if (scenePaused) return; scenePaused = true; clearInput(); showPause(true); refreshPause(); if (document.exitPointerLock && hasLock()) document.exitPointerLock(); return; }
+    if (G.mode === 'scene') { if (scenePaused) return; scenePaused = true; clearInput(true); setInputBlocked(true); showPause(true); refreshPause(true); releaseMouse(); return; }
     if (G.mode !== 'playing') return;
-    G.mode = 'paused'; clearInput(); showPause(true); refreshPause(); if (document.exitPointerLock && hasLock()) document.exitPointerLock();
+    G.mode = 'paused'; clearInput(true); setInputBlocked(true); showPause(true); refreshPause(true); releaseMouse();
   } else {
-    if (scenePaused) { scenePaused = false; showPause(false); lastT = performance.now(); resumeAudio(); return; }
+    if (scenePaused) { scenePaused = false; setInputBlocked(false); showPause(false); lastT = performance.now(); resumeAudio(); return; }
     if (G.mode !== 'paused') return;
-    showPause(false); G.mode = 'playing'; lastT = performance.now(); lockPointer(); resumeAudio();
+    showPause(false); setInputBlocked(false); G.mode = 'playing'; lastT = performance.now(); lockPointer(); resumeAudio();
   }
+}
+/** the map: from the game (M, the MAP button) it returns to the game; from the pause menu it returns to the pause menu */
+function openMapFrom(pauseMenu) {
+  if (isMapOpen()) return;
+  if (pauseMenu) { if (G.mode !== 'paused' && !scenePaused) return; $('pause').hidden = true; setInputBlocked(true); openMap(() => { showPause(true); refreshPause(false); setInputBlocked(true); const b = document.querySelector('.pm-item[data-tab="map"]'); if (b) b.focus(); }); return; }
+  if (G.mode !== 'playing') return;
+  G.mode = 'paused'; clearInput(true); setInputBlocked(true); releaseMouse();
+  openMap(() => { setInputBlocked(false); if (G.mode === 'paused') { G.mode = 'playing'; lastT = performance.now(); lockPointer(); } });
 }
 function toggleMap() {
   if (isMapOpen()) { closeMap(); return; }
-  if (G.mode !== 'playing') return;
-  G.mode = 'paused'; clearInput(); if (document.exitPointerLock && hasLock()) document.exitPointerLock();
-  openMap(() => { if (G.mode === 'paused') { G.mode = 'playing'; lastT = performance.now(); lockPointer(); } });
+  openMapFrom(G.mode === 'paused' || scenePaused);
+}
+function escape() {
+  if (isMapOpen()) { closeMap(); return; }
+  if (handleEscape()) return;
+  if (G.mode === 'paused' || scenePaused) pause(false); else pause(true);
 }
 /** mode: 'new' | 'continue' (the story) or 'free' (just the city) */
 function begin(mode) {
@@ -87,16 +103,20 @@ function begin(mode) {
 bindActions({
   interact, shoot, punch,
   horn() { if (canAct() && player.car) { sfx.horn(); player.car.honk = 1; } },
-  pause() { if (isMapOpen()) closeMap(); else pause(G.mode === 'playing' || (G.mode === 'scene' && !scenePaused)); },
+  pause() { if (isMapOpen()) closeMap(); else if (handleEscape()) return; else pause(G.mode === 'playing' || (G.mode === 'scene' && !scenePaused)); },
+  escape,
   map: toggleMap,
   radio() { if (G.mode === 'playing') { if (player.car) cycleRadio(); else say('get in a car to use the radio', 1.8); } },
   blur() { if ((G.mode === 'playing' && !isTouch()) || G.mode === 'scene') pause(true); },
   lockLost() { if (G.mode === 'playing') pause(true); }
 });
 loadStory(); initMenu(begin);
-$('mapBtn').addEventListener('click', toggleMap);
+initPauseMenu({ resume: () => pause(false), map: () => openMapFrom(true), mainMenu: () => { persist(); location.reload(); } });
+nav.onNotice = t => say(t, 2.2);
+const applyPrefs = () => { setLevels(prefs.master, prefs.sfx); setShadowQuality(prefs.shadows); };
+applyPrefs(); voice.applyVolume(); onPref(applyPrefs);
+$('mapBtn').addEventListener('click', toggleMap); $('pauseBtn').addEventListener('click', () => pause(true));
 const qb = $('qual'); qb.textContent = 'graphics: ' + quality; qb.addEventListener('click', () => { setQuality(quality === 'high' ? 'low' : 'high'); location.reload(); });
-$('resume').addEventListener('click', () => pause(false));
 document.addEventListener('visibilitychange', () => { if (document.hidden && (G.mode === 'playing' || G.mode === 'scene')) pause(true); });
 window.addEventListener('pagehide', persist);
 
@@ -108,7 +128,7 @@ function frame(now) {
   const dt = Math.min(window.__maxDt || .05, (now - lastT) / 1000); lastT = now; // __maxDt is only for the automated tests, which run on a software renderer
   if (inWorld()) {
     G.time += dt;
-    const inp = readInput();
+    const inp = readInput(); updateNav(dt);
     if (G.interior) { // inside a shop the street is frozen: only the player, effects and the timers that matter run
       updatePlayer(dt, inp); updateFx(dt); updateLifecycle(dt, afterRespawn); updateInteraction(); G.interior.room.clerk.update(dt, 0, {});
     } else {
@@ -132,4 +152,4 @@ function frame(now) {
 if (renderer) requestAnimationFrame(frame);
 
 // handles for the automated tests
-window.__gta = { pedai: { cfg: pedCfg, info: pedDebug, reset: resetPedAI }, story, runtime, journal, conv, npcs, crew, voice, updateStory, tickStory, removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los, phys, renderer, placedLog };
+window.__gta = { nav, prefs, openMapFrom, escape, pedai: { cfg: pedCfg, info: pedDebug, reset: resetPedAI }, story, runtime, journal, conv, npcs, crew, voice, updateStory, tickStory, removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los, phys, renderer, placedLog };

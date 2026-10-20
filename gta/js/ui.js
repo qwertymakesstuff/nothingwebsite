@@ -11,6 +11,7 @@ import { cars } from './vehicles.js';
 import { officers, copsNearby } from './police.js';
 import { missionText } from './missions.js';
 import { interaction } from './interaction.js';
+import { nav, updateNavHud } from './nav.js';
 
 const $ = id => document.getElementById(id);
 const msgEl = $('msg'), bannerEl = $('banner'), flashEl = $('flash'), mm = $('minimap'), mg = mm.getContext('2d');
@@ -49,10 +50,14 @@ function drawMinimap() {
   for (const m of allMarkers()) {
     if (m.kind === 'poi') { if (!m.minimap || m.category === 'park') continue; const X = cx + (m.x - px) * sc, Z = cx + (m.z - pz) * sc; if (X < 6 || Z < 6 || X > S - 6 || Z > S - 6) continue; glyphDot(mg, X, Z, 5.5, m.color, m.glyph); }
   }
+  if (nav.route && nav.route.length > 1) { // the road route to the waypoint (only drawn when navroute.js found one)
+    mg.lineJoin = 'round'; mg.beginPath(); nav.route.forEach((q, n) => n ? mg.lineTo(cx + (q[0] - px) * sc, cx + (q[1] - pz) * sc) : mg.moveTo(cx + (q[0] - px) * sc, cx + (q[1] - pz) * sc));
+    mg.strokeStyle = 'rgba(0,0,0,.7)'; mg.lineWidth = 5; mg.stroke(); mg.strokeStyle = '#ff4fd8'; mg.lineWidth = 2.6; mg.stroke();
+  }
   const flashRed = Math.sin(G.time * 8) > 0;
   cars.forEach(c => { if (c.kind === 'cop' && !c.wreck && c.driver !== 'player') { const X = cx + (c.x - px) * sc, Z = cx + (c.z - pz) * sc; if (X > 2 && Z > 2 && X < S - 2 && Z < S - 2) { mg.fillStyle = flashRed ? '#ff3030' : '#3060ff'; mg.beginPath(); mg.arc(X, Z, 3, 0, 7); mg.fill(); } } });
   officers.forEach(o => { if (!o.dead) { const X = cx + (o.x - px) * sc, Z = cx + (o.z - pz) * sc; if (X > 2 && Z > 2 && X < S - 2 && Z < S - 2) { mg.fillStyle = '#6688ff'; mg.beginPath(); mg.arc(X, Z, 2, 0, 7); mg.fill(); } } });
-  for (const id of ['waypoint', 'mission']) { const m = getMarker(id); if (!m) continue; const [X, Z, clamped] = edge(m.x, m.z, 8); mg.fillStyle = m.color; mg.strokeStyle = '#000'; mg.lineWidth = 2; mg.beginPath(); mg.arc(X, Z, clamped ? 5 : 6, 0, 7); mg.fill(); mg.stroke(); }
+  for (const id of ['waypoint', 'mission']) { const m = getMarker(id); if (!m) continue; const [X, Z, clamped] = edge(m.x, m.z, 8); mg.fillStyle = m.color; mg.strokeStyle = '#000'; mg.lineWidth = 2; mg.beginPath(); if (id === 'waypoint') { mg.moveTo(X, Z + 7); mg.lineTo(X - 6, Z - 3); mg.lineTo(X + 6, Z - 3); mg.closePath(); mg.fill(); mg.stroke(); mg.beginPath(); mg.arc(X, Z - 6, 5, 0, 7); } else mg.arc(X, Z, clamped ? 5 : 6, 0, 7); mg.fill(); mg.stroke(); }
   mg.save(); mg.translate(cx, cx); mg.rotate(Math.PI - player.yaw); mg.fillStyle = '#fff'; mg.beginPath(); mg.moveTo(0, -7); mg.lineTo(5, 5); mg.lineTo(-5, 5); mg.closePath(); mg.fill(); mg.restore();
 }
 let lastDistrict = '';
@@ -64,6 +69,7 @@ function showDistrict() {
 export function updateHud(dt) {
   if (msgT > 0) { msgT -= dt; if (msgT <= 0) msgEl.classList.remove('on'); }
   if (bannerT > 0) { bannerT -= dt; if (bannerT <= 0) bannerEl.classList.remove('on'); }
+  updateNavHud(dt);
   hudT -= dt; if (hudT > 0) return; hudT = .1;
   setText('money', '$' + data.money.toLocaleString());
   $('hp').firstElementChild.style.width = Math.max(0, player.hp) + '%';
