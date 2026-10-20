@@ -2,6 +2,7 @@
 // reading time and play goes on. A recording is only requested when voice/available.json lists it, so a missing file never causes a
 // failed network request, a console error or a stalled scene. Dropping a correctly named file into gta/voice/<CHARACTER>/ and running
 // `node gta/tools/voice.mjs` (which lists it in voice/available.json) is all it takes to hear it.
+import { prefs, setPref } from '../prefs.js';
 import { ac, voiceBus, setVoiceVolume, resumeAudio, suspendAudio } from '../audio.js';
 import { data, persist } from '../save.js';
 import { LINES } from './dialogue.js';
@@ -78,8 +79,8 @@ export function startAudio(item, force) {
 export function stopAudio(item) { if (item && item.audio && item.audio.stop) item.audio.stop(); if (item) item.audio = null; }
 
 /* ---- settings ---- */
-export const volume = () => (typeof data.voiceVol === 'number' ? data.voiceVol : .9);
-export function setVolume(v) { data.voiceVol = Math.max(0, Math.min(1, v)); setVoiceVolume(data.voiceVol); persist(); }
+export const volume = () => prefs.voice;
+export function setVolume(v) { setPref('voice', v); setVoiceVolume(prefs.voice); }
 export const subtitlesOn = () => data.subs !== false;
 export function setSubtitles(on) { data.subs = !!on; persist(); }
 export function applyVolume() { setVoiceVolume(volume()); }

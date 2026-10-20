@@ -15,7 +15,7 @@ import * as voice from './voice.js';
 import { G, canAct, addMoney, bump } from '../state.js';
 import { data, persist } from '../save.js';
 import { getPoi, resolveTarget } from '../pois.js';
-import { addMarker, removeMarker } from '../markers.js';
+import { addMarker, removeMarker, getMarker } from '../markers.js';
 import { storyHud, cancelMission } from '../missions.js';
 import { player, enterCar } from '../player.js';
 import { cars, makeCar, removeCar } from '../vehicles.js';
@@ -211,6 +211,27 @@ export function journal() {
     rel: RELATIONSHIPS.filter(id => s.rel[id] !== undefined || id === 'EDDIE' || id === 'MARA').map(id => ({ id, name: nameOf(id), level: levelName(getRel(s, id)), color: CAST[id].color })),
     ending: s.ending
   };
+}
+/**
+ * Every story mission as the pause menu's Missions page shows it: status, what the player has to do, what is blocking a locked one,
+ * and where it is (the current objective, or the place the mission starts) so the page can offer a waypoint.
+ */
+export function missionRows() {
+  const s = story.s, act = s.active, titleOf = id => (MISSIONS[id] ? MISSIONS[id].title : id);
+  const spot = t => (t && Number.isFinite(t.x) && Number.isFinite(t.z) ? { x: t.x, z: t.z } : null);
+  return MISSION_LIST.filter(m => m.id !== 'M00' || (act && act.id === 'M00')).map(m => {
+    const expired = !!m.expires && !s.done[m.id] && evalCond(m.expires, s);
+    const status = s.done[m.id] ? 'done' : act && act.id === m.id ? 'active' : s.failed[m.id] ? 'retry' : expired ? 'missed' : story.isAvailable(m) ? 'open' : 'locked';
+    const reqs = String(m.req || '').split(/&&|\|\|/).map(x => x.trim()).filter(x => x.startsWith('done:')).map(x => x.slice(5)).filter(id => !s.done[id]).map(titleOf);
+    const steps = m.steps.map((st, i) => ({ text: st.text || '', i })).filter(x => x.text);
+    const cur = status === 'active' ? steps.find(x => x.i >= act.step) : null;
+    const objectives = steps.map(x => ({ text: x.text, done: status === 'done' || (status === 'active' && x.i < act.step), current: !!cur && cur.i === x.i }));
+    let dest = null;
+    if (status === 'active') dest = spot(storyHud.target); else if (status === 'open' || status === 'retry') { const mk = getMarker('story:' + m.id); dest = mk ? spot(mk) : null; }
+    if (!dest && m.start) dest = spot(resolve(m.start.at));
+    const blocked = status === 'locked' && String(m.req || '').split(/&&|\|\|/).map(x => x.trim()).filter(x => x.startsWith('done:')).map(x => x.slice(5)).some(id => !s.done[id] && MISSIONS[id] && !(act && act.id === id) && !s.failed[id] && !story.isAvailable(MISSIONS[id]));   // two or more steps away: keep the title (a spoiler) out of the list
+    return { id: m.id, title: m.title, hidden: blocked, status, main: !!m.main, chain: m.chain || null, desc: status === 'locked' || status === 'missed' ? '' : m.desc, reward: m.reward || 0, reqs, objectives, dest, startLabel: m.start ? m.start.label || '' : '' };
+  });
 }
 export function abandonStory() { if (story.s.active) story.abandon(); }
 
