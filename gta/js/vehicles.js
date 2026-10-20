@@ -126,12 +126,12 @@ export function updateCars(dt) {
     const mover = b.driver === 'player' ? b : a, other = mover === a ? b : a;
     const rel = Math.abs(mover.speed) + Math.hypot(other.vx || 0, other.vz || 0);
     if (!carVsCar(mover, other)) continue;
-    if (mover.driver === 'player' || other.driver === 'player') onCarCollision(mover, other, rel);          // the other driver (and anyone watching) reacts
+    const reacted = (mover.driver === 'player' || other.driver === 'player') && onCarCollision(mover, other, rel);   // the other driver (and anyone watching) reacts
     if (mover.driver === 'player' && other.hitCd > .2) { if (rel > 5 && other.kind === 'cop') reportCrime('attack_cop_car', other.x, other.z); else if (rel > 12 && other.kind === 'traffic') reportCrime('collision', other.x, other.z); }
     if (other.driver !== 'player' && rel > 5 && !(other.cop && G.stars)) {
       const dx = other.x - mover.x, dz = other.z - mover.z, d = Math.hypot(dx, dz) || 1;
       other.vx += dx / d * rel * .45; other.vz += dz / d * rel * .45; other.spin = (Math.random() - .5) * 3;
-      if (other.ai) { other.ai = null; other.driver = null; other.honk = 1; showDriver(other, false); }
+      if (other.ai && !reacted) { other.ai = null; other.driver = null; other.honk = 1; showDriver(other, false); }
     }
   }
   const px = player.x, pz = player.z;

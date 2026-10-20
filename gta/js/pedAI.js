@@ -275,18 +275,19 @@ function completeCall(p, inc) {
 export function honk(c) { c.honk = 1; if (Math.hypot(c.x - player.x, c.z - player.z) < 45) sfx.horn(); }
 /** two cars collided. Only collisions with the player's car matter to the other driver. */
 export function onCarCollision(a, b, rel) {
-  if (!cfg.enabled) return; const pc = a.driver === 'player' ? a : b.driver === 'player' ? b : null; if (!pc) return; const o = pc === a ? b : a;
-  const sev = BR.crashSeverity(rel); if (!sev) return; const t = now();
+  if (!cfg.enabled) return false; const pc = a.driver === 'player' ? a : b.driver === 'player' ? b : null; if (!pc) return false; const o = pc === a ? b : a;
+  const sev = BR.crashSeverity(rel); if (!sev) return false; const t = now(), driven = !!o.ai && o.driver === 'ai';
   emit({ type: 'crash', x: o.x, z: o.z, radius: 40, loud: true, visual: true, sev, threat: { x: o.x, z: o.z } });
-  if (!o.ai || o.driver !== 'ai' || (o.reactT && t - o.reactT < 6)) return; o.reactT = t;
+  if (!driven || (o.reactT && t - o.reactT < 6)) return driven; o.reactT = t;
   const A = o.ai; A.pers = A.pers || BR.makePersonality(); const pers = A.pers;
   honk(o); A.hold = Math.max(A.hold || 0, sev === 1 ? 1.2 : 3.5);
-  if (sev === 1) { if (pers.aggression > .45 || pers.hothead) speak(o, 'honk', null, null, 1.8); return; }
+  if (sev === 1) { if (pers.aggression > .45 || pers.hothead) speak(o, 'honk', null, null, 1.8); return true; }
   const angry = pers.hothead ? .6 : pers.aggression * .5, scared = pers.fear * .6;
   const r = Math.random();
   if (sev >= 2 && r < angry + (sev === 3 ? .25 : 0) && pers.courage > .3 && !armedLately()) driverExits(o, pers, sev);
   else if (r > 1 - scared - (sev === 3 ? .2 : 0)) { A.hold = 0; A.flee = t + 7; speak(o, 'flee', null, null, 1.8); }
   else { speak(o, 'nearmiss', null, null, 2); if (pers.hothead && sev === 2) A.chase = t + 8; }
+  return true;                                                                                       // the driver is still at the wheel (or got out): the crash code must not strip their AI
 }
 export function onNearMissCar(c) { /* AI cars that were cut off by the player: a honk now and then */ if (!c.ai || c.reactT && now() - c.reactT < 5) return; c.reactT = now(); honk(c); const A = c.ai; A.pers = A.pers || BR.makePersonality(); if (A.pers.hothead && Math.random() < .35) { A.chase = now() + 7; speak(c, 'honk', null, null, 1.6); } }
 /** the other driver gets out to argue. The car is left where it is; they walk back to it afterwards. */
