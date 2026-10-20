@@ -6,6 +6,7 @@ import { angDiff } from './util.js';
 import { sfx } from './audio.js';
 import { cars, driveCar, carDist, showDriver } from './vehicles.js';
 import { makePed } from './people.js';
+import { carjackVictim } from './pedAI.js';
 import { createCharacter, playerSpec } from './models/characters.js';
 import { scene } from './render.js';
 import { data } from './save.js';
@@ -57,7 +58,7 @@ export function enterCar(c) {
 }
 function ejectDriver(c) {
   const side = [Math.cos(c.yaw), -Math.sin(c.yaw)];
-  const p = makePed([c.x + side[0] * 2.5, c.z + side[1] * 2.5]); p.panic = 6;
+  const p = makePed([c.x + side[0] * 2.5, c.z + side[1] * 2.5]); carjackVictim(p);
 }
 function carBlocks(x, z, except) { return cars.some(c => c !== except && carDist(c, x, z) < .7); }
 /** Step out beside the car on a free spot. Never leaves the player inside a wall or another car. */

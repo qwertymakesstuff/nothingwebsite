@@ -15,15 +15,17 @@ import { peds, killPed } from './people.js';
 import { updateTraffic } from './traffic.js';
 import { updateCop } from './police.js';
 import { updateCrew } from './story/crew.js';
+import { onCarCollision } from './pedAI.js';
 import { carVsProps } from './physprops.js';
 
 const burntMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 });
 export const cars = [];
+let carUid = 0;
 // kind: 'parked' (empty civilian car) | 'owned' (a car the player has taken) | 'traffic' | 'cop'
 export function makeCar(x, z, yaw, kind, color, type) {
   type = type || (kind === 'cop' ? 'cruiser' : pickCarType());
   const model = createCarMesh(type, color == null ? CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)] : color), T = CAR_TYPES[type];
-  const c = { kind, type, x, z, yaw, speed: 0, hp: kind === 'cop' ? 90 : 100, vx: 0, vz: 0, spin: 0, driver: null, model, mesh: model.group, cl: T.cl, cr: T.cr, seat: T.seat, wreck: false, ai: null, cop: null, honk: 0, despawn: 0, stuck: 0, hitCd: 0, burn: 0, steer: 0, braking: false, dm: null, lastYaw: yaw, y: 0, layer: 0, pitch: 0, forSale: false };
+  const c = { uid: ++carUid, kind, type, x, z, yaw, speed: 0, hp: kind === 'cop' ? 90 : 100, vx: 0, vz: 0, spin: 0, driver: null, model, mesh: model.group, cl: T.cl, cr: T.cr, seat: T.seat, wreck: false, ai: null, cop: null, honk: 0, despawn: 0, stuck: 0, hitCd: 0, burn: 0, steer: 0, braking: false, dm: null, lastYaw: yaw, y: 0, layer: 0, pitch: 0, forSale: false };
   c.mesh.rotation.order = 'YXZ'; c.mesh.position.set(x, 0, z); c.mesh.rotation.y = yaw; scene.add(c.mesh); cars.push(c); return c;
 }
 /** little seated figure behind the wheel of civilian and police cars */
@@ -124,6 +126,7 @@ export function updateCars(dt) {
     const mover = b.driver === 'player' ? b : a, other = mover === a ? b : a;
     const rel = Math.abs(mover.speed) + Math.hypot(other.vx || 0, other.vz || 0);
     if (!carVsCar(mover, other)) continue;
+    if (mover.driver === 'player' || other.driver === 'player') onCarCollision(mover, other, rel);          // the other driver (and anyone watching) reacts
     if (mover.driver === 'player' && other.hitCd > .2) { if (rel > 5 && other.kind === 'cop') reportCrime('attack_cop_car', other.x, other.z); else if (rel > 12 && other.kind === 'traffic') reportCrime('collision', other.x, other.z); }
     if (other.driver !== 'player' && rel > 5 && !(other.cop && G.stars)) {
       const dx = other.x - mover.x, dz = other.z - mover.z, d = Math.hypot(dx, dz) || 1;

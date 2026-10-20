@@ -11,6 +11,7 @@ import { player } from './player.js';
 import { peds } from './people.js';
 import { officers } from './police.js';
 import { parkingSpots } from './models/kit.js';
+import { sfx } from './audio.js';
 
 export const trafficCount = () => cars.filter(c => c.ai && !c.ai.hw).length;
 export const highwayCount = () => cars.filter(c => c.ai && c.ai.hw).length;
@@ -67,9 +68,17 @@ function applyY(c) {
   const A = c.ai, seg = A.hw || isRampSegment(A.a, A.b, A.d);
   c.layer = seg ? 1 : 0; c.y = seg ? deckHeight(c.x) : 0;
 }
+/** a stopped or parked car with its driver back at the wheel (or a thief at it) rejoins the traffic where it stands */
+export function trafficTakeover(c, flee) {
+  if (c.wreck || c.driver === 'player') return;
+  const n = nearestNode(c.x, c.z), fx = Math.sin(c.yaw), fz = Math.cos(c.yaw); let d = DIRS[0], bd = -9; for (const q of DIRS) { const v = q[0] * fx + q[1] * fz; if (v > bd) { bd = v; d = q; } }
+  const p = nodePos(n[0], n[1]), s = clamp((c.x - p[0]) * d[0] + (c.z - p[1]) * d[1], 0, P - 4);
+  c.ai = { a: n[0], b: n[1], d, s, cruise: flee ? rand(14, 18) : rand(8, 14), stopT: 0, ghost: 0, hw: false }; c.driver = 'ai'; c.kind = 'traffic'; c.cop = null; showDriver(c, true);
+}
 export function updateTraffic(c, dt) {
   const A = c.ai; A.ghost -= dt;
-  let target = A.cruise;
+  let target = A.cruise + (A.flee > G.time ? 8 : 0) + (A.chase > G.time ? 5 : 0);
+  if (A.chase > G.time && (!A.honkT || G.time > A.honkT)) { A.honkT = G.time + 1.6; c.honk = 1; sfx.horn(); }
   if (A.ghost <= 0) { // brake for anything in front on the same level; if it jams, ghost through for a moment
     const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
     const look = (x, z, lat, y) => { if (y != null && Math.abs(y - c.y) > 2.5) return; const dx = x - c.x, dz = z - c.z, al = dx * fx + dz * fz, la = Math.abs(dx * fz - dz * fx); if (al > 0 && al < 13 && la < lat) target = Math.min(target, Math.max(0, (al - 5.5) * 1.6)); };
@@ -78,6 +87,7 @@ export function updateTraffic(c, dt) {
   }
   // stop at red: look at the signal of the intersection ahead, for this car's direction of travel (not on the deck)
   if (!A.hw) { const ahead = P - A.s, na = A.a + A.d[0], nb = A.b + A.d[1]; if (ahead > 8 && ahead < 22 && A.ghost <= 0) { const ph = lightPhase(na, nb, G.time), st = A.d[0] ? ph.x : ph.z; if (st === 'red' || (st === 'yellow' && ahead > 12)) target = Math.min(target, Math.max(0, (ahead - 9) * 1.5)); } }
+  if (A.hold > 0) { A.hold -= dt; target = 0; }                                // a driver who has just been hit sits there for a moment
   c.speed += clamp(target - c.speed, -26 * dt, 7 * dt);
   A.stopT = c.speed < .5 ? A.stopT + dt : 0; if (A.stopT > 5) { A.ghost = 2.5; A.stopT = 0; }
   A.s += Math.max(0, c.speed) * dt;
@@ -88,6 +98,7 @@ export function updateTraffic(c, dt) {
     const straight = opts.some(d => d[0] === A.d[0] && d[1] === A.d[1]);
     const any = DIRS.filter(d => !(d[0] === -A.d[0] && d[1] === -A.d[1]) && dirAllowed(A.a, A.b, A.hw, d));
     A.d = opts.length ? (Math.random() < .55 && straight ? A.d : pick(opts)) : any.length ? pick(any) : [-A.d[0], -A.d[1]];
+    if (A.chase > G.time && any.length) { const np = nodePos(A.a, A.b); let bestD = 1e9; for (const q of any) { const dd = Math.hypot(np[0] + q[0] * P - player.x, np[1] + q[1] * P - player.z); if (dd < bestD) { bestD = dd; A.d = q; } } }   // an angry driver follows the player for a few seconds
   }
   const p = nodePos(A.a, A.b), r = [-A.d[1], A.d[0]], tx = p[0] + A.d[0] * A.s + r[0] * LANE, tz = p[1] + A.d[1] * A.s + r[1] * LANE;
   const k = Math.min(1, dt * 5); c.x += (tx - c.x) * k; c.z += (tz - c.z) * k;

@@ -95,7 +95,7 @@ export function createCharacter(spec) {
   const gun = new THREE.Mesh(pistolGeo, vcLambert); gun.position.set(0, -.6, .02); gun.rotation.x = Math.PI / 2; gun.visible = false; armR.add(gun);
   body.add(upper, legL, legR, armL, armR);
   root.scale.setScalar(s.h);
-  const ch = { root, body, upper, legL, legR, armL, armR, gun, spec: s, phase: Math.random() * 6, blend: 0, aimBlend: 0, seatBlend: 0, handsBlend: 0 };
+  const ch = { root, body, upper, legL, legR, armL, armR, gun, spec: s, phase: Math.random() * 6, blend: 0, aimBlend: 0, seatBlend: 0, handsBlend: 0, gestBlend: 0, gname: null };
   ch.update = function (dt, speed, f) {
     f = f || {};
     const moving = speed > .25 ? 1 : 0;
@@ -111,6 +111,21 @@ export function createCharacter(spec) {
     armL.rotation.z = .03 + .03 * (1 - ab); armR.rotation.z = -.03 - .03 * (1 - ab);
     ch.handsBlend += ((f.hands ? 1 : 0) - ch.handsBlend) * Math.min(1, dt * 10);
     if (ch.handsBlend > .01) { const hb = ch.handsBlend; armL.rotation.x += (-2.9 - armL.rotation.x) * hb; armR.rotation.x += (-2.9 - armR.rotation.x) * hb; armL.rotation.z -= .35 * hb; armR.rotation.z += .35 * hb; }
+    // gestures (the pedestrian AI asks for these): startle, shake (an angry fist), point, phone, punch, wave
+    if (f.gest) ch.gname = f.gest; ch.gestBlend += ((f.gest ? 1 : 0) - ch.gestBlend) * Math.min(1, dt * 12);
+    if (ch.gestBlend > .01 && ch.gname) {
+      const gb = ch.gestBlend; let lx = null, lz = 0, rx = null, rz = 0;
+      switch (ch.gname) {
+        case 'startle': lx = rx = -2.5; lz = .5; rz = -.5; break;
+        case 'shake': rx = -2.2 + Math.sin(t * 14) * .35; rz = -.3; break;
+        case 'point': rx = -1.55; rz = -.04; break;
+        case 'phone': rx = -2.5; rz = -.38; break;
+        case 'punch': rx = -1.5 + Math.sin(t * 9) * .9; rz = -.05; lx = -.5; break;
+        case 'wave': rx = -2.7 + Math.sin(t * 10) * .3; rz = -.5; break;
+      }
+      if (lx != null) { armL.rotation.x += (lx - armL.rotation.x) * gb; armL.rotation.z += ((lz || armL.rotation.z) - armL.rotation.z) * gb; }
+      if (rx != null) { armR.rotation.x += (rx - armR.rotation.x) * gb; armR.rotation.z += (rz - armR.rotation.z) * gb; }
+    }
     gun.visible = ab > .5 && !f.seated && ch.handsBlend < .5;
     const idle = (1 - ch.blend) * Math.sin(t * 1.8 + ch.phase) * .006;
     body.position.y = Math.abs(Math.cos(ch.phase)) * .035 * ch.blend * Math.min(1.4, speed / 4) - .42 * sb + idle;

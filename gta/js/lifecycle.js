@@ -9,6 +9,7 @@ import { cancelMission } from './missions.js';
 import { banner, say, clearBanners } from './ui.js';
 import { sfx } from './audio.js';
 import { persist } from './save.js';
+import { reset as resetPedAI } from './pedAI.js';
 
 const RESPAWN_DELAY = 3.2;
 export function wasted() {
@@ -28,7 +29,7 @@ export function respawn(where) {
   if (player.car) leaveCar(true);
   player.vis = null;
   const at = spawnPoint(where);
-  clearPolice(); cancelMission(); clearBanners(); resetPhysProps();
+  clearPolice(); cancelMission(); clearBanners(); resetPhysProps(); resetPedAI();
   cars.filter(c => !c.wreck && c.driver !== 'player' && Math.hypot(c.x - at[0], c.z - at[1]) < 8).forEach(removeCar); // keep the spawn spot clear
   player.x = at[0]; player.z = at[1]; player.vx = player.vz = 0; player.hp = 100; player.hurt = 0; player.shootCd = 0; player.mesh.visible = true; player.ch.update(0, 0, {});
   G.heat = 0; G.stars = 0; G.wantedText = ''; G.camYaw = where === 'station' ? Math.PI : 0; G.mode = 'playing';

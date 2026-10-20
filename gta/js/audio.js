@@ -22,7 +22,9 @@ export const sfx = {
   horn: () => { tone(330, .35, 'sawtooth', .08); tone(415, .35, 'sawtooth', .08); },
   door: () => { noise(.1, .15, 900); },
   scream: () => tone(900, .35, 'sawtooth', .05, 500),
-  splash: v => { noise(.5, v || .2, 2200); }
+  splash: v => { noise(.5, v || .2, 2200); },
+  shout: v => { if (v > .02) { const f = 150 + Math.random() * 90; tone(f, .28, 'sawtooth', .05 * Math.min(1, v + .2), f * .8); noise(.18, .06 * v, 1400); } },
+  punch: () => { noise(.08, .22, 600); tone(110, .1, 'sine', .22, 50); }
 };
 
 /** Engine hum for the driven car (speed in m/s, or null when on foot) and the siren while police are close. */
