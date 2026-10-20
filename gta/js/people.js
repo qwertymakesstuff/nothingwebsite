@@ -10,6 +10,7 @@ import { rand, pick } from './util.js';
 import { sfx } from './audio.js';
 import { cars, carDist } from './vehicles.js';
 import { player } from './player.js';
+import { initPed, updatePed, onCarNear, onPedHurt, onPedKilled, startIdle, pairUp } from './pedAI.js';
 
 import { createCharacter, civilianSpec } from './models/characters.js';
 export function layDown(ch) { ch.update(0, 0, { dead: true }); }
@@ -22,7 +23,7 @@ export function makePed(at, o) {
   const c = Math.floor(Math.random() * 4), p = corner(i, j, c);
   const q = { x: at ? at[0] : p[0] + rand(-.7, .7), z: at ? at[1] : p[1] + rand(-.7, .7), i, j, c, dir: Math.random() < .5 ? 1 : -1, hp: 30, dead: 0, panic: 0, speed: rand(1.2, 1.9), ch: null, mesh: null, tgt: null, yaw: 0 };
   q.ch = (o && o.ch) || createCharacter(civilianSpec()); q.mesh = q.ch.root; if (o && o.keep) q.keep = true; scene.add(q.mesh); q.ph = 0;
-  q.nc = (c + q.dir + 4) % 4; q.tgt = corner(i, j, q.nc); q.mesh.position.set(q.x, 0, q.z); peds.push(q); return q;
+  q.nc = (c + q.dir + 4) % 4; q.tgt = corner(i, j, q.nc); q.mesh.position.set(q.x, 0, q.z); initPed(q); peds.push(q); return q;
 }
 function pedNext(p) { // arrived at a corner: keep going round the block, turn back, or cross the road
   const r = Math.random(), sx = [-1, 1, 1, -1][p.nc], sz = [-1, -1, 1, 1][p.nc];
@@ -42,29 +43,48 @@ export function makeBeachPed() {
   }
   return null;
 }
-export function killPed(p, by) {
-  if (p.dead) return; p.dead = 1; layDown(p.ch); dropItem('cash', p.x, p.z, Math.floor(rand(15, 70))); sfx.scream(); bump('kills');
+export function killPed(p, by, byPlayer) {
+  if (p.dead) return; p.dead = 1; layDown(p.ch); dropItem('cash', p.x, p.z, Math.floor(rand(15, 70))); sfx.scream(); bump('kills'); onPedKilled(p, by, !!byPlayer);
 }
-export function damagePed(p, dmg) { p.hp -= dmg; p.panic = 6; if (p.hp <= 0) { killPed(p, 'gun'); reportCrime('murder', p.x, p.z); } else reportCrime('assault', p.x, p.z); }
+/** by: 'gun' (default) or 'fist'. Hurt people react through the pedestrian AI (fight back, flee, call out). */
+export function damagePed(p, dmg, by) {
+  p.hp -= dmg; by = by || 'gun';
+  if (p.hp <= 0) { killPed(p, by, true); reportCrime('murder', p.x, p.z); } else { reportCrime(by === 'fist' ? 'assault' : 'assault', p.x, p.z); onPedHurt(p, dmg, by); }
+}
 
 export function updatePeds(dt) {
   for (let i = peds.length - 1; i >= 0; i--) {
     const p = peds[i];
-    if (p.dead) { p.dead += dt; p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); if (p.ch.dispose) p.ch.dispose(); if (p.keep) continue; if (p.free) makeBeachPed(); else makePed(); } continue; }
-    if (p.panic > 0) p.panic -= dt;
-    const dx = p.tgt[0] - p.x, dz = p.tgt[1] - p.z, d = Math.hypot(dx, dz);
-    if (d < .6) { if (p.free) p.tgt = beachPoint(p.x, p.z) || [p.x + (Math.random() - .5) * 8, p.z + (Math.random() - .5) * 8]; else pedNext(p); }
-    else { const sp = p.speed * (p.panic > 0 ? 3.4 : 1); p.x += dx / d * sp * dt; p.z += dz / d * sp * dt; p.yaw = Math.atan2(dx, dz); p.cur = sp; }
+    if (p.dead) { p.dead += dt; p.mesh.visible = Math.abs(p.x - player.x) < 140 && Math.abs(p.z - player.z) < 140; if (p.dead > 14) { scene.remove(p.mesh); peds.splice(i, 1); if (p.ch.dispose) p.ch.dispose(); if (p.buddy && p.buddy.buddy === p) p.buddy.buddy = null; if (p.keep) continue; if (p.free) makeBeachPed(); else makePed(); } continue; }
+    const far = Math.max(Math.abs(p.x - player.x), Math.abs(p.z - player.z));
+    if (!updatePed(p, dt, far < 45)) walk(p, dt);                                   // the pedestrian AI drives every state except plain walking
     p.mesh.position.set(p.x, 0, p.z); p.mesh.rotation.y = p.yaw;
-    p.mesh.visible = Math.abs(p.x - player.x) < 110 && Math.abs(p.z - player.z) < 110;
-    if (p.mesh.visible) p.ch.update(dt, p.cur || 0, { run: p.panic > 0 });
-    for (const c of cars) { // cars hit people; fast cars scare them
-      if (c.wreck || Math.abs(c.y) > 1.5) continue; const dd = carDist(c, p.x, p.z) + 1.2, spd = Math.abs(c.speed) + Math.hypot(c.vx || 0, c.vz || 0);
-      if (dd < 14 && spd > 8 && p.panic <= 0) p.panic = 3;
-      if (dd < 1.4 && spd > 5) { killPed(p, 'car'); if (c.driver === 'player') reportCrime('hit_and_run', p.x, p.z); break; }
+    p.mesh.visible = far < 110;
+    if (p.mesh.visible) {
+      p.ch.update(dt, p.cur || 0, { run: (p.cur || 0) > 3.6, gest: p.gest });
+      for (const c of cars) { // cars hit people; fast ones that pass close are a near miss (pedAI decides who cares)
+        if (c.wreck || Math.abs(c.y) > 1.5 || Math.abs(c.x - p.x) > 12 || Math.abs(c.z - p.z) > 12) continue; const cd = carDist(c, p.x, p.z), spd = Math.abs(c.speed) + Math.hypot(c.vx || 0, c.vz || 0);
+        if (cd < .2 && spd > 5) { killPed(p, 'car', c.driver === 'player'); if (c.driver === 'player') reportCrime('hit_and_run', p.x, p.z); break; }
+        if (spd > 4.5 && cd < 1 + spd * .1) onCarNear(p, c, cd, spd);
+      }
     }
   }
 }
+/** plain walking: round the block, across the road, or (on the beach) wherever; friends keep together; now and then someone stops */
+function walk(p, dt) {
+  if (p.buddy && !p.buddy.dead && !p.leader && p.buddy.brain && p.buddy.brain.state === 'WALKING') {      // the follower of a pair stays at the leader's side
+    const L = p.buddy, sx = Math.cos(L.yaw) * 1.0, sz = -Math.sin(L.yaw) * 1.0, dx = L.x + sx - p.x, dz = L.z + sz - p.z, d = Math.hypot(dx, dz);
+    if (d > .35) { const sp = Math.min(3.4, L.speed * (1 + Math.min(1.2, d * .5))); p.x += dx / d * sp * dt; p.z += dz / d * sp * dt; p.cur = sp; p.yaw += (((Math.atan2(L.x - p.x, L.z - p.z) - p.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * Math.min(1, dt * 6); } else { p.cur = 0; p.yaw = L.yaw; }
+    return;
+  }
+  const dx = p.tgt[0] - p.x, dz = p.tgt[1] - p.z, d = Math.hypot(dx, dz);
+  if (d < .6) {
+    if (p.free) p.tgt = beachPoint(p.x, p.z) || [p.x + (Math.random() - .5) * 8, p.z + (Math.random() - .5) * 8];
+    else { p.from = p.tgt; pedNext(p); if (Math.random() < .06) startIdle(p); }
+  } else { p.x += dx / d * p.speed * dt; p.z += dz / d * p.speed * dt; p.yaw = Math.atan2(dx, dz); p.cur = p.speed; }
+}
+/** make n pairs of pedestrians who walk together (families, friends) */
+export function makePairs(n) { for (let k = 0; k < n; k++) { const a = peds[Math.floor(Math.random() * peds.length)], b = peds[Math.floor(Math.random() * peds.length)]; if (a === b || a.buddy || b.buddy || a.free || b.free || a.keep || b.keep) continue; a.leader = true; pairUp(a, b); } }
 
 /* pickups */
 export function dropItem(kind, x, z, v) {

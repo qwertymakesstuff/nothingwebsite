@@ -6,6 +6,7 @@ import { G } from './state.js';
 import { pushOut, circlesNear } from './city.js';
 import { sfx } from './audio.js';
 import { peds } from './people.js';
+import { emit as emitPed } from './pedAI.js';
 import { reportCrime } from './reporting.js';
 import { DEFS, resolveImpact, approachSpeed, stepFall, stepSlide, pushVelocity } from './propPhysics.js';
 
@@ -52,7 +53,7 @@ function finish(o) { // snap to the resting pose
   else if (o.state === 'sliding') { s.vx = s.vz = 0; s.rest = true; o.state = 'settled'; }
   place(o);
 }
-function alarm(x, z, r) { for (const p of peds) if (!p.dead && Math.hypot(p.x - x, p.z - z) < r) p.panic = Math.max(p.panic, 3.5); }
+function alarm(x, z, r) { emitPed({ type: 'crash', x, z, radius: r + 6, loud: true, visual: true, sev: 1, threat: { x, z } }); }
 
 /** knock a tall prop over (or bend it) in direction (dx, dz) */
 function topple(o, dx, dz, speed, mode, car) {

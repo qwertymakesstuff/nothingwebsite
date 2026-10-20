@@ -25,7 +25,7 @@ import { openMap, closeMap, isMapOpen } from './map.js';
 import { staticCars, spinners } from './models/kit.js';
 import { cars, makeCar, updateCars, removeCar } from './vehicles.js';
 import { spawnTraffic, spawnParked, spawnHighwayCar, trafficCount, highwayCount } from './traffic.js';
-import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem } from './people.js';
+import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem, makePairs } from './people.js';
 import { player, initPlayer, updatePlayer, syncPlayerMesh, hurtPlayer } from './player.js';
 import { updatePolice, spawnCop, officers, dispatcher, intel, copCars } from './police.js';
 import { reportCrime, ledger, visibleToPlayer, los } from './reporting.js';
@@ -35,7 +35,8 @@ import { updateMission, startMission } from './missions.js';
 import { updateLifecycle, busted, wasted } from './lifecycle.js';
 import { updateFx } from './effects.js';
 import { updateInteraction, interact } from './interaction.js';
-import { shoot } from './weapons.js';
+import { shoot, punch } from './weapons.js';
+import { updateAI, debugInfo as pedDebug, cfg as pedCfg, reset as resetPedAI } from './pedAI.js';
 import { sfx } from './audio.js';
 import { readInput, bindActions, clearInput, lockPointer, hasLock, isTouch } from './input.js';
 import { updateCamera, snapCamera } from './camera.js';
@@ -49,6 +50,7 @@ initPlayer();
 buildCity(); buildHighway(); buildProps(); buildDistant(); registerPoiMarkers(); buildZones(); updateEnvironment(0, 0, 0, false);
 for (let i = 0; i < 56; i++) makePed();
 for (let i = 0; i < 14; i++) makeBeachPed();
+makePairs(7);
 for (let i = 0; i < 46; i++) spawnParked();
 for (let i = 0; i < 30; i++) spawnTraffic();
 for (let i = 0; i < 6; i++) spawnHighwayCar();
@@ -83,7 +85,7 @@ function begin(mode) {
   if (mode === 'free') say(isTouch() ? 'find a car and drive. yellow beams are jobs' : 'E: get in a car. yellow beams are jobs. click to shoot', 6);
 }
 bindActions({
-  interact, shoot,
+  interact, shoot, punch,
   horn() { if (canAct() && player.car) { sfx.horn(); player.car.honk = 1; } },
   pause() { if (isMapOpen()) closeMap(); else pause(G.mode === 'playing' || (G.mode === 'scene' && !scenePaused)); },
   map: toggleMap,
@@ -110,7 +112,7 @@ function frame(now) {
     if (G.interior) { // inside a shop the street is frozen: only the player, effects and the timers that matter run
       updatePlayer(dt, inp); updateFx(dt); updateLifecycle(dt, afterRespawn); updateInteraction(); G.interior.room.clerk.update(dt, 0, {});
     } else {
-      updatePlayer(dt, inp); updateCars(dt); phys.updatePhysProps(dt, player.x, player.z); updatePeds(dt); updatePolice(dt); updateItems(dt, it => { if (it.kind === 'cash') sfx.cash(); else say('health', 1.2); });
+      updatePlayer(dt, inp); updateCars(dt); phys.updatePhysProps(dt, player.x, player.z); updatePeds(dt); updateAI(dt); updatePolice(dt); updateItems(dt, it => { if (it.kind === 'cash') sfx.cash(); else say('health', 1.2); });
       updateFx(dt); updateMission(dt); updateStory(dt); updateLifecycle(dt, afterRespawn);
       if (trafficCount() < 30 && Math.random() < dt * 2) spawnTraffic(); if (highwayCount() < 6 && Math.random() < dt) spawnHighwayCar();
       updateInteraction();
@@ -130,4 +132,4 @@ function frame(now) {
 if (renderer) requestAnimationFrame(frame);
 
 // handles for the automated tests
-window.__gta = { story, runtime, journal, conv, npcs, crew, voice, updateStory, tickStory, removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los, phys, renderer, placedLog };
+window.__gta = { pedai: { cfg: pedCfg, info: pedDebug, reset: resetPedAI }, story, runtime, journal, conv, npcs, crew, voice, updateStory, tickStory, removeCar, startMission, setWaypoint, getPoi, toggleMap, spawnHighwayCar, doors, lightPhase, env, setHour, enterShop, leaveShop, quality, G, data, player, cars, peds, officers, POIS, addHeat, hurtPlayer, spawnCop, startMission, interact, shoot, pause, begin, spawnHospital, busted, wasted, dispatcher, intel, copCars, reportCrime, ledger, visibleToPlayer, los, phys, renderer, placedLog };

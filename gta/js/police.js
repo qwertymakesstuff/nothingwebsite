@@ -352,7 +352,8 @@ export function updatePolice(dt) {
   if (G.stars === 0) { intel.lastKnown = null; intel.evade = 0; intel.contact = false; }
   // the hiding clock only runs once the police have really made contact or reached the scene: nobody escapes before the first patrol arrives
   const cur = dispatcher.current(); if (intel.seen) intel.contact = true;
-  if (!intel.contact && cur && cur.suspect === 'player' && G.time - cur.time < 25 && G.time - intel.tipT > 2.5) { intel.tipT = G.time; intel.lastKnown = { x: s.x, z: s.z, t: G.time }; }   // witnesses phone in where the suspect went, but only for a short while
+  const wit = cur && cur.witness; const witnessSees = !!(wit && !wit.dead && Math.hypot(wit.x - s.x, wit.z - s.z) < 70 && los(wit.x, wit.z, s.x, s.z));   // only someone who can still see the suspect can say where they are
+  if (!intel.contact && cur && cur.suspect === 'player' && G.time - cur.time < 25 && G.time - intel.tipT > 2.5 && witnessSees) { intel.tipT = G.time; intel.lastKnown = { x: s.x, z: s.z, t: G.time }; }   // witnesses phone in where the suspect went, but only for a short while
   const evading = intel.contact || (cur && (cur.stage === 'ON_SCENE' || cur.stage === 'SEARCH'));
   intel.evade = evading ? evadeStep(intel.evade, intel.seen, G.stars, dt) : 0;
   if (evadedEnough(intel.evade, G.stars)) {                          // hidden for long enough: the heat drops a level, never to zero in one jump

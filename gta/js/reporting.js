@@ -8,6 +8,8 @@ import { player } from './player.js';
 import { officers, dispatcher, noteCrime } from './police.js';
 import { angDiff } from './util.js';
 import { say } from './ui.js';
+import { CRIMES } from './crime.js';
+import { registerCrime } from './pedAI.js';
 
 export const ledger = new CrimeLedger();
 const LOUD = new Set(['gunshot', 'assault', 'injure', 'murder', 'hit_and_run', 'carjack', 'assault_cop', 'kill_cop', 'attack_cop_car', 'destroy_cop_car']);
@@ -32,17 +34,35 @@ const copCarsNear = (x, z, r) => cars.some(c => c.kind === 'cop' && !c.wreck && 
  */
 export function reportCrime(type, x, z) {
   if (x == null) { x = player.x; z = player.z; }
-  let witnesses = 0, heard = 0;
+  let witnesses = 0, heard = 0; const seers = [], hearers = [];
   for (const p of peds) {
     if (p.dead) continue; const d = Math.hypot(p.x - x, p.z - z);
-    if (d < 34 && los(p.x, p.z, x, z)) witnesses++; else if (d < 58 && LOUD.has(type)) heard++;
+    if (d < 34 && los(p.x, p.z, x, z)) { witnesses++; seers.push(p); } else if (d < 58 && LOUD.has(type)) { heard++; hearers.push(p); }
   }
   let copSaw = officers.some(o => !o.dead && Math.hypot(o.x - x, o.z - z) < 80 && los(o.x, o.z, x, z));
   if (!copSaw) copSaw = cars.some(c => c.kind === 'cop' && !c.wreck && c.driver !== 'player' && Math.hypot(c.x - x, c.z - z) < 80 && los(c.x, c.z, x, z));
   if (!copSaw && LOUD.has(type) && copCarsNear(x, z, 120)) heard++;
-  const r = ledger.report(type, { x, z, time: G.time, witnesses, heard, visible: witnesses > 0, copSaw, pursued: G.stars > 0 });
+  const ctx = { x, z, time: G.time, witnesses, heard, visible: witnesses > 0, copSaw, pursued: G.stars > 0 };
+  // Pedestrians do not file a report by magic: someone has to see it, decide to phone, and finish the call (pedAI.js). The police and the
+  // police's own reports, and anything while the police are already after you, count at once as before.
+  const def = CRIMES[type], immediate = copSaw || (def && def.cop) || G.stars > 0 || !(witnesses || heard);
+  if (!immediate && (seers.length || hearers.length)) {
+    registerCrime({ type, x, z, sev: def ? def.sev : 1, seers, hearers, ctx });
+    return null;
+  }
+  return fileReport(type, ctx, null);
+}
+/** the report itself: the ledger turns it into heat, the wanted level rises, the dispatcher is told */
+function fileReport(type, ctx, witness) {
+  const r = ledger.report(type, ctx);
   if (!r) return null;
+  r.crime.witness = witness || null;
   addHeat(r.heat); dispatcher.report(r.crime, G.time); noteCrime(r.crime);
   if (!G.stars) say('someone saw that', 1.6);
   return r;
+}
+/** a pedestrian finished phoning the police about an incident (called by pedAI.js) */
+export function fileCrimeReport(inc, witness) {
+  const c = inc.ctx, ctx = Object.assign({}, c, { time: G.time, witnesses: inc.counts.witnesses, heard: inc.counts.heard, visible: inc.counts.witnesses > 0, pursued: G.stars > 0 });
+  return fileReport(inc.type, ctx, witness);
 }

@@ -15,8 +15,8 @@ export class Dispatcher {
   /** A crime was reported. The same incident (close in space and time) is merged instead of dispatching again. */
   report(crime, now) {
     const open = this.incidents.find(i => i.stage !== 'CLOSED' && Math.hypot(i.x - crime.x, i.z - crime.z) < 70 && now - i.time < 40);
-    if (open) { open.count++; open.sev = Math.max(open.sev, crime.sev); open.x = crime.x; open.z = crime.z; open.time = now; open.crimes.push(crime.type); return open; }
-    const inc = { id: this.nextId++, stage: 'REPORTED', x: crime.x, z: crime.z, sev: crime.sev, time: now, openedAt: now, deadline: now + FLEET.deadline, retries: 0, count: 1, crimes: [crime.type], suspect: crime.suspect };
+    if (open) { open.count++; open.sev = Math.max(open.sev, crime.sev); open.x = crime.x; open.z = crime.z; open.time = now; open.crimes.push(crime.type); if (crime.witness) open.witness = crime.witness; return open; }
+    const inc = { id: this.nextId++, stage: 'REPORTED', x: crime.x, z: crime.z, sev: crime.sev, time: now, openedAt: now, deadline: now + FLEET.deadline, retries: 0, count: 1, crimes: [crime.type], suspect: crime.suspect, witness: crime.witness || null };
     this.incidents.push(inc); if (this.incidents.length > 20) this.incidents.shift(); return inc;
   }
   current() { for (let i = this.incidents.length - 1; i >= 0; i--) if (this.incidents[i].stage !== 'CLOSED') return this.incidents[i]; return null; }
