@@ -11,7 +11,6 @@ import { sfx } from './audio.js';
 import { cars, carDist } from './vehicles.js';
 import { player } from './player.js';
 import { initPed, updatePed, onCarNear, onPedHurt, onPedKilled, startIdle, pairUp } from './pedAI.js';
-import { nearMissSeverity } from './pedBrain.js';
 
 import { createCharacter, civilianSpec } from './models/characters.js';
 export function layDown(ch) { ch.update(0, 0, { dead: true }); }
