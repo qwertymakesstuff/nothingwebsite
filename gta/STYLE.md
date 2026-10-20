@@ -30,3 +30,6 @@ Day: warm directional sun (1.5–1.65) with a cool, low hemisphere (.6) for cont
 
 ## Performance rules
 Merge by material (one draw call per material per block), instance repeated props in spatial chunks (sparse kinds use bigger chunks), reuse geometry and materials, no per-window meshes, no real-time lights except sun and two headlights.
+
+## Coast roads (polish pass)
+The shore roads carry white edge posts every 22 m (red reflector band) and a street lamp every 66 m, left out near junctions and car parks and never in the water. Dry sand is slightly lifted and warmed in the ground texture; wet sand stays dark. Plaza trees stand in a low raised bed with soil and shrubs rather than a slab. Dusk keyframes (16:30, 18:48) carry more hemisphere light so streets stay readable.

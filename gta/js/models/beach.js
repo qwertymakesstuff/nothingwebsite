@@ -11,6 +11,7 @@ import { addCircle } from '../city.js';
 import { parkingSpots } from './kit.js';
 import { shoreDist, rockiness, beachWidth, SPURS, LOTS, BOARDWALKS, COAST_ROADS, PATHS, piers, vnoise } from '../coast.js';
 import { REGION } from '../terrain.js';
+import { lampTint } from './vehicles3d.js';
 
 const SAND = 0xe3d4a6, SAND_D = 0xcdbb8a;
 const segDist = (px, pz, ax, az, bx, bz) => { const dx = bx - ax, dz = bz - az, l2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / l2)); return Math.hypot(px - (ax + t * dx), pz - (az + t * dz)); };
@@ -101,6 +102,17 @@ export function buildBeach() {
   // lifeguard towers: one beside each boardwalk, on the sand
   for (const b of BOARDWALKS) { const x = b.x + b.dx * (b.dx ? 30 : 0) + (b.dz ? 16 : 0), z = b.z + b.dz * (b.dz ? 30 : 0) + (b.dx ? 16 : 0), d = shoreDist(x, z); if (d < 6 || reserved(x, z)) continue;
     for (const [dx, dz] of [[-.9, -.9], [.9, -.9], [-.9, .9], [.9, .9]]) S.push(part(BOX, 0xf0f0ec, { sx: .16, sy: 2.6, sz: .16, x: x + dx, y: 1.3, z: z + dz })); S.push(part(BOX, 0xe8e8e4, { sx: 2.4, sy: .14, sz: 2.4, x, y: 2.6, z })); S.push(part(BOX, 0xd8422f, { sx: 1.9, sy: 1.5, sz: 1.9, x, y: 3.4, z })); S.push(part(BOX, 0xf0f0ec, { sx: 2.3, sy: .16, sz: 2.3, x, y: 4.2, z })); S.push(part(BOX, 0xd8422f, { sx: .06, sy: .8, sz: .06, x: x + 1, y: 4.6, z })); S.push(part(BOX, 0xffd23f, { sx: .6, sy: .35, sz: .04, x: x + 1.3, y: 4.85, z })); addCircle(x, z, 1.5); }
+  // coastal road furniture: white edge posts every 22 m and a street lamp every 66 m, so the shore roads read as roads (not just paint) and light up at night
+  const bulbs = [], nearJunction = (x, z) => { for (const s of SPURS) if (segDist(x, z, s.x0, s.z0, s.x1 + s.dx * 14, s.z1 + s.dz * 14) < s.w / 2 + 9) return true; for (const l of LOTS) if (Math.abs(x - l.cx) < l.w / 2 + 8 && Math.abs(z - l.cz) < l.d / 2 + 8) return true; return false; };
+  for (const r of COAST_ROADS) { let run = 0, n = 0;
+    for (let i = 1; i < r.pts.length; i++) { const [ax, az] = r.pts[i - 1], [bx, bz] = r.pts[i], len = Math.hypot(bx - ax, bz - az) || 1, ux = (bx - ax) / len, uz = (bz - az) / len, nx = -uz, nz = ux;
+      for (let t = run % 22; t < len; t += 22, n++) { const cx = ax + ux * t, cz = az + uz * t; if (nearJunction(cx, cz)) continue;
+        for (const sgn of [-1, 1]) { const x = cx + nx * sgn * (r.w / 2 + .9), z = cz + nz * sgn * (r.w / 2 + .9); if (shoreDist(x, z) < 2) continue;
+          S.push(part(BOX, 0xe8e8e2, { sx: .16, sy: .9, sz: .16, x, y: .42, z })); S.push(part(BOX, 0xd8402f, { sx: .17, sy: .14, sz: .17, x, y: .66, z })); }
+        if (n % 3 === 1) { const sgn = n % 2 ? 1 : -1, x = cx + nx * sgn * (r.w / 2 + 1.6), z = cz + nz * sgn * (r.w / 2 + 1.6); if (shoreDist(x, z) < 3) continue;
+          S.push(part(CYL(.1, .16, 6.2, 6), 0x34363a, { x, y: 3.1, z })); S.push(part(BOX, 0x34363a, { sx: .14, sy: .14, sz: 1.5, x: x - nx * sgn * .7, y: 6.2, z: z - nz * sgn * .7, ry: Math.atan2(nx, nz) })); bulbs.push(part(BOX, 0xfff0c0, { sx: .5, sy: .16, sz: .5, x: x - nx * sgn * 1.4, y: 6.1, z: z - nz * sgn * 1.4 })); } }
+      run += len; } }
+  if (bulbs.length) { const bm = new THREE.Mesh(merge(bulbs), lampTint); bm.frustumCulled = false; scene.add(bm); }
   // the port quay along the south edge and the cargo ship moored at it
   const qx0 = 330, qx1 = W - 6, qz = W;
   S.push(part(BOX, 0x8a8a86, { sx: qx1 - qx0, sy: .5, sz: 15, x: (qx0 + qx1) / 2, y: -.22, z: qz + 7.5 })); S.push(part(BOX, 0x6a6a66, { sx: qx1 - qx0, sy: 1.6, sz: .6, x: (qx0 + qx1) / 2, y: -1.1, z: qz + 15 }));
