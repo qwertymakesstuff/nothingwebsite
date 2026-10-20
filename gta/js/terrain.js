@@ -19,7 +19,7 @@ const lerpC = (a, b, t) => [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[
 function paintTexture(T) {
   const c = document.createElement('canvas'); c.width = c.height = T; const g = c.getContext('2d'), img = g.createImageData(T, T), px = img.data, k = REGION.size / T;
   for (let j = 0; j < T; j++) for (let i = 0; i < T; i++) {
-    const x = REGION.x0 + (i + .5) * k, z = REGION.z0 + (j + .5) * k; let col;
+    const x = REGION.x0 + (i + .5) * k, z = REGION.z0 + (j + .5) * k; let col, warm = 0;
     if (x > 2 && x < W - 2 && z > 2 && z < W - 2) col = COL.grass;
     else {
       const d = shoreDist(x, z), n1 = fbm(x, z), n2 = vnoise(x / 3.5, z / 3.5), rk = rockiness(x, z), bw = beachWidth(x, z);
@@ -30,14 +30,14 @@ function paintTexture(T) {
         if (n2 > .78 && d > 4) sand = lerpC(sand, [200, 186, 150], .5);                    // shell / pebble flecks
         const toDune = sm(sandEnd - 2, sandEnd + 16, d + (n1 - .5) * 12);
         const grassBase = lerpC(COL.grass, COL.grassDark, sm(.35, .75, n1)), land = lerpC(grassBase, COL.dirt, sm(.62, .85, vnoise(x / 28 + 5, z / 28)) * .55);
-        col = lerpC(lerpC(sand, COL.dune, clamp(toDune * 2, 0, 1)), land, sm(.55, 1, toDune));
+        col = lerpC(lerpC(sand, COL.dune, clamp(toDune * 2, 0, 1)), land, sm(.55, 1, toDune)); warm = clamp(1 - toDune * 1.2, 0, 1) * (1 - wet * .6);       // dry sand is lifted and warmed below
         if (rk > .02) { const rcol = lerpC(COL.rock, COL.rockDark, sm(.3, .8, n2)); col = lerpC(col, rcol, sm(.15, .6, rk) * (1 - sm(18, 34, d))); }
         // a gravel shoulder along the outer edge of the city's ring road
         const ex = Math.max(0, -x, x - W), ez = Math.max(0, -z, z - W), e = Math.hypot(ex, ez);
         if (e < 5) col = lerpC(COL.gravel, col, sm(1.5, 5, e));
       }
     }
-    const o = (j * T + i) * 4; px[o] = col[0] * .74; px[o + 1] = col[1] * .74; px[o + 2] = col[2] * .72; px[o + 3] = 255;
+    const o = (j * T + i) * 4; px[o] = col[0] * (.74 + .09 * warm); px[o + 1] = col[1] * (.74 + .07 * warm); px[o + 2] = col[2] * (.72 + .03 * warm); px[o + 3] = 255;
   }
   g.putImageData(img, 0, 0);
   const s = T / REGION.size, X = x => (x - REGION.x0) * s, Z = z => (z - REGION.z0) * s;
