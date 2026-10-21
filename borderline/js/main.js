@@ -4,9 +4,13 @@ import { createUI } from './ui.js';
 
 let state = null;
 
+// ?seed=123 replays the same entrants, useful for reproducing a reported shift
+const urlSeed = Number(new URLSearchParams(location.search).get('seed'));
+const seed = () => (Number.isInteger(urlSeed) && urlSeed > 0 ? urlSeed : undefined);
+
 const ui = createUI(action => {
   if (action.type === 'start' || action.type === 'restart') {
-    state = createGame(1);
+    state = createGame(1, seed());
     ui.render(state);
     return;
   }

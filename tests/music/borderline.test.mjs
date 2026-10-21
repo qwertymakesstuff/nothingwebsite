@@ -4,12 +4,27 @@ import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 const root = new URL('../../borderline/', import.meta.url);
-const { createGame, dispatch, currentVisitor, decisionFor } = await import(new URL('js/gameState.js', root));
+const { createGame, dispatch, currentVisitor, decisionFor, buildEntrants } = await import(new URL('js/gameState.js', root));
+const { generateVisitor, FLAWS, misspell } = await import(new URL('js/visitorGenerator.js', root));
+const { documentFields } = await import(new URL('js/documentFactory.js', root));
+const { createRng } = await import(new URL('js/rng.js', root));
+const { DOCUMENT_TYPES } = await import(new URL('data/documents.js', root));
 const { renderDocument } = await import(new URL('js/documentRenderer.js', root));
 const { formatDoc, formatLong, isValidDate } = await import(new URL('js/dates.js', root));
 const { VISITORS } = await import(new URL('data/visitors.js', root));
 const { DAYS } = await import(new URL('data/campaignDays.js', root));
-const { NATIONS, SETTING } = await import(new URL('data/setting.js', root));
+const { NATIONS, SETTING, FORGED_SEALS } = await import(new URL('data/setting.js', root));
+const SEED = 20240611;
+const DATE = DAYS[0].date;
+// every generated entrant across many seeds, one per flaw plus clean ones
+function sample(n = 400) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const rng = createRng(1000 + i);
+    out.push(generateVisitor(rng, { id: `t${i}`, date: DATE, flaw: i % 3 ? 'random' : null }));
+  }
+  return out;
+}
 
 const run = (state, ...actions) => actions.reduce((s, a) => {
   const r = dispatch(s, a);
@@ -31,17 +46,20 @@ test('data: days reference real entrants, documents are well formed', () => {
   for (const day of DAYS) {
     assert.ok(isValidDate(day.date), day.date);
     assert.ok(day.entrants.length > 0);
-    assert.equal(new Set(day.entrants).size, day.entrants.length, 'no entrant appears twice in one shift');
-    for (const id of day.entrants) assert.ok(VISITORS[id], `unknown entrant ${id}`);
+    const authored = day.entrants.filter(id => id !== 'gen');
+    assert.equal(new Set(authored).size, authored.length, 'no authored entrant appears twice in one shift');
+    for (const id of authored) assert.ok(VISITORS[id], `unknown entrant ${id}`);
   }
   for (const v of Object.values(VISITORS)) {
     const passports = v.documents.filter(d => d.type === 'passport');
     assert.equal(passports.length, 1, `${v.id} carries exactly one passport`);
     const p = passports[0];
-    assert.ok(NATIONS[p.nation], `${v.id} passport nation`);
+    assert.ok(NATIONS[p.nationality], `${v.id} passport nation`);
+    for (const d of v.documents) assert.ok(DOCUMENT_TYPES[d.type], `${v.id} document type ${d.type}`);
     assert.ok(isValidDate(p.dob) && isValidDate(p.expires), `${v.id} passport dates`);
     for (const d of v.documents.filter(d => d.type === 'declaration')) assert.ok(NATIONS[d.nationality], `${v.id} declaration nationality`);
-    if (p.nation !== SETTING.country.code) assert.ok(v.documents.some(d => d.type === 'declaration'), `${v.id} foreigner carries a declaration`);
+    if (p.nationality === SETTING.country.code) assert.ok(v.documents.some(d => d.type === 'idCard'), `${v.id} citizen carries an identity card`);
+    if (p.nationality !== SETTING.country.code) assert.ok(v.documents.some(d => d.type === 'declaration'), `${v.id} foreigner carries a declaration`);
   }
 });
 
@@ -53,16 +71,17 @@ test('dates format for documents and the desk', () => {
 });
 
 test('shift loop: call, decide, return, through to the end of the shift', () => {
-  let s = createGame(1);
+  let s = createGame(1, SEED);
   const day = DAYS[0];
   assert.equal(s.money, SETTING.startingMoney);
   assert.equal(s.shift.phase, 'waiting');
   day.entrants.forEach((id, i) => {
     s = run(s, { type: 'callNext' });
-    assert.equal(currentVisitor(s).id, id);
+    assert.equal(currentVisitor(s).id, s.shift.queue[i]);
+    if (id !== 'gen') assert.equal(currentVisitor(s).id, id);
     assert.equal(s.shift.phase, 'inspecting');
     s = run(s, { type: 'decide', decision: i % 2 ? 'reject' : 'accept' });
-    assert.equal(decisionFor(s, id).decision, i % 2 ? 'reject' : 'accept');
+    assert.equal(decisionFor(s, s.shift.queue[i]).decision, i % 2 ? 'reject' : 'accept');
     s = run(s, { type: 'returnPapers' });
   });
   assert.equal(s.shift.phase, 'shiftEnd');
@@ -73,7 +92,7 @@ test('shift loop: call, decide, return, through to the end of the shift', () => 
 });
 
 test('a visitor can only be processed once and actions are phase-checked', () => {
-  const s0 = createGame(1);
+  const s0 = createGame(1, SEED);
   assert.ok(dispatch(s0, { type: 'decide', decision: 'accept' }).error, 'no decision with an empty booth');
   assert.ok(dispatch(s0, { type: 'returnPapers' }).error);
   const s1 = run(s0, { type: 'callNext' });
@@ -89,19 +108,22 @@ test('a visitor can only be processed once and actions are phase-checked', () =>
   assert.ok(dispatch(s0, { type: 'bogus' }).error);
 });
 
-test('documents display exactly their underlying data', () => {
-  for (const v of Object.values(VISITORS)) {
+const shownFields = html => Object.fromEntries([...html.matchAll(/data-field="(\w+)" data-kind="\w+"><span class="f-label">[^<]*<\/span><span class="f-value">([^<]*)<\/span>/g)].map(m => [m[1], m[2]]));
+const unescape = t => t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+
+test('documents display exactly their underlying data (authored and generated)', () => {
+  const visitors = [...Object.values(VISITORS), ...sample(150)];
+  for (const v of visitors) {
     for (const doc of v.documents) {
-      const html = renderDocument(doc, v);
-      const shown = Object.fromEntries([...html.matchAll(/data-field="(\w+)"><dt>[^<]*<\/dt><dd>([^<]*)<\/dd>/g)].map(m => [m[1], m[2]]));
-      for (const [key, value] of Object.entries(shown)) {
-        const raw = doc[key];
-        const expected = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? formatDoc(raw) : key === 'nationality' ? NATIONS[raw].name : raw;
-        assert.equal(value, expected, `${v.id} ${doc.type}.${key}`);
+      const shown = shownFields(renderDocument(doc, v));
+      const fields = documentFields(doc);
+      assert.deepEqual(Object.keys(shown).sort(), fields.map(f => f.key).sort(), `${v.id} ${doc.type} shows every field once`);
+      for (const f of fields) {
+        const raw = doc[f.key];
+        const expected = f.format === 'date' ? formatDoc(raw) : f.format === 'nation' ? NATIONS[raw].name : f.format === 'days' ? `${raw} day${raw === 1 ? '' : 's'}` : String(raw);
+        assert.equal(unescape(shown[f.key]), expected, `${v.id} ${doc.type}.${f.key}`);
       }
-      const fields = Object.keys(doc).filter(k => !['type', 'nation', 'number'].includes(k));
-      for (const k of fields) assert.ok(k in shown, `${v.id} ${doc.type}.${k} is shown`);
-      if (doc.type === 'passport') assert.ok(html.includes(doc.number) && html.includes(NATIONS[doc.nation].name));
+      if (doc.type === 'passport') assert.ok(renderDocument(doc, v).includes(`data-seal="${doc.seal}"`), 'cover seal is the document seal');
     }
   }
   const p = VISITORS.v_ilse_marek.documents[0];
@@ -110,8 +132,62 @@ test('documents display exactly their underlying data', () => {
   assert.throws(() => renderDocument({ type: 'unknown' }, VISITORS.v_ilse_marek));
 });
 
+test('generator: papers in order are complete and consistent', () => {
+  for (let i = 0; i < 300; i++) {
+    const v = generateVisitor(createRng(i + 1), { id: 'c', date: DATE });
+    assert.equal(v.generated.flaw, null);
+    const p = v.documents.find(d => d.type === 'passport');
+    assert.ok(p && NATIONS[p.nationality].cities.includes(p.issuedIn) && p.seal === NATIONS[p.nationality].emblem);
+    assert.ok(p.expires > DATE && isValidDate(p.dob));
+    const citizen = p.nationality === SETTING.country.code;
+    const decl = v.documents.find(d => d.type === 'declaration');
+    assert.equal(Boolean(v.documents.find(d => d.type === 'idCard')), citizen);
+    assert.equal(Boolean(decl), !citizen);
+    if (decl) {
+      assert.equal(Boolean(v.documents.find(d => d.type === 'workPermit')), decl.purpose === 'Work');
+      assert.equal(Boolean(v.documents.find(d => d.type === 'transitPass')), decl.purpose === 'Transit');
+    }
+    for (const d of v.documents) {
+      assert.equal(d.surname, p.surname); assert.equal(d.given, p.given);
+      if ('passportNo' in d) assert.equal(d.passportNo, p.number);
+      if ('dob' in d) assert.equal(d.dob, p.dob);
+      if ('nationality' in d) assert.equal(d.nationality, p.nationality);
+      for (const f of documentFields(d)) if (f.format === 'date') assert.ok(isValidDate(f.value), `${d.type}.${f.key} ${f.value}`);
+    }
+  }
+});
+
+test('generator: every flaw can be planted and changes the papers', () => {
+  const seen = new Set();
+  for (const flaw of FLAWS) {
+    let planted = 0;
+    for (let i = 0; i < 400 && planted < 5; i++) {
+      const clean = generateVisitor(createRng(i + 7), { id: 'f', date: DATE });
+      if (!flaw.applies(clean)) continue;
+      const v = generateVisitor(createRng(i + 7), { id: 'f', date: DATE, flaw: flaw.id });
+      assert.equal(v.generated.flaw, flaw.id);
+      assert.notDeepEqual(v.documents, clean.documents, `${flaw.id} changed something`);
+      planted++; seen.add(flaw.id);
+    }
+    assert.ok(planted > 0, `${flaw.id} found a suitable entrant`);
+  }
+  assert.equal(seen.size, FLAWS.length);
+  assert.deepEqual(new Set(FLAWS.map(f => f.category)), new Set(['expired', 'incomplete', 'contradictory', 'forged']));
+  for (const seal of Object.values(FORGED_SEALS)) assert.ok(!Object.values(NATIONS).some(n => n.emblem === seal));
+  const rng = createRng(5);
+  for (const w of ['KAIN', 'ARNSEN', 'MIKEL', 'OSKARYEV', 'VIK']) for (let i = 0; i < 30; i++) assert.notEqual(misspell(rng, w), w);
+});
+
+test('a seed always produces the same shift', () => {
+  assert.deepEqual(buildEntrants(DAYS[0], 99), buildEntrants(DAYS[0], 99));
+  assert.notDeepEqual(buildEntrants(DAYS[0], 99), buildEntrants(DAYS[0], 100));
+  const s = createGame(1, 99);
+  assert.equal(s.shift.entrants.length, DAYS[0].entrants.length);
+  assert.equal(new Set(s.shift.queue).size, s.shift.queue.length, 'entrant ids are unique');
+});
+
 test('rendered text is escaped', () => {
   const v = { look: {} };
-  const html = renderDocument({ type: 'declaration', surname: '<script>', given: 'A&B', nationality: 'OSK', passportNo: '"x"', purpose: 'p', duration: 'd', destination: 'z' }, v);
+  const html = renderDocument({ type: 'declaration', surname: '<script>', given: 'A&B', nationality: 'OSK', passportNo: '"x"', purpose: 'p', duration: 3, destination: 'z' }, v);
   assert.ok(!html.includes('<script>') && html.includes('&lt;script&gt;') && html.includes('A&amp;B'));
 });

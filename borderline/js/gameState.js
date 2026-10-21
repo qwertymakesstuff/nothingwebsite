@@ -1,23 +1,39 @@
 // The one authoritative game state and the only code allowed to change it.
-//   createGame()            → a fresh state at the start of day 1
+//   createGame(day, seed)   → a fresh state at the start of a day; the seed fixes its entrants
 //   dispatch(state, action) → { state, error }: a new state, or the old one and the reason
 // Shift phases: 'waiting' (booth empty) → 'inspecting' → 'departing' (stamped, papers not
 // yet returned) → 'waiting' again, or 'shiftEnd' after the last entrant.
 import { SETTING } from '../data/setting.js';
 import { dayByNumber } from '../data/campaignDays.js';
 import { VISITORS } from '../data/visitors.js';
+import { generateVisitor } from './visitorGenerator.js';
+import { createRng } from './rng.js';
 
 const DECISIONS = ['accept', 'reject'];
 
-export function createGame(dayNumber = 1) {
+// the day's entrants in arrival order: authored ones copied from data, the rest generated
+export function buildEntrants(day, seed) {
+  const rng = createRng(seed);
+  return day.entrants.map((slot, i) => {
+    if (slot !== 'gen') return structuredClone(VISITORS[slot]);
+    return generateVisitor(rng, { id: `g${day.day}_${i}`, date: day.date, flaw: rng.chance(day.flawRate) ? 'random' : null });
+  });
+}
+
+export const newSeed = () => (Math.random() * 2 ** 32) >>> 0;
+
+export function createGame(dayNumber = 1, seed = newSeed()) {
   const day = dayByNumber(dayNumber);
   if (!day) throw new Error(`no campaign day ${dayNumber}`);
+  const entrants = buildEntrants(day, seed);
   return {
+    seed,
     day: day.day,
     date: day.date,
     money: SETTING.startingMoney,
     shift: {
-      queue: [...day.entrants],
+      entrants,         // full visitor records for this shift, in arrival order
+      queue: entrants.map(v => v.id),
       next: 0,          // index into queue of the next entrant to call
       current: null,    // id of the entrant at the booth
       phase: 'waiting',
@@ -27,7 +43,8 @@ export function createGame(dayNumber = 1) {
   };
 }
 
-export const currentVisitor = state => (state.shift.current ? VISITORS[state.shift.current] : null);
+export const visitorById = (state, id) => state.shift.entrants.find(v => v.id === id) || null;
+export const currentVisitor = state => (state.shift.current ? visitorById(state, state.shift.current) : null);
 export const currentDay = state => dayByNumber(state.day);
 export const decisionFor = (state, id) => state.shift.decisions.find(d => d.visitorId === id) || null;
 

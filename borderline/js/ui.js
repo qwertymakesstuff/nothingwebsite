@@ -1,9 +1,8 @@
 // Draws the game state into the page. Reads state only; every change goes back through
 // the `act` callback supplied by main.js.
 import { SETTING } from '../data/setting.js';
-import { VISITORS } from '../data/visitors.js';
 import { dayByNumber } from '../data/campaignDays.js';
-import { currentVisitor, currentDay, decisionFor } from './gameState.js';
+import { currentVisitor, currentDay, decisionFor, visitorById } from './gameState.js';
 import { renderDocument } from './documentRenderer.js';
 import { portraitSVG } from './portrait.js';
 import { formatLong } from './dates.js';
@@ -71,7 +70,7 @@ export function createUI(act) {
     const v = currentVisitor(state);
     const d = v && decisionFor(state, v.id);
     $('tray').innerHTML = v
-      ? v.documents.map(doc => renderDocument(doc, v, { stamp: doc.type === 'passport' && d ? d.decision : null })).join('')
+      ? v.documents.map((doc, i) => renderDocument(doc, v, { docIndex: i, stamp: doc.type === 'passport' && d ? d.decision : null })).join('')
       : `<p class="tray-empty">No documents on the desk.</p>`;
     $('tray').classList.toggle('fresh', Boolean(arriving));
     const inspecting = state.shift.phase === 'inspecting';
@@ -93,7 +92,7 @@ export function createUI(act) {
 
   function renderLog(state) {
     const items = state.shift.decisions.map(d =>
-      `<li class="log-${esc(d.decision)}"><span>${esc(VISITORS[d.visitorId].name)}</span><span>${DECISION_TEXT[d.decision]}</span><span>+${money(d.pay)}</span></li>`);
+      `<li class="log-${esc(d.decision)}"><span>${esc(visitorById(state, d.visitorId).name)}</span><span>${DECISION_TEXT[d.decision]}</span><span>+${money(d.pay)}</span></li>`);
     $('log').innerHTML = items.join('') || '<li class="log-empty">No entrants processed yet.</li>';
   }
 
