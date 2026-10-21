@@ -173,5 +173,12 @@
     "url": "/fortune-street/",
     "description": "Buy up Meridian Bay: property, rent, auctions and trades against AI rivals or friends on one device. Includes a tutorial.",
     "group": "board"
+  },
+  {
+    "name": "SkinSpin",
+    "image": "/banners/skinspin.svg",
+    "url": "https://missing.website/skinspin/",
+    "description": "Case-opening simulator with fictional skins and play money: open cases, upgrade, trade up, battle NPCs and use the marketplace.",
+    "group": "sims"
   }
 ]
