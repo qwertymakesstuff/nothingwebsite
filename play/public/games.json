@@ -180,5 +180,12 @@
     "url": "https://missing.website/skinspin/",
     "description": "Case-opening simulator with fictional skins and play money: open cases, upgrade, trade up, battle NPCs and use the marketplace.",
     "group": "sims"
+  },
+  {
+    "name": "Idle Empire",
+    "image": "/banners/idle-empire.svg",
+    "url": "https://missing.website/idle-empire/",
+    "description": "Incremental idle game: strike crowns at the Mint and grow a market stall into an industrial empire.",
+    "group": "sims"
   }
 ]
