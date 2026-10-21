@@ -354,3 +354,38 @@ input[type=number] { width: 9em; }
   .cp-stats { grid-template-columns: repeat(2, 1fr); }
   .hud-logo { display: none; }
 }
+
+/* ---- tutorial coach ---- */
+.coach {
+  position: fixed; right: 18px; bottom: 18px; z-index: 40;
+  width: min(380px, calc(100vw - 32px)); max-height: calc(100dvh - 100px); overflow: auto;
+  padding: 14px 16px 12px; border-radius: 18px;
+  background: var(--panel); color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--gold) 60%, var(--line));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45), 0 0 0 4px color-mix(in srgb, var(--gold) 14%, transparent);
+  animation: pop .25s var(--ease);
+}
+.coach.left { right: auto; left: 18px; }
+.coach-head { display: flex; justify-content: space-between; align-items: center; }
+.coach-count { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--gold); }
+.coach-min { background: var(--panel-2); border: 0; border-radius: 8px; width: 28px; height: 28px; font-weight: 800; cursor: pointer; color: var(--ink-2); }
+.coach h3 { font-size: 1.2rem; margin: 4px 0 6px; }
+.coach-body { font-size: .9rem; }
+.coach-body ul { margin: .3em 0; padding-left: 1.2em; }
+.coach-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-top: 10px; }
+.coach-wait { font-size: .82rem; font-weight: 700; color: var(--gold); }
+.coach-progress { height: 4px; border-radius: 4px; background: var(--bg-2); margin-top: 10px; overflow: hidden; }
+.coach-progress i { display: block; height: 100%; background: var(--gold); transition: width .3s; }
+.coach.min .coach-body, .coach.min .coach-foot, .coach.min .coach-progress { display: none; }
+.coach.min h3 { font-size: .95rem; margin-bottom: 0; }
+.coach-target {
+  outline: 3px solid var(--gold) !important; outline-offset: 3px;
+  box-shadow: 0 0 0 9px color-mix(in srgb, var(--gold) 22%, transparent) !important;
+  border-radius: 12px; animation: coach-pulse 1.6s ease-in-out infinite; scroll-margin: 80px 0 45vh;
+}
+@keyframes coach-pulse { 50% { outline-color: color-mix(in srgb, var(--gold) 45%, transparent); } }
+.welcome-modal .btn-row { margin-top: 14px; }
+@media (max-width: 900px) {
+  .coach, .coach.left { left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 44dvh; padding: 12px 14px 10px; }
+  body.coaching .game-screen { padding-bottom: 46dvh; }
+}

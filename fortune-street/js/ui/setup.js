@@ -6,7 +6,7 @@ import { esc, money } from './fmt.js';
 import { tokenArt } from './icons.js';
 
 const AI_NAMES = { collector: 'Marlo Quay', developer: 'Rosa Brickwell', financier: 'Ines Ledger', opportunist: 'Tobias Finch' };
-const HUMAN_NAMES = ['You', 'Player 2', 'Player 3', 'Player 4'];
+const HUMAN_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
 const MODE_INFO = {
   classic: { blurb: 'The full 40-space city against AI rivals with auctions, development and bankruptcy.', seats: 'You + 1-3 AI' },
@@ -31,7 +31,7 @@ function defaultSeats(mode, count) {
   });
 }
 
-export function createSetup(root, { onStart, onContinue, onRules, onSettings, getSave }) {
+export function createSetup(root, { onStart, onContinue, onRules, onSettings, onTutorial, getSave }) {
   let mode = 'classic';
   let count = 4;
   let seats = defaultSeats(mode, count);
@@ -44,7 +44,7 @@ export function createSetup(root, { onStart, onContinue, onRules, onSettings, ge
     root.querySelector('#continueSlot').innerHTML = save.state
       ? `<div class="continue-card"><div><b>Match in progress</b><small>${esc(MODES[save.state.mode].name)} · round ${save.state.round} · ${save.state.players.map(p => esc(p.name)).join(', ')}${save.state.finished ? ' · finished' : ''}</small></div><button type="button" class="btn primary" data-setup="continue">Continue</button></div>`
       : save.error ? `<p class="notice warn">${esc(save.error)} A fresh game is ready below.</p>` : '';
-    root.querySelector('#modeGrid').innerHTML = Object.keys(MODES).map(id => `
+    root.querySelector('#modeGrid').innerHTML = Object.keys(MODES).filter(id => !MODES[id].tutorial).map(id => `
       <button type="button" class="mode-card${id === mode ? ' on' : ''}" data-mode="${id}" aria-pressed="${id === mode}">
         <b>${esc(MODES[id].name)}</b><span>${esc(MODE_INFO[id].blurb)}</span><small>${MODE_INFO[id].seats}</small></button>`).join('')
       + '<div class="mode-card disabled" aria-disabled="true"><b>Online Multiplayer</b><span>Playing over the internet is a future feature. Every mode here runs on this one device.</span><small>Not available</small></div>';
@@ -87,6 +87,7 @@ export function createSetup(root, { onStart, onContinue, onRules, onSettings, ge
     if (s.dataset.setup === 'start') start();
     if (s.dataset.setup === 'rules') onRules();
     if (s.dataset.setup === 'settings') onSettings();
+    if (s.dataset.setup === 'tutorial') onTutorial();
   });
 
   root.addEventListener('change', e => {

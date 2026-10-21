@@ -42,6 +42,11 @@ export const MODES = {
     name: 'Sandbox', board: 'full', sandbox: true,
     options: { startCash: 5000, roundLimit: 0, wealthTarget: 0, auctions: true },
   },
+  // the guided tutorial: a normal match whose first rolls and cards are scripted (cfg.script)
+  tutorial: {
+    name: 'Tutorial', board: 'full', tutorial: true,
+    options: { startCash: START_CASH, roundLimit: 0, wealthTarget: 0, auctions: true },
+  },
 };
 export const PERSONALITY_IDS = ['collector', 'developer', 'financier', 'opportunist'];
 
@@ -95,10 +100,32 @@ export function createGame(cfg = {}) {
   };
   for (const id of board.ownables) st.props[id] = { owner: null, level: 0, mortgaged: false };
   for (const deck of ['bulletin', 'opportunity']) st.decks[deck] = { order: shuffle(st.rng, deckFor(deck, board)), i: 0 };
+  if (m.tutorial) applyScript(st, cfg.script || {});
   log(st, `Welcome to ${board.name}. ${players.map(p => p.name).join(', ')} each start with $${options.startCash}.`, 'info');
   log(st, `${players[0].name} goes first.`, 'turn');
   settle(st);
   return st;
+}
+
+// Tutorial setup: dice queued per player (used before the random generator), cards moved to
+// the top of their decks, and assets owned from the start. Only the tutorial mode reads this.
+function applyScript(st, script) {
+  const ids = new Set(st.players.map(p => p.id));
+  st.script = { dice: {} };
+  for (const [pid, rolls] of Object.entries(script.dice || {})) {
+    if (!ids.has(pid)) continue;
+    st.script.dice[pid] = rolls.filter(r => Array.isArray(r) && r.length === 2 && r.every(n => Number.isInteger(n) && n >= 1 && n <= 6));
+  }
+  for (const [deck, first] of Object.entries(script.topCards || {})) {
+    const d = st.decks[deck];
+    if (!d) continue;
+    const want = [].concat(first).filter(c => d.order.includes(c));
+    d.order = [...want, ...d.order.filter(c => !want.includes(c))];
+  }
+  for (const [pid, assets] of Object.entries(script.owned || {})) {
+    if (!ids.has(pid)) continue;
+    for (const id of assets) if (st.props[id] && !st.props[id].owner) st.props[id].owner = pid;
+  }
 }
 
 function newTurn(pid) {
@@ -467,7 +494,8 @@ const HANDLERS = {
     if (a.player !== t.player || t.phase !== 'preRoll') return 'You cannot roll right now.';
     const bad = mustBeActor(st, a.player); if (bad) return bad;
     const p = P(st, a.player);
-    const d = [rollDie(st.rng), rollDie(st.rng)];
+    const scripted = st.script?.dice?.[a.player]?.shift();
+    const d = scripted || [rollDie(st.rng), rollDie(st.rng)];
     const total = d[0] + d[1], dbl = d[0] === d[1];
     t.dice = d; t.rolled = true; t.extraRoll = false;
     st.fx.dice = d;
@@ -809,6 +837,7 @@ export function validateState(st) {
     if (!d || !Array.isArray(d.order) || d.order.some(c => !CARDS[c]) || !Number.isInteger(d.i)) return `bad ${deck} deck`;
   }
   if (st.pending && !['buy', 'auction'].includes(st.pending.kind)) return 'bad pending decision';
+  if (st.script && (typeof st.script !== 'object' || Object.values(st.script.dice || {}).some(q => !Array.isArray(q)))) return 'bad tutorial script';
   if (st.pending && !st.props[st.pending.asset]) return 'pending asset missing';
   if (st.trade && R.validateOffer(st, st.trade.offer)) return 'stale trade';
   return null;

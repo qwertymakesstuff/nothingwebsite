@@ -279,6 +279,7 @@ export function pauseMenu({ onResume, hasMatch }) {
     body: `<nav class="menu-list">
       ${btn('Resume', 'data-ui="close"', 'primary')}
       ${btn('Rules', 'data-ui="rules"')}
+      ${btn('Tutorial', 'data-ui="tutorial"')}
       ${btn('Settings', 'data-ui="settings"')}
       ${hasMatch ? btn('Restart this match…', 'data-ui="restart"') : ''}
       ${btn('New game…', 'data-ui="newgame"')}

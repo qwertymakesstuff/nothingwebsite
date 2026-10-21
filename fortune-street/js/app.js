@@ -13,6 +13,8 @@ import { createSetup } from './ui/setup.js';
 import { play, configureAudio } from './ui/audio.js';
 import { esc } from './ui/fmt.js';
 import { chip } from './ui/panels.js';
+import { createCoach } from './ui/coach.js';
+import { STEPS, TUTORIAL_GAME, TUTORIAL_KEY, settleStep, actionAllowed } from './tutorial.js';
 
 const $ = sel => document.querySelector(sel);
 
@@ -27,6 +29,7 @@ const app = {
   ledgerFilter: 'all',
   resultsShownFor: null,
   pendingNote: null, // message to show with the next trade review
+  tutorial: loadTutorial(), // { seen, active, step }
   save: {},
 };
 
@@ -62,6 +65,79 @@ function changeSettings(patch) {
   applySettings();
 }
 
+// ---- tutorial progress (kept apart from the game save) ----------------------------------------
+
+function loadTutorial() {
+  try {
+    const t = JSON.parse(localStorage.getItem(TUTORIAL_KEY) || 'null');
+    if (t && typeof t === 'object') return { seen: !!t.seen, active: !!t.active, step: Number.isInteger(t.step) ? t.step : 0 };
+  } catch { /* storage blocked or junk */ }
+  return { seen: false, active: false, step: 0 };
+}
+function saveTutorial() {
+  try { localStorage.setItem(TUTORIAL_KEY, JSON.stringify(app.tutorial)); } catch { /* storage blocked */ }
+}
+const coaching = () => app.state?.mode === 'tutorial' && app.tutorial.active;
+
+function startTutorial() {
+  const begin = () => {
+    app.tutorial = { seen: true, active: true, step: 0 };
+    saveTutorial();
+    app.tab = 'log';
+    startGame(TUTORIAL_GAME);
+  };
+  const save = loadGame().state;
+  if (save && !save.finished && save.mode !== 'tutorial') {
+    dialogs.confirmDialog({ title: 'Start the tutorial?', text: 'The tutorial replaces your saved match.', yes: 'Start the tutorial', onYes: begin });
+  } else begin();
+}
+
+function endTutorial(toTitle) {
+  app.tutorial = { ...app.tutorial, seen: true, active: false };
+  saveTutorial();
+  coach.hide();
+  if (toTitle) { clearSave(); app.state = null; showTitle(); } else { render(); schedule(); }
+}
+
+const coach = createCoach($('#coach'), {
+  onNext: () => { app.tutorial.step++; saveTutorial(); render(); schedule(); },
+  onSkip: () => dialogs.confirmDialog({
+    title: 'Skip the tutorial?', text: 'You can keep playing this match on your own, or start it again any time from the title screen or the menu.',
+    yes: 'Skip tutorial', onYes: () => endTutorial(false),
+  }),
+  onKeepPlaying: () => endTutorial(false),
+  onRealGame: () => endTutorial(true),
+});
+
+function updateCoach() {
+  if (!coaching()) { coach.hide(); return; }
+  const before = app.tutorial.step;
+  const i = settleStep(app.state, before);
+  if (i !== before) { app.tutorial.step = i; saveTutorial(); }
+  const step = STEPS[i];
+  if (step.tab && app.tab !== step.tab) { app.tab = step.tab; renderTab(); }
+  coach.show(step, i, STEPS.length, { waiting: app.animating || R.currentActor(app.state) !== 'p1' });
+}
+
+function firstVisitPrompt() {
+  const mark = () => { app.tutorial.seen = true; saveTutorial(); };
+  const el = dialogs.openModal({
+    title: 'Welcome to Fortune Street',
+    className: 'welcome-modal',
+    onClose: mark,
+    body: `<p class="lead">New to the game? A short guided match teaches everything you need: buying, rent, districts, building, auctions, cards, trading and how to win.</p>
+      <p class="small muted">About five minutes. You can also find it later on the title screen and in the menu.</p>
+      <div class="btn-row"><button type="button" class="btn primary big" data-welcome="yes">Play the tutorial</button><button type="button" class="btn" data-welcome="no">No thanks, I know how to play</button></div>`,
+  });
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-welcome]');
+    if (!b) return;
+    mark();
+    dialogs.closeModal(true);
+    if (b.dataset.welcome === 'yes') startTutorial();
+  });
+}
+
 // ---- screens ------------------------------------------------------------------------------------
 
 const board = createBoardView($('#board'), { onSpace: i => app.state && dialogs.showSpace(app.state, i, ctx()) });
@@ -71,6 +147,7 @@ const setup = createSetup($('#title'), {
   onContinue: () => resume(),
   onRules: () => dialogs.rulesDialog(),
   onSettings: () => dialogs.settingsDialog(app.settings, changeSettings),
+  onTutorial: () => startTutorial(),
   getSave: () => app.save,
 });
 
@@ -80,6 +157,7 @@ function showTitle() {
   $('#game').hidden = true;
   $('#title').hidden = false;
   hideHandoff();
+  coach.hide();
   dialogs.closeModal(true);
   setup.render();
   document.title = 'Fortune Street · Meridian Bay';
@@ -152,6 +230,7 @@ function render() {
     app.resultsShownFor = st.seq;
     setTimeout(() => dialogs.resultsDialog(st), 400);
   }
+  updateCoach();
 }
 
 function renderTab() {
@@ -182,6 +261,11 @@ function centerMessage(st) {
 async function act(action, { quiet = false } = {}) {
   if (!app.state || app.animating) return false;
   const prev = app.state;
+  if (coaching() && R.player(prev, action.player)?.kind === 'human' && !actionAllowed(STEPS[app.tutorial.step], action)) {
+    const step = STEPS[app.tutorial.step];
+    if (!quiet) toast(step.next ? 'Read the tutorial card, then press Next.' : `Tutorial: ${step.title}. Follow the highlighted step, or skip the tutorial.`);
+    return false;
+  }
   const r = dispatch(prev, action);
   if (!r.ok) {
     if (!quiet) { toast(r.error, 'bad'); play('error'); }
@@ -252,6 +336,8 @@ async function aiStep() {
   if (p.kind !== 'ai') return;
   const view = publicView(st, pid);
   let action = decide(view, pid);
+  // the tutorial keeps Wren from interrupting with trade offers
+  if (st.mode === 'tutorial' && action?.type === 'PROPOSE_TRADE') action = { type: 'END_TURN', player: pid };
   // a hard stop against any loop: after many actions in one turn the AI only moves play along
   if (st.turn.actions > 60 && action && ['BUILD', 'MORTGAGE', 'UNMORTGAGE', 'PROPOSE_TRADE', 'SELL_BUILDING'].includes(action.type)) {
     action = { type: st.turn.phase === 'preRoll' ? 'ROLL' : 'END_TURN', player: pid };
@@ -346,6 +432,7 @@ async function onClick(e) {
     case 'results': dialogs.resultsDialog(st); break;
     case 'menu': openPause(); break;
     case 'rules': dialogs.rulesDialog(); break;
+    case 'tutorial': dialogs.closeModal(true); startTutorial(); break;
     case 'settings': dialogs.settingsDialog(app.settings, changeSettings, () => { if (app.paused) openPause(); }); break;
     case 'restart':
       dialogs.confirmDialog({ title: 'Restart this match?', text: 'The current match will be lost and the same players start over with fresh dice.', yes: 'Restart', danger: true, onYes: () => startGame(configFromState(st)) });
@@ -395,6 +482,8 @@ function onKey(e) {
 }
 
 function toast(text, tone = '') {
+  // the same message twice in a row (repeated clicks) shows once
+  if ([...$('#toasts').children].some(t => t.textContent === text && !t.classList.contains('out'))) return;
   const el = document.createElement('div');
   el.className = `toast ${tone}`;
   el.textContent = text;
@@ -416,6 +505,7 @@ applySettings();
 const boot = loadGame();
 if (boot.error) quarantineSave(); // set the unreadable save aside, then say so on the title screen
 showTitle();
+if (!app.tutorial.seen && !boot.state) firstVisitPrompt();
 if (boot.error) { app.save = boot; setup.render(); }
 if (new URLSearchParams(location.search).has('continue') && app.save.state) resume();
 

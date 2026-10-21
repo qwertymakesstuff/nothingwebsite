@@ -797,3 +797,60 @@ test('index.html versions every stylesheet and module with one release number', 
   for (const m of html.matchAll(/(?:href|src)="(?:css|js)\/[\w/.]+\?v=([\w.]+)"/g)) versions.add(m[1]);
   assert.equal(versions.size, 1, `one version everywhere, found ${[...versions]}`);
 });
+
+test('tutorial: the scripted match reaches every step with only the allowed actions', async () => {
+  const T = await import(new URL('tutorial.js', dir));
+  let st = createGame(T.TUTORIAL_GAME);
+  assert.equal(st.props.netmakers.owner, 'p1', 'head start');
+  assert.equal(st.decks.bulletin.order[0], 'festival');
+  let step = 0, guard = 0;
+  const seen = new Set();
+  const human = s => {
+    const S = T.STEPS[step];
+    const options = {
+      ROLL: { type: 'ROLL' }, BUY: { type: 'BUY' }, DECLINE: { type: 'DECLINE' }, BID: { type: 'BID', amount: 0 },
+      END_TURN: { type: 'END_TURN' }, PAY_IMPOUND: { type: 'PAY_IMPOUND' },
+      BUILD: { type: 'BUILD', asset: ['netmakers', 'saltbox', 'crabhouse'].find(id => R.canBuild(s, 'p1', id).ok) },
+    };
+    // the first allowed action that is legal, building only when the step is about building
+    const order = S.title.startsWith('Build a') ? ['BUILD'] : (S.allow || []).filter(t => t !== 'BUILD');
+    for (const t of order) {
+      const a = { ...options[t], player: 'p1' };
+      if (options[t] && T.actionAllowed(S, a) && dispatch(s, a).ok) return a;
+    }
+    return null;
+  };
+  const history = [];
+  while (step < T.STEPS.length - 1 && guard++ < 500) {
+    history.push(st);
+    step = T.settleStep(st, step);
+    seen.add(step);
+    const S = T.STEPS[step];
+    if (S.next) { assert.equal(T.actionAllowed(S, { type: 'ROLL' }), false, 'reading steps hold the game'); step++; continue; }
+    const pid = R.currentActor(st);
+    const a = pid === 'p1' ? human(st) : AI.decide(publicView(st, pid), pid);
+    assert.ok(a, `step ${step} (${S.title}) has no way forward in phase ${st.turn.phase}`);
+    st = ok(st, a);
+  }
+  assert.equal(step, T.STEPS.length - 1, 'reached the finale');
+  // the lessons actually happened
+  assert.ok(['netmakers', 'saltbox', 'crabhouse'].every(id => st.props[id].owner === 'p1'));
+  assert.ok(st.ledger.some(l => l.reason === 'Rent at Spice Lane' && l.from === 'p1'));
+  assert.ok(st.log.some(l => /Waterfront Festival/.test(l.text)));
+  assert.ok(st.log.some(l => /towed to the Impound Lot/.test(l.text)));
+  assert.ok(st.log.some(l => /Sealed bids for Lantern Street/.test(l.text)));
+  assert.ok(st.ledger.some(l => l.reason === 'Impound release fee'));
+  assert.equal(validateState(st), null);
+  // reload at any moment: resuming from the start lands on a step the player can complete
+  for (const h of history) {
+    if (R.currentActor(h) !== 'p1') continue;
+    step = T.settleStep(h, 0);
+    const S = T.STEPS[step];
+    assert.ok(S.next || S.finale || human(h), `turn ${h.turnNumber} ${h.turn.phase}: resumed on "${S.title}" with no legal move`);
+  }
+  // a resumed tutorial skips steps whose goal is already met, and no further
+  const fresh = createGame(T.TUTORIAL_GAME);
+  assert.equal(T.settleStep(fresh, 4), 4);
+  const bought = ok(ok(fresh, { type: 'ROLL', player: 'p1' }), { type: 'BUY', player: 'p1' });
+  assert.equal(T.settleStep(bought, 4), 6, 'roll and buy already done: on to End turn');
+});

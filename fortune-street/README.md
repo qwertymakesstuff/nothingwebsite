@@ -16,6 +16,17 @@ no build step, no dependencies.
 
 Online multiplayer isn't implemented. The title screen shows it as a future feature.
 
+## Tutorial
+
+First-time visitors are asked whether they want the tutorial (it is also on the title screen and
+in the pause menu). It is a real match against one AI, Captain Wren, with the first rolls and
+cards scripted (`script` in `createGame`, tutorial mode only) so every rule comes up in order:
+buying, completing a district, building evenly, rent, doubles, auctions, City Bulletins,
+Business Opportunities and the Impound Lot, then trading, mortgages, debt and winning.
+A coach card explains each step and highlights what to press; actions outside the step are
+refused. Step goals are written as "the game has moved past this point", so a tutorial resumed
+after a reload picks up at the right step. Progress is stored under `fortune-street:tutorial`.
+
 ## Files
 
 | File | Job |
@@ -26,9 +37,10 @@ Online multiplayer isn't implemented. The title screen shows it as a future feat
 | `js/engine.js` | **the only writer**: `createGame`, `dispatch(state, action)`, `publicView`, `validateState` |
 | `js/ai.js` | four AI personalities; `decide(view, pid)` returns one action for `dispatch` |
 | `js/rng.js` | seeded generator whose state lives in the game state |
+| `js/tutorial.js` | the tutorial match setup and its steps (text, highlight target, allowed actions, goal) |
 | `js/save.js` | localStorage save/load with format version and validation; settings |
 | `js/app.js` | controller: owns the state, routes clicks and AI choices to `dispatch`, saves, animates, hand-offs |
-| `js/ui/*` | board view (grid, tokens, dice, cards), side panels, dialogs, title/setup, icons, sound |
+| `js/ui/*` | board view (grid, tokens, dice, cards), side panels, dialogs, title/setup, tutorial coach, icons, sound |
 
 ## Rules engine
 
