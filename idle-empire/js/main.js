@@ -6,6 +6,7 @@ import { createState } from './gameState.js';
 import * as economy from './economy.js';
 import { createUI } from './ui.js';
 import { LOOP } from './config.js';
+import * as upgradeSystem from './upgradeSystem.js';
 
 const state = createState();
 const ui = createUI(state);
@@ -16,18 +17,21 @@ function logic() {
   const seconds = Math.min((now - lastLogic) / 1000, LOOP.maxTickSeconds);
   lastLogic = now;
   economy.tick(state, seconds);
+  upgradeSystem.checkUnlocks(state);
 }
 setInterval(logic, LOOP.logicIntervalMs);
 
 let lastShop = 0, lastTitle = 0;
 function frame(now) {
   ui.renderTreasury();
-  if (now - lastShop >= LOOP.shopIntervalMs) { lastShop = now; ui.renderShop(); }
+  if (now - lastShop >= LOOP.shopIntervalMs) { lastShop = now; ui.renderShop(); ui.renderUpgrades(); }
   if (now - lastTitle >= LOOP.titleIntervalMs) { lastTitle = now; ui.renderTitle(); }
   requestAnimationFrame(frame);
 }
+upgradeSystem.checkUnlocks(state);
 ui.renderShop();
+ui.renderUpgrades();
 requestAnimationFrame(frame);
 
 // a handle for testing from the browser console
-window.idleEmpire = { state, economy };
+window.idleEmpire = { state, economy, upgrades: upgradeSystem };

@@ -4,6 +4,8 @@ import { BUILDINGS } from './buildings.js';
 import { formatNumber } from './numberFormatter.js';
 import * as economy from './economy.js';
 import { ECONOMY } from './config.js';
+import * as upgradeSystem from './upgradeSystem.js';
+import { UPGRADES_BY_ID } from './upgrades.js';
 
 const $ = id => document.getElementById(id);
 const MAX_FLOATERS = 40;
@@ -62,6 +64,44 @@ function buildingRow(def) {
 }
 
 // only write to the DOM when the text differs from what was written last time
+function upgradeCard(def) {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = `upgrade upgrade-${def.group}`;
+  el.dataset.id = def.id;
+  el.innerHTML = `
+    <span class="u-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${def.icon}</svg>${def.tier ? `<span class="u-tier">${def.tier}</span>` : ''}</span>
+    <span class="u-main">
+      <span class="u-name"><span class="u-title"></span><span class="u-level"></span></span>
+      <span class="u-desc"></span>
+      <span class="u-effect"></span>
+    </span>
+    <span class="u-cost"><span class="coin" aria-hidden="true"></span><span class="u-cost-value"></span></span>
+    <span class="b-progress" aria-hidden="true"><span></span></span>`;
+  el.querySelector('.u-title').textContent = def.name;
+  el.querySelector('.u-desc').textContent = def.description;
+  return {
+    def, el, last: {},
+    level: el.querySelector('.u-level'),
+    effect: el.querySelector('.u-effect'),
+    cost: el.querySelector('.u-cost-value'),
+    bar: el.querySelector('.b-progress span'),
+  };
+}
+
+// "+12.5/s (+25%) · +2 per click": what buying the next level changes
+function effectText(preview) {
+  const parts = [];
+  const [p0, p1] = preview.pps, [c0, c1] = preview.click;
+  const dp = p1.sub(p0), dc = c1.sub(c0);
+  if (dp.sign() > 0) {
+    const pct = p0.sign() > 0 ? ` (+${formatNumber(dp.div(p0).mul(100))}%)` : '';
+    parts.push(`+${formatNumber(dp)}/s${pct}`);
+  }
+  if (dc.sign() > 0) parts.push(`+${formatNumber(dc)} per click`);
+  return parts.length ? parts.join(' · ') : 'no effect yet';
+}
+
 function setText(row, key, node, text) {
   if (row.last[key] === text) return;
   row.last[key] = text;
@@ -77,7 +117,11 @@ function restartClass(el, cls) {
 const MODE_LABELS = { 1: 'x1', 10: 'x10', 100: 'x100', max: 'Max' };
 
 export function createUI(state) {
-  const els = { currency: $('currency'), perSecond: $('perSecond'), perClick: $('perClick'), mint: $('mint'), shop: $('shop'), floaters: $('floaters'), buyModes: $('buyModes') };
+  const els = {
+    currency: $('currency'), perSecond: $('perSecond'), perClick: $('perClick'), mint: $('mint'), shop: $('shop'),
+    floaters: $('floaters'), buyModes: $('buyModes'), upgrades: $('upgrades'), upgradeCount: $('upgradeCount'),
+    owned: $('ownedUpgrades'), ownedCount: $('ownedUpgradeCount'), ownedList: $('ownedUpgradeList'),
+  };
   const rows = BUILDINGS.map(buildingRow);
   rows.forEach(r => els.shop.appendChild(r.el));
   els.mint.innerHTML = mintSvg();
@@ -166,7 +210,7 @@ export function createUI(state) {
       const ratio = affordable ? 1 : Math.max(0, Math.min(1, state.currency.div(cost).toNumber()));
       const width = `${Math.floor(ratio * 100)}%`;
       if (row.last.width !== width) { row.last.width = width; row.bar.style.width = width; }
-      const each = formatNumber(economy.unitRate(row.def));
+      const each = formatNumber(economy.unitRate(state, row.def));
       const rate = owned > 0
         ? `+${each}/s each · ${formatNumber(economy.buildingProduction(state, id))}/s total`
         : `+${each}/s each`;
@@ -182,9 +226,90 @@ export function createUI(state) {
     }
   }
 
+  // upgrade shop: cards are kept per id and only re-ordered when the available list changes
+  const cards = new Map();
+  let upgradeKey = null, ownedKey = null, firstUpgradeRender = true;
+  const empty = document.createElement('p');
+  empty.className = 'empty-note';
+  empty.textContent = 'No upgrades yet. They unlock as you click, earn and build.';
+
+  els.upgrades.addEventListener('click', e => {
+    const btn = e.target.closest('.upgrade');
+    if (!btn) return;
+    const paid = upgradeSystem.buyUpgrade(state, btn.dataset.id);
+    if (paid) {
+      const r = btn.getBoundingClientRect();
+      floater(`-${formatNumber(paid)}`, r.left + r.width - 40, r.top + 10, 'floater-spend');
+      // a repeatable card stays in the list: flash it
+      if (UPGRADES_BY_ID[btn.dataset.id].repeatable) restartClass(btn, 'bought');
+      renderUpgrades();
+      renderShop();
+    } else {
+      restartClass(btn, 'denied');
+    }
+    renderTreasury();
+  });
+  els.upgrades.addEventListener('animationend', e => e.target.classList.remove('denied', 'fresh', 'bought'));
+
+  function renderUpgrades() {
+    const list = upgradeSystem.availableUpgrades(state);
+    const key = list.map(({ def }) => `${def.id}:${upgradeSystem.levelOf(state, def.id)}`).join(',');
+    if (key !== upgradeKey) {
+      upgradeKey = key;
+      const ids = new Set(list.map(({ def }) => def.id));
+      for (const [id, card] of cards) if (!ids.has(id)) { card.el.remove(); cards.delete(id); }
+      for (const { def } of list) {
+        let card = cards.get(def.id);
+        if (!card) {
+          card = upgradeCard(def);
+          cards.set(def.id, card);
+          if (!firstUpgradeRender) card.el.classList.add('fresh');
+        }
+        els.upgrades.appendChild(card.el); // appending an existing node moves it into sorted order
+      }
+      if (!list.length) els.upgrades.appendChild(empty); else empty.remove();
+      els.upgradeCount.textContent = list.length ? `${list.length} available` : '';
+      firstUpgradeRender = false;
+    }
+    for (const { def, cost } of list) {
+      const card = cards.get(def.id);
+      const affordable = state.currency.gte(cost);
+      setText(card, 'cost', card.cost, formatNumber(cost));
+      if (def.repeatable) setText(card, 'level', card.level, `Lv ${upgradeSystem.levelOf(state, def.id)}/${def.repeatable.maxLevel}`);
+      setText(card, 'effect', card.effect, effectText(upgradeSystem.previewUpgrade(state, def.id)));
+      const ratio = affordable ? 1 : Math.max(0, Math.min(1, state.currency.div(cost).toNumber()));
+      const width = `${Math.floor(ratio * 100)}%`;
+      if (card.last.width !== width) { card.last.width = width; card.bar.style.width = width; }
+      if (card.last.affordable !== affordable) {
+        card.last.affordable = affordable;
+        card.el.classList.toggle('affordable', affordable);
+        card.el.classList.toggle('unaffordable', !affordable);
+        card.el.setAttribute('aria-disabled', String(!affordable));
+      }
+      const label = `Buy upgrade ${def.name} for ${formatNumber(cost)} crowns: ${card.last.effect}`;
+      if (card.last.label !== label) { card.last.label = label; card.el.setAttribute('aria-label', label); }
+    }
+
+    const owned = upgradeSystem.ownedUpgrades(state);
+    const oKey = owned.map(u => `${u.id}:${upgradeSystem.levelOf(state, u.id)}`).join(',');
+    if (oKey !== ownedKey) {
+      ownedKey = oKey;
+      els.owned.hidden = owned.length === 0;
+      els.ownedCount.textContent = String(owned.length);
+      els.ownedList.replaceChildren(...owned.map(u => {
+        const chip = document.createElement('span');
+        chip.className = 'owned-chip';
+        const level = upgradeSystem.levelOf(state, u.id);
+        chip.textContent = u.repeatable ? `${u.name} ${level}/${u.repeatable.maxLevel}` : u.name;
+        chip.title = u.description;
+        return chip;
+      }));
+    }
+  }
+
   function renderTitle() {
     document.title = `${formatNumber(state.currency.floor())} crowns · Idle Empire`;
   }
 
-  return { renderTreasury, renderShop, renderTitle };
+  return { renderTreasury, renderShop, renderUpgrades, renderTitle };
 }

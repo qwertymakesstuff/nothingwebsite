@@ -1,29 +1,50 @@
-/* Page layout: Mint on the left, scrollable shop on the right; stacked on phones. */
+/* Page layout.
+     wide (> 1180 px)   Mint | Upgrades | Buildings, each panel scrolls on its own
+     medium            Mint | Upgrades above Buildings
+     phones (< 820 px)  everything stacked, the page scrolls */
 .game {
-  display: grid; grid-template-columns: minmax(320px, 1fr) minmax(340px, 460px);
-  gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(300px, 360px) minmax(340px, 440px);
+  grid-template-areas: 'mint upgrades shop';
+  gap: 16px; padding: 16px; max-width: 1440px; margin: 0 auto;
   height: calc(100dvh - 53px);
 }
 .mint-panel {
+  grid-area: mint;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
   padding: 20px 16px; border: 1px solid var(--line); border-radius: 16px;
   background: linear-gradient(180deg, rgba(41,36,43,.6), rgba(26,23,28,.6));
 }
 .mint-stage { display: grid; place-items: center; flex: 0 1 auto; }
-.shop-panel {
+.upgrade-panel, .shop-panel {
   display: flex; flex-direction: column; min-height: 0;
   border: 1px solid var(--line); border-radius: 16px; background: var(--bg-2);
 }
-.shop-list {
+.upgrade-panel { grid-area: upgrades; }
+.shop-panel { grid-area: shop; }
+.upgrade-list, .shop-list {
   display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px;
   overflow-y: auto; min-height: 0; flex: 1; overscroll-behavior: contain;
 }
+/* cards keep their natural height; the list scrolls instead of squashing them */
+.upgrade-list > *, .shop-list > * { flex: none; }
+
+@media (max-width: 1180px) {
+  .game {
+    grid-template-columns: minmax(300px, 1fr) minmax(340px, 440px);
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+    grid-template-areas: 'mint upgrades' 'mint shop';
+  }
+  .upgrade-panel { max-height: 40vh; }
+  .upgrade-list { flex: 0 1 auto; }
+}
 
 @media (max-width: 820px) {
-  .game { grid-template-columns: 1fr; height: auto; padding: 12px; gap: 12px; }
+  .game { grid-template-columns: 1fr; grid-template-rows: none; grid-template-areas: 'mint' 'upgrades' 'shop'; height: auto; padding: 12px; gap: 12px; }
   .mint-panel { gap: 14px; padding: 16px 12px; }
   .mint { width: min(220px, 60vw); }
-  .shop-list { overflow: visible; }
+  .upgrade-panel { max-height: none; }
+  .upgrade-list, .shop-list { overflow: visible; }
 }
 @media (max-width: 420px) {
   .panel-head { flex-wrap: wrap; }

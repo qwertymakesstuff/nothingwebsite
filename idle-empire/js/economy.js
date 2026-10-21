@@ -9,6 +9,7 @@
 import BigNum, { ZERO, ONE } from './bigNum.js';
 import { BUILDINGS, BUILDINGS_BY_ID } from './buildings.js';
 import { ECONOMY } from './config.js';
+import { collectModifiers } from './upgrades.js';
 
 const EXACT_LIMIT = 2 ** 53;  // above this every double is already a whole number
 const MAX_EXACT_STEPS = 2000; // safety net for growth values very close to 1
@@ -76,14 +77,28 @@ export function nextCost(state, id) {
   return buildingCost(BUILDINGS_BY_ID[id], state.buildings[id] || 0, 1);
 }
 
-// output of one copy of a building (multipliers arrive with upgrades in a later phase)
-export function unitRate(def) {
-  return BigNum.from(def.baseRate);
+// Upgrade effects, combined. Recomputed only when the owned upgrades change: the cache is
+// keyed on the state.upgrades object, which upgrade purchases replace rather than edit.
+const modsCache = new WeakMap();
+export function modifiers(state) {
+  let mods = modsCache.get(state.upgrades);
+  if (!mods) { mods = collectModifiers(state.upgrades); modsCache.set(state.upgrades, mods); }
+  return mods;
+}
+
+// output of one copy of a building with every upgrade applied (stacking rule: see upgrades.js)
+export function unitRate(state, def) {
+  const mods = modifiers(state);
+  const b = mods.building[def.id];
+  let bonus = 0;
+  for (const { per, percent } of b.bonus) bonus += percent * (state.buildings[per] || 0);
+  return BigNum.from(def.baseRate).mul(b.mult).mul(1 + bonus / 100).mul(mods.global);
 }
 
 export function buildingProduction(state, id) {
   const def = BUILDINGS_BY_ID[id];
-  return unitRate(def).mul(state.buildings[id] || 0);
+  const owned = state.buildings[id] || 0;
+  return owned ? unitRate(state, def).mul(owned) : ZERO;
 }
 
 export function productionPerSecond(state) {
@@ -92,8 +107,11 @@ export function productionPerSecond(state) {
   return total;
 }
 
-export function clickValue() {
-  return BigNum.from(ECONOMY.clickBase);
+export function clickValue(state) {
+  const mods = modifiers(state);
+  let value = BigNum.from(ECONOMY.clickBase + mods.clickAdd).mul(mods.clickMult);
+  if (mods.clickPps > 0) value = value.add(productionPerSecond(state).mul(mods.clickPps));
+  return value;
 }
 
 export function earn(state, amount) {

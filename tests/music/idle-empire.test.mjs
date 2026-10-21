@@ -222,3 +222,149 @@ test('economy config: a building without its own growth uses the default', () =>
   assert.equal(economy.growthOf({ baseCost: 10, growth: 0.5 }), ECONOMY.defaultGrowth); // must exceed 1
   assert.equal(economy.buildingCost({ baseCost: 10, growth: 2 }, 0, 4).toNumber(), 10 + 20 + 40 + 80);
 });
+
+// ---- phase 3: upgrades and multipliers ----
+
+const { UPGRADES, UPGRADES_BY_ID, collectModifiers } = await import(new URL('upgrades.js', dir));
+const up = await import(new URL('upgradeSystem.js', dir));
+const near = (a, b, msg) => assert.ok(Math.abs(BigNum.from(a).toNumber() - b) <= Math.abs(b) * 1e-9, `${msg}: ${a} vs ${b}`);
+const withUpgrades = (levels, buildings = {}) => { const s = createState(); s.upgrades = levels; Object.assign(s.buildings, buildings); return s; };
+
+test('upgrade catalogue: unique ids, valid references, sane data', () => {
+  assert.equal(new Set(UPGRADES.map(u => u.id)).size, UPGRADES.length);
+  assert.ok(UPGRADES.length >= 30);
+  const types = new Set(['buildingMult', 'globalMult', 'ownedBonus', 'clickAdd', 'clickMult', 'clickPps']);
+  for (const u of UPGRADES) {
+    assert.ok(!/Foundrys|Factorys/.test(u.description), u.id);
+    assert.ok(u.name && u.description && u.icon && u.cost > 0, u.id);
+    assert.ok(u.unlock.length > 0 && u.effects.length > 0, u.id);
+    for (const c of u.unlock) if (c.type === 'owned') assert.ok(BUILDINGS_BY_ID[c.building], u.id);
+    for (const e of u.effects) {
+      assert.ok(types.has(e.type), `${u.id} ${e.type}`);
+      if (e.building) assert.ok(BUILDINGS_BY_ID[e.building], u.id);
+      if (e.per) assert.ok(BUILDINGS_BY_ID[e.per], u.id);
+    }
+    if (u.repeatable) assert.ok(u.repeatable.growth > 1 && u.repeatable.maxLevel > 1, u.id);
+  }
+  for (const b of BUILDINGS) assert.equal(UPGRADES.filter(u => u.effects.some(e => e.type === 'buildingMult' && e.building === b.id)).length, 3);
+});
+
+test('unlocks: conditions on clicks, ownership, earnings and production; unlocks stick', () => {
+  const s = createState();
+  assert.deepEqual(up.checkUnlocks(s), []);
+  for (let i = 0; i < 49; i++) economy.click(s);
+  assert.deepEqual(up.checkUnlocks(s), []);
+  economy.click(s);
+  assert.deepEqual(up.checkUnlocks(s), ['click-1']);
+  assert.deepEqual(up.checkUnlocks(s), []); // reported once
+  s.buildings.stall = 1;
+  assert.deepEqual(up.checkUnlocks(s), ['stall-1']);
+  s.buildings.workshop = 250; // 250/s: needs pps >= 25 (Overtime) and >= 50 (Gilded Strike)
+  const fresh = up.checkUnlocks(s);
+  assert.ok(fresh.includes('rep-global') && fresh.includes('click-pps-1') && fresh.includes('workshop-3'), fresh.join());
+  assert.ok(!fresh.includes('synergy-workshop')); // needs 25 stalls too
+  s.buildings.workshop = 0; s.buildings.stall = 0; // conditions no longer hold...
+  up.checkUnlocks(s);
+  assert.ok(s.upgradesUnlocked['rep-global'] && s.upgradesUnlocked['stall-1']); // ...but stay unlocked
+  s.totalEarned = BigNum.from(1e9);
+  assert.ok(up.checkUnlocks(s).includes('global-3'));
+});
+
+test('buying upgrades: locked, unaffordable, one-time and spending rules', () => {
+  const s = createState();
+  s.currency = BigNum.from(1e6);
+  assert.equal(up.buyUpgrade(s, 'stall-1'), null); // locked
+  assert.equal(up.buyUpgrade(s, 'nope'), null);
+  s.buildings.stall = 1; up.checkUnlocks(s);
+  const before = s.upgrades;
+  assert.equal(up.buyUpgrade(s, 'stall-1').toNumber(), 150);
+  assert.equal(s.currency.toNumber(), 1e6 - 150);
+  assert.notEqual(s.upgrades, before); // replaced, not edited (keeps the modifier cache honest)
+  assert.equal(up.buyUpgrade(s, 'stall-1'), null); // one-time
+  assert.equal(s.currency.toNumber(), 1e6 - 150);
+  assert.ok(!up.availableUpgrades(s).some(a => a.def.id === 'stall-1'));
+  s.buildings.stall = 10; up.checkUnlocks(s);
+  s.currency = BigNum.from(749);
+  assert.equal(up.buyUpgrade(s, 'stall-2'), null); // costs 750
+  assert.equal(s.currency.toNumber(), 749);
+});
+
+test('repeatable upgrades: price grows per level, stops at the max level', () => {
+  const s = createState();
+  s.totalClicks = 100; up.checkUnlocks(s);
+  s.currency = BigNum.from('1e30');
+  const prices = [];
+  for (let i = 0; i < 25; i++) { const p = up.buyUpgrade(s, 'rep-click'); if (!p) break; prices.push(p.toNumber()); }
+  assert.equal(prices.length, 20);
+  assert.deepEqual(prices.slice(0, 4), [200, 500, 1250, 3125]);
+  assert.equal(up.levelOf(s, 'rep-click'), 20);
+  assert.ok(up.isMaxed(s, 'rep-click'));
+  assert.ok(!up.availableUpgrades(s).some(a => a.def.id === 'rep-click'));
+  assert.equal(economy.clickValue(s).toNumber(), 21); // 1 base + 20
+});
+
+test('multipliers stack exactly as documented', () => {
+  // building tiers multiply each other
+  near(economy.unitRate(withUpgrades({ 'stall-1': 1 }), BUILDINGS_BY_ID.stall), 0.2, 'one tier');
+  near(economy.unitRate(withUpgrades({ 'stall-1': 1, 'stall-2': 1, 'stall-3': 1 }), BUILDINGS_BY_ID.stall), 0.8, 'three tiers');
+  // other buildings are untouched
+  near(economy.unitRate(withUpgrades({ 'stall-1': 1 }), BUILDINGS_BY_ID.workshop), 1, 'other building');
+  // global multipliers compound with each other and with building multipliers
+  near(economy.unitRate(withUpgrades({ 'workshop-1': 1, 'global-1': 1, 'global-2': 1, 'rep-global': 3 }), BUILDINGS_BY_ID.workshop),
+    1 * 2 * 1.1 * 1.15 * 1.05 ** 3, 'global stack');
+  // conditional: +1% per stall owned, applied after the building multipliers
+  const syn = withUpgrades({ 'synergy-workshop': 1, 'workshop-1': 1 }, { stall: 30, workshop: 10 });
+  near(economy.unitRate(syn, BUILDINGS_BY_ID.workshop), 1 * 2 * 1.3, 'synergy');
+  near(economy.productionPerSecond(syn), 30 * 0.1 + 10 * 2.6, 'pps with synergy');
+  syn.buildings.stall = 40; // grows with the condition, no re-purchase needed
+  near(economy.unitRate(syn, BUILDINGS_BY_ID.workshop), 1 * 2 * 1.4, 'synergy follows ownership');
+  // clicks: (base + adds) x mults + pps x fractions
+  const c = withUpgrades({ 'rep-click': 2, 'click-1': 1, 'click-2': 1, 'click-pps-1': 1, 'click-pps-2': 1 }, { workshop: 100 });
+  near(economy.clickValue(c), (1 + 2) * 2 * 2 + 100 * 0.03, 'click stack');
+  // levels above the max are clamped, never trusted
+  near(collectModifiers({ 'rep-global': 999 }).global, 1.05 ** 25, 'clamped');
+});
+
+test('the preview shown before purchase matches the result after', () => {
+  const s = createState();
+  Object.assign(s.buildings, { stall: 30, workshop: 12, foundry: 3 });
+  s.totalClicks = 200; s.totalEarned = BigNum.from(1e7);
+  up.checkUnlocks(s);
+  s.currency = BigNum.from('1e20');
+  for (const { def } of up.availableUpgrades(s)) {
+    const p = up.previewUpgrade(s, def.id);
+    assert.ok(p.pps[1].gte(p.pps[0]) && p.click[1].gte(p.click[0]), def.id);
+    assert.ok(p.pps[1].gt(p.pps[0]) || p.click[1].gt(p.click[0]), `${def.id} has a visible effect`);
+    up.buyUpgrade(s, def.id);
+    near(economy.productionPerSecond(s), p.pps[1].toNumber(), `${def.id} pps`);
+    near(economy.clickValue(s), p.click[1].toNumber(), `${def.id} click`);
+  }
+});
+
+test('available upgrades are sorted cheapest first', () => {
+  const s = createState();
+  Object.assign(s.buildings, { stall: 25, workshop: 25, foundry: 25 });
+  s.totalClicks = 500; s.totalEarned = BigNum.from(1e8);
+  up.checkUnlocks(s);
+  const costs = up.availableUpgrades(s).map(a => a.cost.toNumber());
+  assert.ok(costs.length > 10);
+  assert.deepEqual(costs, [...costs].sort((a, b) => a - b));
+});
+
+test('a simulated session: buying upgrades speeds progress and nothing breaks', () => {
+  const play = useUpgrades => {
+    const s = createState();
+    for (let t = 0; t < 1800; t++) {
+      for (let c = 0; c < 5; c++) economy.click(s);
+      up.checkUnlocks(s);
+      if (useUpgrades) for (const { def } of up.availableUpgrades(s)) up.buyUpgrade(s, def.id);
+      for (const def of [...BUILDINGS].reverse()) while (economy.buyBuilding(s, def.id, 1)) { /* buy */ }
+      economy.tick(s, 1);
+      assert.ok(s.currency.sign() >= 0 && Number.isFinite(s.currency.toNumber()));
+    }
+    return s;
+  };
+  const plain = play(false), upgraded = play(true);
+  assert.ok(economy.productionPerSecond(upgraded).gt(economy.productionPerSecond(plain).mul(1.5)));
+  assert.ok(Object.keys(upgraded.upgrades).length > 5);
+});

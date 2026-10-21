@@ -13,6 +13,9 @@ export function createState() {
     totalEarned: ZERO,    // every crown ever earned (clicks + production)
     totalClicks: 0,
     buildings: Object.fromEntries(BUILDINGS.map(b => [b.id, 0])),
+    // upgrade levels owned ({ id: level }); replaced, never edited in place (see economy.modifiers)
+    upgrades: {},
+    upgradesUnlocked: {}, // { id: true } once an upgrade has appeared in the shop
     buyMode: ECONOMY.defaultBuyMode, // 1, 10, 100 or 'max'
     startedAt: Date.now(),
   };

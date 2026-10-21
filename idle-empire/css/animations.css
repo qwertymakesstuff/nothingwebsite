@@ -32,3 +32,15 @@
   .b-progress span { transition: none; }
   .mint { transition: none; }
 }
+
+/* upgrades */
+@keyframes fresh {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,122,0); }
+  30% { box-shadow: 0 0 0 3px rgba(255,215,122,.6), 0 0 18px rgba(255,215,122,.35); }
+}
+.upgrade.fresh { animation: fresh 1.2s ease-out 2; }
+.upgrade.bought { animation: bought .45s ease-out; }
+.upgrade.denied { animation: denied .22s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .upgrade.fresh, .upgrade.bought, .upgrade.denied { animation: none; }
+}
