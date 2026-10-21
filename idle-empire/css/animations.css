@@ -19,8 +19,16 @@
 }
 .building.denied { animation: denied .22s ease-in-out; }
 
+@keyframes bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); color: var(--gold-2); }
+  100% { transform: scale(1); }
+}
+.b-owned.bump { animation: bump .3s ease-out; }
+
 @media (prefers-reduced-motion: reduce) {
   .floater { animation-duration: .5s; }
-  .building.denied, .building.bought { animation: none; }
+  .building.denied, .building.bought, .b-owned.bump { animation: none; }
+  .b-progress span { transition: none; }
   .mint { transition: none; }
 }

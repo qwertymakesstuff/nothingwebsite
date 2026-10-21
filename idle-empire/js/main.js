@@ -5,13 +5,7 @@
 import { createState } from './gameState.js';
 import * as economy from './economy.js';
 import { createUI } from './ui.js';
-
-const LOGIC_INTERVAL_MS = 100;
-const SHOP_INTERVAL_MS = 100;
-const TITLE_INTERVAL_MS = 1000;
-// longest stretch credited in one tick (e.g. after the computer wakes from sleep);
-// proper offline earnings are a later phase
-const MAX_TICK_SECONDS = 120;
+import { LOOP } from './config.js';
 
 const state = createState();
 const ui = createUI(state);
@@ -19,17 +13,17 @@ const ui = createUI(state);
 let lastLogic = performance.now();
 function logic() {
   const now = performance.now();
-  const seconds = Math.min((now - lastLogic) / 1000, MAX_TICK_SECONDS);
+  const seconds = Math.min((now - lastLogic) / 1000, LOOP.maxTickSeconds);
   lastLogic = now;
   economy.tick(state, seconds);
 }
-setInterval(logic, LOGIC_INTERVAL_MS);
+setInterval(logic, LOOP.logicIntervalMs);
 
 let lastShop = 0, lastTitle = 0;
 function frame(now) {
   ui.renderTreasury();
-  if (now - lastShop >= SHOP_INTERVAL_MS) { lastShop = now; ui.renderShop(); }
-  if (now - lastTitle >= TITLE_INTERVAL_MS) { lastTitle = now; ui.renderTitle(); }
+  if (now - lastShop >= LOOP.shopIntervalMs) { lastShop = now; ui.renderShop(); }
+  if (now - lastTitle >= LOOP.titleIntervalMs) { lastTitle = now; ui.renderTitle(); }
   requestAnimationFrame(frame);
 }
 ui.renderShop();

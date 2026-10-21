@@ -9,6 +9,7 @@ const { formatNumber } = await import(new URL('numberFormatter.js', dir));
 const { createState } = await import(new URL('gameState.js', dir));
 const economy = await import(new URL('economy.js', dir));
 const { BUILDINGS, BUILDINGS_BY_ID } = await import(new URL('buildings.js', dir));
+const { ECONOMY } = await import(new URL('config.js', dir));
 
 test('every idle-empire module has valid syntax', () => {
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
@@ -77,8 +78,8 @@ test('building costs: escalate by the growth factor and sum in closed form', () 
   assert.equal(economy.buildingCost(stall, 0).toNumber(), 15);
   assert.equal(economy.buildingCost(stall, 1).toNumber(), Math.ceil(15 * 1.15));
   assert.equal(economy.buildingCost(stall, 10).toNumber(), Math.ceil(15 * 1.15 ** 10));
-  let sum = 0; for (let k = 3; k < 13; k++) sum += 15 * 1.15 ** k;
-  assert.ok(Math.abs(economy.buildingCost(stall, 3, 10).toNumber() - Math.ceil(sum)) <= 1);
+  let sum = 0; for (let k = 3; k < 13; k++) sum += Math.ceil(15 * 1.15 ** k);
+  assert.equal(economy.buildingCost(stall, 3, 10).toNumber(), sum); // bulk = exact sum of single prices
   const far = economy.buildingCost(stall, 10000); // 15 * 1.15^10000 is ~1e608
   assert.ok(far.parts().e > 600 && far.parts().e < 620);
   for (let i = 1; i < BUILDINGS.length; i++) assert.ok(BUILDINGS[i].baseCost > BUILDINGS[i - 1].baseCost);
@@ -98,8 +99,9 @@ test('buying: validates funds, spends exactly the price, raises the next price',
   assert.equal(s.buildings.stall, 0);
   assert.equal(economy.buyBuilding(s, 'nope'), null);
   s.currency = BigNum.from(20);
-  const paid = economy.buyBuilding(s, 'stall');
-  assert.equal(paid.toNumber(), 15);
+  const bought = economy.buyBuilding(s, 'stall');
+  assert.equal(bought.count, 1);
+  assert.equal(bought.cost.toNumber(), 15);
   assert.equal(s.currency.toNumber(), 5);
   assert.equal(s.buildings.stall, 1);
   assert.equal(economy.nextCost(s, 'stall').toNumber(), 18);
@@ -129,4 +131,94 @@ test('a long simulated session: buy greedily for an hour without breaking', () =
   assert.ok(Number.isFinite(s.currency.toNumber()));
   assert.ok(economy.productionPerSecond(s).toNumber() > 100);
   assert.ok(s.totalEarned.gte(s.currency));
+});
+
+// ---- phase 2: bulk buying and the economy config ----
+
+const sumSingles = (def, owned, count) => {
+  let t = BigNum.from(0);
+  for (let i = 0; i < count; i++) t = t.add(economy.buildingCost(def, owned + i, 1));
+  return t;
+};
+
+test('bulk prices equal the sum of single prices, across the exact/closed-form boundary', () => {
+  for (const def of BUILDINGS) {
+    for (const [owned, count] of [[0, 1], [0, 10], [7, 100], [200, 100], [250, 40], [1000, 25]]) {
+      const bulk = economy.buildingCost(def, owned, count), singles = sumSingles(def, owned, count);
+      const rel = Math.abs(bulk.sub(singles).div(singles).toNumber());
+      assert.ok(rel < 1e-12, `${def.id} ${owned}+${count}: ${bulk} vs ${singles}`);
+    }
+  }
+  assert.ok(economy.buildingCost(BUILDINGS_BY_ID.stall, 0, 0).isZero());
+  assert.ok(economy.buildingCost(BUILDINGS_BY_ID.stall, 0, -3).isZero());
+  assert.ok(economy.buildingCost(BUILDINGS_BY_ID.stall, 0, NaN).isZero());
+});
+
+test('maxAffordable: cost(n) fits the budget and cost(n + 1) does not', () => {
+  const budgets = [0, 14, 15, 16, 32, 33, 1000, 123456, 9.99e15, 1e20, 1e100, '1e400', '3.3e5000'];
+  for (const def of BUILDINGS) for (const owned of [0, 1, 37, 300, 2000]) for (const b of budgets) {
+    const money = BigNum.from(b);
+    const n = economy.maxAffordable(def, owned, money);
+    if (n > 0) assert.ok(economy.buildingCost(def, owned, n).lte(money), `${def.id} ${owned} ${b} n=${n}`);
+    if (n < ECONOMY.maxPurchase) assert.ok(economy.buildingCost(def, owned, n + 1).gt(money), `${def.id} ${owned} ${b} n=${n}+1`);
+  }
+  assert.equal(economy.maxAffordable(BUILDINGS_BY_ID.stall, 0, 15 + 18), 2);
+  assert.equal(economy.maxAffordable(BUILDINGS_BY_ID.stall, 0, 15 + 18 - 1), 1);
+});
+
+test('buy modes: x1 / x10 / x100 are all-or-nothing, Max buys everything affordable', () => {
+  const s = createState();
+  assert.equal(s.buyMode, 1);
+  const cost10 = economy.buildingCost(BUILDINGS_BY_ID.stall, 0, 10);
+  s.currency = cost10.sub(1);
+  economy.setBuyMode(s, 10);
+  assert.equal(economy.quote(s, 'stall').affordable, false);
+  assert.equal(economy.buyBuilding(s, 'stall'), null); // can afford 9, not 10: buys nothing
+  assert.equal(s.buildings.stall, 0);
+  assert.ok(s.currency.eq(cost10.sub(1)));
+  s.currency = s.currency.add(1);
+  assert.equal(economy.buyBuilding(s, 'stall').count, 10);
+  assert.equal(s.buildings.stall, 10);
+  assert.ok(s.currency.isZero());
+
+  // ten single buys cost exactly what one x10 buy cost
+  const a = createState(), b = createState();
+  a.currency = b.currency = BigNum.from(1e6);
+  for (let i = 0; i < 10; i++) economy.buyBuilding(a, 'workshop', 1);
+  economy.buyBuilding(b, 'workshop', 10);
+  assert.ok(a.currency.eq(b.currency));
+
+  const m = createState();
+  m.currency = BigNum.from(5000);
+  economy.setBuyMode(m, 'max');
+  const q = economy.quote(m, 'stall');
+  const got = economy.buyBuilding(m, 'stall');
+  assert.equal(got.count, q.count);
+  assert.ok(got.count > 1);
+  assert.ok(m.currency.sign() >= 0);
+  assert.ok(m.currency.lt(economy.nextCost(m, 'stall'))); // nothing more is affordable
+  assert.equal(economy.buyBuilding(m, 'stall'), null); // Max with nothing affordable
+  assert.equal(economy.quote(m, 'stall').count, 1);    // quotes the next single copy
+
+  economy.setBuyMode(m, 7);
+  assert.equal(m.buyMode, ECONOMY.defaultBuyMode); // unknown modes fall back
+  assert.equal(economy.buyBuilding(m, 'stall', 'lots'), null);
+});
+
+test('Buy Max with an astronomically large treasury stays finite and exact', () => {
+  const s = createState();
+  s.currency = BigNum.from('1e3000');
+  const got = economy.buyBuilding(s, 'bank', 'max');
+  assert.ok(got.count > 40000 && got.count < 50000, String(got.count));
+  assert.ok(s.currency.sign() >= 0);
+  assert.ok(s.currency.lt(economy.nextCost(s, 'bank')));
+  assert.equal(s.buildings.bank, got.count);
+  assert.ok(Number.isFinite(economy.productionPerSecond(s).toNumber()));
+});
+
+test('economy config: a building without its own growth uses the default', () => {
+  assert.equal(economy.growthOf({ baseCost: 10 }), ECONOMY.defaultGrowth);
+  assert.equal(economy.growthOf({ baseCost: 10, growth: 1.2 }), 1.2);
+  assert.equal(economy.growthOf({ baseCost: 10, growth: 0.5 }), ECONOMY.defaultGrowth); // must exceed 1
+  assert.equal(economy.buildingCost({ baseCost: 10, growth: 2 }, 0, 4).toNumber(), 10 + 20 + 40 + 80);
 });

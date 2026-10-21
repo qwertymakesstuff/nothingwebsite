@@ -3,6 +3,7 @@
 import { BUILDINGS } from './buildings.js';
 import { formatNumber } from './numberFormatter.js';
 import * as economy from './economy.js';
+import { ECONOMY } from './config.js';
 
 const $ = id => document.getElementById(id);
 const MAX_FLOATERS = 40;
@@ -44,14 +45,17 @@ function buildingRow(def) {
     </span>
     <span class="b-side">
       <span class="b-owned" title="owned">0</span>
-      <span class="b-cost"><span class="coin" aria-hidden="true"></span><span class="b-cost-value"></span></span>
-    </span>`;
+      <span class="b-cost"><span class="b-qty"></span><span class="coin" aria-hidden="true"></span><span class="b-cost-value"></span></span>
+    </span>
+    <span class="b-progress" aria-hidden="true"><span></span></span>`;
   el.querySelector('.b-name').textContent = def.name;
   el.querySelector('.b-desc').textContent = def.description;
   return {
     def, el,
     owned: el.querySelector('.b-owned'),
     cost: el.querySelector('.b-cost-value'),
+    qty: el.querySelector('.b-qty'),
+    bar: el.querySelector('.b-progress span'),
     rate: el.querySelector('.b-rate'),
     last: {},
   };
@@ -70,17 +74,19 @@ function restartClass(el, cls) {
   el.classList.add(cls);
 }
 
+const MODE_LABELS = { 1: 'x1', 10: 'x10', 100: 'x100', max: 'Max' };
+
 export function createUI(state) {
-  const els = { currency: $('currency'), perSecond: $('perSecond'), perClick: $('perClick'), mint: $('mint'), shop: $('shop'), floaters: $('floaters') };
+  const els = { currency: $('currency'), perSecond: $('perSecond'), perClick: $('perClick'), mint: $('mint'), shop: $('shop'), floaters: $('floaters'), buyModes: $('buyModes') };
   const rows = BUILDINGS.map(buildingRow);
   rows.forEach(r => els.shop.appendChild(r.el));
   els.mint.innerHTML = mintSvg();
   const shown = {};
 
-  function floater(text, x, y) {
+  function floater(text, x, y, extraClass) {
     if (els.floaters.childElementCount >= MAX_FLOATERS) els.floaters.firstElementChild.remove();
     const f = document.createElement('span');
-    f.className = 'floater';
+    f.className = extraClass ? `floater ${extraClass}` : 'floater';
     f.textContent = text;
     f.style.left = `${x + (Math.random() * 24 - 12)}px`;
     f.style.top = `${y}px`;
@@ -100,15 +106,41 @@ export function createUI(state) {
     renderTreasury();
   });
 
+  // buy-mode selector: x1 / x10 / x100 / Max
+  const modeButtons = ECONOMY.buyModes.map(mode => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'buy-mode';
+    b.dataset.mode = String(mode);
+    b.textContent = MODE_LABELS[mode] || `x${mode}`;
+    b.setAttribute('role', 'radio');
+    b.addEventListener('click', () => { economy.setBuyMode(state, mode); renderModes(); renderShop(); });
+    els.buyModes.appendChild(b);
+    return { mode, b };
+  });
+  function renderModes() {
+    for (const { mode, b } of modeButtons) {
+      const on = state.buyMode === mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', String(on));
+    }
+  }
+  renderModes();
+
   els.shop.addEventListener('click', e => {
     const btn = e.target.closest('.building');
     if (!btn) return;
-    const paid = economy.buyBuilding(state, btn.dataset.id);
-    restartClass(btn, paid ? 'bought' : 'denied');
+    const bought = economy.buyBuilding(state, btn.dataset.id);
+    restartClass(btn, bought ? 'bought' : 'denied');
+    if (bought) {
+      const r = btn.querySelector('.b-owned').getBoundingClientRect();
+      floater(`+${formatNumber(bought.count)}`, r.left + r.width / 2, r.top, 'floater-buy');
+      restartClass(btn.querySelector('.b-owned'), 'bump');
+    }
     renderTreasury();
     renderShop();
   });
-  els.shop.addEventListener('animationend', e => e.target.classList.remove('bought', 'denied'));
+  els.shop.addEventListener('animationend', e => e.target.classList.remove('bought', 'denied', 'bump'));
 
   function show(key, node, text) {
     if (shown[key] === text) return;
@@ -126,10 +158,14 @@ export function createUI(state) {
     for (const row of rows) {
       const id = row.def.id;
       const owned = state.buildings[id] || 0;
-      const cost = economy.nextCost(state, id);
-      const affordable = economy.canAfford(state, cost);
-      setText(row, 'owned', row.owned, String(owned));
+      const { count, cost, affordable } = economy.quote(state, id);
+      setText(row, 'owned', row.owned, formatNumber(owned));
       setText(row, 'cost', row.cost, formatNumber(cost));
+      setText(row, 'qty', row.qty, count > 1 || state.buyMode !== 1 ? `×${formatNumber(count)}` : '');
+      // how close the treasury is to this price, 0..1
+      const ratio = affordable ? 1 : Math.max(0, Math.min(1, state.currency.div(cost).toNumber()));
+      const width = `${Math.floor(ratio * 100)}%`;
+      if (row.last.width !== width) { row.last.width = width; row.bar.style.width = width; }
       const each = formatNumber(economy.unitRate(row.def));
       const rate = owned > 0
         ? `+${each}/s each · ${formatNumber(economy.buildingProduction(state, id))}/s total`
@@ -141,7 +177,7 @@ export function createUI(state) {
         row.el.classList.toggle('unaffordable', !affordable);
         row.el.setAttribute('aria-disabled', String(!affordable));
       }
-      const label = `Buy ${row.def.name} for ${formatNumber(cost)} crowns, ${owned} owned`;
+      const label = `Buy ${formatNumber(count)} ${row.def.name} for ${formatNumber(cost)} crowns, ${formatNumber(owned)} owned`;
       if (row.last.label !== label) { row.last.label = label; row.el.setAttribute('aria-label', label); }
     }
   }

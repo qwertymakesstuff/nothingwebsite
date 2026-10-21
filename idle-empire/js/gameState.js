@@ -2,6 +2,7 @@
 // nothing keeps its own copy. All amounts are BigNums, counts are plain integers.
 import { ZERO } from './bigNum.js';
 import { BUILDINGS } from './buildings.js';
+import { ECONOMY } from './config.js';
 
 export const STATE_VERSION = 1;
 
@@ -12,6 +13,7 @@ export function createState() {
     totalEarned: ZERO,    // every crown ever earned (clicks + production)
     totalClicks: 0,
     buildings: Object.fromEntries(BUILDINGS.map(b => [b.id, 0])),
+    buyMode: ECONOMY.defaultBuyMode, // 1, 10, 100 or 'max'
     startedAt: Date.now(),
   };
 }
