@@ -6,6 +6,7 @@ import { NAMES } from '../data/names.js';
 import { PURPOSES, DOCUMENT_TYPES } from '../data/documents.js';
 import { makeDocument, passportNumber, corvennaNumber } from './documentFactory.js';
 import { addDays, ageOn } from './dates.js';
+import { poolPortrait } from './portrait.js';
 
 // What the regulations in force demand of a traveller's papers. Clean entrants are built to
 // satisfy these; flaws break exactly one of them.
@@ -298,5 +299,8 @@ export function generateVisitor(rng, { id, date, rules = [], flaw = null, allowe
     f.apply(rng, visitor, ctx);
     visitor.generated = { flaw: f.id, topic: f.topic, category: f.category };
   }
+  // the face fits the person the passport describes (a flaw may have changed the nationality)
+  const face = doc(visitor, 'passport') || p;
+  visitor.portrait = poolPortrait(face.nationality, face.sex || p.sex, face.dob || p.dob, date);
   return visitor;
 }

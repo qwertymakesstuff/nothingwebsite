@@ -51,6 +51,15 @@ warnings reset each shift.
 After Day 10 a new campaign starts again from Day 1; endings come in phase 10. Add `?seed=123`
 to the URL to replay the same campaign.
 
+## Portraits
+
+48 painted portraits live in `assets/portraits/`: the six Day 1 entrants (`v_*`), the planned
+recurring cast (`c_*`) and household (`h_*`), and 30 generic portraits
+(`pool_<nation>_<m|f>_<young|middle|older>`). The same image shows in the booth window and,
+in sepia, as the photo on the passport and identity card. Generated entrants get the pool
+portrait that fits their passport, so a face never contradicts the papers. The prompts that
+made them are in `docs/BORDERLINE-portrait-prompts.docx`.
+
 ## Architecture
 
 | File | Job |
@@ -61,6 +70,7 @@ to the URL to replay the same campaign.
 | `data/visitors.js` | hand-written entrants with structured papers |
 | `data/campaignDays.js` | the ten days: date, arrival order (`'gen'` = generated), flaw rate, nationality and purpose weights, bulletin |
 | `data/regulations.js` | versioned regulations (topic, `from`/`until`, `replaces`), check kind, parameters, rulebook text; `activeRegulations(day)`, `regulationChanges(day)`, `archivedRegulations(day)` |
+| `data/portraits.js` | the painted portraits in `assets/portraits/` (512 × 512 JPEG) and the age bands of the generic pool |
 | `data/scoring.js` | wage, warnings per shift, fines, which breaches are serious |
 | `js/gameState.js` | **the only writer**: `createGame(day, seed)`, `dispatch(state, action)` |
 | `js/visitorGenerator.js` | seeded entrants whose papers satisfy the day's rules (`requirements(rules)`), and the flaw catalogue: expired, incomplete, contradictory, forged, restricted, travel, plus the legal exception case |
@@ -73,7 +83,8 @@ to the URL to replay the same campaign.
 | `js/rulebook.js` | rulebook pages (Rules with New/Changed marks, Nations, Directive, Archive) from the data |
 | `js/briefing.js` | the morning briefing: directive and the day's regulation changes |
 | `js/ui.js`, `js/main.js` | rendering, focus management and the controller |
-| `js/rng.js`, `js/dates.js`, `js/html.js`, `js/portrait.js` | seeded random numbers, dates, escaping, portraits |
+| `js/portrait.js` | a visitor's face: their painted portrait, or a drawn one from `look`; `poolPortrait()` picks a generated entrant's portrait by the nationality, sex and age on their passport |
+| `js/rng.js`, `js/dates.js`, `js/html.js` | seeded random numbers, dates, escaping |
 
 How the pieces fit:
 

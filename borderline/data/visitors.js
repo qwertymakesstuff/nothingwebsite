@@ -1,11 +1,12 @@
 // Hand-authored entrants for the training shift. Each one carries structured documents;
 // the desk renders exactly these fields, so what the player reads is what the game holds.
-//   look: portrait parameters (see js/portrait.js)
+//   portrait: painted portrait id (data/portraits.js); look: parameters for the drawn fallback
 //   documents: { type, ...fields } as defined in data/documents.js
 
 export const VISITORS = {
   v_ilse_marek: {
     id: 'v_ilse_marek',
+    portrait: 'v_ilse_marek',
     name: 'Ilse Marek',
     look: { skin: '#e2b896', hair: '#5a3a22', hairStyle: 'bun', coat: '#6b5a48', collar: '#d9d2c0' },
     lines: { greet: 'Good morning. I am coming home from my sister\'s in Brenna.', accepted: 'Thank you. It is good to be back.', rejected: 'But I live here...' },
@@ -16,6 +17,7 @@ export const VISITORS = {
   },
   v_tomas_reyl: {
     id: 'v_tomas_reyl',
+    portrait: 'v_tomas_reyl',
     name: 'Tomas Reyl',
     look: { skin: '#c99a76', hair: '#2a2420', hairStyle: 'short', coat: '#3c4a5a', collar: '#e6e0d0', beard: true },
     lines: { greet: 'Papers. Here. I sell cloth in Halvost every spring.', accepted: 'Good, good. Business waits for no one.', rejected: 'You will regret this. My buyers will not.' },
@@ -26,6 +28,7 @@ export const VISITORS = {
   },
   v_anika_sorvald: {
     id: 'v_anika_sorvald',
+    portrait: 'v_anika_sorvald',
     name: 'Anika Sorvald',
     look: { skin: '#f0d0b4', hair: '#c9a15a', hairStyle: 'long', coat: '#7a3b32', collar: '#efe8d8', glasses: true },
     lines: { greet: 'Hello! I start at the conservatory in Halvost next week.', accepted: 'Wonderful, thank you!', rejected: 'Is something wrong with my passport?' },
@@ -36,6 +39,7 @@ export const VISITORS = {
   },
   v_mikel_arnsen: {
     id: 'v_mikel_arnsen',
+    portrait: 'v_mikel_arnsen',
     name: 'Mikel Arnsen',
     look: { skin: '#d6a882', hair: '#7a5530', hairStyle: 'cap', coat: '#4a4a3a', collar: '#cfc8b4' },
     lines: { greet: 'The quarry at Ostrel is hiring. I have a cousin there.', accepted: 'Hah. Easier than I thought.', rejected: 'A spelling mistake? That is the clerk\'s fault, not mine.' },
@@ -47,6 +51,7 @@ export const VISITORS = {
   },
   v_odessa_kain: {
     id: 'v_odessa_kain',
+    portrait: 'v_odessa_kain',
     name: 'Odessa Kain',
     look: { skin: '#8a5a3c', hair: '#d8d4cc', hairStyle: 'scarf', coat: '#2f3f3a', collar: '#b9a77a' },
     lines: { greet: 'My grandson is getting married in Brenna. I would not miss it.', accepted: 'Bless you, young one.', rejected: 'Then I will wait here until you change your mind.' },
@@ -57,6 +62,7 @@ export const VISITORS = {
   },
   v_piotr_halden: {
     id: 'v_piotr_halden',
+    portrait: 'v_piotr_halden',
     name: 'Piotr Halden',
     look: { skin: '#e8c0a0', hair: '#3a2a1e', hairStyle: 'short', coat: '#5a4a3a', collar: '#e0dccc' },
     lines: { greet: 'Evening. Last bus from the east. My passport is in here somewhere... there.', accepted: 'Home before dark. Thank you.', rejected: 'You are sending a Corvennan away from Corvenna?' },

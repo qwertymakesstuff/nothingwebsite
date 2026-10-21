@@ -9,7 +9,7 @@ import { renderRulebook, RULEBOOK_TABS } from './rulebook.js';
 import { activeRegulations } from '../data/regulations.js';
 import { SCORING } from '../data/scoring.js';
 import { shiftReport, warningsUsed } from './decisionSystem.js';
-import { portraitSVG } from './portrait.js';
+import { portraitHTML } from './portrait.js';
 import { formatLong, formatDoc } from './dates.js';
 import { esc } from './html.js';
 
@@ -85,7 +85,7 @@ export function createUI(act) {
     const v = currentVisitor(state);
     const phase = state.shift.phase;
     $('boothWindow').innerHTML = BACKDROP + (v
-      ? `<div class="visitor${arriving ? ' arriving' : ''}${phase === 'departing' ? ' leaving' : ''}">${portraitSVG(v.look, { title: v.name })}</div>`
+      ? `<div class="visitor${v.portrait ? ' has-photo' : ''}${arriving ? ' arriving' : ''}${phase === 'departing' ? ' leaving' : ''}">${portraitHTML(v, { title: v.name })}</div>`
       : `<p class="booth-empty">${{ shiftEnd: 'The road is empty. The shift is over.', briefing: 'The barrier is still down.' }[phase] || 'The booth is empty.'}</p>`);
     const d = v && decisionFor(state, v.id);
     const line = !v ? '' : d ? v.lines[d.decision === 'accept' ? 'accepted' : 'rejected'] : v.lines.greet;

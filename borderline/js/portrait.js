@@ -1,4 +1,22 @@
 import { esc } from './html.js';
+import { PORTRAITS, AGE_BANDS, portraitPath } from '../data/portraits.js';
+import { ageOn } from './dates.js';
+
+// the generic portrait for a person of this nationality, sex and age
+export function poolPortrait(nationality, sex, dob, date) {
+  const age = ageOn(dob, date);
+  const band = (AGE_BANDS.find(([, lo, hi]) => age >= lo && age <= hi) || AGE_BANDS[0])[0];
+  const id = `pool_${String(nationality).toLowerCase()}_${sex === 'F' ? 'f' : 'm'}_${band}`;
+  return PORTRAITS.has(id) ? id : null;
+}
+
+// a visitor's face: their painted portrait if there is one, otherwise the drawn one
+export function portraitHTML(visitor, { title = '' } = {}) {
+  if (visitor.portrait && PORTRAITS.has(visitor.portrait)) {
+    return `<img class="portrait portrait-photo" src="${esc(portraitPath(visitor.portrait))}" alt="${esc(title || visitor.name || 'Portrait')}" width="512" height="512" draggable="false">`;
+  }
+  return portraitSVG(visitor.look, { title });
+}
 
 // Builds an entrant's portrait as an SVG string from their `look` data. The same function
 // draws the booth view and the passport photo, so the two always match.

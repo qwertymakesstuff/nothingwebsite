@@ -5,7 +5,7 @@ import { esc } from './html.js';
 import { NATIONS, SETTING } from '../data/setting.js';
 import { DOCUMENT_TYPES } from '../data/documents.js';
 import { documentFields } from './documentFactory.js';
-import { portraitSVG } from './portrait.js';
+import { portraitHTML } from './portrait.js';
 
 // official seals and the forgeries of them (see FORGED_SEALS in data/setting.js)
 export const EMBLEMS = {
@@ -38,7 +38,7 @@ const stampMark = decision => decision
   ? `<div class="doc-stamp mark-${esc(decision)}" role="img" aria-label="Stamped: ${esc(STAMPS[decision])}"><span>${esc(STAMPS[decision])}</span><small>${esc(SETTING.checkpoint.post)}</small></div>` : '';
 
 const photo = (doc, visitor) =>
-  `<div class="doc-photo">${portraitSVG(visitor.look, { title: `Photograph of ${doc.given} ${doc.surname}` })}</div>`;
+  `<div class="doc-photo">${portraitHTML(visitor, { title: `Photograph of ${doc.given} ${doc.surname}` })}</div>`;
 
 const RENDERERS = {
   passport(doc, visitor, o) {

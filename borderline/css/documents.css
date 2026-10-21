@@ -21,6 +21,7 @@
 .doc-form { font-size: .65rem; color: #7a705e; border: 1px solid #0003; padding: .1rem .35rem; white-space: nowrap; }
 .doc-photo { background: #c9c0a6; border: 1px solid #0003; align-self: start; filter: sepia(.35) contrast(.95); }
 .doc-photo .portrait { display: block; width: 100%; height: auto; }
+.doc-photo .portrait-photo { aspect-ratio: 1; object-fit: cover; pointer-events: none; }
 
 /* passport: cover in the nation's colour, seal on the cover */
 .doc-passport { background: var(--paper); border: 1px solid #0004; }

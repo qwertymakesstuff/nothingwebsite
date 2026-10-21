@@ -22,6 +22,9 @@ const { formatDoc, formatLong, isValidDate } = await import(new URL('js/dates.js
 const { VISITORS } = await import(new URL('data/visitors.js', root));
 const { DAYS, LAST_DAY } = await import(new URL('data/campaignDays.js', root));
 const { NATIONS, SETTING, FORGED_SEALS } = await import(new URL('data/setting.js', root));
+const { PORTRAITS, portraitPath } = await import(new URL('data/portraits.js', root));
+const { portraitHTML } = await import(new URL('js/portrait.js', root));
+const { ageOn } = await import(new URL('js/dates.js', root));
 const SEED = 20240611;
 const RULES = activeRegulations(1);
 const CTX = { date: DAYS[0].date };
@@ -506,4 +509,24 @@ test('comparison tool: does a permit cover the stay?', () => {
   assert.equal(compare(permit('1982-04-17'), stay, today).status, 'mismatch');
   assert.match(compare(stay, permit('1982-04-17'), today).message, /18\.04\.1982/);
   assert.equal(compare(stay, { kind: 'today', value: '1982-03-19', display: '', label: 'Today', where: 'date plate' }).status, 'info');
+});
+
+test('portraits: every listed image exists, and every face fits its passport', () => {
+  for (const id of PORTRAITS) assert.ok(fs.existsSync(new URL(portraitPath(id), root)), `${id}.jpg exists`);
+  const files = fs.readdirSync(new URL('assets/portraits/', root)).filter(f => f.endsWith('.jpg'));
+  assert.equal(files.length, PORTRAITS.size, 'no unlisted images');
+  for (const v of Object.values(VISITORS)) assert.ok(PORTRAITS.has(v.portrait), `${v.id} has a portrait`);
+  for (let n = 1; n <= LAST_DAY; n++) {
+    for (const v of buildEntrants(DAYS[n - 1], 300 + n)) {
+      const p = v.documents.find(d => d.type === 'passport');
+      if (!p || v.id.startsWith('v_')) continue;
+      const age = ageOn(p.dob, DAYS[n - 1].date);
+      const band = age <= 35 ? 'young' : age <= 59 ? 'middle' : 'older';
+      assert.equal(v.portrait, `pool_${p.nationality.toLowerCase()}_${p.sex.toLowerCase()}_${band}`, `${v.id} portrait matches passport`);
+    }
+  }
+  const ilse = VISITORS.v_ilse_marek;
+  assert.match(portraitHTML(ilse), /<img class="portrait portrait-photo" src="assets\/portraits\/v_ilse_marek\.jpg"/);
+  assert.match(renderDocument(ilse.documents[0], ilse), /v_ilse_marek\.jpg/, 'the passport photo is the same portrait');
+  assert.match(portraitHTML({ look: {}, portrait: 'missing' }), /<svg/, 'unknown portraits fall back to the drawing');
 });
