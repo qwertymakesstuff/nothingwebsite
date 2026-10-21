@@ -493,6 +493,24 @@ function toast(text, tone = '') {
   while ($('#toasts').children.length > 4) $('#toasts').firstChild.remove();
 }
 
+// The game moved from missing.website/fortune-street to the play arcade; the old address
+// redirects here with its saved data in the URL fragment. Only known keys are taken, never
+// over data already saved here, and the save is still validated by loadGame() as usual.
+function importMovedData() {
+  const m = location.hash.match(/^#import=(.*)$/);
+  if (!m) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  try {
+    const data = JSON.parse(decodeURIComponent(m[1]));
+    for (const key of ['fortune-street:save', 'fortune-street:settings', 'fortune-street:tutorial']) {
+      if (typeof data[key] === 'string' && localStorage.getItem(key) == null) localStorage.setItem(key, data[key]);
+    }
+    app.settings = loadSettings();
+    app.tutorial = loadTutorial();
+    applySettings();
+  } catch { /* a damaged hand-over just means starting fresh */ }
+}
+
 // ---- boot -------------------------------------------------------------------------------------------------
 
 dialogs.initModalRoot();
@@ -502,6 +520,7 @@ document.addEventListener('keydown', onKey);
 globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener?.('change', applySettings);
 applySettings();
 
+importMovedData();
 const boot = loadGame();
 if (boot.error) quarantineSave(); // set the unreadable save aside, then say so on the title screen
 showTitle();

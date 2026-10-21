@@ -1,9 +1,10 @@
-# Fortune Street (`/fortune-street/`)
+# Fortune Street (`play.missing.website/fortune-street/`)
 
 A property-trading board game set in the fictional harbor city of Meridian Bay. Buy property,
 collect rent, complete districts, build up to landmark towers, trade with rivals and finish
 the richest owner. 2-4 players, human or AI, all on one device. Plain HTML, CSS and ES modules;
-no build step, no dependencies.
+no build step, no dependencies. Part of the play arcade (`play/public/`); the old address
+`missing.website/fortune-street/` redirects here and passes saved data along in the URL fragment.
 
 ## Modes
 

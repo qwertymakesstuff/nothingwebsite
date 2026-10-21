@@ -15,6 +15,7 @@ import { cars, makeCar, removeCar, driveCar, showDriver, carDist, hurtCar } from
 import { player, hurtPlayer } from './player.js';
 import { layDown, dropItem } from './people.js';
 import { createCharacter, officerSpec } from './models/characters.js';
+import { loadBody, bodyUrl, modelFor } from './story/glbChar.js';
 import { busted } from './lifecycle.js';
 import { banner, say } from './ui.js';
 import { S, TUNE, aggro, officerNext, carNext, arrestStep, evadeStep, evadedEnough } from './copAI.js';
@@ -220,6 +221,17 @@ function officerFrom(c, i, fixed) {
   const away = fixed ? 1.6 : 0, hx = c.cop.hx || 0, hz = c.cop.hz || 0;
   const o = { x: c.x + rx * (c.cr + 1.1 + away) + fx * (i * 1.7 - .6) + hx * away, z: c.z + rz * (c.cr + 1.1 + away) + fz * (i * 1.7 - .6) + hz * away, hp: 60, ch, mesh: ch.root, shotCd: rand(.6, 1.6), car: c, yaw: c.yaw, dead: 0, cur: 0, state: S.INVESTIGATING, stT: 0, look: Math.random() * .2, sees: false, unseenT: 0, hold: 0, grabT: 0, fixed: !!fixed, tgt: null, warned: false, fled: false };
   scene.add(ch.root); const r = pushOut(o.x, o.z, .5); o.x = r[0]; o.z = r[1]; officers.push(o); showDriver(c, false); ch.update(0, 0, {});
+  riggedOfficer(o);
+}
+/** the officer's rigged body (ped_officer_m / ped_officer_f) replaces the blocky one as soon as the file is ready */
+async function riggedOfficer(o) {
+  try {
+    const ch = await loadBody({ url: bodyUrl(modelFor.officer()), scale: 1.04 + Math.random() * .05 });
+    if (!officers.includes(o)) { ch.dispose(); return; }
+    const old = o.ch; scene.remove(o.mesh); o.ch = ch; o.mesh = ch.root; scene.add(o.mesh); o.mesh.position.set(o.x, 0, o.z); o.mesh.rotation.y = o.yaw;
+    if (o.dead) layDown(ch); else ch.update(0, 0, {});
+    if (old.dispose) old.dispose();
+  } catch (e) { console.warn('[officer model]', e); }
 }
 
 /* ---- officers on foot ---- */

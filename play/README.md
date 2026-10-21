@@ -1,6 +1,6 @@
 # play.missing.website
 
-A small arcade of 24 games that run in the browser: ten classics, twelve early-Flash-era favourites, and two bigger 3D games (Granny at `missing.website/granny/` and Harbor City at `missing.website/gta/`) that live on the main site and are linked from the homepage. Static files only (no build step), served by a
+A small arcade of 25 games that run in the browser: ten classics, twelve early-Flash-era favourites, the Fortune Street board game, and two bigger 3D games (Granny at `missing.website/granny/` and Harbor City at `missing.website/gta/`) that live on the main site and are linked from the homepage. Static files only (no build step), served by a
 Cloudflare Worker with static assets.
 
 ## Games
@@ -34,6 +34,17 @@ Cloudflare Worker with static assets.
 | `/skyhop/` | Sky Hop | endless platform hoppers | arrows / drag |
 | `/slideout/` | Slide Out | sliding-car puzzles | drag cars; Z undo |
 | `/lanewars/` | Lane Wars | lane-battle strategy | tap units; 1-6 |
+
+### Board games
+
+| URL | Game | Inspired by | Controls |
+|---|---|---|---|
+| `/fortune-street/` | Fortune Street | property-trading board games | mouse / touch; R rolls, E ends the turn |
+
+Fortune Street is bigger than the arcade games and doesn't use gamekit: it is its own app of ES
+modules (`fortune-street/js/`, entry `js/app.js`) with 2-4 players, AI rivals, pass-and-play and a
+guided tutorial. See `fortune-street/README.md`. It used to live at `missing.website/fortune-street/`,
+which now redirects here and hands over any saved match, settings and tutorial progress.
 
 Block Roll's 12 levels and Slide Out's 17 puzzles are checked by solvers in `tests/music/play-levels.test.mjs`.
 

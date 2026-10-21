@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const dir = new URL('../../fortune-street/js/', import.meta.url);
+const dir = new URL('../../play/public/fortune-street/js/', import.meta.url);
 const E = await import(new URL('engine.js', dir));
 const R = await import(new URL('rules.js', dir));
 const B = await import(new URL('board.js', dir));

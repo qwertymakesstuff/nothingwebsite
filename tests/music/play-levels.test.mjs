@@ -56,7 +56,9 @@ test('play site: every game listed on the homepage has a page, a script and a ba
     }
     const slug = g.url.replace(/\//g, '');
     assert.ok(!slugs.has(slug), `duplicate ${slug}`); slugs.add(slug);
-    for (const f of [`${slug}/index.html`, `${slug}/${slug}.js`, g.image.replace(/^\//, '')]) assert.ok(existsSync(new URL(`../../play/public/${f}`, import.meta.url)), `${g.name}: missing ${f}`);
+    // a small game is one <slug>.js; a bigger one (Fortune Street) keeps its modules in js/app.js
+    const script = existsSync(new URL(`../../play/public/${slug}/${slug}.js`, import.meta.url)) ? `${slug}/${slug}.js` : `${slug}/js/app.js`;
+    for (const f of [`${slug}/index.html`, script, g.image.replace(/^\//, '')]) assert.ok(existsSync(new URL(`../../play/public/${f}`, import.meta.url)), `${g.name}: missing ${f}`);
     assert.ok(g.name && g.description && g.group);
   }
 });
