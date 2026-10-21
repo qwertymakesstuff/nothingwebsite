@@ -2,13 +2,13 @@
 // regulations in force. It never looks at how an entrant was generated.
 //   evaluate(visitor, regulations, { date }) → {
 //     verdict: 'accept' | 'reject',
-//     violations: [{ rule, message, evidence: [{ doc, field }] }],
+//     violations: [{ rule, topic, message, evidence: [{ doc, field }] }],
 //     checks: [{ rule, passed, note }]     // every rule that was applied, for reports
 //   }
 import { NATIONS, SETTING } from '../data/setting.js';
 import { DOCUMENT_TYPES } from '../data/documents.js';
 import { documentFields } from './documentFactory.js';
-import { ageOn, daysBetween, formatDoc } from './dates.js';
+import { ageOn, daysBetween, formatDoc, addDays } from './dates.js';
 
 const LABEL = type => DOCUMENT_TYPES[type]?.label || type;
 const indexOf = (docs, type) => docs.findIndex(d => d.type === type);
@@ -23,12 +23,16 @@ export function nationalityOf(docs) {
   return docs.some(d => d.type === 'idCard') ? SETTING.country.code : null;
 }
 
+const nationName = code => NATIONS[code]?.name || code;
+const declarationOf = docs => docs.find(d => d.type === 'declaration');
+
 const CHECKS = {
   requireDocument({ document, who }, docs) {
     const nat = nationalityOf(docs);
     const citizen = nat === SETTING.country.code;
     if (who === 'citizen' && !citizen) return { skip: 'not a citizen' };
     if (who === 'foreign' && (citizen || nat === null)) return { skip: 'not a foreign entrant' };
+    if (Array.isArray(who) && !who.includes(nat)) return { skip: `not a national of ${who.map(nationName).join(' or ')}` };
     return indexOf(docs, document) >= 0 ? [] : [{ message: `No ${LABEL(document)} was presented.`, evidence: [] }];
   },
 
@@ -43,8 +47,9 @@ const CHECKS = {
     const out = [];
     let note;
     docs.forEach((d, i) => {
-      if (!documents.includes(d.type)) return;
+      if (documents === 'others' ? d.type === 'passport' : !documents.includes(d.type)) return;
       const key = expiryKey(d.type);
+      if (!key) return;
       if (!(d[key] < ctx.date)) return;
       if (exception && d.type === 'passport' && d.nationality === exception.nationality
         && ageOn(d.dob, ctx.date) >= exception.minAge && daysBetween(d[key], ctx.date) < exception.graceDays) {
@@ -71,6 +76,39 @@ const CHECKS = {
     const nation = NATIONS[docs[i].nationality];
     return nation && docs[i].seal === nation.emblem ? []
       : [{ message: `The seal on the ${LABEL(document)} is not the official seal of ${nation?.name || 'its nation'}.`, evidence: [{ doc: i, field: 'seal' }] }];
+  },
+
+  restrictNationality({ nations, exceptPurposes = [] }, docs) {
+    const nat = nationalityOf(docs);
+    if (!nations.includes(nat)) return { skip: 'nationality not restricted' };
+    const decl = declarationOf(docs);
+    if (decl && exceptPurposes.includes(decl.purpose)) return { skip: `purpose ${decl.purpose} is allowed` };
+    return [{ message: `Entry of ${NATIONS[nat]?.adjective || nat} nationals is restricted${decl ? `, and ${decl.purpose} is not an allowed purpose` : ''}.`,
+      evidence: [{ doc: docs.findIndex(d => d.nationality === nat), field: 'nationality' }] }];
+  },
+
+  maxDuration({ days, exceptPurposes = [] }, docs) {
+    const decl = declarationOf(docs);
+    if (!decl) return { skip: 'no declaration' };
+    if (exceptPurposes.includes(decl.purpose)) return { skip: `purpose ${decl.purpose} is exempt` };
+    return decl.duration <= days ? []
+      : [{ message: `A stay of ${decl.duration} days exceeds the limit of ${days} days.`, evidence: [{ doc: docs.indexOf(decl), field: 'duration' }] }];
+  },
+
+  coversStay({ document, field }, docs, ctx) {
+    const decl = declarationOf(docs), i = indexOf(docs, document);
+    if (!decl || i < 0) return { skip: `no declaration or ${LABEL(document)}` };
+    const end = addDays(ctx.date, decl.duration);
+    return docs[i][field] >= end ? []
+      : [{ message: `The stay ends on ${formatDoc(end)}, but the ${LABEL(document)} is only valid until ${formatDoc(docs[i][field])}.`,
+        evidence: [{ doc: docs.indexOf(decl), field: 'duration' }, { doc: i, field }] }];
+  },
+
+  allowedValues({ document, field, values }, docs) {
+    const i = indexOf(docs, document);
+    if (i < 0) return { skip: `no ${LABEL(document)}` };
+    return values.includes(docs[i][field]) ? []
+      : [{ message: `${docs[i][field]} is not a permitted ${field} for a ${LABEL(document)}.`, evidence: [{ doc: i, field }] }];
   },
 
   // every field of a listed kind must hold the same value as its first appearance,
@@ -105,7 +143,7 @@ export function evaluate(visitor, regulations, ctx) {
     const r = check(rule.params || {}, docs, ctx);
     if (r && r.skip) { checks.push({ rule: rule.id, passed: true, note: `Not applicable: ${r.skip}.` }); continue; }
     const found = Array.isArray(r) ? r : r.violations;
-    for (const v of found) violations.push({ rule: rule.id, ...v });
+    for (const v of found) violations.push({ rule: rule.id, topic: rule.topic || rule.id, ...v });
     checks.push({ rule: rule.id, passed: found.length === 0, note: Array.isArray(r) ? undefined : r.note });
   }
   return { verdict: violations.length ? 'reject' : 'accept', violations, checks };

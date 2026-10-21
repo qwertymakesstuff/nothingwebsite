@@ -73,3 +73,15 @@
 @media (max-width: 640px) {
   .doc { width: 100%; }
 }
+
+/* entry permit: pink ministry form with a red band */
+.doc-entryPermit { background: #f3e1dc; border-top: 6px solid #8a2a22; border-bottom: 2px solid #8a2a2255; }
+.doc-entryPermit .doc-head { border-bottom: 1px dashed #8a2a2255; }
+.doc-entryPermit .doc-kind { color: #6b2626; }
+.doc-entryPermit .emblem { width: 28px; height: 28px; }
+
+/* health certificate: white card with a green cross */
+.doc-healthCert { width: 280px; background: #fbfaf4; border: 1px solid #0003; border-left: 8px solid #2f6b3a; }
+.doc-healthCert .doc-head { border-bottom: 1px solid #2f6b3a44; }
+.doc-healthCert .doc-kind { color: #24572f; }
+.doc-healthCert .cross { font-size: 1.5rem; color: #2f6b3a; line-height: 1; }

@@ -4,5 +4,5 @@ export const SCORING = {
   warningsPerShift: 2,     // the first mistakes in a shift bring a warning and no fine
   fine: 5,                 // each ordinary mistake once the warnings are used up
   seriousFine: 10,         // admitting an entrant on forged papers: fined at once, never a warning
-  seriousRules: ['passport-issuer', 'passport-seal'],
+  seriousTopics: ['passport-issuer', 'passport-seal'], // regulation topics (see data/regulations.js)
 };

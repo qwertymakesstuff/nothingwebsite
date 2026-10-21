@@ -1,8 +1,9 @@
 // Draws the game state into the page. Reads state only; every change goes back through
 // the `act` callback supplied by main.js.
 import { SETTING } from '../data/setting.js';
-import { dayByNumber } from '../data/campaignDays.js';
-import { currentVisitor, currentDay, decisionFor, visitorById } from './gameState.js';
+import { dayByNumber, LAST_DAY } from '../data/campaignDays.js';
+import { briefingHTML } from './briefing.js';
+import { currentVisitor, currentDay, decisionFor, visitorById, isLastDay } from './gameState.js';
 import { createDesk, deskToolbarHTML } from './desk.js';
 import { renderRulebook, RULEBOOK_TABS } from './rulebook.js';
 import { activeRegulations } from '../data/regulations.js';
@@ -48,7 +49,7 @@ export function createUI(act) {
   function renderHUD(state) {
     const s = state.shift;
     $('hud').innerHTML = `
-      <div><dt>Day</dt><dd>${state.day}</dd></div>
+      <div><dt>Day</dt><dd>${state.day} / ${LAST_DAY}</dd></div>
       <div><dt>Date</dt><dd>${esc(formatLong(state.date))}</dd></div>
       <div><dt>Entrants</dt><dd>${s.decisions.length} / ${s.queue.length} processed</dd></div>
       <div><dt>Warnings</dt><dd class="${warningsUsed(s.decisions) >= SCORING.warningsPerShift ? 'hud-alert' : ''}">${warningsUsed(s.decisions)} / ${SCORING.warningsPerShift}</dd></div>
@@ -85,7 +86,7 @@ export function createUI(act) {
     const phase = state.shift.phase;
     $('boothWindow').innerHTML = BACKDROP + (v
       ? `<div class="visitor${arriving ? ' arriving' : ''}${phase === 'departing' ? ' leaving' : ''}">${portraitSVG(v.look, { title: v.name })}</div>`
-      : `<p class="booth-empty">${phase === 'shiftEnd' ? 'The road is empty. The shift is over.' : 'The booth is empty.'}</p>`);
+      : `<p class="booth-empty">${{ shiftEnd: 'The road is empty. The shift is over.', briefing: 'The barrier is still down.' }[phase] || 'The booth is empty.'}</p>`);
     const d = v && decisionFor(state, v.id);
     const line = !v ? '' : d ? v.lines[d.decision === 'accept' ? 'accepted' : 'rejected'] : v.lines.greet;
     $('speech').innerHTML = v ? `<p class="speaker">${esc(v.name)}</p><p>“${esc(line)}”</p>` : '';
@@ -100,7 +101,7 @@ export function createUI(act) {
     }
     const v = currentVisitor(state);
     const d = v && decisionFor(state, v.id);
-    desk.show(v, { stamp: d ? d.decision : null, arriving });
+    desk.show(v, { stamp: d ? d.decision : null, arriving, date: state.date });
     const inspecting = state.shift.phase === 'inspecting';
     for (const b of document.querySelectorAll('[data-action="decide"]')) b.disabled = !inspecting;
     document.querySelector('[data-action="returnPapers"]').disabled = state.shift.phase !== 'departing';
@@ -110,6 +111,7 @@ export function createUI(act) {
     const s = state.shift;
     const v = currentVisitor(state);
     const text = {
+      briefing: 'Read the morning briefing, then open the checkpoint.',
       waiting: s.next === 0 ? 'Your shift has begun. Call the first entrant when you are ready.' : 'Call the next entrant.',
       inspecting: `Inspecting ${v?.name}. Read and compare the papers, then stamp a decision.`,
       departing: `Papers stamped. Return them to ${v?.name}.`,
@@ -147,8 +149,12 @@ export function createUI(act) {
   function renderSummary(state) {
     const r = shiftReport(state.shift.decisions);
     const mistakes = state.shift.decisions.filter(d => !d.correct);
+    const last = isLastDay(state);
+    const days = [...state.history.map(h => h.report), r];
+    const total = { correct: days.reduce((a, x) => a + x.correct, 0), processed: days.reduce((a, x) => a + x.processed, 0), net: days.reduce((a, x) => a + x.net, 0) };
+    const signed = n => `${n < 0 ? '−' : '+'}${money(Math.abs(n))}`;
     $('summaryBody').innerHTML = `
-      <p class="kicker">${esc(SETTING.checkpoint.post)} · End of shift</p>
+      <p class="kicker">${esc(SETTING.checkpoint.post)} · End of shift · ${esc(formatLong(state.date))}</p>
       <h2 id="summaryTitle">Day ${state.day} report</h2>
       <dl class="summary-stats">
         <div><dt>Entrants processed</dt><dd>${r.processed}</dd></div>
@@ -157,20 +163,22 @@ export function createUI(act) {
         <div><dt>Warnings issued</dt><dd>${r.warnings} / ${SCORING.warningsPerShift}</dd></div>
         <div><dt>Wages earned</dt><dd>+${money(r.wages)}</dd></div>
         <div><dt>Fines</dt><dd>${r.fines ? `−${money(r.fines)}` : money(0)}</dd></div>
-        <div class="summary-total"><dt>Net for the shift</dt><dd>${r.net < 0 ? '−' : '+'}${money(Math.abs(r.net))}</dd></div>
+        <div class="summary-total"><dt>Net for the shift</dt><dd>${signed(r.net)}</dd></div>
         <div><dt>Savings</dt><dd>${money(state.money)}</dd></div>
       </dl>
       ${mistakes.length ? `<h3 class="summary-sub">Citations</h3><ol class="summary-mistakes">${mistakes.map(d =>
         `<li><b>${esc(visitorById(state, d.visitorId).name)}</b>: ${d.decision === 'accept' ? 'admitted' : 'refused'}, should have been ${d.verdict === 'accept' ? 'admitted' : 'refused'}. ${esc(d.citation.reason)} <span class="summary-penalty">${d.fine ? `Fined ${money(d.fine)}` : 'Warning'}</span></li>`).join('')}</ol>`
         : '<p class="summary-note">A clean shift. The Ministry has no citations to record.</p>'}
-      <p class="summary-note">Later days are not built yet; a new shift starts Day 1 again with fresh entrants.</p>
-      <div class="btn-row"><button type="button" class="btn primary" data-action="restart">Start a new shift</button></div>`;
+      ${state.history.length ? `<h3 class="summary-sub">So far</h3><p class="summary-note">${state.day} days worked · ${total.correct} of ${total.processed} decisions correct · ${signed(total.net)} net pay.</p>` : ''}
+      ${last ? `<p class="summary-note">That was the last day of this posting. Campaign endings come in a later phase, so a new campaign starts again from Day 1.</p>
+        <div class="btn-row"><button type="button" class="btn primary" data-action="restart">Start a new campaign</button></div>`
+        : `<div class="btn-row"><button type="button" class="btn primary" data-action="nextDay">Go home · begin Day ${state.day + 1}</button></div>`}`;
   }
 
   // move focus to the control the player needs next, so keyboard play never gets lost
   function focusFor(phase) {
     if (phase === 'inspecting') { desk.firstDocument()?.focus({ preventScroll: true }); return; }
-    const sel = { waiting: '[data-action="callNext"]', departing: '[data-action="returnPapers"]', shiftEnd: '#summary [data-action="restart"]' }[phase];
+    const sel = { briefing: '#briefing [data-action="openCheckpoint"]', waiting: '[data-action="callNext"]', departing: '[data-action="returnPapers"]', shiftEnd: '#summary .btn.primary' }[phase];
     document.querySelector(sel)?.focus({ preventScroll: phase === 'inspecting' });
   }
 
@@ -185,9 +193,12 @@ export function createUI(act) {
       const ended = state.shift.phase === 'shiftEnd';
       if (ended) renderSummary(state);
       $('summary').hidden = !ended;
+      const briefing = state.shift.phase === 'briefing';
+      if (briefing && state.shift.phase !== lastPhase) $('briefingBody').innerHTML = briefingHTML(currentDay(state));
+      $('briefing').hidden = !briefing;
       if (state.shift.phase !== lastPhase) focusFor(state.shift.phase);
       lastPhase = state.shift.phase;
     },
-    showIntro() { showScreen('intro'); $('summary').hidden = true; lastPhase = null; shownVisitor = null; rulebookKey = null; },
+    showIntro() { showScreen('intro'); $('summary').hidden = true; $('briefing').hidden = true; lastPhase = null; shownVisitor = null; rulebookKey = null; },
   };
 }

@@ -33,10 +33,20 @@ export const DOCUMENT_TYPES = {
     fields: [...NAME, F('passportNo', 'Passport no.', 'passportNo'), F('route', 'Route', 'route'),
       F('exitBy', 'Exit by', 'expiry', 'date'), F('number', 'Pass no.', 'passNo')],
   },
+  entryPermit: {
+    label: 'Entry Permit',
+    fields: [...NAME, F('nationality', 'Nationality', 'nationality', 'nation'), F('passportNo', 'Passport no.', 'passportNo'),
+      F('purpose', 'Purpose', 'purpose'), F('validUntil', 'Valid until', 'expiry', 'date'), F('number', 'Permit no.', 'entryNo')],
+  },
+  healthCert: {
+    label: 'Health Certificate',
+    fields: [...NAME, F('passportNo', 'Passport no.', 'passportNo'), F('vaccine', 'Vaccination', 'vaccine'),
+      F('vaccinatedOn', 'Vaccinated on', 'vaccinatedOn', 'date'), F('expires', 'Expires', 'expiry', 'date'), F('number', 'Certificate no.', 'certNo')],
+  },
 };
 
 // number patterns for documents Corvenna issues (# = digit)
-export const NUMBER_PATTERNS = { idCard: 'ID ###-###', workPermit: 'WP-####', transitPass: 'TP-#####' };
+export const NUMBER_PATTERNS = { idCard: 'ID ###-###', workPermit: 'WP-####', transitPass: 'TP-#####', entryPermit: 'EP-######', healthCert: 'HC/##/####' };
 
 // purposes an entry declaration may state, with the stay length range (days) a generated
 // entrant asks for, and the extra document a purpose brings with it

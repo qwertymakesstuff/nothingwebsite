@@ -13,7 +13,7 @@ import { esc } from './html.js';
 const GAP = 14, STEP = 20, BIG_STEP = 60, MIN_HEIGHT = 420;
 
 export function createDesk({ tray, toolbar, result, examine }) {
-  let visitor = null, stamp = null;
+  let visitor = null, stamp = null, today = null;
   let positions = {};   // docIndex → { x, y }
   let order = [];       // docIndex list, back to front
   let selected = null;  // docIndex
@@ -125,7 +125,7 @@ export function createDesk({ tray, toolbar, result, examine }) {
     const holder = el.closest('.tray > .doc');
     if (holder) toFront(Number(holder.dataset.doc)); // a field on a covered paper comes into view
     if (picked.length === 2) {
-      lastResult = compare(itemFrom(picked[0]), itemFrom(picked[1]));
+      lastResult = compare(itemFrom(picked[0]), itemFrom(picked[1]), { today });
       result.textContent = lastResult.message;
       result.dataset.status = lastResult.status;
     } else {
@@ -237,9 +237,9 @@ export function createDesk({ tray, toolbar, result, examine }) {
 
   return {
     // draw `v`'s papers; positions survive re-renders of the same entrant
-    show(v, { stamp: s = null, arriving = false } = {}) {
+    show(v, { stamp: s = null, arriving = false, date = null } = {}) {
       const changed = (v?.id ?? null) !== (visitor?.id ?? null);
-      visitor = v; stamp = s;
+      visitor = v; stamp = s; today = date;
       if (changed) { moved = false; positions = {}; order = []; selected = null; picked = []; lastResult = null; result.textContent = ''; delete result.dataset.status; }
       const target = v ? Math.max(0, v.documents.findIndex(d => d.type === 'passport')) : -1;
       tray.innerHTML = v

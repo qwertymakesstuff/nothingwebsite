@@ -65,6 +65,15 @@ const RENDERERS = {
       <div class="doc-fields doc-grid">${fieldsHTML(doc, o.docIndex)}</div>
       <p class="doc-fine">Valid only for the employer named. The holder must leave Corvenna when this permit lapses.</p>`;
   },
+  entryPermit(doc, visitor, o) {
+    return `<header class="doc-head">${emblemSVG('star', '#6b2626')}<div><p class="doc-issuer">${esc(SETTING.country.formal)} · ${esc(SETTING.country.ministry)}</p><p class="doc-kind">Entry Permit</p></div></header>
+      <div class="doc-fields doc-grid">${fieldsHTML(doc, o.docIndex)}</div>
+      <p class="doc-fine">Admits the holder once, for the purpose stated, until the date shown.</p>`;
+  },
+  healthCert(doc, visitor, o) {
+    return `<header class="doc-head"><span class="cross" aria-hidden="true">✚</span><div><p class="doc-issuer">International Certificate of Vaccination</p><p class="doc-kind">Health Certificate</p></div></header>
+      <div class="doc-fields doc-grid">${fieldsHTML(doc, o.docIndex)}</div>`;
+  },
   transitPass(doc, visitor, o) {
     return `<header class="doc-head"><div><p class="doc-issuer">${esc(SETTING.country.ministry)}</p><p class="doc-kind">Transit Pass</p></div><span class="doc-form">No stopping</span></header>
       <div class="doc-fields">${fieldsHTML(doc, o.docIndex)}</div>`;

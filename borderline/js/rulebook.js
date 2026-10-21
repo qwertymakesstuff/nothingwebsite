@@ -1,21 +1,43 @@
 // The rulebook on the desk, drawn from the same data the rules engine applies:
 //   Rules: the regulations in force today, numbered
 //   Nations: each nation's official seal and recognised issuing offices (comparable items)
-//   Directive: the morning bulletin
+//   Directive: the morning bulletin, and pay and penalties
+//   Archive: regulations no longer in force and earlier directives
 import { NATIONS } from '../data/setting.js';
 import { esc } from './html.js';
 import { emblemSVG } from './documentRenderer.js';
 import { formatLong } from './dates.js';
 import { SCORING } from '../data/scoring.js';
 import { SETTING } from '../data/setting.js';
+import { regulationChanges, archivedRegulations, REGULATIONS } from '../data/regulations.js';
+import { DAYS } from '../data/campaignDays.js';
 
-export const RULEBOOK_TABS = [['rules', 'Rules'], ['nations', 'Nations'], ['directive', 'Directive']];
+export const RULEBOOK_TABS = [['rules', 'Rules'], ['nations', 'Nations'], ['directive', 'Directive'], ['archive', 'Archive']];
 
 const ref = (kind, label, attrs) =>
   `data-ref data-kind="${kind}" data-label="${esc(label)}" data-where="rulebook" ${attrs}`;
 
-function rulesPage(regulations) {
-  return `<ol class="rule-list">${regulations.map(r => `<li id="rule-${esc(r.id)}">${esc(r.text)}${r.note ? `<span class="rule-note">${esc(r.note)}</span>` : ''}</li>`).join('')}</ol>`;
+function rulesPage(regulations, dayNumber) {
+  const ch = regulationChanges(dayNumber);
+  const isNew = new Set(ch.added.map(r => r.id)), isChanged = new Set(ch.changed.map(c => c.rule.id));
+  // on the first day every rule is new, so nothing is singled out
+  const badge = r => (dayNumber === 1 ? '' : isNew.has(r.id) ? '<span class="rule-badge">New</span>' : isChanged.has(r.id) ? '<span class="rule-badge changed">Changed</span>' : '');
+  return `<ol class="rule-list">${regulations.map(r => `<li id="rule-${esc(r.id)}">${badge(r)}${esc(r.text)}${r.note ? `<span class="rule-note">${esc(r.note)}</span>` : ''}</li>`).join('')}</ol>`;
+}
+
+const daySpan = r => (r.from === r.until ? `Day ${r.from}` : `Days ${r.from}–${r.until}`);
+
+function archivePage(dayNumber) {
+  const old = archivedRegulations(dayNumber);
+  const successor = r => REGULATIONS.find(x => x.replaces === r.id);
+  const rules = old.length
+    ? `<ul class="archive-list">${old.map(r => `<li><span class="archive-days">${daySpan(r)}</span>${esc(r.text)}${successor(r) ? '<span class="rule-note">Replaced by a revised rule.</span>' : '<span class="rule-note">Withdrawn.</span>'}</li>`).join('')}</ul>`
+    : '<p class="archive-empty">No regulation has been withdrawn or replaced yet.</p>';
+  const past = DAYS.filter(d => d.day < dayNumber);
+  const directives = past.length
+    ? `<ul class="archive-list">${past.map(d => `<li><span class="archive-days">Day ${d.day} · ${esc(formatLong(d.date))}</span><b>${esc(d.bulletin.title)}</b>${d.bulletin.lines.map(l => `<span class="rule-note">${esc(l)}</span>`).join('')}</li>`).join('')}</ul>`
+    : '<p class="archive-empty">This is your first day.</p>';
+  return `<h3>Former regulations</h3>${rules}<h3 class="rulebook-sub">Earlier directives</h3>${directives}`;
 }
 
 function nationsPage() {
@@ -43,7 +65,8 @@ function directivePage(day, date) {
 }
 
 export function renderRulebook({ tab, regulations, day, date }) {
-  const page = tab === 'nations' ? nationsPage() : tab === 'directive' ? directivePage(day, date) : rulesPage(regulations);
+  const page = tab === 'nations' ? nationsPage() : tab === 'directive' ? directivePage(day, date)
+    : tab === 'archive' ? archivePage(day.day) : rulesPage(regulations, day.day);
   return `<header class="rulebook-head"><p class="doc-issuer">Ministry of Passage</p><h2>Rulebook</h2></header>
     <div class="rulebook-tabs" role="tablist" aria-label="Rulebook sections">${RULEBOOK_TABS.map(([id, label]) =>
       `<button type="button" role="tab" id="rbtab-${id}" aria-selected="${tab === id}" aria-controls="rulebookPage" tabindex="${tab === id ? 0 : -1}" data-rulebook="${id}">${label}</button>`).join('')}</div>

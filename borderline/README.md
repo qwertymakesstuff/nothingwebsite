@@ -5,7 +5,8 @@ Checkpoint 9 on the Ilvar Pass, a mountain crossing to the eastern states. Plain
 ES modules, no build step, no dependencies. The game is built in 13 phases. Done so far:
 **phase 1** (foundation and inspection desk), **phase 2** (document system and generated
 entrants), **phase 3** (desk interaction and the comparison tool), **phase 4** (rules engine
-and rulebook) and **phase 5** (decisions, scoring and penalties).
+and rulebook), **phase 5** (decisions, scoring and penalties) and **phase 6** (regulation
+progression: ten different days).
 
 ## Playing
 
@@ -26,8 +27,29 @@ and return the papers.
   is fined K10 at once and never counts as a warning. A slip after each stamp says whether it
   was right, and why not if it wasn't. The end-of-shift report lists every citation.
 
-Only Day 1 exists so far; a new shift starts Day 1 again with fresh generated entrants. Add
-`?seed=123` to the URL to replay the same entrants.
+## The ten days
+
+Each shift opens with a **morning briefing**: the directive, plus any regulations that are new,
+changed or withdrawn. Rules marked New or Changed are flagged in the rulebook, and its
+**Archive** tab keeps former regulations and earlier directives. Each day has its own date,
+queue length, mix of nationalities and purposes, and rate of flawed papers. Money carries over;
+warnings reset each shift.
+
+| Day | Date | What changes |
+| --- | --- | --- |
+| 1 | 12 Mar 1982 | passport, expiry, citizen ID card, foreign declaration, documents agree |
+| 2 | 13 Mar | recognised issuing offices (forgers); Work Permits for workers |
+| 3 | 15 Mar | official seals; Transit Passes |
+| 4 | 16 Mar | every paper in date; expiry rule revised with a year's grace for citizens 65+ |
+| 5 | 17 Mar | Entry Permits for all foreigners; documents must also agree on purpose |
+| 6 | 18 Mar | Oskarian nationals suspended except in transit (until Day 8) |
+| 7 | 19 Mar | stays capped at 30 days except Work and Study; Work Permit must cover the stay |
+| 8 | 20 Mar | Health Certificates for Velsundi and Dravish nationals |
+| 9 | 22 Mar | Oskaria reopened; Kaltrini nationals only for a Family visit or Transit |
+| 10 | 23 Mar | Port Kessel closed: transit only via Sarn Bridge or Westmark Gate |
+
+After Day 10 a new campaign starts again from Day 1; endings come in phase 10. Add `?seed=123`
+to the URL to replay the same campaign.
 
 ## Architecture
 
@@ -37,18 +59,19 @@ Only Day 1 exists so far; a new shift starts Day 1 again with fresh generated en
 | `data/documents.js` | document types: fields, labels, field kinds, display formats; purposes |
 | `data/names.js` | name pools by nation |
 | `data/visitors.js` | hand-written entrants with structured papers |
-| `data/campaignDays.js` | days: date, arrival order (`'gen'` = generated), flaw rate, morning bulletin |
-| `data/regulations.js` | regulations: check kind, parameters, effective day, rulebook text; `activeRegulations(day)` |
+| `data/campaignDays.js` | the ten days: date, arrival order (`'gen'` = generated), flaw rate, nationality and purpose weights, bulletin |
+| `data/regulations.js` | versioned regulations (topic, `from`/`until`, `replaces`), check kind, parameters, rulebook text; `activeRegulations(day)`, `regulationChanges(day)`, `archivedRegulations(day)` |
 | `data/scoring.js` | wage, warnings per shift, fines, which breaches are serious |
 | `js/gameState.js` | **the only writer**: `createGame(day, seed)`, `dispatch(state, action)` |
-| `js/visitorGenerator.js` | seeded entrants with consistent papers, and the flaw catalogue (expired, incomplete, contradictory, forged, plus the legal exception case) |
+| `js/visitorGenerator.js` | seeded entrants whose papers satisfy the day's rules (`requirements(rules)`), and the flaw catalogue: expired, incomplete, contradictory, forged, restricted, travel, plus the legal exception case |
 | `js/documentFactory.js` | builds documents and their display text |
 | `js/documentRenderer.js` | document HTML from document data; seals and stamps |
 | `js/rulesEngine.js` | `evaluate(visitor, regulations, { date })`: verdict, violations with evidence, per-rule checks |
 | `js/decisionSystem.js` | `assess()` turns a stamp into a decision record (pay, warning or fine, reason); `shiftReport()` |
 | `js/inspectionEngine.js` | the player's comparison tool (`compare(a, b)`) |
 | `js/desk.js` | dragging, placing, keyboard movement, tidy, magnifier, compare mode (presentation only) |
-| `js/rulebook.js` | rulebook pages from the regulation, nation and scoring data |
+| `js/rulebook.js` | rulebook pages (Rules with New/Changed marks, Nations, Directive, Archive) from the data |
+| `js/briefing.js` | the morning briefing: directive and the day's regulation changes |
 | `js/ui.js`, `js/main.js` | rendering, focus management and the controller |
 | `js/rng.js`, `js/dates.js`, `js/html.js`, `js/portrait.js` | seeded random numbers, dates, escaping, portraits |
 
@@ -61,6 +84,9 @@ How the pieces fit:
   that the engine catches exactly that flaw and nothing else.
 - **Every case is fair.** A shift only plants flaws against regulations in force that day, and
   every fact the engine checks is printed on a paper, the date plate or the rulebook.
+- **Each day is judged by its own rules.** A decision is assessed against
+  `activeRegulations(day)` and keeps its `day`; finished days are filed in `state.history`
+  with their reports, so earlier cases are never re-judged by later rules.
 - **One decision record per entrant.** `dispatch` refuses a second stamp, so pay and fines
   are applied once. Money, the log and the report all read from these records.
 
@@ -69,6 +95,9 @@ How the pieces fit:
 `node --test tests/music/borderline.test.mjs` covers: module syntax and data integrity; the
 shift loop and refused actions; rendered fields matching document data; generator consistency
 and every flaw; the comparison tool; regulation data; authored verdicts; engine agreement with
-3,000 generated cases (each flawed one fails only its planted rule); expiry and exception
+8,000 generated cases across the ten days (each flawed one fails only its planted rule); expiry and exception
 boundaries; that rules not in force are not applied; the rulebook matching the data; and
-scoring (warnings, fines, serious breaches, money reconciling over 60 full shifts).
+scoring (warnings, fines, serious breaches); and the campaign: engine agreement on every
+day, clean papers meeting each day's requirements, eight full ten-day campaigns with money
+carried over, historical verdicts, every day differing, briefings, rule numbering, the
+archive and the stay-length comparison.

@@ -25,6 +25,8 @@ export const SETTING = {
   transitRoutes: ['Ilvar Pass → Sarn Bridge', 'Ilvar Pass → Port Kessel', 'Ilvar Pass → Westmark Gate'],
   employers: ['Ostrel Quarry Works', 'Halvost Rail Yards', 'Brenna Textile Mill', 'Sarnow Timber Company', 'Kessel Docks', 'State Grain Office'],
   occupations: ['Quarryman', 'Rail fitter', 'Loom operator', 'Forester', 'Dock labourer', 'Clerk', 'Mechanic', 'Nurse'],
+  // the vaccination northern travellers must prove during the outbreak (from Day 8)
+  vaccine: 'Skeld fever',
   // invented places that issue no documents; forgers print them on fake passports
   unrecognizedCities: ['Vel Oskara', 'Nordmirn', 'Skeldborg', 'Upper Kolm', 'Kaltra Nova', 'Ostravin', 'Draven Fort', 'Lorvikstad'],
 };

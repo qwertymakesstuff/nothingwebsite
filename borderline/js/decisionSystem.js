@@ -11,7 +11,7 @@ export const warningsUsed = decisions => decisions.filter(d => d.citation?.level
 export function assess(visitor, decision, ctx, priorDecisions = [], scoring = SCORING) {
   const result = evaluate(visitor, ctx.regulations, ctx);
   const correct = decision === result.verdict;
-  const violations = result.violations.map(v => ({ rule: v.rule, message: v.message, evidence: v.evidence }));
+  const violations = result.violations.map(v => ({ rule: v.rule, topic: v.topic, message: v.message, evidence: v.evidence }));
   const record = {
     visitorId: visitor.id,
     decision,
@@ -25,7 +25,7 @@ export function assess(visitor, decision, ctx, priorDecisions = [], scoring = SC
   };
   if (correct) return record;
 
-  const serious = decision === 'accept' && violations.some(v => scoring.seriousRules.includes(v.rule));
+  const serious = decision === 'accept' && violations.some(v => scoring.seriousTopics.includes(v.topic));
   const warning = !serious && warningsUsed(priorDecisions) < scoring.warningsPerShift;
   const rules = [...new Set(violations.map(v => v.rule))];
   record.citation = {

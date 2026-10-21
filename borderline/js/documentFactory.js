@@ -36,9 +36,11 @@ export function makeDocument(type, person, details = {}) {
     case 'idCard':
       return { ...base, dob: person.dob, sex: person.sex, ...details };
     case 'declaration':
+    case 'entryPermit':
       return { ...base, nationality: person.nationality, passportNo: person.passportNo, ...details };
     case 'workPermit':
     case 'transitPass':
+    case 'healthCert':
       return { ...base, passportNo: person.passportNo, ...details };
     default:
       throw new Error(`unknown document type "${type}"`);
