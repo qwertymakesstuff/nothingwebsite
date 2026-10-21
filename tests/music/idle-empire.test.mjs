@@ -604,3 +604,95 @@ test('achievement store: survives a reload, rejects garbage, tolerates broken st
     delete globalThis.localStorage;
   }
 });
+
+// ---- phase 6: statistics ----
+
+const statsMod = await import(new URL('stats.js', dir));
+const report = await import(new URL('statistics.js', dir));
+const rel = (a, b) => { a = BigNum.from(a); b = BigNum.from(b); return b.isZero() ? a.abs().toNumber() : a.sub(b).div(b).abs().toNumber(); };
+
+test('statistics: the books balance over a simulated session', () => {
+  const s = createState();
+  let t = NOON;
+  for (let sec = 0; sec < 1800; sec++) {
+    for (let c = 0; c < 4; c++) economy.click(s, (t += 250));
+    progression.checkProgress(s, t);
+    for (const { def } of up.availableUpgrades(s)) up.buyUpgrade(s, def.id);
+    for (const def of [...BUILDINGS].reverse()) while (economy.buyBuilding(s, def.id, 1)) { /* buy */ }
+    economy.tick(s, 1);
+  }
+  const st = s.stats;
+  const produced = Object.values(st.producedBy).reduce((a, b) => a.add(b), BigNum.from(0));
+  assert.ok(rel(st.clickEarned.add(produced), s.totalEarned) < 1e-9, 'earned = clicks + buildings');
+  assert.ok(rel(s.totalEarned.sub(st.spent), s.currency) < 1e-9, 'in hand = earned - spent');
+  assert.equal(st.buildingsBought, report.totalOwned(s));
+  assert.equal(st.upgradesBought, Object.values(s.upgrades).reduce((a, b) => a + b, 0));
+  assert.equal(st.playTime, 1800);
+  assert.ok(st.highestPps.gte(economy.productionPerSecond(s).mul(0.999)));
+  assert.ok(st.highestClick.gte(1));
+  assert.ok(st.clickEarned.gte(7200)); // 4 clicks x 1800 s, each worth at least 1
+});
+
+test('statistics: records, refusals and invalid ticks', () => {
+  const s = unlockAll(createState());
+  economy.tick(s, NaN); economy.tick(s, -1); economy.tick(s, 0);
+  assert.equal(s.stats.playTime, 0);
+  s.buildings.workshop = 10;
+  economy.tick(s, 2);
+  const peak = s.stats.highestPps;
+  assert.ok(peak.gt(0));
+  assert.ok(rel(s.stats.producedBy.workshop, economy.productionPerSecond(s).mul(2)) < 1e-12);
+  s.buildings.workshop = 1; economy.tick(s, 1);
+  assert.ok(s.stats.highestPps.eq(peak)); // a record never goes down
+  economy.buyBuilding(s, 'imperial', 1);
+  s.upgradesUnlocked['global-6'] = true; up.buyUpgrade(s, 'global-6');
+  assert.equal(s.stats.denied, 2);
+  assert.ok(s.stats.spent.isZero());
+});
+
+test('statistics: save round trip keeps every value, garbage becomes zero', () => {
+  const s = unlockAll(createState());
+  s.stats.spent = BigNum.from('1.5e400');
+  s.stats.clickEarned = BigNum.from(12345.5);
+  s.stats.producedBy.bank = BigNum.from('7e320');
+  Object.assign(s.stats, { buildingsBought: 42, upgradesBought: 7, playTime: 3600.5, bestBurst: 13, denied: 3, modeSwitches: 9 });
+  s.stats.highestPps = BigNum.from(99);
+  const json = JSON.parse(JSON.stringify(statsMod.serializeStats(s.stats)));
+  const back = statsMod.deserializeStats(json);
+  assert.deepEqual(statsMod.serializeStats(back), statsMod.serializeStats(s.stats));
+  assert.equal(back.spent.toString(), '1.5e400');
+  const junk = statsMod.deserializeStats({ spent: -5, clickEarned: 'lots', playTime: -1, buildingsBought: 'NaN', denied: 2.7, producedBy: { bank: null, stall: '30' } });
+  assert.ok(junk.spent.isZero() && junk.clickEarned.isZero());
+  assert.equal(junk.playTime, 0); assert.equal(junk.buildingsBought, 0); assert.equal(junk.denied, 2);
+  assert.ok(junk.producedBy.bank.isZero()); assert.equal(junk.producedBy.stall.toNumber(), 30);
+  for (const bad of [null, undefined, 'x', 42]) assert.deepEqual(statsMod.serializeStats(statsMod.deserializeStats(bad)), statsMod.serializeStats(statsMod.createStats()));
+});
+
+test('statistics: production history samples every 5 s and keeps 10 minutes', () => {
+  const s = createState();
+  s.buildings.workshop = 3;
+  assert.ok(report.sampleHistory(s, 1e6));
+  assert.ok(!report.sampleHistory(s, 1e6 + 4999));
+  assert.ok(report.sampleHistory(s, 1e6 + 5000));
+  for (let i = 2; i < 300; i++) report.sampleHistory(s, 1e6 + i * 5000);
+  assert.equal(s.session.history.length, report.HISTORY_LENGTH);
+  assert.equal(s.session.history.at(-1).t, 1e6 + 299 * 5000);
+  assert.equal(s.session.history[0].pps.toNumber(), 3);
+});
+
+test('statistics reports: building shares, bonuses, progress, durations', () => {
+  const s = unlockAll(createState());
+  Object.assign(s.buildings, { stall: 10, workshop: 5, bank: 1 });
+  const rows = report.buildingBreakdown(s);
+  assert.equal(rows.length, BUILDINGS.length);
+  assert.ok(Math.abs(rows.reduce((a, r) => a + r.share, 0) - 1) < 1e-9);
+  assert.equal(rows.find(r => r.def.id === 'mine').share, 0);
+  const locked = createState(); locked.buildings.stall = 2;
+  assert.deepEqual(report.buildingBreakdown(locked).map(r => r.def.id), ['stall']);
+  const bonuses = report.activeBonuses(s);
+  assert.ok(bonuses.some(b => /rank/i.test(b.label)) && bonuses.some(b => /Achievements/.test(b.label)));
+  const prog = report.progressSummary(s);
+  assert.ok(prog.find(p => p.label === 'Buildings unlocked').value.startsWith(`${BUILDINGS.length} of`));
+  assert.equal(prog.find(p => p.label === 'Ownership milestones').value, `${2 + 1 + 1} of ${BUILDINGS.length * milestones.OWNERSHIP_MILESTONES.length}`);
+  assert.deepEqual([0, 12.9, 65, 3600, 3725, 90061].map(statsMod.formatDuration), ['0 s', '12 s', '1 m 05 s', '1 h 00 m', '1 h 02 m', '1 d 01 h']);
+});

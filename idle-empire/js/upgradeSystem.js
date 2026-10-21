@@ -3,6 +3,7 @@ import BigNum, { ZERO } from './bigNum.js';
 import { UPGRADES, UPGRADES_BY_ID, maxLevel } from './upgrades.js';
 import * as economy from './economy.js';
 import { allMet } from './conditions.js';
+import { recordSpend } from './stats.js';
 
 export function levelOf(state, id) {
   return state.upgrades[id] || 0;
@@ -53,6 +54,7 @@ export function buyUpgrade(state, id) {
   state.currency = BigNum.max(ZERO, state.currency.sub(cost));
   if (state.currency.lt(1) && cost.gte(1000)) state.flags.spentAll = true;
   state.upgrades = { ...state.upgrades, [id]: levelOf(state, id) + 1 };
+  recordSpend(state, cost, 'upgrade');
   return cost;
 }
 

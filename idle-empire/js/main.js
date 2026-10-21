@@ -10,6 +10,7 @@ import * as upgradeSystem from './upgradeSystem.js';
 import * as progression from './progression.js';
 import { loadAchievements, saveAchievements } from './achievementStore.js';
 import * as achievementSystem from './achievementSystem.js';
+import { sampleHistory } from './statistics.js';
 
 const { checkProgress } = progression;
 
@@ -23,6 +24,7 @@ function logic() {
   const seconds = Math.min((now - lastLogic) / 1000, LOOP.maxTickSeconds);
   lastLogic = now;
   economy.tick(state, seconds);
+  sampleHistory(state);
   progress();
 }
 
@@ -38,7 +40,7 @@ let lastShop = 0, lastTitle = 0;
 function frame(now) {
   ui.renderTreasury();
   if (now - lastShop >= LOOP.shopIntervalMs) { lastShop = now; ui.renderShop(); ui.renderUpgrades(); ui.renderRank(); }
-  if (now - lastTitle >= LOOP.titleIntervalMs) { lastTitle = now; ui.renderTitle(); ui.renderAchievements(); }
+  if (now - lastTitle >= LOOP.titleIntervalMs) { lastTitle = now; ui.renderTitle(); ui.renderAchievements(); ui.renderStats(); }
   requestAnimationFrame(frame);
 }
 progress();

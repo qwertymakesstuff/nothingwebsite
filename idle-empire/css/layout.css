@@ -55,6 +55,11 @@
   .upgrade-panel { max-height: none; }
   .upgrade-list, .shop-list { overflow: visible; }
 }
+@media (max-width: 640px) {
+  .stats-columns { grid-template-columns: 1fr; }
+  .stats-table .each { display: none; }
+  .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 420px) {
   .top-btn-label { display: none; }
   .back-link { display: none; }

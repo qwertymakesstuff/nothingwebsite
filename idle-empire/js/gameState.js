@@ -3,6 +3,7 @@
 import { ZERO } from './bigNum.js';
 import { BUILDINGS } from './buildings.js';
 import { ECONOMY } from './config.js';
+import { createStats, createSession } from './stats.js';
 
 export const STATE_VERSION = 1;
 
@@ -21,14 +22,8 @@ export function createState() {
     rank: 0,              // highest empire rank reached (index into RANKS)
     buyMode: ECONOMY.defaultBuyMode, // 1, 10, 100 or 'max'
     achievements: {},     // { id: unlock time (ms since 1970) }; also kept in localStorage, see achievementStore.js
-    // counters that achievements look at (the full statistics screen is a later phase)
-    stats: {
-      clickEarned: ZERO,  // crowns earned by clicking
-      bestBurst: 0,       // most clicks inside one second
-      burstStart: 0, burstCount: 0,
-      denied: 0,          // purchases refused for lack of crowns
-      modeSwitches: 0,    // times the buy mode was changed
-    },
+    stats: createStats(),   // what the empire has done (stats.js)
+    session: createSession(), // this visit only: start time and the production history
     flags: {},            // one-off notable moments, e.g. { bigMax: true } (see economy.buyBuilding)
     startedAt: Date.now(),
   };

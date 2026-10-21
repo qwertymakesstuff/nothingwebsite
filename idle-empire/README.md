@@ -4,8 +4,8 @@ An incremental idle game: strike crowns at the Mint, buy buildings that strike c
 grow a market stall into an industrial empire. Plain HTML, CSS and ES modules, no build step,
 no dependencies. Built in phases (see the roadmap in the project brief); done so far:
 **phase 1** (foundation and core gameplay), **phase 2** (economy and purchase systems),
-**phase 3** (upgrades and multipliers), **phase 4** (empire buildings and progression) and
-**phase 5** (achievements and milestones).
+**phase 3** (upgrades and multipliers), **phase 4** (empire buildings and progression),
+**phase 5** (achievements and milestones) and **phase 6** (statistics).
 
 | File | Job |
 | --- | --- |
@@ -26,6 +26,9 @@ no dependencies. Built in phases (see the roadmap in the project brief); done so
 | `js/achievementSystem.js` | checking and granting achievements (once each, timestamped) |
 | `js/achievementStore.js` | keeps unlocked achievements in `localStorage` across refreshes |
 | `js/achievementsView.js` | the achievement collection dialog and the unlock celebration |
+| `js/stats.js` | statistics bookkeeping: the counters, recording, save conversion (no economy import) |
+| `js/statistics.js` | statistics reports: production history, building breakdown, bonuses, progress |
+| `js/statsView.js` | the statistics dialog: overview, chart, building table, bonuses, progress |
 | `js/upgrades.js` | upgrade catalogue as data, and `collectModifiers()`: how effects combine |
 | `js/upgradeSystem.js` | upgrade actions: unlock checks, prices, buying, before-purchase preview |
 | `js/economy.js` | pure rules: prices, bulk quotes, Buy Max, production, click, buy, tick |
@@ -123,14 +126,37 @@ treasury on a big purchase, playing between midnight and 4 a.m., ...).
   corrupted JSON. This is the only thing saved so far; the full save system (phase 8) will take
   it over. Because the reward is kept too, a returning player starts slightly faster.
 
+## Statistics (phase 6)
+
+`state.stats` records, as things happen: crowns earned by clicking, crowns each building has made,
+crowns spent, buildings bought, upgrade levels bought, highest production per second, best single
+click, best clicks in a second, refused purchases, buy-mode switches and play time (the time the
+game loop has run). `state.session` holds this visit's start and a production sample every 5 s
+(the last 10 minutes) for the chart; it is not meant to be saved.
+
+The books always balance, and a test plays 30 simulated minutes to prove it:
+
+```
+crowns earned  = crowns earned by clicking + crowns made by all buildings
+crowns in hand = crowns earned - crowns spent
+```
+
+The **Statistics** button in the top bar opens a screen with 16 overview figures, a production
+chart for this visit (log scale once values pass 1e308), a per-building table (owned, output
+each and in total, share of production, crowns made so far), the active bonuses (rank,
+achievements, empire-wide upgrades, click bonuses) and progress (rank, buildings unlocked,
+ownership milestones, upgrades, achievements). `serializeStats` / `deserializeStats` turn the
+statistics into plain JSON and back (missing, negative or non-numeric values become zero), ready
+for the save system.
+
 ## Scope so far
 
 Clicking, six buildings with escalating prices, passive income, per-second and per-click counters
 (phase 1); x1 / x10 / x100 / Max buying, exact bulk prices, the economy config, affordability
 states and purchase feedback (phase 2); upgrades, multipliers and the upgrade panel (phase 3); 14 buildings, tiered unlocks,
 milestones, ranks, skyline and notifications (phase 4); achievements with rewards, hidden ones, the
-collection and their persistence (phase 5). Not yet (later phases): statistics, prestige, saving
-and offline earnings. **Only achievements are saved yet**: a refresh starts the empire over.
+collection and their persistence (phase 5); statistics and the statistics screen (phase 6). Not yet
+(later phases): prestige, saving and offline earnings. **Only achievements are saved yet**: a refresh starts the empire over.
 
 `window.idleEmpire` exposes `{ state, economy }` for testing from the console.
 
@@ -144,4 +170,5 @@ repeatable purchases, multiplier stacking, preview = result, and a simulated ses
 without upgrades, the roster, tiered unlocks, milestones and ranks (including bulk-buy events),
 skyline levels, a two-hour pacing check, the achievement catalogue, once-only grants with
 timestamps, the reward, every hidden achievement, progress bars, and the store (reload, garbage,
-blocked storage).
+blocked storage), statistics bookkeeping over a simulated session, records, the statistics save
+round trip, production history and the report helpers.

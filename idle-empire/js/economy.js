@@ -12,6 +12,7 @@ import { ECONOMY } from './config.js';
 import { collectModifiers } from './upgrades.js';
 import { milestoneMult, rankIndex, rankMult } from './milestones.js';
 import { ACHIEVEMENT_BONUS } from './achievements.js';
+import { recordClick, recordSpend, recordProduction, recordTick } from './stats.js';
 
 const EXACT_LIMIT = 2 ** 53;  // above this every double is already a whole number
 const MAX_EXACT_STEPS = 2000; // safety net for growth values very close to 1
@@ -139,11 +140,7 @@ export function click(state, now = Date.now()) {
   const value = clickValue(state);
   earn(state, value);
   state.totalClicks += 1;
-  const st = state.stats;
-  st.clickEarned = st.clickEarned.add(value);
-  if (now - st.burstStart < 1000) st.burstCount += 1;
-  else { st.burstStart = now; st.burstCount = 1; }
-  if (st.burstCount > st.bestBurst) st.bestBurst = st.burstCount;
+  recordClick(state, value, now);
   return value;
 }
 
@@ -166,14 +163,24 @@ export function buyBuilding(state, id, mode = state.buyMode) {
   if (!q.affordable) { state.stats.denied += 1; return null; }
   state.currency = BigNum.max(ZERO, state.currency.sub(q.cost));
   state.buildings[id] = (state.buildings[id] || 0) + q.count;
+  recordSpend(state, q.cost, 'building', q.count);
   // notable purchases, for hidden achievements
   if (q.count >= 100 && validBuyMode(mode) === 'max') state.flags.bigMax = true;
   if (state.currency.lt(1) && q.cost.gte(1000)) state.flags.spentAll = true;
   return { count: q.count, cost: q.cost };
 }
 
-// passive income for `seconds` of elapsed time
+// passive income for `seconds` of elapsed time, credited building by building so the
+// statistics know who made what
 export function tick(state, seconds) {
   if (!(seconds > 0) || !Number.isFinite(seconds)) return;
-  earn(state, productionPerSecond(state).mul(seconds));
+  let pps = ZERO;
+  for (const def of BUILDINGS) {
+    const rate = buildingProduction(state, def.id);
+    if (rate.isZero()) continue;
+    pps = pps.add(rate);
+    recordProduction(state, def.id, rate.mul(seconds));
+  }
+  earn(state, pps.mul(seconds));
+  recordTick(state, seconds, pps);
 }

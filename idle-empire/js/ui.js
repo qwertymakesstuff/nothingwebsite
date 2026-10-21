@@ -7,6 +7,7 @@ import { nextLockedBuilding, lockedCount } from './progression.js';
 import { createNotifier } from './notifications.js';
 import { createSkyline } from './skyline.js';
 import { createAchievementsView } from './achievementsView.js';
+import { createStatsView } from './statsView.js';
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_BONUS } from './achievements.js';
 import { formatNumber, formatGoal } from './numberFormatter.js';
 import * as economy from './economy.js';
@@ -173,6 +174,7 @@ export function createUI(state) {
   const notify = createNotifier($('toasts'));
   const renderSkyline = createSkyline($('skyline'));
   const achievementsView = createAchievementsView(state);
+  const statsView = createStatsView(state);
   const rankEls = { name: $('rankName'), bonus: $('rankBonus'), bar: $('rankBar'), next: $('rankNext') };
   els.mint.innerHTML = mintSvg();
   const shown = {};
@@ -426,10 +428,11 @@ export function createUI(state) {
   }
 
   function renderAchievements() { achievementsView.render(); }
+  function renderStats() { statsView.render(); }
 
   function renderTitle() {
     document.title = `${formatNumber(state.currency.floor())} crowns · Idle Empire`;
   }
 
-  return { renderTreasury, renderShop, renderUpgrades, renderRank, renderAchievements, renderTitle, announce };
+  return { renderTreasury, renderShop, renderUpgrades, renderRank, renderAchievements, renderStats, renderTitle, announce };
 }

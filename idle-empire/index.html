@@ -17,6 +17,10 @@
   <header class="topbar">
     <h1 class="wordmark"><span class="wordmark-crown" aria-hidden="true"></span>Idle Empire</h1>
     <div class="top-actions">
+      <button id="statsBtn" class="top-btn" type="button" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 20h18v2H3z"/><path d="M4 18V12h3v6zM10 18V8h3v10zM16 18V4h3v14z"/></svg>
+        <span class="top-btn-label">Statistics</span>
+      </button>
       <button id="achievementsBtn" class="top-btn" type="button" aria-haspopup="dialog">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12v2h3v3a5 5 0 0 1-4.4 5A6 6 0 0 1 13 16v2h3v3H8v-3h3v-2a6 6 0 0 1-3.6-3A5 5 0 0 1 3 8V5h3zm0 4H5v1a3 3 0 0 0 1.5 2.6A7 7 0 0 1 6 8zm12 0v1a7 7 0 0 1-.5 2.6A3 3 0 0 0 19 8V7z"/></svg>
         <span class="top-btn-label">Achievements</span> <b id="achievementCount">0/0</b>
@@ -71,6 +75,45 @@
 
   <div id="floaters" class="floaters" aria-hidden="true"></div>
   <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <dialog id="statsDialog" class="dialog dialog-wide" aria-labelledby="statsTitle">
+    <div class="dialog-head">
+      <div>
+        <h2 id="statsTitle">Statistics</h2>
+        <p id="statsSub" class="dialog-sub"></p>
+      </div>
+      <button id="statsClose" class="dialog-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="stats-body">
+      <section aria-labelledby="statsOverviewTitle">
+        <h3 id="statsOverviewTitle">Overview</h3>
+        <div id="statsOverview" class="stat-cards"></div>
+      </section>
+      <section aria-labelledby="statsChartTitle">
+        <h3 id="statsChartTitle">Production this visit</h3>
+        <div id="statsChart" class="stats-chart"></div>
+      </section>
+      <section aria-labelledby="statsBuildingsTitle">
+        <h3 id="statsBuildingsTitle">Buildings</h3>
+        <div class="table-wrap">
+          <table class="stats-table">
+            <thead><tr><th scope="col">Building</th><th scope="col" class="num">Owned</th><th scope="col" class="num each">Each /s</th><th scope="col" class="num">Total /s</th><th scope="col">Share</th><th scope="col" class="num">Made so far</th></tr></thead>
+            <tbody id="statsBuildings"></tbody>
+          </table>
+        </div>
+      </section>
+      <div class="stats-columns">
+        <section aria-labelledby="statsBonusTitle">
+          <h3 id="statsBonusTitle">Active bonuses</h3>
+          <ul id="statsBonuses" class="stat-list"></ul>
+        </section>
+        <section aria-labelledby="statsProgressTitle">
+          <h3 id="statsProgressTitle">Progress</h3>
+          <ul id="statsProgress" class="stat-list"></ul>
+        </section>
+      </div>
+    </div>
+  </dialog>
 
   <dialog id="achievementsDialog" class="dialog" aria-labelledby="achievementTitle">
     <div class="dialog-head">
