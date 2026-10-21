@@ -4,6 +4,7 @@ import { ZERO } from './bigNum.js';
 import { BUILDINGS } from './buildings.js';
 import { ECONOMY } from './config.js';
 import { createStats, createSession } from './stats.js';
+import { createLegacy } from './legacy.js';
 
 export const STATE_VERSION = 1;
 
@@ -25,6 +26,8 @@ export function createState() {
     stats: createStats(),   // what the empire has done (stats.js)
     session: createSession(), // this visit only: start time and the production history
     flags: {},            // one-off notable moments, e.g. { bigMax: true } (see economy.buyBuilding)
-    startedAt: Date.now(),
+    legacy: createLegacy(), // kept through prestige: seals, legacy upgrades, all-time totals (legacy.js)
+    startedAt: Date.now(),  // when the first empire was founded
+    runStartedAt: Date.now(), // when this empire (run) began
   };
 }

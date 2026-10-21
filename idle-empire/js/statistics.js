@@ -6,6 +6,8 @@ import { UPGRADES } from './upgrades.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_BONUS } from './achievements.js';
 import { OWNERSHIP_MILESTONES, RANKS, RANK_BONUS, milestoneMult } from './milestones.js';
 import * as economy from './economy.js';
+import { SEAL_BONUS, mandateMult, legacyClickMult, priceMult } from './legacy.js';
+import { formatNumber } from './numberFormatter.js';
 
 export const HISTORY_INTERVAL_MS = 5000; // one production sample every 5 s
 export const HISTORY_LENGTH = 120;       // keeps the last 10 minutes
@@ -51,6 +53,10 @@ export function activeBonuses(state) {
   return [
     { label: `Empire rank (${RANKS[rank].name})`, value: `+${Math.round(rank * RANK_BONUS * 100)}%` },
     { label: `Achievements (${achieved})`, value: `+${Math.round(achieved * ACHIEVEMENT_BONUS * 100)}%` },
+    { label: `Imperial Seals (${formatNumber(state.legacy.sealsEarned)} earned)`, value: `+${formatNumber(state.legacy.sealsEarned.mul(SEAL_BONUS * 100))}%` },
+    { label: 'Imperial Mandate (legacy)', value: `x${mandateMult(state.legacy).toFixed(2)}` },
+    { label: 'Golden Hands (legacy, clicks)', value: `x${legacyClickMult(state.legacy)}` },
+    { label: 'Cheaper Bricks (legacy, prices)', value: `-${Math.round((1 - priceMult(state.legacy)) * 100)}%` },
     { label: 'Empire-wide upgrades', value: `x${mods.global.toFixed(2)}` },
     { label: 'Click multiplier', value: `x${mods.clickMult}` },
     { label: 'Extra crowns per click', value: `+${mods.clickAdd}` },
@@ -67,6 +73,8 @@ export function progressSummary(state) {
     { label: 'Ownership milestones', value: `${milestonesReached} of ${BUILDINGS.length * OWNERSHIP_MILESTONES.length}` },
     { label: 'Upgrades owned', value: `${upgradesOwned} of ${UPGRADES.length}` },
     { label: 'Achievements', value: `${Object.keys(state.achievements).length} of ${ACHIEVEMENTS.length}` },
+    { label: 'Empires founded', value: `${state.legacy.prestiges + 1}` },
+    { label: 'Imperial Seals to spend', value: formatNumber(state.legacy.seals) },
   ];
 }
 

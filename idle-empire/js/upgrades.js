@@ -23,7 +23,9 @@
 //   building unit rate = baseRate x (all its buildingMults) x (its ownership milestones) x (1 + its ownedBonus% / 100)
 //                        x (all globalMults) x (1 + 5% per empire rank)        (milestones and ranks: milestones.js)
 //                        x (1 + 1% per achievement)                           (achievements.js)
-//   click value        = (clickBase + all clickAdds) x (all clickMults) + per-second x (all clickPps fractions)
+//                        x (1 + 5% per seal earned) x (1.25 per Imperial Mandate level)   (legacy.js)
+//   click value        = (clickBase + all clickAdds) x (all clickMults) x (2 per Golden Hands level)
+//                        + per-second x (all clickPps fractions)
 // Multipliers multiply each other; additive bonuses (clickAdd, ownedBonus %, clickPps) add up first.
 import { BUILDINGS, BUILDINGS_BY_ID } from './buildings.js';
 

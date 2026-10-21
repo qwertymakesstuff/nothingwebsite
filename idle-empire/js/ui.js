@@ -8,6 +8,9 @@ import { createNotifier } from './notifications.js';
 import { createSkyline } from './skyline.js';
 import { createAchievementsView } from './achievementsView.js';
 import { createStatsView } from './statsView.js';
+import { createPrestigeView } from './prestigeView.js';
+import { SEAL_BONUS } from './legacy.js';
+import { formatDuration } from './stats.js';
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_BONUS } from './achievements.js';
 import { formatNumber, formatGoal } from './numberFormatter.js';
 import * as economy from './economy.js';
@@ -157,6 +160,7 @@ function restartClass(el, cls) {
 const MODE_LABELS = { 1: 'x1', 10: 'x10', 100: 'x100', max: 'Max' };
 const RANK_ICON = '<path d="M3 18l2-11 4.5 4L12 4l2.5 7L19 7l2 11z"/><path d="M3 19h18v2H3z"/>';
 const UPGRADE_ICON = '<path d="M12 3l7 8h-4v9H9v-9H5z"/>';
+const SEAL_ICON = '<circle cx="12" cy="10" r="7"/><path d="M8 15l-2 7 6-3 6 3-2-7z"/>';
 
 export function createUI(state) {
   const els = {
@@ -175,6 +179,18 @@ export function createUI(state) {
   const renderSkyline = createSkyline($('skyline'));
   const achievementsView = createAchievementsView(state);
   const statsView = createStatsView(state);
+  const prestigeView = createPrestigeView(state, {
+    onPrestige: ({ gain, earned, runSeconds }) => {
+      notify({ kind: 'rank', icon: SEAL_ICON, title: `A new empire rises: +${formatNumber(gain)} seal${gain.eq(1) ? '' : 's'}`,
+        body: `The last one earned ${formatNumber(earned.floor())} crowns in ${formatDuration(runSeconds)}.` });
+      renderAll();
+    },
+    onLegacyBuy: def => {
+      notify({ kind: 'upgrade', icon: SEAL_ICON, title: `Legacy upgrade: ${def.name}`, body: def.description });
+      renderAll();
+    },
+  });
+  const legacyLine = $('legacyLine');
   const rankEls = { name: $('rankName'), bonus: $('rankBonus'), bar: $('rankBar'), next: $('rankNext') };
   els.mint.innerHTML = mintSvg();
   const shown = {};
@@ -319,6 +335,11 @@ export function createUI(state) {
       show('rankNext', rankEls.next, 'The highest rank there is.');
       if (shown.rankBar !== '100%') { shown.rankBar = '100%'; rankEls.bar.style.width = '100%'; }
     }
+    const L = state.legacy;
+    const legacy = L.sealsEarned.sign() > 0
+      ? `Imperial Seals: ${formatNumber(L.seals)} to spend · +${formatNumber(L.sealsEarned.mul(SEAL_BONUS * 100))}% production`
+      : '';
+    if (shown.legacy !== legacy) { shown.legacy = legacy; legacyLine.textContent = legacy; legacyLine.hidden = !legacy; }
     renderSkyline(state);
   }
 
@@ -428,11 +449,15 @@ export function createUI(state) {
   }
 
   function renderAchievements() { achievementsView.render(); }
-  function renderStats() { statsView.render(); }
+  function renderStats() { statsView.render(); prestigeView.render(); }
+
+  function renderAll() {
+    renderTreasury(); renderShop(); renderUpgrades(); renderRank(); renderAchievements(); renderStats(); renderTitle();
+  }
 
   function renderTitle() {
     document.title = `${formatNumber(state.currency.floor())} crowns · Idle Empire`;
   }
 
-  return { renderTreasury, renderShop, renderUpgrades, renderRank, renderAchievements, renderStats, renderTitle, announce };
+  return { renderTreasury, renderShop, renderUpgrades, renderRank, renderAchievements, renderStats, renderTitle, renderAll, announce };
 }

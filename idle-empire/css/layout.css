@@ -62,6 +62,10 @@
 }
 @media (max-width: 420px) {
   .top-btn-label { display: none; }
+  .topbar { padding: 8px 12px; }
+  .wordmark { font-size: 16px; gap: 7px; white-space: nowrap; }
+  .top-actions { gap: 6px; }
+  .top-btn { padding: 6px 8px; }
   .back-link { display: none; }
   .ach-grid { grid-template-columns: 1fr; }
   .panel-head { flex-wrap: wrap; }
@@ -71,4 +75,9 @@
   .b-icon { width: 40px; height: 40px; }
   .b-icon svg { width: 24px; height: 24px; }
   .b-desc { display: none; }
+}
+@media (max-width: 350px) {
+  .wordmark-crown { display: none; }
+  .wordmark { font-size: 15px; }
+  .top-btn { padding: 5px 6px; gap: 4px; }
 }

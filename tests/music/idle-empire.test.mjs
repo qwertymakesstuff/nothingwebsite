@@ -500,11 +500,11 @@ const store = await import(new URL('achievementStore.js', dir));
 const NOON = new Date(2026, 5, 1, 12, 0, 0).getTime(), TWO_AM = new Date(2026, 5, 1, 2, 0, 0).getTime();
 
 test('achievement catalogue: unique ids, every kind of goal, hidden ones', () => {
-  assert.equal(ACHIEVEMENTS.length, 72);
+  assert.equal(ACHIEVEMENTS.length, 79);
   assert.equal(new Set(ACHIEVEMENTS.map(a => a.id)).size, ACHIEVEMENTS.length);
   for (const a of ACHIEVEMENTS) assert.ok(a.name && a.description && a.icon && typeof a.check === 'function', a.id);
   assert.ok(ACHIEVEMENTS.filter(a => a.hidden).length >= 8);
-  for (const g of ['Clicking', 'Earning', 'Production', 'Buildings', 'Upgrades', 'Progress', 'Hidden']) {
+  for (const g of ['Clicking', 'Earning', 'Production', 'Buildings', 'Upgrades', 'Progress', 'Legacy', 'Hidden']) {
     assert.ok(ACHIEVEMENTS.some(a => a.group === g), g);
   }
 });
@@ -695,4 +695,157 @@ test('statistics reports: building shares, bonuses, progress, durations', () => 
   assert.ok(prog.find(p => p.label === 'Buildings unlocked').value.startsWith(`${BUILDINGS.length} of`));
   assert.equal(prog.find(p => p.label === 'Ownership milestones').value, `${2 + 1 + 1} of ${BUILDINGS.length * milestones.OWNERSHIP_MILESTONES.length}`);
   assert.deepEqual([0, 12.9, 65, 3600, 3725, 90061].map(statsMod.formatDuration), ['0 s', '12 s', '1 m 05 s', '1 h 00 m', '1 h 02 m', '1 d 01 h']);
+});
+
+// ---- phase 7: prestige ----
+
+const legacy = await import(new URL('legacy.js', dir));
+const pres = await import(new URL('prestige.js', dir));
+
+test('seals: cube root of all-time crowns / 1e9, exact at every boundary', () => {
+  const n = x => legacy.sealsFor(x).toNumber();
+  assert.equal(n(0), 0); assert.equal(n(1e9 - 1), 0); assert.equal(n(1e9), 1);
+  assert.equal(n(8e9 - 1), 1); assert.equal(n(8e9), 2); assert.equal(n(27e9), 3);
+  assert.equal(n(1e12 - 1), 9); assert.equal(n(1e12), 10); assert.equal(n(1e15), 100); assert.equal(n(1e18), 1000);
+  for (let k = 1; k <= 2000; k += 37) {
+    assert.equal(n(legacy.lifetimeForSeals(k)), k, `boundary ${k}`);
+    assert.equal(n(legacy.lifetimeForSeals(k).mul(1 - 1e-12)), k - 1, `just below ${k}`); // (minus 1 is lost past 2^53)
+  }
+  const huge = legacy.sealsFor('1e300');
+  assert.ok(Math.abs(huge.log10() - 97) < 1e-9);
+  assert.ok(legacy.sealsFor('1e3000').parts().e === 997);
+  let prev = 0;
+  for (let e = 0; e < 40; e += 0.25) { const v = n(10 ** e); assert.ok(v >= prev); prev = v; }
+});
+
+test('prestige: nothing to gain means no reset', () => {
+  const s = createState();
+  s.totalEarned = BigNum.from(5e8); s.currency = BigNum.from(5e8);
+  assert.ok(pres.pendingSeals(s).isZero());
+  assert.equal(pres.prestige(s), null);
+  assert.equal(s.currency.toNumber(), 5e8);
+  const next = pres.nextSeal(s);
+  assert.equal(next.total.toNumber(), 1);
+  assert.equal(next.needed.toNumber(), 5e8);
+  assert.equal(next.progress, 0.5);
+});
+
+test('prestige: resets exactly what it promises and keeps the rest, in the same state object', () => {
+  const s = unlockAll(createState());
+  const ref = s;
+  Object.assign(s.buildings, { stall: 50, bank: 7 });
+  s.totalEarned = BigNum.from(8.5e9); s.currency = BigNum.from(3e9); s.totalClicks = 1234;
+  s.upgrades = { 'stall-1': 1 }; s.upgradesUnlocked = { 'stall-1': true }; s.milestones = { stall: 50 }; s.rank = 4;
+  s.stats.playTime = 600; s.flags.bigMax = true;
+  ach.grant(s, 'clicks-1', NOON);
+  economy.setBuyMode(s, 'max');
+  const founded = s.startedAt;
+  const r = pres.prestige(s, NOON);
+  assert.equal(r.gain.toNumber(), 2);
+  assert.equal(s, ref);
+  // reset
+  assert.ok(s.currency.isZero() && s.totalEarned.isZero());
+  assert.equal(s.totalClicks, 0);
+  assert.deepEqual(Object.values(s.buildings).filter(v => v), []);
+  assert.deepEqual(s.upgrades, {}); assert.deepEqual(s.upgradesUnlocked, {});
+  assert.deepEqual(Object.keys(s.buildingsUnlocked), ['stall']);
+  assert.deepEqual(s.milestones, {}); assert.equal(s.rank, 0);
+  assert.equal(s.stats.playTime, 0); assert.deepEqual(s.flags, {});
+  // kept
+  assert.ok('clicks-1' in s.achievements);
+  assert.equal(s.buyMode, 'max');
+  assert.equal(s.startedAt, founded);
+  assert.equal(s.runStartedAt, NOON);
+  const L = s.legacy;
+  assert.equal(L.seals.toNumber(), 2); assert.equal(L.sealsEarned.toNumber(), 2); assert.equal(L.prestiges, 1);
+  assert.equal(L.lifetimeEarned.toNumber(), 8.5e9); assert.equal(L.lifetimeClicks, 1234); assert.equal(L.playTime, 600);
+  assert.equal(L.bestRunEarned.toNumber(), 8.5e9);
+  assert.ok(L.unlockedEver.bank);
+  // the bonus works in the new empire
+  s.buildings.stall = 1;
+  near(economy.unitRate(s, BUILDINGS_BY_ID.stall), 0.1 * 1.1 * economy.achievementMult(s), '+5% per seal');
+  // and only new seals count next time
+  assert.ok(pres.pendingSeals(s).isZero());
+  s.totalEarned = BigNum.from(27e9 - 8.5e9); // all-time now 27e9: 3 seals in total
+  assert.equal(pres.pendingSeals(s).toNumber(), 1);
+  assert.equal(pres.prestige(s, NOON + 1).gain.toNumber(), 1);
+  assert.equal(s.legacy.sealsEarned.toNumber(), 3);
+  assert.equal(s.legacy.bestRunEarned.toNumber(), 18.5e9);
+});
+
+test('legacy shop: prices, limits and every effect', () => {
+  const s = createState();
+  assert.equal(pres.buyLegacy(s, 'seed'), null); // no seals
+  s.legacy.seals = BigNum.from(1000); // to spend; none earned yet, so the next prestige still pays
+  assert.equal(pres.buyLegacy(s, 'nope'), null);
+  const paid = []; let p;
+  while ((p = pres.buyLegacy(s, 'seed'))) paid.push(p.toNumber());
+  assert.deepEqual(paid, [1, 3, 10, 30, 100]);
+  assert.equal(legacy.legacyLevel(s.legacy, 'seed'), 5);
+  assert.equal(s.legacy.seals.toNumber(), 1000 - 144);
+  assert.equal(legacy.startingCrowns(s.legacy).toNumber(), 1e11);
+  assert.equal(s.currency.toNumber(), 1e11);   // each level's increase was paid at once
+  assert.ok(s.stats.granted.eq(1e11));
+  // Golden Hands doubles clicks, Mandate multiplies production, Bricks cut prices
+  pres.buyLegacy(s, 'hands'); pres.buyLegacy(s, 'hands');
+  assert.equal(economy.clickValue(s).toNumber(), 4);
+  s.buildings.workshop = 1;
+  const before = economy.unitRate(s, BUILDINGS_BY_ID.workshop);
+  pres.buyLegacy(s, 'mandate');
+  near(economy.unitRate(s, BUILDINGS_BY_ID.workshop), before.toNumber() * 1.25, 'mandate');
+  assert.equal(pres.legacyCost(s, 'mandate').toNumber(), 6);
+  pres.buyLegacy(s, 'bricks'); pres.buyLegacy(s, 'bricks');
+  assert.equal(economy.nextCost(s, 'stall').toNumber(), Math.ceil(15 * 0.9));
+  s.currency = BigNum.from(1e6);
+  const q = economy.quote(s, 'stall', 'max');
+  assert.ok(q.affordable && q.cost.lte(1e6));
+  assert.ok(economy.buildingCost(economy.pricedDef(s, BUILDINGS_BY_ID.stall), 0, q.count + 1).gt(1e6));
+  // the next empire starts with Seed Capital, and the books still balance
+  s.totalEarned = BigNum.from(1e15);
+  s.currency = BigNum.from(5);
+  pres.prestige(s, NOON);
+  assert.equal(s.currency.toNumber(), 1e11);    // a fresh empire gets the full amount
+  assert.ok(s.stats.granted.eq(1e11));
+  assert.ok(s.totalEarned.isZero()); // a gift, not earnings: it can't mint seals
+  // Inherited Deeds: unlocked buildings carry over, and apply at once when bought
+  const d = unlockAll(createState());
+  d.legacy.seals = BigNum.from(10); d.totalEarned = BigNum.from(1e9);
+  pres.prestige(d, NOON);
+  assert.deepEqual(Object.keys(d.buildingsUnlocked), ['stall']);
+  d.legacy.seals = BigNum.from(10);
+  pres.buyLegacy(d, 'deeds');
+  assert.equal(Object.keys(d.buildingsUnlocked).length, BUILDINGS.length);
+  assert.equal(pres.buyLegacy(d, 'deeds'), null); // one level only
+  d.totalEarned = BigNum.from(1e10); pres.prestige(d, NOON);
+  assert.equal(Object.keys(d.buildingsUnlocked).length, BUILDINGS.length);
+});
+
+test('prestige achievements: milestones across empires', () => {
+  const s = createState();
+  s.totalEarned = BigNum.from(1e12);
+  pres.prestige(s, NOON);
+  const got = ach.checkAchievements(s, NOON);
+  assert.ok(got.includes('prestige-1') && got.includes('seals-10'), got.join());
+});
+
+test('prestige loop: each empire reaches a billion crowns faster than the last', () => {
+  const s = createState();
+  const times = [];
+  for (let run = 0; run < 3; run++) {
+    let t = 0;
+    while (s.totalEarned.lt(2e10) && t < 6 * 3600) {
+      for (let c = 0; c < 3; c++) economy.click(s, NOON + t * 1000 + c);
+      progression.checkProgress(s, NOON);
+      for (const { def } of up.availableUpgrades(s)) up.buyUpgrade(s, def.id);
+      for (const def of [...BUILDINGS].reverse()) while (economy.buyBuilding(s, def.id, 1)) { /* buy */ }
+      economy.tick(s, 1);
+      t++;
+      if (times.length === run && s.totalEarned.gte(1e9)) times.push(t);
+    }
+    pres.prestige(s, NOON + run);
+    for (const u of ['deeds', 'seed', 'mandate', 'hands', 'bricks']) while (pres.buyLegacy(s, u)) { /* spend */ }
+  }
+  assert.equal(times.length, 3);
+  assert.ok(times[1] < times[0] && times[2] < times[1], times.join(' > '));
+  assert.ok(s.legacy.sealsEarned.gte(3));
 });

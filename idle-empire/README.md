@@ -5,7 +5,7 @@ grow a market stall into an industrial empire. Plain HTML, CSS and ES modules, n
 no dependencies. Built in phases (see the roadmap in the project brief); done so far:
 **phase 1** (foundation and core gameplay), **phase 2** (economy and purchase systems),
 **phase 3** (upgrades and multipliers), **phase 4** (empire buildings and progression),
-**phase 5** (achievements and milestones) and **phase 6** (statistics).
+**phase 5** (achievements and milestones), **phase 6** (statistics) and **phase 7** (prestige).
 
 | File | Job |
 | --- | --- |
@@ -26,6 +26,9 @@ no dependencies. Built in phases (see the roadmap in the project brief); done so
 | `js/achievementSystem.js` | checking and granting achievements (once each, timestamped) |
 | `js/achievementStore.js` | keeps unlocked achievements in `localStorage` across refreshes |
 | `js/achievementsView.js` | the achievement collection dialog and the unlock celebration |
+| `js/legacy.js` | what survives a prestige: the seal formula, legacy upgrades, their bonuses (pure) |
+| `js/prestige.js` | the prestige action: seals owed, next seal, the reset, buying legacy upgrades |
+| `js/prestigeView.js` | the prestige dialog: estimate, resets / keeps, confirmation, legacy shop |
 | `js/stats.js` | statistics bookkeeping: the counters, recording, save conversion (no economy import) |
 | `js/statistics.js` | statistics reports: production history, building breakdown, bonuses, progress |
 | `js/statsView.js` | the statistics dialog: overview, chart, building table, bonuses, progress |
@@ -76,7 +79,7 @@ Stacking rule, the same for every effect:
 ```
 building unit rate = baseRate x (its building multipliers) x (its ownership milestones)
                      x (1 + its synergy % / 100) x (global multipliers) x (1 + 5% per empire rank)
-                     x (1 + 1% per achievement)
+                     x (1 + 1% per achievement) x (1 + 5% per Imperial Seal earned) x (1.25 per Imperial Mandate)
 click value        = (1 + click additions) x (click multipliers) + per-second x (click share of per-second)
 ```
 
@@ -149,14 +152,50 @@ ownership milestones, upgrades, achievements). `serializeStats` / `deserializeSt
 statistics into plain JSON and back (missing, negative or non-numeric values become zero), ready
 for the save system.
 
+## Prestige (phase 7)
+
+**Imperial Seals** are the prestige currency. All-time crowns (every empire together) are worth
+
+```
+seals in total = floor( cube root( all-time crowns / 1e9 ) )
+```
+
+so the first seal comes at 1 B crowns (about 1.2 h into a first empire), 10 at 1 T, 100 at 1 Qa.
+A prestige pays the seals owed beyond those already earned. Every seal ever earned adds **+5% to
+all production**, whether spent or not. `sealsFor` is exact at every boundary (it settles the
+floating-point cube root against `lifetimeForSeals`) and works far past 1e308.
+
+**Prestige** (top-bar button, which shows the seals a reset would pay) opens a screen with the seals
+to spend and earned, what a new empire pays now and the bonus after it, progress to the next seal,
+and two lists, *Resets* and *You keep*, that `prestige()` follows exactly (a test checks every
+item). Founding takes two clicks (button, then "Yes"), and is impossible while it would pay nothing.
+The state object is reset in place, so every system keeps working on the same object.
+
+* Resets: crowns, buildings and unlocks, upgrades, rank and milestones, this empire's statistics.
+* Keeps: seals, legacy upgrades, achievements, all-time totals (crowns, clicks, play time,
+  empires founded, best empire), buy mode, founding date.
+
+**Legacy upgrades**, bought with seals and kept forever: Seed Capital (start with 1 K to 100 B
+crowns, 5 levels), Inherited Deeds (every building ever unlocked is open from the start), Golden
+Hands (clicks x2 per level, 3 levels), Imperial Mandate (production x1.25 per level, 10 levels,
+price doubling) and Cheaper Bricks (buildings 5% cheaper per level, 5 levels). Seed Capital and
+Inherited Deeds also apply at once when bought. Seed Capital crowns count as *granted*, not earned,
+so they can never mint seals (`crowns in hand = earned + granted - spent`).
+
+Long-term goals: achievements for 1 / 5 / 10 / 25 prestiges and 10 / 100 / 1,000 seals, and the
+repeatable Imperial Mandate. The statistics screen adds all-time figures and the legacy bonuses.
+A test plays three empires in a row and checks each reaches a billion crowns faster than the last.
+
 ## Scope so far
 
 Clicking, six buildings with escalating prices, passive income, per-second and per-click counters
 (phase 1); x1 / x10 / x100 / Max buying, exact bulk prices, the economy config, affordability
 states and purchase feedback (phase 2); upgrades, multipliers and the upgrade panel (phase 3); 14 buildings, tiered unlocks,
 milestones, ranks, skyline and notifications (phase 4); achievements with rewards, hidden ones, the
-collection and their persistence (phase 5); statistics and the statistics screen (phase 6). Not yet
-(later phases): prestige, saving and offline earnings. **Only achievements are saved yet**: a refresh starts the empire over.
+collection and their persistence (phase 5); statistics and the statistics screen (phase 6);
+prestige with Imperial Seals and legacy upgrades (phase 7). Not yet (later phases): saving and
+offline earnings. **Only achievements are saved yet**: a refresh starts the empire over and
+loses Imperial Seals and legacy upgrades too, until the save system (phase 8).
 
 `window.idleEmpire` exposes `{ state, economy }` for testing from the console.
 
@@ -171,4 +210,6 @@ without upgrades, the roster, tiered unlocks, milestones and ranks (including bu
 skyline levels, a two-hour pacing check, the achievement catalogue, once-only grants with
 timestamps, the reward, every hidden achievement, progress bars, and the store (reload, garbage,
 blocked storage), statistics bookkeeping over a simulated session, records, the statistics save
-round trip, production history and the report helpers.
+round trip, production history, the report helpers, the seal formula at every boundary, the
+prestige reset against its promised lists, the legacy shop and its effects, prestige
+achievements, and a three-empire prestige loop.

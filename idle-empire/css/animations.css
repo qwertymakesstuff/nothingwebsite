@@ -83,3 +83,5 @@
   .sparkle { display: none; }
   .top-btn.pulse, .toast-achievement::after { animation: none; }
 }
+.legacy-card.bought { animation: bought .45s ease-out; }
+.legacy-card.denied { animation: denied .22s ease-in-out; }

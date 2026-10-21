@@ -4,17 +4,18 @@
 //
 // Bookkeeping that must always agree:
 //   totalEarned = crowns earned by clicking + crowns produced by every building
-//   crowns in hand = totalEarned - crowns spent
+//   crowns in hand = totalEarned + crowns granted - crowns spent
 import BigNum, { ZERO } from './bigNum.js';
 import { BUILDINGS } from './buildings.js';
 
-const AMOUNTS = ['clickEarned', 'spent', 'highestPps', 'highestClick'];
+const AMOUNTS = ['clickEarned', 'spent', 'granted', 'highestPps', 'highestClick'];
 const COUNTS = ['bestBurst', 'denied', 'modeSwitches', 'buildingsBought', 'upgradesBought', 'playTime'];
 
 export function createStats() {
   return {
     clickEarned: ZERO,   // crowns earned by clicking
     spent: ZERO,         // crowns spent on buildings and upgrades
+    granted: ZERO,       // crowns given rather than earned (Seed Capital at the start of an empire)
     highestPps: ZERO,    // best production per second reached
     highestClick: ZERO,  // most valuable single click
     producedBy: Object.fromEntries(BUILDINGS.map(b => [b.id, ZERO])), // crowns each building has made

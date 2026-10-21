@@ -11,6 +11,7 @@ import * as progression from './progression.js';
 import { loadAchievements, saveAchievements } from './achievementStore.js';
 import * as achievementSystem from './achievementSystem.js';
 import { sampleHistory } from './statistics.js';
+import * as prestigeSystem from './prestige.js';
 
 const { checkProgress } = progression;
 
@@ -50,4 +51,4 @@ ui.renderRank();
 requestAnimationFrame(frame);
 
 // a handle for testing from the browser console
-window.idleEmpire = { state, economy, upgrades: upgradeSystem, progression, achievements: achievementSystem };
+window.idleEmpire = { state, economy, upgrades: upgradeSystem, progression, achievements: achievementSystem, prestige: prestigeSystem };

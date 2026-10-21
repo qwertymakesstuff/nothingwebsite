@@ -17,6 +17,10 @@
   <header class="topbar">
     <h1 class="wordmark"><span class="wordmark-crown" aria-hidden="true"></span>Idle Empire</h1>
     <div class="top-actions">
+      <button id="prestigeBtn" class="top-btn" type="button" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="10" r="7"/><path d="M8 15l-2 7 6-3 6 3-2-7z"/></svg>
+        <span class="top-btn-label">Prestige</span> <b id="prestigePending" class="pending"></b>
+      </button>
       <button id="statsBtn" class="top-btn" type="button" aria-haspopup="dialog">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 20h18v2H3z"/><path d="M4 18V12h3v6zM10 18V8h3v10zM16 18V4h3v14z"/></svg>
         <span class="top-btn-label">Statistics</span>
@@ -48,6 +52,7 @@
         <div class="rank-bar" aria-hidden="true"><span id="rankBar"></span></div>
         <p class="rank-next" id="rankNext"></p>
       </div>
+      <p class="legacy-line" id="legacyLine" hidden></p>
       <div class="skyline" id="skyline"></div>
     </section>
 
@@ -75,6 +80,49 @@
 
   <div id="floaters" class="floaters" aria-hidden="true"></div>
   <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <dialog id="prestigeDialog" class="dialog dialog-wide" aria-labelledby="prestigeTitle">
+    <div class="dialog-head">
+      <div>
+        <h2 id="prestigeTitle">Found a New Empire</h2>
+        <p class="dialog-sub">Start over with Imperial Seals: each seal ever earned adds +5% to all production, forever.</p>
+      </div>
+      <button id="prestigeClose" class="dialog-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="stats-body">
+      <div class="stat-cards seal-cards">
+        <div class="stat-card"><span>Seals to spend</span><b id="sealsAvailable">0</b></div>
+        <div class="stat-card"><span>Seals earned in total</span><b id="sealsEarned">0</b><small id="sealsBonus"></small></div>
+        <div class="stat-card highlight"><span>A new empire now gives</span><b id="sealsGain">+0</b></div>
+      </div>
+      <p class="next-seal" id="nextSealText"></p>
+      <div class="rank-bar" aria-hidden="true"><span id="nextSealBar"></span></div>
+
+      <div id="prestigeMain">
+        <div class="stats-columns">
+          <section><h3>Resets</h3><ul id="prestigeResets" class="plain-list resets"></ul></section>
+          <section><h3>You keep</h3><ul id="prestigeKeeps" class="plain-list keeps"></ul></section>
+        </div>
+        <p class="prestige-after" id="sealsAfter"></p>
+        <div class="prestige-actions">
+          <button id="prestigeGo" class="big-btn" type="button">Found a new empire</button>
+          <p id="prestigeReason" class="prestige-reason"></p>
+        </div>
+      </div>
+      <div id="prestigeConfirm" class="prestige-confirm" hidden role="alertdialog" aria-labelledby="prestigeConfirmText">
+        <p id="prestigeConfirmText"></p>
+        <div class="prestige-actions">
+          <button id="prestigeYes" class="big-btn danger" type="button">Yes, found a new empire</button>
+          <button id="prestigeNo" class="ghost-btn" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <section>
+        <h3>Legacy upgrades <span class="h3-note">bought with seals, kept forever</span></h3>
+        <div id="legacyShop" class="legacy-shop"></div>
+      </section>
+    </div>
+  </dialog>
 
   <dialog id="statsDialog" class="dialog dialog-wide" aria-labelledby="statsTitle">
     <div class="dialog-head">

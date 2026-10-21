@@ -6,7 +6,7 @@ import { formatNumber } from './numberFormatter.js';
 import * as economy from './economy.js';
 import { formatDuration } from './stats.js';
 import { buildingBreakdown, activeBonuses, progressSummary, totalOwned, HISTORY_INTERVAL_MS, HISTORY_LENGTH } from './statistics.js';
-import { ZERO } from './bigNum.js';
+import BigNum, { ZERO } from './bigNum.js';
 
 const dateFormat = typeof Intl !== 'undefined' ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : null;
 const when = t => (dateFormat ? dateFormat.format(t) : new Date(t).toString());
@@ -18,7 +18,8 @@ const OVERVIEW = [
   ['Per click', s => formatNumber(economy.clickValue(s))],
   ['Highest per second', s => formatNumber(s.stats.highestPps)],
   ['Best single click', s => formatNumber(s.stats.highestClick)],
-  ['Crowns earned', s => formatNumber(s.totalEarned.floor())],
+  ['Crowns earned this empire', s => formatNumber(s.totalEarned.floor())],
+  ['Crowns earned, all empires', s => formatNumber(s.legacy.lifetimeEarned.add(s.totalEarned).floor())],
   ['Earned by clicking', s => formatNumber(s.stats.clickEarned.floor())],
   ['Earned by buildings', s => formatNumber(Object.values(s.stats.producedBy).reduce((a, b) => a.add(b), ZERO).floor())],
   ['Crowns spent', s => formatNumber(s.stats.spent)],
@@ -27,8 +28,13 @@ const OVERVIEW = [
   ['Buildings owned', s => formatNumber(totalOwned(s))],
   ['Buildings bought', s => formatNumber(s.stats.buildingsBought)],
   ['Upgrade levels bought', s => formatNumber(s.stats.upgradesBought)],
+  ['Mint clicks, all empires', s => formatNumber(s.legacy.lifetimeClicks + s.totalClicks)],
+  ['Empires founded', s => formatNumber(s.legacy.prestiges + 1)],
+  ['Best empire (crowns earned)', s => formatNumber(BigNum.max(s.legacy.bestRunEarned, s.totalEarned).floor())],
+  ['This empire\'s age', (s, now) => formatDuration((now - s.runStartedAt) / 1000)],
   ['This visit', (s, now) => formatDuration((now - s.session.startedAt) / 1000)],
-  ['Total play time', s => formatDuration(s.stats.playTime)],
+  ['Play time this empire', s => formatDuration(s.stats.playTime)],
+  ['Play time, all empires', s => formatDuration(s.legacy.playTime + s.stats.playTime)],
 ];
 
 const CHART_W = 600, CHART_H = 150, PAD_L = 4, PAD_B = 18;

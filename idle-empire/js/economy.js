@@ -12,6 +12,7 @@ import { ECONOMY } from './config.js';
 import { collectModifiers } from './upgrades.js';
 import { milestoneMult, rankIndex, rankMult } from './milestones.js';
 import { ACHIEVEMENT_BONUS } from './achievements.js';
+import { sealMult, mandateMult, legacyClickMult, priceMult } from './legacy.js';
 import { recordClick, recordSpend, recordProduction, recordTick } from './stats.js';
 
 const EXACT_LIMIT = 2 ** 53;  // above this every double is already a whole number
@@ -66,7 +67,7 @@ export function validBuyMode(mode) {
 // what the shop offers for a building in a buy mode: { count, cost, affordable }.
 // In Max mode with nothing affordable it quotes a single copy so the player sees the target.
 export function quote(state, id, mode = state.buyMode) {
-  const def = BUILDINGS_BY_ID[id];
+  const def = pricedDef(state, BUILDINGS_BY_ID[id]);
   if (!def) return null;
   const owned = state.buildings[id] || 0;
   mode = validBuyMode(mode);
@@ -77,7 +78,14 @@ export function quote(state, id, mode = state.buyMode) {
 }
 
 export function nextCost(state, id) {
-  return buildingCost(BUILDINGS_BY_ID[id], state.buildings[id] || 0, 1);
+  return buildingCost(pricedDef(state, BUILDINGS_BY_ID[id]), state.buildings[id] || 0, 1);
+}
+
+// a building as the shop prices it for this player (Cheaper Bricks lowers the base cost)
+export function pricedDef(state, def) {
+  if (!def) return def;
+  const m = priceMult(state.legacy);
+  return m === 1 ? def : { ...def, baseCost: def.baseCost * m };
 }
 
 // Upgrade effects, combined. Recomputed only when the owned upgrades change: the cache is
@@ -101,7 +109,9 @@ export function unitRate(state, def) {
     .mul(1 + bonus / 100)
     .mul(mods.global)
     .mul(rankMult(rankIndex(state.totalEarned)))
-    .mul(achievementMult(state));
+    .mul(achievementMult(state))
+    .mul(sealMult(state.legacy))
+    .mul(mandateMult(state.legacy));
 }
 
 // +1% production per achievement unlocked (state.achievements only ever holds known ids)
@@ -123,7 +133,7 @@ export function productionPerSecond(state) {
 
 export function clickValue(state) {
   const mods = modifiers(state);
-  let value = BigNum.from(ECONOMY.clickBase + mods.clickAdd).mul(mods.clickMult);
+  let value = BigNum.from(ECONOMY.clickBase + mods.clickAdd).mul(mods.clickMult).mul(legacyClickMult(state.legacy));
   if (mods.clickPps > 0) value = value.add(productionPerSecond(state).mul(mods.clickPps));
   return value;
 }

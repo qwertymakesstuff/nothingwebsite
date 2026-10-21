@@ -20,6 +20,7 @@ const ICONS = {
   upgrade: '<path d="M12 3l7 8h-4v9H9v-9H5z"/>',
   crown: '<path d="M3 18l2-11 4.5 4L12 4l2.5 7L19 7l2 11z"/><path d="M3 19h18v2H3z"/>',
   key: '<circle cx="8" cy="12" r="5"/><path d="M12 11h10v3h-2v3h-3v-3h-5z"/>',
+  seal: '<circle cx="12" cy="10" r="7"/><path d="M8 15l-2 7 6-3 6 3-2-7z"/><path d="M9 10l2 2 4-4" fill="none" stroke="#3a2608" stroke-width="2"/>',
   star: '<path d="M12 2l3 7 7 .6-5.3 4.7 1.6 7.2L12 17.8 5.7 21.5l1.6-7.2L2 9.6 9 9z"/>',
 };
 
@@ -82,6 +83,14 @@ export const ACHIEVEMENTS = [
     id: `rank-${i}`, name: `Hail the ${RANKS[i].name}`, group: 'Progress', icon: ICONS.crown,
     description: `Reach the rank of ${RANKS[i].name}.`, ...reach(s => s.rank, i),
   })),
+
+  // prestige: long-term goals across empires
+  ...tiered('Legacy', ICONS.seal, 'prestige', [
+    [1, 'A New Dynasty'], [5, 'Old Money'], [10, 'Eternal Empire'], [25, 'Wheel of Dynasties'],
+  ], s => s.legacy.prestiges, n => (n === 1 ? 'Found a new empire (prestige) for the first time.' : `Found ${n} new empires.`)),
+  ...tiered('Legacy', ICONS.seal, 'seals', [
+    [10, 'Seal Collector'], [100, 'Keeper of Seals'], [1000, 'Hall of Seals'],
+  ], s => s.legacy.sealsEarned, n => `Earn ${formatNumber(n)} Imperial Seals in total.`),
 
   // hidden: unusual things, revealed only when done
   { id: 'hidden-hoarder', name: 'Dragon on a Pile', group: 'Hidden', icon: ICONS.star, hidden: true,
