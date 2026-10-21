@@ -2,6 +2,7 @@
 // own hangout says, turns to face the player when near, and can be hurt (the witness in M08). They are not part of the pedestrian crowd.
 import { scene } from '../render.js';
 import { createCharacter } from '../models/characters.js';
+import { loadBody, bodyUrl, modelFor } from './glbChar.js';
 import { pushOut } from '../city.js';
 import { layDown } from '../people.js';
 import { player } from '../player.js';
@@ -18,10 +19,22 @@ export function spawn(id, o) {
     const ch = o.ch || createCharacter(CAST[id].look); scene.add(ch.root);
     n = { id, name: o.name || nameOf(id), x: 0, z: 0, yaw: 0, ch, root: ch.root, hp: 100, dead: false, hang: false, face: true, keep: !!o.keep };
     npcs.set(id, n);
+    if (!o.ch) riggedCast(n);
   }
   n.hang = !!o.hang; if (o.keep != null) n.keep = !!o.keep; n.hp = o.hp != null ? o.hp : 100; n.dead = false; n.root.visible = true; n.ch.update(0, 0, {});
   place(n, o.x, o.z, o.yaw);
   return n;
+}
+/** the cast with their own model (Eddie, Mara, Rowan, Sloane, Dana) swap their blocky body for it as soon as the file is ready */
+async function riggedCast(n) {
+  const name = modelFor.cast(n.id); if (!name) return;
+  try {
+    const ch = await loadBody({ url: bodyUrl(name), scale: 1.05 });
+    if (npcs.get(n.id) !== n) { ch.dispose(); return; }
+    const old = n.ch; scene.remove(n.root); n.ch = ch; n.root = ch.root; scene.add(n.root); n.root.position.set(n.x, 0, n.z); n.root.rotation.y = n.yaw;
+    if (n.dead) layDown(ch); else ch.update(0, 0, {});
+    if (old.dispose) old.dispose(); else old.root.traverse(o => { if (o.isMesh && o !== old.gun && o.geometry) o.geometry.dispose(); });
+  } catch (e) { console.warn('[cast model]', n.id, e); }
 }
 function place(n, x, z, yaw) {
   if (x != null) { const r = pushOut(x, z, .45); n.x = r[0]; n.z = r[1]; }

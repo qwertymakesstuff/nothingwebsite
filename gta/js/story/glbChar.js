@@ -66,20 +66,38 @@ export async function loadRigged(opts) {
  * how the bones happen to be oriented. Walking is the run clip at a smaller amplitude (Ash) or a procedural gait (crowd1); aiming, hands
  * up, sitting at the wheel and the pedestrians' gestures are the same limb directions.
  * ==================================================================================================================== */
-const rawFiles = {};
-async function gltfOf(url) {
-  if (!THREE.GLTFLoader) await script(here('../../lib/GLTFLoader.js'));
-  if (!rawFiles[url]) rawFiles[url] = fetch(url).then(r => { if (!r.ok) throw new Error('could not load ' + url + ' (' + r.status + ')'); return r.arrayBuffer(); });
-  const buf = await rawFiles[url];
-  return new Promise((res, rej) => new THREE.GLTFLoader().parse(buf.slice(0), new URL('.', url).href, res, rej));      // parsed per instance: skinned meshes cannot be shared without SkeletonUtils
+const protos = {};
+/** one parsed copy of each file; every character made from it is a SkeletonUtils clone (own skeleton, shared geometry and textures) */
+function protoOf(url) {
+  if (protos[url]) return protos[url];
+  return (protos[url] = (async () => {
+    if (!THREE.GLTFLoader) await script(here('../../lib/GLTFLoader.js'));
+    if (!THREE.SkeletonUtils) await script(here('../../lib/SkeletonUtils.js'));
+    const buf = await fetch(url).then(r => { if (!r.ok) throw new Error('could not load ' + url + ' (' + r.status + ')'); return r.arrayBuffer(); });
+    const gltf = await new Promise((res, rej) => new THREE.GLTFLoader().parse(buf, new URL('.', url).href, res, rej));
+    gltf.scene.traverse(o => { if (o.isSkinnedMesh) { o.geometry.computeBoundingSphere(); o.geometry.boundingSphere.radius *= 1.6; o.frustumCulled = true; } });   // a skinned mesh's real bounds move with the pose: a generous sphere around the bind pose
+    return { scene: gltf.scene, animations: gltf.animations, calc: null };
+  })());
 }
-export const BODIES = { ash: here('../../models/ped_ash.glb'), crowd1: here('../../models/ped_crowd1.glb') };
+const MODEL_DIR = here('../../models/');
+/** the character files: the player, the story cast, police and the crowd */
+export const BODIES = { ash: MODEL_DIR + 'ped_ash.glb', crowd1: MODEL_DIR + 'ped_crowd1.glb' };
+export const bodyUrl = name => MODEL_DIR + name + '.glb';
+const CAST_MODELS = { EDDIE: 'ped_eddie', MARA: 'ped_mara', ROWAN: 'ped_rowan', SLOANE: 'ped_sloane', DANA: 'ped_officer_f' };
+const pickOf = a => a[Math.floor(Math.random() * a.length)];
+/** which file a kind of person uses (null: no model, keep the blocky body) */
+export const modelFor = {
+  cast: id => CAST_MODELS[id] || null,
+  civilian: female => pickOf(female ? ['ped_crowd2', 'ped_crowd4'] : ['ped_crowd1', 'ped_crowd3', 'ped_crowd5', 'ped_crowd6']),
+  officer: () => (Math.random() < .28 ? 'ped_officer_f' : 'ped_officer_m')
+};
 
 /** opts: { url, scale, tint (hex multiplied into the colours, for the jacket choices) } */
 export async function loadBody(opts) {
-  const gltf = await gltfOf(opts.url), model = gltf.scene, root = new THREE.Group(); root.add(model); root.scale.setScalar(opts.scale || 1.05);
+  const proto = await protoOf(opts.url), model = THREE.SkeletonUtils.clone(proto.scene), root = new THREE.Group(); root.add(model); root.scale.setScalar(opts.scale || 1.05);
+  const gltf = { scene: model, animations: proto.animations };
   const V = THREE.Vector3, Q = THREE.Quaternion, clipped = gltf.animations[0] && gltf.animations[0].duration > .2;
-  const mats = []; model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; for (const m of [].concat(o.material)) { if (m.emissive) m.emissive.setScalar(.5); if (m.emissiveIntensity != null) m.emissiveIntensity = 1; mats.push(m); } } });   // the export is fully emissive: keep some of it so the lights still shape the body
+  const mats = []; model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.material = [].concat(o.material).map(m => m.clone())[0]; const m = o.material; if (m.emissive) m.emissive.setScalar(.5); if (m.emissiveIntensity != null) m.emissiveIntensity = 1; mats.push(m); } });   // own materials (shared textures); the export is fully emissive: keep some of it so the lights still shape the body
   const boost = opts.boost || 1, setTint = hex => { const c = new THREE.Color(hex == null ? 0xffffff : hex).multiplyScalar(boost); for (const m of mats) { m.color.copy(c); if (m.emissive) m.emissive.copy(c).multiplyScalar(.5); } };
   setTint(opts.tint);
   const names = {}; model.traverse(o => { if (o.isBone) names[o.name.replace(/^mixamorig:?/, '')] = o; });
@@ -90,11 +108,13 @@ export async function loadBody(opts) {
   let mixer = null, action = null, idleT = 0, idleQ = null, idleHip = null;
   if (clipped) {
     mixer = new THREE.AnimationMixer(model); action = mixer.clipAction(gltf.animations[0]); action.play();
+    if (proto.calc) idleT = proto.calc.idleT; else {
     // idle pose: the moment of the loop when the feet are together and level and the hands hang closest to the body
     const a = new V(), b = new V(), c = new V(), d = new V(), e = new V(), dur = action.getClip().duration, lf = B('LeftFoot'), rf = B('RightFoot'), lh = B('LeftHand'), rh = B('RightHand'), hips = B('Hips'); let best = 1e9;
     for (let t = 0; t < dur; t += dur / 40) {
       action.time = t; mixer.update(0); model.updateMatrixWorld(true); lf.getWorldPosition(a); rf.getWorldPosition(b); lh.getWorldPosition(c); rh.getWorldPosition(d); hips.getWorldPosition(e);
       const sc = Math.hypot(a.x - b.x, a.z - b.z) + Math.abs(a.y - b.y) * 2 + 1.4 * (Math.abs(c.x - e.x) + Math.abs(d.x - e.x)); if (sc < best) { best = sc; idleT = t; }
+    }
     }
     action.time = idleT; mixer.update(0); idleQ = bones.map(b => b.quaternion.clone()); idleHip = B('Hips').position.clone();
   }
@@ -116,13 +136,15 @@ export async function loadBody(opts) {
 
   // stand on the ground: the lowest sole over the standing pose (and the run, for Ash) sits exactly on y = 0
   let lift = 0;
-  if (skinned) {
+  if (proto.calc) { lift = proto.calc.lift; model.position.y = lift; }
+  else if (skinned) {
     const pos = skinned.geometry.attributes.position, soles = []; for (let i = 0; i < pos.count && soles.length < 3000; i++) if (pos.getY(i) < .14) soles.push(i);
     let low = 1e9; const p = new V(), lowest = () => { model.updateMatrixWorld(true); skinned.skeleton.update(); for (const i of soles) { skinned.boneTransform(i, p); p.applyMatrix4(skinned.matrixWorld); if (p.y < low) low = p.y; } };
     if (clipped) { const du = action.getClip().duration; for (let t = 0; t < du; t += du / 24) { action.time = t; mixer.update(0); lowest(); } action.time = idleT; mixer.update(0); lowest(); }
     else { bones.forEach((b, i) => b.quaternion.copy(rest[i])); model.updateMatrixWorld(true); legs('L', 0, -1, 0, 0, -1, 0, 1); legs('R', 0, -1, 0, 0, -1, 0, 1); lowest(); }
     lift = -low / root.scale.y + .015; model.position.y = lift;
   }
+  if (!proto.calc) proto.calc = { idleT, lift };
   const gun = new THREE.Mesh(new THREE.BoxGeometry(.035, .09, .2), new THREE.MeshLambertMaterial({ color: 0x1a1a1c })); gun.visible = false; root.add(gun);
   const ch = { root, model, mixer, spec: { rigged: true }, gun, seatDrop: .4, seatBack: .08, t: Math.random() * 6, ph: Math.random() * 6, amp: 0, runW: 0, ab: 0, sb: 0, hb: 0, gb: 0, gname: null, setTint, state: 'idle' };
   const GEST = {                                                          // [arm, ux, uy, uz, fx, fy, fz] for the right arm unless it says both
@@ -182,7 +204,7 @@ export async function loadBody(opts) {
     if (state === 'idle') { const spine = B('Spine1') || B('Spine'); if (spine) spine.rotation.x += Math.sin(ch.t * 1.7) * .012; }
     void here0;
   };
-  ch.dispose = () => { model.traverse(o => { if (o.geometry) o.geometry.dispose(); const ms = o.material ? [].concat(o.material) : []; for (const m of ms) { for (const k of Object.keys(m)) if (m[k] && m[k].isTexture) m[k].dispose(); m.dispose(); } }); gun.geometry.dispose(); gun.material.dispose(); };
+  ch.dispose = () => { for (const m of mats) m.dispose(); gun.geometry.dispose(); gun.material.dispose(); };                    // geometry and textures belong to the shared copy
   ch.update(0, 0, {});
   return ch;
 }
