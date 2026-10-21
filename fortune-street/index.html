@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1b26" />
+  <meta name="description" content="Fortune Street: a property-trading board game set in the harbor city of Meridian Bay. Play AI rivals or friends on one device." />
+  <title>Fortune Street · Meridian Bay</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='5' fill='%230f3a46'/%3E%3Cpath d='M9 20l1-10h4l1 10M10 10V7h4v3M12 7V4' stroke='%23e8b450' stroke-width='1.8' fill='none'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/board.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+</head>
+<body>
+  <!-- title and setup -->
+  <section id="title" class="screen title-screen" hidden>
+    <header class="title-hero">
+      <div class="hero-text">
+        <p class="kicker">A property-trading game of Meridian Bay</p>
+        <h1 class="logo">Fortune <span>Street</span></h1>
+        <p class="hero-sub">Buy up the waterfront, build towers over the market, strike deals with rivals, and finish the richest owner in the bay.</p>
+        <div class="btn-row">
+          <button type="button" class="btn" data-setup="rules">How to play</button>
+          <button type="button" class="btn" data-setup="settings">Settings</button>
+          <a class="btn ghost" href="/">missing.website</a>
+        </div>
+      </div>
+      <svg class="hero-skyline" viewBox="0 0 400 180" aria-hidden="true">
+        <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8b450" stop-opacity=".35"/><stop offset="1" stop-color="#e8b450" stop-opacity="0"/></linearGradient></defs>
+        <circle cx="300" cy="70" r="34" fill="url(#sky)"/>
+        <g class="sk-back"><path d="M20 140V96h22v44M50 140V70h26v70M84 140V86h18v54M110 140V52l14-14 14 14v88M146 140V78h24v62M178 140V60h20v80M206 140V92h26v48M240 140V40l10-20 10 20v100M268 140V74h28v66M304 140V96h18v44M330 140V64h24v76M362 140V100h22v40"/></g>
+        <g class="sk-front"><path d="M0 140h400"/><path d="M30 140v-24h30v24M120 140v-34h20v34M190 140v-20h40v20M280 140v-30h24v30M350 140v-18h30v18"/><path d="M246 40h8M244 60h12M244 80h12M244 100h12"/></g>
+        <g class="sk-water"><path d="M0 152c20 0 20-4 40-4s20 4 40 4 20-4 40-4 20 4 40 4 20-4 40-4 20 4 40 4 20-4 40-4 20 4 40 4 20-4 40-4 20 4 40 4"/><path d="M20 166c20 0 20-4 40-4s20 4 40 4 20-4 40-4 20 4 40 4 20-4 40-4 20 4 40 4 20-4 40-4 20 4 40 4"/></g>
+      </svg>
+    </header>
+    <div class="title-body">
+      <div id="continueSlot"></div>
+      <h2 class="section-title">Choose a mode</h2>
+      <div class="mode-grid" id="modeGrid"></div>
+      <h2 class="section-title">Seat the players</h2>
+      <div class="seat-config" id="seatConfig"></div>
+      <div class="btn-row start-row"><button type="button" class="btn primary big" data-setup="start">Start match</button></div>
+    </div>
+  </section>
+
+  <!-- the match -->
+  <section id="game" class="screen game-screen" hidden>
+    <header class="hud-bar">
+      <span class="hud-logo">Fortune <span>Street</span></span>
+      <div class="hud" id="hud" aria-live="polite"></div>
+      <div class="hud-actions">
+        <button type="button" class="btn small" data-ui="rules">Rules</button>
+        <button type="button" class="btn small" data-ui="menu" aria-label="Pause menu">Menu</button>
+      </div>
+    </header>
+    <main class="table">
+      <aside class="col-left">
+        <section class="panel" id="leaderboard" aria-label="Leaderboard"></section>
+        <section class="panel" id="effects" aria-label="City conditions"></section>
+      </aside>
+      <div class="board-wrap"><div class="board" id="board"></div></div>
+      <aside class="col-right">
+        <section class="panel turn-panel" id="turnPanel" aria-label="Current player"></section>
+        <section class="panel tabs-panel">
+          <div class="tabbar" role="tablist">
+            <button type="button" role="tab" data-ui="tab" data-tab="portfolio">Portfolio</button>
+            <button type="button" role="tab" data-ui="tab" data-tab="log">Event feed</button>
+            <button type="button" role="tab" data-ui="tab" data-tab="ledger">Ledger</button>
+          </div>
+          <div class="tab-body" id="tabBody"></div>
+        </section>
+      </aside>
+    </main>
+  </section>
+
+  <div id="handoff" class="handoff" hidden></div>
+  <div id="modalRoot" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <noscript><p style="padding:2rem">Fortune Street needs JavaScript to run.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
