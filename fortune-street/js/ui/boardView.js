@@ -73,6 +73,7 @@ export function createBoardView(root, { onSpace }) {
       <div class="center-brand"><span class="brand-kicker">Meridian Bay</span><span class="brand-title">Fortune<br>Street</span></div>
       <div class="dice" aria-live="polite"><div class="die" data-die="0">${dieFace(5)}</div><div class="die" data-die="1">${dieFace(2)}</div></div>
       <p class="center-msg" id="centerMsg"></p>
+      <div class="roll-total" id="rollTotal" aria-live="assertive" hidden></div>
       <div class="card-slot" id="cardSlot"></div>`;
     root.appendChild(center);
     const layer = document.createElement('div');
@@ -186,6 +187,23 @@ export function createBoardView(root, { onSpace }) {
     setDice(final);
   }
 
+  // the big roll result in the middle of the board, shown between the dice and the move
+  async function showRollTotal(d, holdMs) {
+    const el = root.querySelector('#rollTotal');
+    if (!el) return;
+    el.innerHTML = `<b>${d[0] + d[1]}</b><span>${d[0]} + ${d[1]}</span>${d[0] === d[1] ? '<em>Doubles!</em>' : ''}`;
+    el.classList.remove('out');
+    el.hidden = false;
+    await sleep(holdMs);
+  }
+  async function hideRollTotal(fadeMs = 250) {
+    const el = root.querySelector('#rollTotal');
+    if (!el || el.hidden) return;
+    el.classList.add('out');
+    await sleep(fadeMs);
+    el.hidden = true;
+  }
+
   function showCard(card) {
     const slot = root.querySelector('#cardSlot');
     if (!slot) return;
@@ -214,5 +232,5 @@ export function createBoardView(root, { onSpace }) {
     layoutTokens();
   }).observe(root);
 
-  return { build, update, syncPositions, layoutTokens, animateMoves, rollDice, setDice, showCard, setMessage, highlight };
+  return { build, update, syncPositions, layoutTokens, animateMoves, rollDice, showRollTotal, hideRollTotal, setDice, showCard, setMessage, highlight };
 }

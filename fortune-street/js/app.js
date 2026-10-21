@@ -40,9 +40,10 @@ function reducedMotion() {
 function timings() {
   const anim = reducedMotion() ? 'off' : app.settings.animation;
   return {
-    step: { normal: 150, fast: 70, off: 0 }[anim],
-    dice: { normal: 650, fast: 300, off: 0 }[anim],
-    ai: { relaxed: 1100, normal: 600, fast: 220 }[app.settings.aiSpeed] ?? 600,
+    step: { normal: 210, fast: 100, off: 0 }[anim],
+    dice: { normal: 900, fast: 450, off: 0 }[anim],
+    total: { normal: 900, fast: 450, off: 0 }[anim], // how long the roll result shows before moving
+    ai: { relaxed: 1400, normal: 850, fast: 300 }[app.settings.aiSpeed] ?? 850,
   };
 }
 function applySettings() {
@@ -198,8 +199,13 @@ async function present(prev, st) {
     app.animating = true;
     $('#turnPanel .actions') && ($('#turnPanel .actions').innerHTML = '<p class="lead thinking">Moving…</p>');
     if (prev.turn.player !== st.turn.player || fx.dice) board.showCard(null);
-    if (fx.dice) { play('dice'); await board.rollDice(fx.dice, t.dice); }
+    if (fx.dice) {
+      play('dice');
+      await board.rollDice(fx.dice, t.dice);
+      if (t.total > 0) await board.showRollTotal(fx.dice, t.total);
+    }
     await board.animateMoves(fx.moves, { stepMs: t.step, onStep: () => play('step') });
+    await board.hideRollTotal(t.total > 0 ? 250 : 0);
     app.animating = false;
   }
   board.syncPositions(st);

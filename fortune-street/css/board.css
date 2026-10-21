@@ -148,3 +148,19 @@
 .token.jump { transition: transform .35s var(--ease); }
 .token.gone { opacity: 0; }
 @keyframes bob { 50% { margin-top: -3px; } }
+
+/* roll result: a big number over the bay between the dice and the move */
+.roll-total {
+  position: absolute; inset: 0; z-index: 2;
+  display: grid; place-content: center; justify-items: center; gap: .1em;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(6, 20, 28, .55) 0, rgba(6, 20, 28, .35) 35%, transparent 65%);
+  animation: total-in .35s var(--ease);
+  transition: opacity .25s;
+}
+.roll-total[hidden] { display: none; }
+.roll-total.out { opacity: 0; }
+.roll-total b { font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 16cqi, 150px); line-height: .9; color: var(--gold); text-shadow: 0 4px 0 rgba(0, 0, 0, .3), 0 0 30px rgba(232, 180, 80, .35); }
+.roll-total span { font-weight: 800; font-size: clamp(10px, 2.4cqi, 20px); letter-spacing: .08em; color: #f3ead8; }
+.roll-total em { font-style: normal; font-weight: 800; text-transform: uppercase; letter-spacing: .14em; font-size: clamp(9px, 2cqi, 16px); color: #1f2b35; background: var(--gold); padding: .2em .7em; border-radius: 99px; margin-top: .3em; }
+@keyframes total-in { from { opacity: 0; transform: scale(.6); } 60% { transform: scale(1.08); } }
