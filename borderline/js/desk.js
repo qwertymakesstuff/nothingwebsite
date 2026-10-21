@@ -146,7 +146,8 @@ export function createDesk({ tray, toolbar, result, examine }) {
   function openExamine(i) {
     examineReturn = document.activeElement;
     const body = examine.querySelector('.examine-body');
-    body.innerHTML = renderDocument(visitor.documents[i], visitor, { docIndex: i, stamp: visitor.documents[i].type === 'passport' ? stamp : null });
+    const target = Math.max(0, visitor.documents.findIndex(d => d.type === 'passport'));
+    body.innerHTML = renderDocument(visitor.documents[i], visitor, { docIndex: i, stamp: i === target ? stamp : null });
     examine.querySelector('.examine-title').textContent = `Examining: ${docName(i)}`;
     examine.hidden = false;
     examine.querySelector('[data-desk="closeExamine"]').focus();
@@ -240,8 +241,9 @@ export function createDesk({ tray, toolbar, result, examine }) {
       const changed = (v?.id ?? null) !== (visitor?.id ?? null);
       visitor = v; stamp = s;
       if (changed) { moved = false; positions = {}; order = []; selected = null; picked = []; lastResult = null; result.textContent = ''; delete result.dataset.status; }
+      const target = v ? Math.max(0, v.documents.findIndex(d => d.type === 'passport')) : -1;
       tray.innerHTML = v
-        ? v.documents.map((doc, i) => renderDocument(doc, v, { docIndex: i, stamp: doc.type === 'passport' ? s : null })).join('')
+        ? v.documents.map((doc, i) => renderDocument(doc, v, { docIndex: i, stamp: i === target ? s : null })).join('')
         : '<p class="tray-empty">No documents on the desk.</p>';
       for (const el of docEls()) { el.tabIndex = 0; el.setAttribute('aria-roledescription', 'document'); }
       tray.classList.toggle('fresh', arriving);

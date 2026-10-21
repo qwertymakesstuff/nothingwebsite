@@ -4,6 +4,8 @@ import { SETTING } from '../data/setting.js';
 import { dayByNumber } from '../data/campaignDays.js';
 import { currentVisitor, currentDay, decisionFor, visitorById } from './gameState.js';
 import { createDesk, deskToolbarHTML } from './desk.js';
+import { renderRulebook, RULEBOOK_TABS } from './rulebook.js';
+import { activeRegulations } from '../data/regulations.js';
 import { portraitSVG } from './portrait.js';
 import { formatLong, formatDoc } from './dates.js';
 import { esc } from './html.js';
@@ -23,6 +25,7 @@ export function createUI(act) {
   let shownVisitor = null;
   let lastPhase = null;
   let toolbarDate = null;
+  let rulebookTab = 'rules', rulebookKey = null;
   const desk = createDesk({ tray: $('tray'), toolbar: $('deskTools'), result: $('compareResult'), examine: $('examine') });
 
   document.addEventListener('click', e => {
@@ -49,11 +52,30 @@ export function createUI(act) {
       <div><dt>Savings</dt><dd class="hud-money">${money(state.money)}</dd></div>`;
   }
 
-  function renderBulletin(state) {
-    const b = currentDay(state).bulletin;
-    $('bulletin').innerHTML = `<h2>${esc(b.title)}</h2><p class="bulletin-date">${esc(formatLong(state.date))}</p>
-      <ul>${b.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
+  // redrawn only when the day or tab changes, so compare picks in it survive other renders
+  function renderBulletin(state, force = false) {
+    const key = `${state.day}:${rulebookTab}`;
+    if (key === rulebookKey && !force) return;
+    rulebookKey = key;
+    $('bulletin').innerHTML = renderRulebook({ tab: rulebookTab, regulations: activeRegulations(state.day), day: currentDay(state), date: state.date });
+    desk.refreshComparables();
   }
+  let lastState = null;
+  $('bulletin').addEventListener('click', e => {
+    const t = e.target.closest('[data-rulebook]');
+    if (!t || !lastState) return;
+    rulebookTab = t.dataset.rulebook;
+    renderBulletin(lastState);
+    $('bulletin').querySelector(`[data-rulebook="${rulebookTab}"]`).focus();
+  });
+  $('bulletin').addEventListener('keydown', e => {
+    const t = e.target.closest('[data-rulebook]');
+    if (!t || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    const ids = RULEBOOK_TABS.map(x => x[0]);
+    const n = (ids.indexOf(rulebookTab) + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length;
+    rulebookTab = ids[n]; renderBulletin(lastState);
+    $('bulletin').querySelector(`[data-rulebook="${rulebookTab}"]`).focus();
+  });
 
   function renderBooth(state, arriving) {
     const v = currentVisitor(state);
@@ -125,6 +147,7 @@ export function createUI(act) {
 
   return {
     render(state) {
+      lastState = state;
       showScreen('game');
       const v = currentVisitor(state);
       const arriving = Boolean(v) && v.id !== shownVisitor;
@@ -136,6 +159,6 @@ export function createUI(act) {
       if (state.shift.phase !== lastPhase) focusFor(state.shift.phase);
       lastPhase = state.shift.phase;
     },
-    showIntro() { showScreen('intro'); $('summary').hidden = true; lastPhase = null; shownVisitor = null; },
+    showIntro() { showScreen('intro'); $('summary').hidden = true; lastPhase = null; shownVisitor = null; rulebookKey = null; },
   };
 }

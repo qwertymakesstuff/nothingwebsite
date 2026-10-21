@@ -6,17 +6,21 @@
 import { SETTING } from '../data/setting.js';
 import { dayByNumber } from '../data/campaignDays.js';
 import { VISITORS } from '../data/visitors.js';
-import { generateVisitor } from './visitorGenerator.js';
+import { generateVisitor, FLAWS } from './visitorGenerator.js';
+import { activeRegulations } from '../data/regulations.js';
 import { createRng } from './rng.js';
 
 const DECISIONS = ['accept', 'reject'];
 
-// the day's entrants in arrival order: authored ones copied from data, the rest generated
+// the day's entrants in arrival order: authored ones copied from data, the rest generated.
+// Generated flaws only break regulations in force that day, so every case is fair.
 export function buildEntrants(day, seed) {
   const rng = createRng(seed);
+  const active = new Set(activeRegulations(day.day).map(r => r.id));
+  const allowedFlaws = FLAWS.filter(f => active.has(f.rule)).map(f => f.id);
   return day.entrants.map((slot, i) => {
     if (slot !== 'gen') return structuredClone(VISITORS[slot]);
-    return generateVisitor(rng, { id: `g${day.day}_${i}`, date: day.date, flaw: rng.chance(day.flawRate) ? 'random' : null });
+    return generateVisitor(rng, { id: `g${day.day}_${i}`, date: day.date, flaw: rng.chance(day.flawRate) ? 'random' : null, allowedFlaws });
   });
 }
 

@@ -6,6 +6,11 @@ import { NAMES } from '../data/names.js';
 import { PURPOSES } from '../data/documents.js';
 import { makeDocument, passportNumber, corvennaNumber } from './documentFactory.js';
 import { addDays, ageOn } from './dates.js';
+import { REGULATIONS_BY_ID } from '../data/regulations.js';
+
+// the expiry exception: who it covers and for how long, as the regulation states it
+const GRACE = REGULATIONS_BY_ID['passport-valid'].params.exception;
+const coveredByGrace = (p, date) => p.nationality === GRACE.nationality && ageOn(p.dob, date) >= GRACE.minAge;
 
 const SKIN = ['#f0d0b4', '#e8c0a0', '#e2b896', '#d6a882', '#c99a76', '#a8724e', '#8a5a3c', '#6a4430'];
 const HAIR = ['#1e1814', '#2a2420', '#3a2a1e', '#5a3a22', '#7a5530', '#a87a40', '#c9a15a', '#8a8580', '#d8d4cc'];
@@ -40,16 +45,27 @@ const has = type => v => v.documents.some(d => d.type === type);
 const remove = type => v => { v.documents = v.documents.filter(d => d.type !== type); };
 const others = v => v.documents.filter(d => d.type !== 'passport');
 
-// every flaw a generated entrant can carry, the regulation it breaks and the change it makes
+// every flaw a generated entrant can carry, the regulation it concerns and the change it
+// makes; applies(visitor, ctx) says whether it suits an entrant. `legal: true` marks a
+// special case that looks wrong but is allowed by an exception.
 export const FLAWS = [
   {
     id: 'expiredPassport', category: 'expired', rule: 'passport-valid', applies: () => true,
     apply(rng, v, ctx) {
       const p = v.documents.find(d => d.type === 'passport');
-      // elderly citizens get a grace year under the expiry exception, so theirs lapse by more
-      const elder = p.nationality === SETTING.country.code && ageOn(p.dob, ctx.date) >= 60;
-      p.expires = addDays(ctx.date, -(elder ? rng.int(400, 1500) : rng.int(1, 900)));
+      // anyone the expiry exception covers must be past its grace period to be refused
+      const lo = coveredByGrace(p, ctx.date) ? GRACE.graceDays + 1 : 1;
+      p.expires = addDays(ctx.date, -rng.int(lo, lo + 900));
     },
+  },
+  {
+    id: 'elderGrace', category: 'exception', rule: 'passport-valid', legal: true,
+    applies: (v, ctx) => coveredByGrace(v.documents.find(d => d.type === 'passport'), ctx.date),
+    apply(rng, v, ctx) { v.documents.find(d => d.type === 'passport').expires = addDays(ctx.date, -rng.int(1, GRACE.graceDays - 1)); },
+  },
+  {
+    id: 'missingPassport', category: 'incomplete', rule: 'passport-required', applies: has('declaration'),
+    apply(rng, v) { remove('passport')(v); v.lines.greet = rng.pick(['My passport? I... it was stolen on the train. I have these.', 'I left my passport with my agent. These should be enough.']); },
   },
   {
     id: 'expiredPaper', category: 'expired', rule: 'papers-valid',
@@ -174,13 +190,13 @@ export function generateVisitor(rng, { id, date, flaw = null, allowedFlaws = nul
   };
   let chosen = flaw;
   if (flaw === 'random') {
-    const pool = FLAWS.filter(f => (!allowedFlaws || allowedFlaws.includes(f.id)) && f.applies(visitor));
+    const pool = FLAWS.filter(f => (!allowedFlaws || allowedFlaws.includes(f.id)) && f.applies(visitor, ctx));
     chosen = pool.length ? rng.pick(pool).id : null;
   }
   if (chosen) {
     const f = FLAWS_BY_ID[chosen];
     if (!f) throw new Error(`unknown flaw "${chosen}"`);
-    if (!f.applies(visitor)) throw new Error(`flaw "${chosen}" does not suit ${visitor.name}`);
+    if (!f.applies(visitor, ctx)) throw new Error(`flaw "${chosen}" does not suit ${visitor.name}`);
     f.apply(rng, visitor, ctx);
     visitor.generated = { flaw: f.id, rule: f.rule, category: f.category };
   }

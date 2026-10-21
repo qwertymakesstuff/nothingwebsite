@@ -75,5 +75,7 @@ export function renderDocument(doc, visitor, opts = {}) {
   const r = RENDERERS[doc.type];
   if (!r) throw new Error(`no renderer for document type "${doc.type}"`);
   const label = DOCUMENT_TYPES[doc.type].label;
-  return `<article class="doc doc-${esc(doc.type)}" data-doc="${opts.docIndex ?? 0}" aria-label="${esc(label)}">${r(doc, visitor, { ...opts, docIndex: opts.docIndex ?? 0 })}</article>`;
+  // papers other than the passport take the stamp across their face
+  const overlay = doc.type !== 'passport' && opts.stamp ? `<div class="doc-stamp-overlay">${stampMark(opts.stamp)}</div>` : '';
+  return `<article class="doc doc-${esc(doc.type)}" data-doc="${opts.docIndex ?? 0}" aria-label="${esc(label)}">${r(doc, visitor, { ...opts, docIndex: opts.docIndex ?? 0 })}${overlay}</article>`;
 }
