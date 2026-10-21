@@ -1,0 +1,53 @@
+/* Paperwork. Passports wear their nation's cover colour; ministry forms are plain stock. */
+.doc {
+  position: relative; color: var(--ink); font-family: var(--font-doc); font-size: .8rem;
+  border-radius: 4px; box-shadow: 0 4px 10px #0009; overflow: hidden;
+}
+.tray.fresh .doc { animation: slide-in .35s ease-out backwards; }
+.tray.fresh .doc + .doc { animation-delay: .12s; }
+@keyframes slide-in { from { transform: translateY(-14px) rotate(-2deg); opacity: 0; } }
+.doc dl { margin: 0; }
+.doc-field dt { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: #6a6050; }
+.doc-field dd { margin: 0 0 .35rem; font-weight: 600; font-size: .86rem; }
+.doc-head { display: flex; align-items: center; gap: .6rem; padding: .55rem .7rem; }
+.doc-head p { margin: 0; }
+.doc-issuer { font: 600 .62rem var(--font-ui); letter-spacing: .14em; text-transform: uppercase; }
+.doc-kind { font: 700 1.05rem var(--font-head); letter-spacing: .1em; text-transform: uppercase; }
+.emblem { width: 34px; height: 34px; flex: none; }
+
+/* passport */
+.doc-passport { width: 300px; max-width: 100%; background: var(--paper); border: 1px solid #0004; }
+.doc-passport .doc-head { background: var(--cover); color: var(--cover-ink); }
+.passport-body { display: grid; grid-template-columns: 92px 1fr; gap: .7rem; padding: .7rem;
+  background: repeating-linear-gradient(135deg, #0000 0 6px, #00000008 6px 7px), var(--paper); }
+.doc-photo { background: #c9c0a6; border: 1px solid #0003; align-self: start; filter: sepia(.35) contrast(.95); }
+.doc-photo .portrait { display: block; width: 100%; height: auto; }
+.doc-number { padding: .35rem .7rem; background: var(--paper-2); letter-spacing: .25em; font-size: .8rem; border-top: 1px dashed #0003; }
+
+/* entry declaration */
+.doc-declaration { width: 300px; max-width: 100%; background: #f2eee2; border-top: 6px solid #4f5a4a; }
+.doc-declaration .doc-head { border-bottom: 1px solid #0002; justify-content: space-between; }
+.doc-declaration .doc-kind { color: #3c4636; }
+.doc-form { font-size: .65rem; color: #7a705e; border: 1px solid #0003; padding: .1rem .35rem; }
+.doc-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: .8rem; padding: .7rem; }
+.doc-fine { margin: 0; padding: 0 .7rem .6rem; font-size: .6rem; color: #7a705e; }
+
+/* stamp mark, printed onto the passport once a decision is made */
+.doc-stamps { height: 62px; display: grid; place-items: center; border-top: 1px dashed #0003;
+  background: repeating-linear-gradient(0deg, #0000 0 11px, #0000000a 11px 12px), var(--paper); }
+.doc-stamps-label { font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: #0003; }
+.doc-stamp {
+  transform: rotate(-6deg);
+  display: flex; flex-direction: column; align-items: center; padding: .25rem .6rem;
+  border: 3px double currentColor; border-radius: 4px; mix-blend-mode: multiply; opacity: .85;
+  font: 700 1.05rem var(--font-head); letter-spacing: .12em; text-transform: uppercase;
+  animation: stamp .25s ease-out;
+}
+.doc-stamp small { font: 600 .55rem var(--font-ui); letter-spacing: .2em; }
+.doc-stamp.mark-accept { color: #24713a; }
+.doc-stamp.mark-reject { color: #b02a24; }
+@keyframes stamp { from { transform: rotate(-6deg) scale(1.6); opacity: 0; } }
+
+@media (max-width: 640px) {
+  .doc-passport, .doc-declaration { width: 100%; }
+}

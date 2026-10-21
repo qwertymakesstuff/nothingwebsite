@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#161714" />
+  <meta name="description" content="BORDERLINE: a border inspection game. Check papers at Checkpoint 9 on the Corvennan frontier." />
+  <title>BORDERLINE · Checkpoint 9</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='3' fill='%23262722'/%3E%3Cpath d='M4 12h16' stroke='%23c9a24a' stroke-width='2.4'/%3E%3Cpath d='M4 7h6M14 17h6' stroke='%23b0302a' stroke-width='2.4'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=1" />
+  <link rel="stylesheet" href="css/desk.css?v=1" />
+  <link rel="stylesheet" href="css/documents.css?v=1" />
+</head>
+<body>
+  <section id="intro" class="screen intro">
+    <div class="intro-card">
+      <p class="kicker">Republic of Corvenna · Ministry of Passage</p>
+      <h1 class="logo">BORDER<span>LINE</span></h1>
+      <p class="intro-text" id="introText"></p>
+      <div class="btn-row">
+        <button type="button" class="btn primary" data-action="start">Report for duty</button>
+        <a class="btn ghost" href="/">missing.website</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="game" class="screen game" hidden>
+    <header class="hud">
+      <span class="hud-logo">BORDER<span>LINE</span></span>
+      <dl class="hud-stats" id="hud"></dl>
+    </header>
+    <main class="post">
+      <section class="booth" aria-label="Inspection booth">
+        <div class="booth-window" id="boothWindow"></div>
+        <div class="speech" id="speech" aria-live="polite"></div>
+        <button type="button" class="btn primary booth-call" data-action="callNext">Call next entrant</button>
+      </section>
+      <section class="desk" aria-label="Inspection desk">
+        <aside class="bulletin" id="bulletin" aria-label="Today's directive"></aside>
+        <div class="tray" id="tray" aria-label="Documents on the desk"></div>
+        <div class="controls" role="group" aria-label="Decision">
+          <button type="button" class="stamp-btn stamp-accept" data-action="decide" data-decision="accept">Entry granted</button>
+          <button type="button" class="stamp-btn stamp-reject" data-action="decide" data-decision="reject">Entry denied</button>
+          <button type="button" class="btn" data-action="returnPapers">Return papers</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+      </section>
+    </main>
+    <section class="logbook" aria-label="Today's log">
+      <h2>Today's log</h2>
+      <ol id="log"></ol>
+    </section>
+  </section>
+
+  <div class="modal-backdrop" id="summary" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle" id="summaryBody"></div>
+  </div>
+
+  <script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
