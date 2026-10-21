@@ -1,0 +1,34 @@
+/* Page layout: three columns on wide screens, board + sidebar on medium, stacked on phones. */
+.game-screen { min-height: 100dvh; }
+.table {
+  display: grid;
+  grid-template-columns: minmax(230px, 280px) minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-areas: "left board right";
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+  max-width: 1760px;
+  margin: 0 auto;
+}
+.col-left { grid-area: left; display: grid; gap: 14px; position: sticky; top: 72px; }
+.col-right { grid-area: right; display: grid; gap: 14px; position: sticky; top: 72px; }
+.board-wrap { grid-area: board; display: grid; justify-items: center; }
+.board { max-width: min(100%, calc(100dvh - 104px)); }
+
+@media (max-width: 1240px) {
+  .table { grid-template-columns: minmax(0, 1fr) minmax(290px, 360px); grid-template-areas: "board right" "left right"; }
+  .col-left { position: static; grid-template-columns: 1fr 1fr; align-items: start; }
+}
+@media (max-width: 900px) {
+  .table { grid-template-columns: minmax(0, 1fr); grid-template-areas: "board" "right" "left"; padding: 10px 16px 24px; gap: 12px; }
+  .col-right, .col-left { position: static; }
+  .board { max-width: 100%; padding: 6px; border-radius: 14px; }
+  .tab-body { max-height: none; }
+  .hud-bar { padding: 8px 16px; gap: 8px; }
+  .hud { font-size: .78rem; gap: 6px 10px; }
+  .hud-mode, .hud-target { display: none; }
+}
+@media (max-width: 620px) {
+  .col-left { grid-template-columns: 1fr; }
+  .panel { padding: 12px; }
+}

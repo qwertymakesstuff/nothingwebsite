@@ -27,6 +27,7 @@ import { buildZones } from './zones.js';
 import { openMap, closeMap, isMapOpen } from './map.js';
 import { staticCars, spinners } from './models/kit.js';
 import { cars, makeCar, updateCars, removeCar } from './vehicles.js';
+import { loadCarSkins, skinCar } from './models/vehicles3d.js';
 import { spawnTraffic, spawnParked, spawnHighwayCar, trafficCount, highwayCount } from './traffic.js';
 import { peds, makePed, makeBeachPed, updatePeds, updateItems, dropItem, makePairs, useCrowdBodies } from './people.js';
 import { loadBody, BODIES } from './story/glbChar.js';
@@ -65,6 +66,7 @@ for (const s of staticCars) { if (s.chance != null && Math.random() > s.chance) 
 /* the rigged models: Ash for the player and the crowd model for some pedestrians. Both load in the background; the blocky bodies stand in until then (and for good if a file fails). */
 loadBody({ url: BODIES.ash, boost: 2 }).then(adoptRiggedPlayer).catch(e => console.warn('[ash model]', e));
 useCrowdBodies(true);
+loadCarSkins().then(() => cars.forEach(c => skinCar(c.model, c.type, c.model.colorHex)));
 
 /* pause / resume. The pause menu is the single way out of play; losing focus or the mouse lock always lands there. While it (or the
    map) is open the world is frozen (nothing in the frame loop that moves, times or decides runs) and the keyboard belongs to the menu. */

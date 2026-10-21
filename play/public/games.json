@@ -166,5 +166,12 @@
     "url": "https://missing.website/gta/",
     "description": "Open-world crime sandbox: steal cars, take jobs, evade the police.",
     "group": "big"
+  },
+  {
+    "name": "Fortune Street",
+    "image": "/banners/fortune-street.svg",
+    "url": "/fortune-street/",
+    "description": "Buy up Meridian Bay: property, rent, auctions and trades against AI rivals or friends on one device. Includes a tutorial.",
+    "group": "board"
   }
 ]

@@ -13,7 +13,7 @@ import { player } from './player.js';
 import { initPed, updatePed, onCarNear, onPedHurt, onPedKilled, startIdle, pairUp } from './pedAI.js';
 
 import { createCharacter, civilianSpec } from './models/characters.js';
-import { loadBody, BODIES } from './story/glbChar.js';
+import { loadBody, bodyUrl, modelFor } from './story/glbChar.js';
 export function layDown(ch) { ch.update(0, 0, { dead: true }); }
 
 export const peds = [], items = [];
@@ -25,21 +25,21 @@ export function makePed(at, o) {
   const q = { x: at ? at[0] : p[0] + rand(-.7, .7), z: at ? at[1] : p[1] + rand(-.7, .7), i, j, c, dir: Math.random() < .5 ? 1 : -1, hp: 30, dead: 0, panic: 0, speed: rand(1.2, 1.9), ch: null, mesh: null, tgt: null, yaw: 0 };
   q.ch = (o && o.ch) || createCharacter(civilianSpec()); q.mesh = q.ch.root; if (o && o.keep) q.keep = true; scene.add(q.mesh); q.ph = 0;
   q.nc = (c + q.dir + 4) % 4; q.tgt = corner(i, j, q.nc); q.mesh.position.set(q.x, 0, q.z); initPed(q); peds.push(q);
-  if (crowd.on && !(o && (o.ch || o.keep)) && !q.ch.spec.female && Math.random() < .2) swapBody(q);
+  if (crowd.on && !(o && (o.ch || o.keep))) swapBody(q);
   return q;
 }
-/** some pedestrians are the rigged crowd model (ped_crowd1.glb) instead of a blocky body; at most `crowd.max` at once */
-const crowd = { on: false, max: 8 };
+/** pedestrians are the rigged crowd models (ped_crowd1..6, matched to the body they were given: women or men); the blocky body stands in until the file is ready, and stays if it fails */
+const crowd = { on: false, max: 60 };
 async function swapBody(p) {
   if (p.crowd || peds.filter(x => x.crowd).length >= crowd.max) return; p.crowd = true;
   try {
-    const ch = await loadBody({ url: BODIES.crowd1, scale: 1.04 + Math.random() * .06 });
+    const ch = await loadBody({ url: bodyUrl(modelFor.civilian(!!p.ch.spec.female)), scale: 1.02 + Math.random() * .08 });
     if (!peds.includes(p) || p.dead) { ch.dispose(); p.crowd = false; return; }
     scene.remove(p.mesh); if (p.ch.dispose) p.ch.dispose(); p.ch = ch; p.mesh = ch.root; scene.add(p.mesh); p.mesh.position.set(p.x, 0, p.z); p.mesh.rotation.y = p.yaw;
   } catch (e) { p.crowd = false; crowd.on = false; console.warn('[crowd model]', e); }
 }
 /** switch the rigged crowd model on and swap a few of the pedestrians that already exist */
-export function useCrowdBodies(on) { crowd.on = on !== false; if (crowd.on) for (const p of peds) if (!p.ch.spec.female && !p.keep && Math.random() < .18) swapBody(p); }
+export function useCrowdBodies(on) { crowd.on = on !== false; if (crowd.on) for (const p of peds) if (!p.keep && !p.ch.spec.rigged) swapBody(p); }
 function pedNext(p) { // arrived at a corner: keep going round the block, turn back, or cross the road
   const r = Math.random(), sx = [-1, 1, 1, -1][p.nc], sz = [-1, -1, 1, 1][p.nc];
   const ok = t => !walkBlocked(t[0], t[1]) && !walkBlocked((t[0] + p.x) / 2, (t[1] + p.z) / 2);  // nobody crosses a highway ramp on foot
