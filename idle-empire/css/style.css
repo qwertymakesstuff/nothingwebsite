@@ -75,7 +75,7 @@ a { color: var(--gold); }
 
 /* the Mint */
 .mint {
-  position: relative; width: min(300px, 70vw); aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%;
+  position: relative; width: min(300px, 70vw, 34vh); aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%;
   background: none; cursor: pointer; touch-action: manipulation; user-select: none;
   filter: drop-shadow(0 12px 22px rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(232,181,74,.18));
   transition: transform .08s ease-out, filter .2s;
@@ -183,3 +183,58 @@ a { color: var(--gold); }
 .owned-list { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 8px; max-height: 140px; overflow-y: auto; }
 .owned-chip { padding: 2px 8px; border-radius: 999px; border: 1px solid #4a3d2b; background: #221d18; color: var(--text); font-size: 12px; }
 .floater-spend { font-size: 15px; color: var(--bad); }
+
+/* building kinds, the locked "coming next" card */
+.b-name { display: flex; align-items: baseline; gap: 6px; }
+.b-kind {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+  padding: 0 5px; border: 1px solid var(--line); border-radius: 5px;
+}
+.locked-building { cursor: default; opacity: .8; border-style: dashed; background: var(--bg); }
+.locked-building:hover { border-color: var(--line); }
+.locked-building:active { transform: none; }
+.locked-building .b-icon { color: #4a4040; background: #1a1719; border-color: var(--line); }
+.locked-building .b-title { color: var(--muted); }
+.locked-building .b-kind { color: var(--gold); border-color: #4a3d2b; }
+.b-req { color: var(--gold); font-size: 12px; }
+.b-lock { font-size: 18px; opacity: .6; }
+.more-note { color: var(--muted); font-size: 12px; text-align: center; padding: 2px 0 4px; }
+.more-note:empty { display: none; }
+
+/* empire rank */
+.rank { width: min(360px, 100%); text-align: center; }
+.rank-line { font-size: 13px; color: var(--muted); }
+.rank-label { text-transform: uppercase; letter-spacing: .15em; font-size: 11px; }
+.rank-line b { font-family: var(--display); color: var(--gold-2); font-size: 16px; letter-spacing: .03em; }
+.rank-bonus { color: var(--good); font-size: 12px; }
+.rank-bar { height: 4px; margin: 6px 0 4px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
+.rank-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-deep), var(--gold-2)); transition: width .4s ease-out; }
+.rank-next { color: var(--muted); font-size: 11px; }
+
+/* skyline */
+.skyline { width: 100%; }
+.skyline svg { display: block; width: 100%; height: auto; max-height: 120px; }
+.skyline .smoke { fill: #8a8078; opacity: 0; }
+
+/* notifications */
+.toasts {
+  position: fixed; right: 16px; bottom: 16px; z-index: 30; width: min(340px, calc(100vw - 32px));
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast {
+  pointer-events: auto; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: linear-gradient(#2c262c, #201b20); border: 1px solid #4a3d2b; border-left: 3px solid var(--gold);
+  border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,.5);
+}
+.toast-icon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: #1a1612; color: var(--gold); }
+.toast-icon svg { width: 20px; height: 20px; }
+.toast-text { display: flex; flex-direction: column; min-width: 0; }
+.toast-text strong { font-size: 14px; }
+.toast-text span { color: var(--muted); font-size: 12px; }
+.toast-rank { border-left-color: var(--gold-2); }
+.toast-rank .toast-icon { color: #2a1c05; background: linear-gradient(var(--gold-2), var(--gold)); }
+.toast-milestone { border-left-color: var(--good); }
+.toast-milestone .toast-icon { color: var(--good); }
+.toast-upgrade { border-left-color: #9cc4e8; }
+.toast-upgrade .toast-icon { color: #9cc4e8; }

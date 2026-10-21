@@ -33,6 +33,12 @@
         <button id="mint" class="mint" type="button" aria-label="Strike a crown at the Mint"></button>
       </div>
       <p class="mint-hint">Click the Mint to strike crowns. Spend them on buildings that strike crowns for you.</p>
+      <div class="rank" id="rank">
+        <p class="rank-line"><span class="rank-label">Rank</span> <b id="rankName">Street Peddler</b> <span id="rankBonus" class="rank-bonus"></span></p>
+        <div class="rank-bar" aria-hidden="true"><span id="rankBar"></span></div>
+        <p class="rank-next" id="rankNext"></p>
+      </div>
+      <div class="skyline" id="skyline"></div>
     </section>
 
     <section class="upgrade-panel" aria-labelledby="upgradeTitle">
@@ -58,6 +64,7 @@
   </main>
 
   <div id="floaters" class="floaters" aria-hidden="true"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -3,19 +3,24 @@
 An incremental idle game: strike crowns at the Mint, buy buildings that strike crowns for you,
 grow a market stall into an industrial empire. Plain HTML, CSS and ES modules, no build step,
 no dependencies. Built in phases (see the roadmap in the project brief); done so far:
-**phase 1** (foundation and core gameplay), **phase 2** (economy and purchase systems) and
-**phase 3** (upgrades and multipliers).
+**phase 1** (foundation and core gameplay), **phase 2** (economy and purchase systems),
+**phase 3** (upgrades and multipliers) and **phase 4** (empire buildings and progression).
 
 | File | Job |
 | --- | --- |
-| `index.html` | page shell: treasury, the Mint, upgrade shop, building shop |
+| `index.html` | page shell: treasury, the Mint, rank, skyline, upgrade shop, building shop, toasts |
 | `css/style.css` | theme tokens (dark iron + gold) and component looks |
 | `css/layout.css` | three columns on wide screens, two on medium, stacked below 820 px |
-| `css/animations.css` | floating click rewards, purchase / denied feedback |
+| `css/animations.css` | floating click rewards, purchase / denied feedback, toasts, chimney smoke |
 | `js/config.js` | tuning knobs: click value, default price growth, buy modes, loop timings |
 | `js/main.js` | entry point: creates the one game state, logic loop (100 ms) and render loop |
 | `js/gameState.js` | the single authoritative state object (`createState()`) |
-| `js/buildings.js` | building roster as data: name, description, base cost, optional growth, rate, icon |
+| `js/buildings.js` | the 14-building roster as data: name, kind, description, cost, rate, unlock rule, icon |
+| `js/conditions.js` | unlock conditions shared by buildings and upgrades, and their progress |
+| `js/milestones.js` | ownership milestones and empire ranks (pure data and maths) |
+| `js/progression.js` | `checkProgress()`: records new unlocks / milestones / ranks and returns them as events |
+| `js/skyline.js` | the skyline SVG that grows with what you own |
+| `js/notifications.js` | toast notifications |
 | `js/upgrades.js` | upgrade catalogue as data, and `collectModifiers()`: how effects combine |
 | `js/upgradeSystem.js` | upgrade actions: unlock checks, prices, buying, before-purchase preview |
 | `js/economy.js` | pure rules: prices, bulk quotes, Buy Max, production, click, buy, tick |
@@ -48,12 +53,12 @@ rounded up, so the counter never shows more than you have.
 
 ## Upgrades
 
-33 upgrades in `upgrades.js`, each with unlock conditions (clicks, buildings owned, crowns earned,
+98 upgrades in `upgrades.js`, each with unlock conditions (clicks, buildings owned, crowns earned,
 production per second; all must hold, and once unlocked an upgrade stays unlocked) and effects:
 
-* three x2 tiers per building (unlock at 1 / 10 / 25 owned, priced 10x / 50x / 500x the building)
-* clicking: three x2 click upgrades, and two that add a share of per-second income to each click
-* empire-wide production: +10%, +15%, +25%
+* five x2 tiers per building (unlock at 1 / 10 / 25 / 50 / 100 owned, priced 10x to 50,000x the building)
+* clicking: x2, x2, x2 and x3 click upgrades, and three that add a share of per-second income to each click
+* empire-wide production: +10%, +15%, +25%, +25%, +30%, +50%
 * conditional synergies: +1% output per building of the tier below (e.g. Workshops per Market Stall)
 * repeatable: Sharper Dies (+1 base click, 20 levels, price x2.5 per level) and Overtime Shifts
   (all production x1.05 compounding, 25 levels, price x3 per level)
@@ -61,7 +66,8 @@ production per second; all must hold, and once unlocked an upgrade stays unlocke
 Stacking rule, the same for every effect:
 
 ```
-building unit rate = baseRate x (its building multipliers) x (1 + its synergy % / 100) x (global multipliers)
+building unit rate = baseRate x (its building multipliers) x (its ownership milestones)
+                     x (1 + its synergy % / 100) x (global multipliers) x (1 + 5% per empire rank)
 click value        = (1 + click additions) x (click multipliers) + per-second x (click share of per-second)
 ```
 
@@ -70,11 +76,34 @@ changes before you buy it (`previewUpgrade`, computed on a copy of the state, so
 exactly the result). Combined modifiers are cached per `state.upgrades` object, which is replaced
 on every purchase rather than edited.
 
+## The empire (phase 4)
+
+14 buildings in three kinds (workers, machines, businesses), from the Market Stall (15 crowns,
+0.1/s) to the Imperial Mint (1.4 Qa, 3.8 B/s). Only the Market Stall is open at the start; each
+next building unlocks when you own 1 of the previous one (5 from the Gold Mine on) and have
+earned a quarter of its price. The shop shows the next locked building with its requirements
+and a progress bar, and counts how many are left to discover.
+
+* **Ownership milestones** (`milestones.js`): owning 10, 25, 50, 100, 150, 200, 300, 400 and 500 of a
+  building multiplies its output (x1.5 to x3 each, stacking); the row shows the next one.
+* **Empire ranks**: twelve ranks by crowns earned, Street Peddler to Emperor, each +5% production.
+  Shown under the Mint with a bar to the next rank.
+* **Skyline**: a silhouette per building along the bottom of the Mint panel, taller as you own
+  more (log scale), under a sky that warms with your rank.
+* **Notifications**: toasts for new buildings, first copies, milestones (bulk buys report the
+  highest one with the combined bonus), rank-ups and new upgrades. Each event is reported once.
+
+Pacing, from a simulated player (3 clicks/s, best-payback buying, all affordable upgrades, no
+prestige): Factory 5 min, Bank 22 min, Railway 1.1 h, Stock Exchange 3.6 h, Airship 6 h,
+Aether Refinery 11 h, Sky Colony 19 h, Imperial Mint 30 h. Prestige (phase 7) is meant to
+shorten the later stretch.
+
 ## Scope so far
 
 Clicking, six buildings with escalating prices, passive income, per-second and per-click counters
 (phase 1); x1 / x10 / x100 / Max buying, exact bulk prices, the economy config, affordability
-states and purchase feedback (phase 2); upgrades, multipliers and the upgrade panel (phase 3). Not yet (later phases): achievements, statistics, prestige, saving and
+states and purchase feedback (phase 2); upgrades, multipliers and the upgrade panel (phase 3); 14 buildings, tiered unlocks,
+milestones, ranks, skyline and notifications (phase 4). Not yet (later phases): achievements, statistics, prestige, saving and
 offline earnings. **Progress is not saved yet**: a refresh starts over.
 
 `window.idleEmpire` exposes `{ state, economy }` for testing from the console.
@@ -86,4 +115,5 @@ bad input, formatting, cost scaling, clicking, purchase validation, passive inco
 hour of greedy play, bulk prices = sum of singles, Buy Max exactness from 0 to 3.3e5000 crowns,
 all-or-nothing buy modes, config defaults, the upgrade catalogue, unlocks, one-time and
 repeatable purchases, multiplier stacking, preview = result, and a simulated session with and
-without upgrades.
+without upgrades, the roster, tiered unlocks, milestones and ranks (including bulk-buy events),
+skyline levels, and a two-hour pacing check.

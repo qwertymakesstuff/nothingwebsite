@@ -2,6 +2,7 @@
 import BigNum, { ZERO } from './bigNum.js';
 import { UPGRADES, UPGRADES_BY_ID, maxLevel } from './upgrades.js';
 import * as economy from './economy.js';
+import { allMet } from './conditions.js';
 
 export function levelOf(state, id) {
   return state.upgrades[id] || 0;
@@ -19,22 +20,12 @@ export function upgradeCost(state, id) {
   return cost.mul(BigNum.from(def.repeatable.growth).pow(levelOf(state, id))).ceil();
 }
 
-export function conditionMet(state, c) {
-  switch (c.type) {
-    case 'owned': return (state.buildings[c.building] || 0) >= c.count;
-    case 'earned': return state.totalEarned.gte(c.amount);
-    case 'pps': return economy.productionPerSecond(state).gte(c.amount);
-    case 'clicks': return state.totalClicks >= c.count;
-    default: return false;
-  }
-}
-
 // marks upgrades whose conditions now hold as unlocked; returns the ids newly unlocked
 export function checkUnlocks(state) {
   const fresh = [];
   for (const def of UPGRADES) {
     if (state.upgradesUnlocked[def.id]) continue;
-    if (def.unlock.every(c => conditionMet(state, c))) {
+    if (allMet(state, def.unlock)) {
       state.upgradesUnlocked[def.id] = true;
       fresh.push(def.id);
     }

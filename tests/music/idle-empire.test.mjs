@@ -10,6 +10,9 @@ const { createState } = await import(new URL('gameState.js', dir));
 const economy = await import(new URL('economy.js', dir));
 const { BUILDINGS, BUILDINGS_BY_ID } = await import(new URL('buildings.js', dir));
 const { ECONOMY } = await import(new URL('config.js', dir));
+const progression = await import(new URL('progression.js', dir));
+const milestones = await import(new URL('milestones.js', dir));
+const unlockAll = s => { for (const b of BUILDINGS) s.buildingsUnlocked[b.id] = true; return s; };
 
 test('every idle-empire module has valid syntax', () => {
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
@@ -111,19 +114,20 @@ test('buying: validates funds, spends exactly the price, raises the next price',
 
 test('passive income follows owned buildings and elapsed time', () => {
   const s = createState();
-  s.buildings.stall = 10; s.buildings.workshop = 2;
-  assert.equal(economy.productionPerSecond(s).toNumber(), 3);
+  s.buildings.stall = 9; s.buildings.workshop = 2; // below the 10-owned milestone
+  assert.equal(economy.productionPerSecond(s).toNumber(), 2.9);
   economy.tick(s, 10);
-  assert.equal(Math.round(s.currency.toNumber()), 30);
-  assert.equal(Math.round(s.totalEarned.toNumber()), 30);
+  assert.equal(Math.round(s.currency.toNumber()), 29);
+  assert.equal(Math.round(s.totalEarned.toNumber()), 29);
   for (const bad of [0, -5, NaN, Infinity]) economy.tick(s, bad);
-  assert.equal(Math.round(s.currency.toNumber()), 30);
+  assert.equal(Math.round(s.currency.toNumber()), 29);
 });
 
 test('a long simulated session: buy greedily for an hour without breaking', () => {
   const s = createState();
   for (let t = 0; t < 3600; t++) {
     for (let c = 0; c < 5; c++) economy.click(s); // 5 clicks per second
+    progression.checkProgress(s);
     for (const def of [...BUILDINGS].reverse()) while (economy.buyBuilding(s, def.id)) { /* buy */ }
     economy.tick(s, 1);
     assert.ok(s.currency.sign() >= 0);
@@ -182,11 +186,12 @@ test('buy modes: x1 / x10 / x100 are all-or-nothing, Max buys everything afforda
   assert.ok(s.currency.isZero());
 
   // ten single buys cost exactly what one x10 buy cost
-  const a = createState(), b = createState();
+  const a = unlockAll(createState()), b = unlockAll(createState());
   a.currency = b.currency = BigNum.from(1e6);
-  for (let i = 0; i < 10; i++) economy.buyBuilding(a, 'workshop', 1);
-  economy.buyBuilding(b, 'workshop', 10);
+  for (let i = 0; i < 10; i++) assert.ok(economy.buyBuilding(a, 'workshop', 1));
+  assert.equal(economy.buyBuilding(b, 'workshop', 10).count, 10);
   assert.ok(a.currency.eq(b.currency));
+  assert.equal(a.buildings.workshop, 10);
 
   const m = createState();
   m.currency = BigNum.from(5000);
@@ -206,7 +211,7 @@ test('buy modes: x1 / x10 / x100 are all-or-nothing, Max buys everything afforda
 });
 
 test('Buy Max with an astronomically large treasury stays finite and exact', () => {
-  const s = createState();
+  const s = unlockAll(createState());
   s.currency = BigNum.from('1e3000');
   const got = economy.buyBuilding(s, 'bank', 'max');
   assert.ok(got.count > 40000 && got.count < 50000, String(got.count));
@@ -246,7 +251,8 @@ test('upgrade catalogue: unique ids, valid references, sane data', () => {
     }
     if (u.repeatable) assert.ok(u.repeatable.growth > 1 && u.repeatable.maxLevel > 1, u.id);
   }
-  for (const b of BUILDINGS) assert.equal(UPGRADES.filter(u => u.effects.some(e => e.type === 'buildingMult' && e.building === b.id)).length, 3);
+  for (const b of BUILDINGS) assert.equal(UPGRADES.filter(u => u.effects.some(e => e.type === 'buildingMult' && e.building === b.id)).length, 5);
+  for (const b of BUILDINGS.slice(1)) assert.ok(UPGRADES_BY_ID[`synergy-${b.id}`], `synergy for ${b.id}`);
 });
 
 test('unlocks: conditions on clicks, ownership, earnings and production; unlocks stick', () => {
@@ -313,14 +319,16 @@ test('multipliers stack exactly as documented', () => {
   near(economy.unitRate(withUpgrades({ 'workshop-1': 1, 'global-1': 1, 'global-2': 1, 'rep-global': 3 }), BUILDINGS_BY_ID.workshop),
     1 * 2 * 1.1 * 1.15 * 1.05 ** 3, 'global stack');
   // conditional: +1% per stall owned, applied after the building multipliers
-  const syn = withUpgrades({ 'synergy-workshop': 1, 'workshop-1': 1 }, { stall: 30, workshop: 10 });
+  // (9 workshops: below the 10-owned milestone, so only the synergy counts here)
+  const syn = withUpgrades({ 'synergy-workshop': 1, 'workshop-1': 1 }, { stall: 30, workshop: 9 });
   near(economy.unitRate(syn, BUILDINGS_BY_ID.workshop), 1 * 2 * 1.3, 'synergy');
-  near(economy.productionPerSecond(syn), 30 * 0.1 + 10 * 2.6, 'pps with synergy');
+  near(economy.productionPerSecond(syn), 30 * 0.1 * 1.5 * 1.5 + 9 * 2.6, 'pps with synergy and stall milestones');
   syn.buildings.stall = 40; // grows with the condition, no re-purchase needed
   near(economy.unitRate(syn, BUILDINGS_BY_ID.workshop), 1 * 2 * 1.4, 'synergy follows ownership');
   // clicks: (base + adds) x mults + pps x fractions
   const c = withUpgrades({ 'rep-click': 2, 'click-1': 1, 'click-2': 1, 'click-pps-1': 1, 'click-pps-2': 1 }, { workshop: 100 });
-  near(economy.clickValue(c), (1 + 2) * 2 * 2 + 100 * 0.03, 'click stack');
+  const ms100 = 1.5 * 1.5 * 1.5 * 2; // milestones at 10, 25, 50, 100
+  near(economy.clickValue(c), (1 + 2) * 2 * 2 + 100 * ms100 * 0.03, 'click stack');
   // levels above the max are clamped, never trusted
   near(collectModifiers({ 'rep-global': 999 }).global, 1.05 ** 25, 'clamped');
 });
@@ -356,7 +364,7 @@ test('a simulated session: buying upgrades speeds progress and nothing breaks', 
     const s = createState();
     for (let t = 0; t < 1800; t++) {
       for (let c = 0; c < 5; c++) economy.click(s);
-      up.checkUnlocks(s);
+      progression.checkProgress(s);
       if (useUpgrades) for (const { def } of up.availableUpgrades(s)) up.buyUpgrade(s, def.id);
       for (const def of [...BUILDINGS].reverse()) while (economy.buyBuilding(s, def.id, 1)) { /* buy */ }
       economy.tick(s, 1);
@@ -367,4 +375,115 @@ test('a simulated session: buying upgrades speeds progress and nothing breaks', 
   const plain = play(false), upgraded = play(true);
   assert.ok(economy.productionPerSecond(upgraded).gt(economy.productionPerSecond(plain).mul(1.5)));
   assert.ok(Object.keys(upgraded.upgrades).length > 5);
+});
+
+// ---- phase 4: the empire roster and progression ----
+
+const { skylineLevel } = await import(new URL('skyline.js', dir));
+const { allMet, conditionProgress } = await import(new URL('conditions.js', dir));
+
+test('roster: 14 buildings, rising prices and output, every field present', () => {
+  assert.equal(BUILDINGS.length, 14);
+  assert.equal(new Set(BUILDINGS.map(b => b.id)).size, 14);
+  const kinds = new Set(BUILDINGS.map(b => b.kind));
+  assert.deepEqual([...kinds].sort(), ['business', 'machine', 'worker']);
+  BUILDINGS.forEach((b, i) => {
+    assert.ok(b.name && b.plural && b.description && b.icon, b.id);
+    if (i === 0) { assert.deepEqual(b.unlock, []); return; }
+    const prev = BUILDINGS[i - 1];
+    assert.ok(b.baseCost > prev.baseCost * 5 && b.baseRate > prev.baseRate * 4, b.id);
+    assert.ok(b.baseCost / b.baseRate >= prev.baseCost / prev.baseRate * 0.6, `${b.id} payback`); // later is never much better value
+    assert.equal(b.unlock[0].building, prev.id);
+  });
+});
+
+test('tiered unlocks: buildings open in order, locked ones cannot be bought', () => {
+  const s = createState();
+  assert.deepEqual(Object.keys(s.buildingsUnlocked), ['stall']);
+  s.currency = BigNum.from(1e6);
+  assert.equal(economy.buyBuilding(s, 'workshop', 1), null);
+  assert.equal(s.buildings.workshop, 0);
+  assert.equal(progression.nextLockedBuilding(s).id, 'workshop');
+  assert.equal(progression.lockedCount(s), 13);
+  assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'building'), []); // needs a stall
+  economy.buyBuilding(s, 'stall', 1);
+  s.totalEarned = BigNum.from(24);
+  assert.ok(!progression.checkProgress(s).some(e => e.type === 'building')); // and 25 earned
+  s.totalEarned = BigNum.from(25);
+  assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'building'), [{ type: 'building', id: 'workshop' }]);
+  assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'building'), []); // reported once
+  assert.ok(economy.buyBuilding(s, 'workshop', 1));
+  // later buildings need five of the previous one
+  const late = unlockAll(createState());
+  delete late.buildingsUnlocked.mine;
+  late.buildings.bank = 4; late.totalEarned = BigNum.from(1e9);
+  assert.ok(!allMet(late, BUILDINGS_BY_ID.mine.unlock));
+  late.buildings.bank = 5;
+  assert.ok(allMet(late, BUILDINGS_BY_ID.mine.unlock));
+  assert.equal(conditionProgress(late, { type: 'owned', building: 'bank', count: 10 }), 0.5);
+  assert.equal(conditionProgress(late, { type: 'earned', amount: 1e12 }), 0.001);
+});
+
+test('ownership milestones: multipliers stack, events report the highest with the combined bonus', () => {
+  assert.equal(milestones.milestoneMult(0), 1);
+  assert.equal(milestones.milestoneMult(9), 1);
+  assert.equal(milestones.milestoneMult(10), 1.5);
+  assert.equal(milestones.milestoneMult(100), 1.5 ** 3 * 2);
+  assert.equal(milestones.milestoneMult(10000), milestones.OWNERSHIP_MILESTONES.reduce((m, x) => m * x.mult, 1));
+  assert.equal(milestones.nextMilestone(0).count, 1);
+  assert.equal(milestones.nextMilestone(25).count, 50);
+  assert.equal(milestones.nextMilestone(500), null);
+  const s = createState();
+  s.buildings.stall = 1;
+  assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'milestone'), [{ type: 'milestone', id: 'stall', count: 1, mult: 1 }]);
+  s.buildings.stall = 60; // Max buying jumped past 10, 25 and 50
+  assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'milestone'), [{ type: 'milestone', id: 'stall', count: 50, mult: 1.5 ** 3 }]);
+  assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'milestone'), []);
+  near(economy.unitRate(s, BUILDINGS_BY_ID.stall), 0.1 * 1.5 ** 3, 'milestones in the unit rate');
+});
+
+test('empire ranks: thresholds, +5% per rank, reported once', () => {
+  assert.equal(milestones.rankIndex(0), 0);
+  assert.equal(milestones.rankIndex(999), 0);
+  assert.equal(milestones.rankIndex(1000), 1);
+  assert.equal(milestones.rankIndex('1e300'), milestones.RANKS.length - 1);
+  for (let i = 1; i < milestones.RANKS.length; i++) assert.ok(milestones.RANKS[i].earned > milestones.RANKS[i - 1].earned);
+  const s = createState();
+  s.buildings.workshop = 1;
+  s.totalEarned = BigNum.from(1e5);
+  const ranks = progression.checkProgress(s).filter(e => e.type === 'rank');
+  assert.deepEqual(ranks, [{ type: 'rank', index: 2 }]);
+  assert.equal(s.rank, 2);
+  assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'rank'), []);
+  near(economy.unitRate(s, BUILDINGS_BY_ID.workshop), 1 * 1.1, 'rank bonus');
+});
+
+test('progression events include newly unlocked upgrades', () => {
+  const s = createState();
+  s.buildings.stall = 1;
+  const ev = progression.checkProgress(s).find(e => e.type === 'upgrades');
+  assert.deepEqual(ev.ids, ['stall-1']);
+});
+
+test('skyline levels grow on a log scale', () => {
+  assert.deepEqual([0, 1, 3, 4, 10, 31, 32, 100, 316, 317, 5000].map(skylineLevel), [0, 1, 1, 2, 3, 3, 4, 5, 5, 6, 6]);
+});
+
+test('pacing: a simulated player opens the first nine buildings within two hours', () => {
+  const s = createState();
+  for (let t = 0; t < 2 * 3600; t++) {
+    for (let c = 0; c < 3; c++) economy.click(s);
+    progression.checkProgress(s);
+    for (const { def } of up.availableUpgrades(s)) up.buyUpgrade(s, def.id);
+    // cheapest building first, a crude but steady strategy
+    for (let k = 0; k < 20; k++) {
+      const open = BUILDINGS.filter(b => s.buildingsUnlocked[b.id]);
+      const pick = open.map(b => ({ b, score: economy.nextCost(s, b.id).div(economy.unitRate(s, b)).toNumber() })).sort((x, y) => x.score - y.score)[0];
+      if (!economy.buyBuilding(s, pick.b.id, 1)) break;
+    }
+    economy.tick(s, 1);
+  }
+  const open = BUILDINGS.filter(b => s.buildingsUnlocked[b.id]).length;
+  assert.ok(open >= 9 && open <= 11, `${open} buildings open after 2 h`);
+  assert.ok(s.rank >= 4, `rank ${s.rank}`);
 });

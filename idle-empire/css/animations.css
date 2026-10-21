@@ -44,3 +44,19 @@
 @media (prefers-reduced-motion: reduce) {
   .upgrade.fresh, .upgrade.bought, .upgrade.denied { animation: none; }
 }
+
+/* notifications and the skyline */
+@keyframes toast-in { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+.toast { animation: toast-in .25s ease-out; }
+.toast.leaving { opacity: 0; transform: translateX(30px); transition: opacity .25s, transform .25s; }
+@keyframes smoke {
+  0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+  30% { opacity: .5; }
+  100% { opacity: 0; transform: translate(6px, -16px) scale(1.6); }
+}
+.skyline .smoke { animation: smoke 3.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.skyline .smoke.s2 { animation-delay: 1.6s; }
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+  .skyline .smoke { animation: none; }
+}

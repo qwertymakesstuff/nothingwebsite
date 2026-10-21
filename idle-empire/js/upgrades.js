@@ -20,7 +20,8 @@
 //                  { type: 'clickPps', fraction }              clicks also earn fraction x per-second
 //
 // Stacking (the one rule every effect follows):
-//   building unit rate = baseRate x (all its buildingMults) x (1 + its ownedBonus% / 100) x (all globalMults)
+//   building unit rate = baseRate x (all its buildingMults) x (its ownership milestones) x (1 + its ownedBonus% / 100)
+//                        x (all globalMults) x (1 + 5% per empire rank)        (milestones and ranks: milestones.js)
 //   click value        = (clickBase + all clickAdds) x (all clickMults) + per-second x (all clickPps fractions)
 // Multipliers multiply each other; additive bonuses (clickAdd, ownedBonus %, clickPps) add up first.
 import { BUILDINGS, BUILDINGS_BY_ID } from './buildings.js';
@@ -33,19 +34,30 @@ const ICONS = {
   gold: '<circle cx="12" cy="12" r="9"/><path d="M8 15l1-6 2 2 1-3 1 3 2-2 1 6z" fill="#3a2608"/>',
 };
 
-// three x2 tiers per building: unlocked at 1 / 10 / 25 owned, priced at 10x / 50x / 500x its base cost
+// five x2 tiers per building: unlocked at 1 / 10 / 25 / 50 / 100 owned,
+// priced at 10x / 50x / 500x / 5,000x / 50,000x its base cost
 const TIER_NAMES = {
-  stall: ['Painted Signs', 'Bulk Suppliers', 'Market Rights'],
-  workshop: ['Steel Chisels', 'Apprentice Guild', 'Water Wheel'],
-  foundry: ['Hotter Coals', 'Bellows Engines', 'Blast Furnace'],
-  factory: ['Conveyor Belts', 'Night Shift', 'Steam Turbines'],
-  tradehouse: ['Faster Clippers', 'Port Charters', 'Trade Monopoly'],
-  bank: ['Compound Ledgers', 'Vault Doors', 'Royal Charter'],
+  stall: ['Painted Signs', 'Bulk Suppliers', 'Market Rights', 'Covered Arcades', 'Market Charter'],
+  workshop: ['Steel Chisels', 'Apprentice Guild', 'Water Wheel', 'Precision Lathes', 'Master Craftsmen'],
+  foundry: ['Hotter Coals', 'Bellows Engines', 'Blast Furnace', 'Bessemer Converters', 'Molten Rivers'],
+  factory: ['Conveyor Belts', 'Night Shift', 'Steam Turbines', 'Assembly Lines', 'Lights-Out Factory'],
+  tradehouse: ['Faster Clippers', 'Port Charters', 'Trade Monopoly', 'Silk Roads', 'Global Ledger'],
+  bank: ['Compound Ledgers', 'Vault Doors', 'Royal Charter', 'Central Reserve', 'Infinite Credit'],
+  mine: ['Brighter Lamps', 'Dynamite', 'Deep Shafts', 'Steam Drills', 'Mother Lode'],
+  railway: ['Iron Rails', 'Express Lines', 'Tunnel Boring', 'Transcontinental', 'Thunder Locomotives'],
+  shipyard: ['Dry Docks', 'Ironclad Hulls', 'Steam Liners', 'Cargo Giants', 'Armada Contracts'],
+  exchange: ['Ticker Tape', 'Bull Market', 'Futures Pit', 'Hostile Takeovers', 'Market Maker'],
+  airship: ['Lighter Gas', 'Gilded Gondolas', 'Jet Stream Routes', 'Cloud Harbors', 'Sky Armada'],
+  refinery: ['Purer Aether', 'Condensers', 'Vacuum Stills', 'Aether Turbines', "Philosopher's Coil"],
+  colony: ['Anchored Isles', 'Cloud Farms', 'Sky Bridges', 'Floating Capitals', 'Heavenly Census'],
+  imperial: ['Royal Dies', 'Continental Presses', 'Golden Standard', 'Imperial Treasury', 'Eternal Mint'],
 };
 const TIERS = [
   { owned: 1, price: 10, badge: 'I' },
   { owned: 10, price: 50, badge: 'II' },
   { owned: 25, price: 500, badge: 'III' },
+  { owned: 50, price: 5000, badge: 'IV' },
+  { owned: 100, price: 50000, badge: 'V' },
 ];
 
 const buildingTiers = BUILDINGS.flatMap(b => TIERS.map((t, i) => ({
@@ -58,21 +70,35 @@ const buildingTiers = BUILDINGS.flatMap(b => TIERS.map((t, i) => ({
   effects: [{ type: 'buildingMult', building: b.id, factor: 2 }],
 })));
 
-// each building gets +1% output for every one of the building below it
-const SYNERGIES = [
-  ['workshop', 'stall', 'Supply Contracts', 'Workshops buy from your stalls', 5e4],
-  ['foundry', 'workshop', 'Ore Shipments', 'Foundries feed your workshops', 5e5],
-  ['factory', 'foundry', 'Freight Rail', 'Factories run on foundry steel', 5e6],
-  ['tradehouse', 'factory', 'Merchant Credit', 'Trading Houses sell factory goods', 5e7],
-  ['bank', 'tradehouse', 'Investment Desk', 'Banks finance your trading houses', 5e8],
-].map(([building, per, name, flavour, cost]) => ({
-  id: `synergy-${building}`,
-  name, icon: ICONS.link, group: 'synergy',
-  description: `${flavour}: +1% ${BUILDINGS_BY_ID[building].name} output for every ${BUILDINGS_BY_ID[per].name} owned.`,
-  cost,
-  unlock: [{ type: 'owned', building: per, count: 25 }, { type: 'owned', building, count: 10 }],
-  effects: [{ type: 'ownedBonus', building, per, percent: 1 }],
-}));
+// each building gets +1% output for every one of the building below it;
+// unlocked with 25 of the lower building and 10 of the upper, priced at 500x the upper building
+const SYNERGY_NAMES = {
+  workshop: ['Supply Contracts', 'Workshops buy from your stalls'],
+  foundry: ['Ore Shipments', 'Foundries feed your workshops'],
+  factory: ['Freight Rail', 'Factories run on foundry steel'],
+  tradehouse: ['Merchant Credit', 'Trading Houses sell factory goods'],
+  bank: ['Investment Desk', 'Banks finance your trading houses'],
+  mine: ['Mining Loans', 'Banks bankroll new shafts'],
+  railway: ['Ore Trains', 'Railways haul gold from the mines'],
+  shipyard: ['Dockside Rails', 'Shipyards are fed by rail'],
+  exchange: ['Shipping Shares', 'Exchanges trade shares in your fleets'],
+  airship: ['Venture Capital', 'Investors fund new airships'],
+  refinery: ['Aether Harvest', 'Airships gather aether for the refineries'],
+  colony: ['Lift Engines', 'Refined aether keeps the colonies aloft'],
+  imperial: ['Colonial Tribute', 'Every colony pays tribute to the Imperial Mint'],
+};
+const SYNERGIES = BUILDINGS.slice(1).map((b, i) => {
+  const per = BUILDINGS[i];
+  const [name, flavour] = SYNERGY_NAMES[b.id];
+  return {
+    id: `synergy-${b.id}`,
+    name, icon: ICONS.link, group: 'synergy',
+    description: `${flavour}: +1% ${b.name} output for every ${per.name} owned.`,
+    cost: b.baseCost * 500,
+    unlock: [{ type: 'owned', building: per.id, count: 25 }, { type: 'owned', building: b.id, count: 10 }],
+    effects: [{ type: 'ownedBonus', building: b.id, per: per.id, percent: 1 }],
+  };
+});
 
 export const UPGRADES = [
   // clicking
@@ -86,6 +112,10 @@ export const UPGRADES = [
     cost: 1e5, unlock: [{ type: 'pps', amount: 50 }], effects: [{ type: 'clickPps', fraction: 0.01 }] },
   { id: 'click-pps-2', name: 'Golden Touch', group: 'click', icon: ICONS.gold, description: 'Each click earns another 2% of your per-second income.',
     cost: 5e7, unlock: [{ type: 'pps', amount: 5000 }], effects: [{ type: 'clickPps', fraction: 0.02 }] },
+  { id: 'click-4', name: 'Hydraulic Press', group: 'click', icon: ICONS.click, description: 'Clicks are worth x3.',
+    cost: 5e8, unlock: [{ type: 'earned', amount: 1e8 }], effects: [{ type: 'clickMult', factor: 3 }] },
+  { id: 'click-pps-3', name: 'Midas Engine', group: 'click', icon: ICONS.gold, description: 'Each click earns another 3% of your per-second income.',
+    cost: 5e12, unlock: [{ type: 'pps', amount: 1e8 }], effects: [{ type: 'clickPps', fraction: 0.03 }] },
 
   // the whole empire
   { id: 'global-1', name: 'Ledger Books', group: 'global', icon: ICONS.global, description: 'Proper bookkeeping: all buildings produce +10%.',
@@ -94,6 +124,12 @@ export const UPGRADES = [
     cost: 5e6, unlock: [{ type: 'earned', amount: 1e6 }], effects: [{ type: 'globalMult', factor: 1.15 }] },
   { id: 'global-3', name: 'Imperial Seal', group: 'global', icon: ICONS.global, description: 'All buildings produce +25%.',
     cost: 5e9, unlock: [{ type: 'earned', amount: 1e9 }], effects: [{ type: 'globalMult', factor: 1.25 }] },
+  { id: 'global-4', name: 'Royal Treasury', group: 'global', icon: ICONS.global, description: 'All buildings produce +25%.',
+    cost: 5e12, unlock: [{ type: 'earned', amount: 1e12 }], effects: [{ type: 'globalMult', factor: 1.25 }] },
+  { id: 'global-5', name: 'Imperial Decree', group: 'global', icon: ICONS.global, description: 'All buildings produce +30%.',
+    cost: 5e15, unlock: [{ type: 'earned', amount: 1e15 }], effects: [{ type: 'globalMult', factor: 1.3 }] },
+  { id: 'global-6', name: 'World Bank', group: 'global', icon: ICONS.global, description: 'All buildings produce +50%.',
+    cost: 5e18, unlock: [{ type: 'earned', amount: 1e18 }], effects: [{ type: 'globalMult', factor: 1.5 }] },
 
   // repeatable
   { id: 'rep-click', name: 'Sharper Dies', group: 'repeat', icon: ICONS.repeat,

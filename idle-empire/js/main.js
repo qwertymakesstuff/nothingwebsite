@@ -7,6 +7,9 @@ import * as economy from './economy.js';
 import { createUI } from './ui.js';
 import { LOOP } from './config.js';
 import * as upgradeSystem from './upgradeSystem.js';
+import * as progression from './progression.js';
+
+const { checkProgress } = progression;
 
 const state = createState();
 const ui = createUI(state);
@@ -17,21 +20,22 @@ function logic() {
   const seconds = Math.min((now - lastLogic) / 1000, LOOP.maxTickSeconds);
   lastLogic = now;
   economy.tick(state, seconds);
-  upgradeSystem.checkUnlocks(state);
+  ui.announce(checkProgress(state));
 }
 setInterval(logic, LOOP.logicIntervalMs);
 
 let lastShop = 0, lastTitle = 0;
 function frame(now) {
   ui.renderTreasury();
-  if (now - lastShop >= LOOP.shopIntervalMs) { lastShop = now; ui.renderShop(); ui.renderUpgrades(); }
+  if (now - lastShop >= LOOP.shopIntervalMs) { lastShop = now; ui.renderShop(); ui.renderUpgrades(); ui.renderRank(); }
   if (now - lastTitle >= LOOP.titleIntervalMs) { lastTitle = now; ui.renderTitle(); }
   requestAnimationFrame(frame);
 }
-upgradeSystem.checkUnlocks(state);
+checkProgress(state); // nothing to announce on a fresh start
 ui.renderShop();
 ui.renderUpgrades();
+ui.renderRank();
 requestAnimationFrame(frame);
 
 // a handle for testing from the browser console
-window.idleEmpire = { state, economy, upgrades: upgradeSystem };
+window.idleEmpire = { state, economy, upgrades: upgradeSystem, progression };

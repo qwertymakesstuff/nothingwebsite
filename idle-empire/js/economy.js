@@ -10,6 +10,7 @@ import BigNum, { ZERO, ONE } from './bigNum.js';
 import { BUILDINGS, BUILDINGS_BY_ID } from './buildings.js';
 import { ECONOMY } from './config.js';
 import { collectModifiers } from './upgrades.js';
+import { milestoneMult, rankIndex, rankMult } from './milestones.js';
 
 const EXACT_LIMIT = 2 ** 53;  // above this every double is already a whole number
 const MAX_EXACT_STEPS = 2000; // safety net for growth values very close to 1
@@ -86,13 +87,18 @@ export function modifiers(state) {
   return mods;
 }
 
-// output of one copy of a building with every upgrade applied (stacking rule: see upgrades.js)
+// output of one copy of a building with every bonus applied (stacking rule: see upgrades.js)
 export function unitRate(state, def) {
   const mods = modifiers(state);
   const b = mods.building[def.id];
   let bonus = 0;
   for (const { per, percent } of b.bonus) bonus += percent * (state.buildings[per] || 0);
-  return BigNum.from(def.baseRate).mul(b.mult).mul(1 + bonus / 100).mul(mods.global);
+  return BigNum.from(def.baseRate)
+    .mul(b.mult)
+    .mul(milestoneMult(state.buildings[def.id] || 0))
+    .mul(1 + bonus / 100)
+    .mul(mods.global)
+    .mul(rankMult(rankIndex(state.totalEarned)));
 }
 
 export function buildingProduction(state, id) {
@@ -136,9 +142,10 @@ export function setBuyMode(state, mode) {
   state.buyMode = validBuyMode(mode);
 }
 
-// buys in the given mode (default: the selected one). All or nothing: x10 buys exactly
+// buys in the given mode (default: the selected one); locked buildings can't be bought. All or nothing: x10 buys exactly
 // ten or none. Returns { count, cost } for what was bought, or null when nothing was.
 export function buyBuilding(state, id, mode = state.buyMode) {
+  if (!state.buildingsUnlocked[id]) return null;
   const q = quote(state, id, mode);
   if (!q || !q.affordable) return null;
   state.currency = BigNum.max(ZERO, state.currency.sub(q.cost));

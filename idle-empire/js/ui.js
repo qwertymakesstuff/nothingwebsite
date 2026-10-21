@@ -1,6 +1,11 @@
 // Rendering and input. Reads the game state, never stores game data of its own;
 // DOM text is only touched when the formatted value actually changes.
-import { BUILDINGS } from './buildings.js';
+import { BUILDINGS, BUILDINGS_BY_ID, KIND_LABELS } from './buildings.js';
+import { RANKS, RANK_BONUS, nextMilestone } from './milestones.js';
+import { conditionProgress } from './conditions.js';
+import { nextLockedBuilding, lockedCount } from './progression.js';
+import { createNotifier } from './notifications.js';
+import { createSkyline } from './skyline.js';
 import { formatNumber } from './numberFormatter.js';
 import * as economy from './economy.js';
 import { ECONOMY } from './config.js';
@@ -41,7 +46,7 @@ function buildingRow(def) {
   el.innerHTML = `
     <span class="b-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${def.icon}</svg></span>
     <span class="b-main">
-      <span class="b-name"></span>
+      <span class="b-name"><span class="b-title"></span><span class="b-kind"></span></span>
       <span class="b-desc"></span>
       <span class="b-rate"></span>
     </span>
@@ -50,7 +55,8 @@ function buildingRow(def) {
       <span class="b-cost"><span class="b-qty"></span><span class="coin" aria-hidden="true"></span><span class="b-cost-value"></span></span>
     </span>
     <span class="b-progress" aria-hidden="true"><span></span></span>`;
-  el.querySelector('.b-name').textContent = def.name;
+  el.querySelector('.b-title').textContent = def.name;
+  el.querySelector('.b-kind').textContent = KIND_LABELS[def.kind];
   el.querySelector('.b-desc').textContent = def.description;
   return {
     def, el,
@@ -61,6 +67,36 @@ function buildingRow(def) {
     rate: el.querySelector('.b-rate'),
     last: {},
   };
+}
+
+// the "coming next" card for the first locked building: what it is and what unlocks it
+function lockedCard() {
+  const el = document.createElement('div');
+  el.className = 'building locked-building';
+  el.innerHTML = `
+    <span class="b-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"></svg></span>
+    <span class="b-main">
+      <span class="b-name"><span class="b-title"></span><span class="b-kind">coming next</span></span>
+      <span class="b-desc"></span>
+      <span class="b-req"></span>
+    </span>
+    <span class="b-side"><span class="b-lock" aria-hidden="true">🔒︎</span></span>
+    <span class="b-progress" aria-hidden="true"><span></span></span>`;
+  return {
+    el, last: {},
+    icon: el.querySelector('svg'), title: el.querySelector('.b-title'), desc: el.querySelector('.b-desc'),
+    req: el.querySelector('.b-req'), bar: el.querySelector('.b-progress span'),
+  };
+}
+
+function conditionText(c) {
+  switch (c.type) {
+    case 'owned': return `own ${c.count} ${c.count === 1 ? BUILDINGS_BY_ID[c.building].name : BUILDINGS_BY_ID[c.building].plural}`;
+    case 'earned': return `earn ${formatNumber(c.amount)} crowns in total`;
+    case 'pps': return `make ${formatNumber(c.amount)} per second`;
+    case 'clicks': return `click ${formatNumber(c.count)} times`;
+    default: return '';
+  }
 }
 
 // only write to the DOM when the text differs from what was written last time
@@ -95,7 +131,8 @@ function effectText(preview) {
   const [p0, p1] = preview.pps, [c0, c1] = preview.click;
   const dp = p1.sub(p0), dc = c1.sub(c0);
   if (dp.sign() > 0) {
-    const pct = p0.sign() > 0 ? ` (+${formatNumber(dp.div(p0).mul(100))}%)` : '';
+    const pctValue = p0.sign() > 0 ? dp.div(p0).mul(100) : null;
+    const pct = !pctValue ? '' : pctValue.lt(0.1) ? ' (<0.1%)' : ` (+${formatNumber(pctValue)}%)`;
     parts.push(`+${formatNumber(dp)}/s${pct}`);
   }
   if (dc.sign() > 0) parts.push(`+${formatNumber(dc)} per click`);
@@ -115,6 +152,8 @@ function restartClass(el, cls) {
 }
 
 const MODE_LABELS = { 1: 'x1', 10: 'x10', 100: 'x100', max: 'Max' };
+const RANK_ICON = '<path d="M3 18l2-11 4.5 4L12 4l2.5 7L19 7l2 11z"/><path d="M3 19h18v2H3z"/>';
+const UPGRADE_ICON = '<path d="M12 3l7 8h-4v9H9v-9H5z"/>';
 
 export function createUI(state) {
   const els = {
@@ -124,6 +163,14 @@ export function createUI(state) {
   };
   const rows = BUILDINGS.map(buildingRow);
   rows.forEach(r => els.shop.appendChild(r.el));
+  const locked = lockedCard();
+  els.shop.appendChild(locked.el);
+  const moreNote = document.createElement('p');
+  moreNote.className = 'more-note';
+  els.shop.appendChild(moreNote);
+  const notify = createNotifier($('toasts'));
+  const renderSkyline = createSkyline($('skyline'));
+  const rankEls = { name: $('rankName'), bonus: $('rankBonus'), bar: $('rankBar'), next: $('rankNext') };
   els.mint.innerHTML = mintSvg();
   const shown = {};
 
@@ -173,7 +220,7 @@ export function createUI(state) {
 
   els.shop.addEventListener('click', e => {
     const btn = e.target.closest('.building');
-    if (!btn) return;
+    if (!btn || btn.classList.contains('locked-building')) return;
     const bought = economy.buyBuilding(state, btn.dataset.id);
     restartClass(btn, bought ? 'bought' : 'denied');
     if (bought) {
@@ -201,6 +248,9 @@ export function createUI(state) {
   function renderShop() {
     for (const row of rows) {
       const id = row.def.id;
+      const open = !!state.buildingsUnlocked[id];
+      if (row.last.open !== open) { row.last.open = open; row.el.hidden = !open; }
+      if (!open) continue;
       const owned = state.buildings[id] || 0;
       const { count, cost, affordable } = economy.quote(state, id);
       setText(row, 'owned', row.owned, formatNumber(owned));
@@ -211,8 +261,10 @@ export function createUI(state) {
       const width = `${Math.floor(ratio * 100)}%`;
       if (row.last.width !== width) { row.last.width = width; row.bar.style.width = width; }
       const each = formatNumber(economy.unitRate(state, row.def));
+      const ms = nextMilestone(owned);
+      const msText = ms ? (ms.mult > 1 ? ` · x${ms.mult} at ${ms.count}` : '') : '';
       const rate = owned > 0
-        ? `+${each}/s each · ${formatNumber(economy.buildingProduction(state, id))}/s total`
+        ? `+${each}/s each · ${formatNumber(economy.buildingProduction(state, id))}/s total${msText}`
         : `+${each}/s each`;
       setText(row, 'rate', row.rate, rate);
       if (row.last.affordable !== affordable) {
@@ -223,6 +275,64 @@ export function createUI(state) {
       }
       const label = `Buy ${formatNumber(count)} ${row.def.name} for ${formatNumber(cost)} crowns, ${formatNumber(owned)} owned`;
       if (row.last.label !== label) { row.last.label = label; row.el.setAttribute('aria-label', label); }
+    }
+    renderLocked();
+  }
+
+  function renderLocked() {
+    const next = nextLockedBuilding(state);
+    if (locked.last.id !== (next && next.id)) {
+      locked.last.id = next && next.id;
+      locked.el.hidden = !next;
+      if (next) {
+        locked.icon.innerHTML = next.icon;
+        locked.title.textContent = next.name;
+        locked.desc.textContent = next.description;
+      }
+    }
+    const more = Math.max(0, lockedCount(state) - 1);
+    setText(locked, 'more', moreNote, more ? `${more} more building${more === 1 ? '' : 's'} to discover` : '');
+    if (!next) return;
+    setText(locked, 'req', locked.req, `Unlocks when you ${next.unlock.map(conditionText).join(' and ')}`);
+    const progress = Math.min(...next.unlock.map(c => conditionProgress(state, c)));
+    const width = `${Math.floor(progress * 100)}%`;
+    if (locked.last.width !== width) { locked.last.width = width; locked.bar.style.width = width; }
+  }
+
+  function renderRank() {
+    const i = state.rank, next = RANKS[i + 1];
+    show('rankName', rankEls.name, RANKS[i].name);
+    show('rankBonus', rankEls.bonus, i > 0 ? `+${Math.round(i * RANK_BONUS * 100)}% production` : '');
+    if (next) {
+      show('rankNext', rankEls.next, `Next: ${next.name} at ${formatNumber(next.earned)} crowns earned (+${Math.round(RANK_BONUS * 100)}%)`);
+      // progress on a log scale, so each rank's bar fills at a steady pace
+      const lo = Math.log10(Math.max(1, RANKS[i].earned)), hi = Math.log10(next.earned);
+      const p = Math.max(0, Math.min(1, (state.totalEarned.log10() - lo) / (hi - lo)));
+      const width = `${Math.floor(p * 100)}%`;
+      if (shown.rankBar !== width) { shown.rankBar = width; rankEls.bar.style.width = width; }
+    } else {
+      show('rankNext', rankEls.next, 'The highest rank there is.');
+      if (shown.rankBar !== '100%') { shown.rankBar = '100%'; rankEls.bar.style.width = '100%'; }
+    }
+    renderSkyline(state);
+  }
+
+  // turn progression events into notifications
+  function announce(events) {
+    for (const ev of events) {
+      if (ev.type === 'building') {
+        const b = BUILDINGS_BY_ID[ev.id];
+        notify({ kind: 'unlock', icon: b.icon, title: `New building: ${b.name}`, body: b.description });
+      } else if (ev.type === 'milestone') {
+        const b = BUILDINGS_BY_ID[ev.id];
+        if (ev.count === 1) notify({ kind: 'first', icon: b.icon, title: `Your first ${b.name}`, body: `${formatNumber(b.baseRate)} crowns per second, before bonuses.` });
+        else notify({ kind: 'milestone', icon: b.icon, title: `${ev.count} ${b.plural}`, body: `Milestone: ${b.plural} produce x${formatNumber(ev.mult)}.` });
+      } else if (ev.type === 'rank') {
+        notify({ kind: 'rank', icon: RANK_ICON, title: `Rank up: ${RANKS[ev.index].name}`, body: `All production +${Math.round(ev.index * RANK_BONUS * 100)}% in total.` });
+      } else if (ev.type === 'upgrades') {
+        const n = ev.ids.length;
+        notify({ kind: 'upgrade', icon: UPGRADE_ICON, title: n === 1 ? 'New upgrade available' : `${n} new upgrades available`, body: n === 1 ? UPGRADES_BY_ID[ev.ids[0]].name : ev.ids.slice(0, 3).map(id => UPGRADES_BY_ID[id].name).join(', ') + (n > 3 ? '…' : '') });
+      }
     }
   }
 
@@ -311,5 +421,5 @@ export function createUI(state) {
     document.title = `${formatNumber(state.currency.floor())} crowns · Idle Empire`;
   }
 
-  return { renderTreasury, renderShop, renderUpgrades, renderTitle };
+  return { renderTreasury, renderShop, renderUpgrades, renderRank, renderTitle, announce };
 }
