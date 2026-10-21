@@ -783,3 +783,17 @@ test('settings load with defaults and ignore junk values', () => {
   assert.deepEqual(S.loadSettings(), S.DEFAULT_SETTINGS);
   delete globalThis.localStorage;
 });
+
+test('index.html versions every stylesheet and module with one release number', () => {
+  const html = fs.readFileSync(new URL('../index.html', dir), 'utf8');
+  const map = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  const files = [...fs.readdirSync(dir).filter(f => f.endsWith('.js')), ...fs.readdirSync(new URL('ui/', dir)).filter(f => f.endsWith('.js')).map(f => `ui/${f}`)];
+  const versions = new Set();
+  for (const f of files) {
+    const target = map[`./js/${f}`];
+    assert.ok(target, `${f} is missing from the import map`);
+    versions.add(target.split('?v=')[1]);
+  }
+  for (const m of html.matchAll(/(?:href|src)="(?:css|js)\/[\w/.]+\?v=([\w.]+)"/g)) versions.add(m[1]);
+  assert.equal(versions.size, 1, `one version everywhere, found ${[...versions]}`);
+});

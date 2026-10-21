@@ -39,10 +39,13 @@ function reducedMotion() {
 }
 function timings() {
   const anim = reducedMotion() ? 'off' : app.settings.animation;
+  // the roll total is information, not motion: reduced motion still shows it (without the
+  // pop-in); only switching animation off in Settings skips it
+  const total = { normal: 900, fast: 450, off: 0 }[app.settings.animation] ?? 900;
   return {
     step: { normal: 210, fast: 100, off: 0 }[anim],
     dice: { normal: 900, fast: 450, off: 0 }[anim],
-    total: { normal: 900, fast: 450, off: 0 }[anim], // how long the roll result shows before moving
+    total, // how long the roll result shows before moving
     ai: { relaxed: 1400, normal: 850, fast: 300 }[app.settings.aiSpeed] ?? 850,
   };
 }
