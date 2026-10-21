@@ -8,8 +8,6 @@ import { rollCase } from './rewards.js';
 import { secureRandom } from './rng.js';
 import { levelInfo, xpForOpening, defaultSettings } from './playerState.js';
 
-const fail = (error, message) => ({ ok: false, error, message });
-
 export function instanceValue(inst) {
   return itemValue(inst.itemId, inst.wear);
 }
@@ -22,15 +20,60 @@ export function findItem(player, uid) {
   return player.inventory.find(i => i.uid === uid) || null;
 }
 
-function newId(player, prefix) {
+export function newId(player, prefix) {
   const id = `${prefix}${player.nextId}`;
   player.nextId += 1;
   return id;
 }
 
-function log(player, entry) {
+export function log(player, entry) {
   player.activity.unshift({ id: newId(player, 'a'), ...entry });
   if (player.activity.length > ACTIVITY_LIMIT) player.activity.length = ACTIVITY_LIMIT;
+}
+
+export const fail = (error, message) => ({ ok: false, error, message });
+
+export function hasItem(player, itemId) {
+  return player.inventory.some(i => i.itemId === itemId);
+}
+
+// The one way an item enters the inventory: case, upgrade, contract, battle or market.
+// Records it in recent drops and the collection log. Callers validate before calling.
+export function acquireItem(player, { itemId, wear, float }, source, now) {
+  const inst = { uid: newId(player, 'i'), itemId, wear: wear ?? null, float: float ?? null, acquiredAt: now, source, locked: false, favorite: false };
+  player.inventory.push(inst);
+  player.stats.itemsObtained += 1;
+  const value = instanceValue(inst);
+  if (!player.stats.bestDrop || value > player.stats.bestDrop.value) {
+    player.stats.bestDrop = { itemId, wear: inst.wear, float: inst.float, value, at: now, caseId: source };
+  }
+  player.recentDrops.unshift({ itemId, wear: inst.wear, float: inst.float, at: now, caseId: source });
+  if (player.recentDrops.length > RECENT_DROPS_LIMIT) player.recentDrops.length = RECENT_DROPS_LIMIT;
+  if (!player.collectionLog.includes(itemId)) player.collectionLog.push(itemId);
+  return inst;
+}
+
+// Removes the given uids from the inventory; callers have validated that they are all present.
+export function removeItems(player, uids) {
+  const gone = new Set(uids);
+  const removed = player.inventory.filter(i => gone.has(i.uid));
+  player.inventory = player.inventory.filter(i => !gone.has(i.uid));
+  return removed;
+}
+
+// Checks items that an operation would consume. Returns the instances or a failure.
+export function checkConsumable(player, uids, { allowFavorites = true } = {}) {
+  if (!Array.isArray(uids) || !uids.length) return fail('empty', 'No items selected.');
+  if (new Set(uids).size !== uids.length) return fail('duplicate', 'The same item was selected twice.');
+  const items = [];
+  for (const uid of uids) {
+    const inst = findItem(player, uid);
+    if (!inst) return fail('not-owned', 'One of those items is no longer in your inventory.');
+    if (inst.locked) return fail('locked', `${ITEMS_BY_ID[inst.itemId].name} is locked. Unlock it to use it.`);
+    if (inst.favorite && !allowFavorites) return fail('favorite', `${ITEMS_BY_ID[inst.itemId].name} is a favourite and is protected.`);
+    items.push(inst);
+  }
+  return { ok: true, items };
 }
 
 export function canAfford(player, price) {
@@ -54,25 +97,14 @@ export function openCase(player, caseId, { rng = secureRandom, now = Date.now() 
   const levelBefore = levelInfo(player.xp).level;
 
   // --- validated: apply everything ---
-  const inst = {
-    uid: newId(player, 'i'), itemId: drop.itemId, wear: drop.wear, float: drop.float,
-    acquiredAt: now, source: c.id, locked: false, favorite: false,
-  };
   player.coins -= c.price;
   player.xp += xpGained;
-  player.inventory.push(inst);
-
+  const inst = acquireItem(player, drop, c.id, now);
   const s = player.stats;
   s.casesOpened += 1;
   s.coinsSpent += c.price;
-  s.itemsObtained += 1;
   s.rarityCounts[item.rarity] = (s.rarityCounts[item.rarity] || 0) + 1;
   s.casesById[c.id] = (s.casesById[c.id] || 0) + 1;
-  if (!s.bestDrop || value > s.bestDrop.value) {
-    s.bestDrop = { itemId: inst.itemId, wear: inst.wear, float: inst.float, value, at: now, caseId: c.id };
-  }
-  player.recentDrops.unshift({ itemId: inst.itemId, wear: inst.wear, float: inst.float, at: now, caseId: c.id });
-  if (player.recentDrops.length > RECENT_DROPS_LIMIT) player.recentDrops.length = RECENT_DROPS_LIMIT;
   log(player, { type: 'open', at: now, delta: -c.price, caseId: c.id, itemId: inst.itemId, wear: inst.wear, value });
 
   const levelAfter = levelInfo(player.xp).level;
@@ -81,16 +113,9 @@ export function openCase(player, caseId, { rng = secureRandom, now = Date.now() 
 
 // What selling these uids would do, without doing it. Shared by the confirm dialog and sellItems.
 export function quoteSale(player, uids, { allowFavorites = true } = {}) {
-  if (!Array.isArray(uids) || !uids.length) return fail('empty', 'No items selected.');
-  if (new Set(uids).size !== uids.length) return fail('duplicate', 'The same item was selected twice.');
-  const items = [];
-  for (const uid of uids) {
-    const inst = findItem(player, uid);
-    if (!inst) return fail('not-owned', 'One of those items is no longer in your inventory.');
-    if (inst.locked) return fail('locked', `${ITEMS_BY_ID[inst.itemId].name} is locked. Unlock it to sell it.`);
-    if (inst.favorite && !allowFavorites) return fail('favorite', `${ITEMS_BY_ID[inst.itemId].name} is a favourite and is protected.`);
-    items.push({ inst, value: instanceValue(inst) });
-  }
+  const check = checkConsumable(player, uids, { allowFavorites });
+  if (!check.ok) return check.error === 'locked' ? { ...check, message: check.message.replace('to use it', 'to sell it') } : check;
+  const items = check.items.map(inst => ({ inst, value: instanceValue(inst) }));
   const total = items.reduce((s, x) => s + x.value, 0);
   return { ok: true, items, total, count: items.length };
 }
@@ -101,8 +126,7 @@ export function sellItems(player, uids, { allowFavorites = true, now = Date.now(
   if (player.coins + q.total > MAX_COINS) return fail('cap', 'Balance limit reached.');
 
   // --- validated: apply everything ---
-  const sold = new Set(uids);
-  player.inventory = player.inventory.filter(i => !sold.has(i.uid));
+  removeItems(player, uids);
   player.coins += q.total;
   player.stats.itemsSold += q.count;
   player.stats.coinsFromSales += q.total;

@@ -4,7 +4,7 @@ import { ITEMS_BY_ID, WEAPON_TYPES, COLLECTION_BY_ID } from '../items.js';
 import { RARITIES, RARITY_BY_ID } from '../rarities.js';
 import { instanceValue, inventoryValue, quoteSale, findItem } from '../economy.js';
 import { itemArt } from '../art.js';
-import { coins, itemCard, rarityPill, itemTitle, wearName, caseName, emptyState, itemDescription } from '../ui/components.js';
+import { coins, itemCard, rarityPill, itemTitle, wearName, sourceName, emptyState, itemDescription } from '../ui/components.js';
 import { ICONS } from '../ui/icons.js';
 import { $, esc, fmt, money, dateTime } from '../ui/dom.js';
 import { openModal, closeModal } from '../ui/modal.js';
@@ -126,7 +126,7 @@ function inspect(uid) {
       <div><dt>Wear</dt><dd>${cur.wear ? `${esc(wearName(cur.wear))} (${cur.wear})` : 'No wear'}</dd></div>
       ${cur.wear ? `<div><dt>Float</dt><dd>${cur.float.toFixed(4)}<span class="float-bar"><span style="left:${(cur.float * 100).toFixed(2)}%"></span></span></dd></div>` : ''}
       <div><dt>Collection</dt><dd>${esc(COLLECTION_BY_ID[it.collection].name)}</dd></div>
-      <div><dt>Unboxed from</dt><dd>${esc(caseName(cur.source))}</dd></div>
+      <div><dt>Obtained from</dt><dd>${esc(sourceName(cur.source))}</dd></div>
       <div><dt>Obtained</dt><dd>${esc(dateTime(cur.acquiredAt))}</dd></div>
     </dl>
     <div class="inspect-actions">

@@ -21,6 +21,16 @@ export function emptyStats() {
     itemsSold: 0,
     coinsFromSales: 0,
     refillsClaimed: 0,
+    upgradesAttempted: 0,
+    upgradesWon: 0,
+    contractsCompleted: 0,
+    battlesPlayed: 0,
+    battlesWon: 0,
+    marketBought: 0,
+    marketSpent: 0,
+    marketSold: 0,
+    marketEarned: 0,
+    collectionsCompleted: 0,
     rarityCounts: Object.fromEntries(RARITIES.map(r => [r.id, 0])),
     casesById: {},
     bestDrop: null,          // { itemId, wear, float, value, at, caseId }
@@ -40,6 +50,21 @@ export function createPlayer(now = Date.now()) {
     stats: emptyStats(),
     settings: defaultSettings(),
     createdAt: now,
+    collectionLog: [],       // every item id ever obtained (collection progress)
+    collectionsClaimed: {},  // collection id -> time its completion reward was paid
+    upgrades: [],            // newest first: upgrade results
+    contracts: [],           // newest first: trade-up results
+    battles: [],             // newest first: settled battles, kept for replays and history
+    market: emptyMarket(),
+  };
+}
+
+export function emptyMarket() {
+  return {
+    npc: [],          // NPC listings: { id, itemId, wear, float, price, seller, listedAt, featured }
+    mine: [],         // the player's listings; the item sits here (out of the inventory) until sold or cancelled
+    lastTick: 0,      // last time NPC buyers were simulated
+    lastListing: 0,   // last time NPC sellers added a listing
   };
 }
 

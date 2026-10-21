@@ -61,6 +61,10 @@ export function caseCard(c, { coinsAvailable = Infinity } = {}) {
 
 export const caseName = id => (CASES_BY_ID[id] ? CASES_BY_ID[id].name : 'Unknown case');
 
+const SOURCE_NAMES = { upgrade: 'Upgrade', contract: 'Trade-up contract', battle: 'Case battle', market: 'Marketplace' };
+// Where an item came from: a case name, or one of the game modes.
+export const sourceName = id => SOURCE_NAMES[id] || caseName(id);
+
 export function emptyState({ icon = 'inventory', title, text = '', action = '' }) {
   return `<div class="empty-state">${ICONS[icon] || ''}<h3>${esc(title)}</h3>${text ? `<p>${esc(text)}</p>` : ''}${action}</div>`;
 }

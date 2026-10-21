@@ -3,7 +3,7 @@
 import { CASES } from '../cases.js';
 import { RARITIES } from '../rarities.js';
 import { inventoryValue } from '../economy.js';
-import { caseCard, itemCard, caseName, emptyState, coins } from '../ui/components.js';
+import { caseCard, itemCard, sourceName, emptyState, coins } from '../ui/components.js';
 import { LOGO } from '../ui/icons.js';
 import { esc, fmt, timeAgo } from '../ui/dom.js';
 
@@ -39,7 +39,7 @@ export default {
 <section class="section">
   <div class="section-head"><h2>Recently obtained</h2>${drops.length ? '<a class="link" href="#/inventory">Inventory →</a>' : ''}</div>
   ${drops.length
-    ? `<div class="item-grid item-grid-compact">${drops.map(d => itemCard(d.itemId, d.wear, { note: `${esc(caseName(d.caseId))} · ${timeAgo(d.at)}` })).join('')}</div>`
+    ? `<div class="item-grid item-grid-compact">${drops.map(d => itemCard(d.itemId, d.wear, { note: `${esc(sourceName(d.caseId))} · ${timeAgo(d.at)}` })).join('')}</div>`
     : emptyState({ icon: 'cases', title: 'Nothing unboxed yet', text: 'Your drops will show up here. The Rookie Crate is a cheap place to start.', action: '<a class="btn btn-primary" href="#/case/rookie">Open a Rookie Crate</a>' })}
 </section>
 

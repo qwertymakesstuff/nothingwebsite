@@ -7,6 +7,11 @@ import { createPlayer } from './playerState.js';
 import { loadSave, savePlayer, sanitizePlayer, migrate } from './save.js';
 import { SAVE_VERSION } from './config.js';
 import * as economy from './economy.js';
+import { upgradeItem } from './upgrade.js';
+import { signContract } from './contracts.js';
+import { claimCollection } from './collections.js';
+import { runBattle } from './battles.js';
+import { tickMarket, buyListing, listItem, cancelListing } from './market.js';
 
 export function memoryStorage(initial = {}) {
   const data = new Map(Object.entries(initial));
@@ -48,6 +53,20 @@ export function createStore({ storage, rng = secureRandom, clock = () => Date.no
     updateSettings: patch => run('settings', () => economy.updateSettings(player, patch)),
     rename: name => run('rename', () => economy.renamePlayer(player, name)),
     claimRefill: () => run('refill', () => economy.claimRefill(player, { now: clock() })),
+    upgrade: (uid, target) => run('upgrade', () => upgradeItem(player, uid, target, { rng, now: clock() })),
+    contract: uids => run('contract', () => signContract(player, uids, { rng, now: clock() })),
+    claimCollection: id => run('collection', () => claimCollection(player, id, { now: clock() })),
+    battle: setup => run('battle', () => runBattle(player, setup, { rng, now: clock() })),
+    buyListing: id => run('market', () => buyListing(player, id, { now: clock() })),
+    listItem: (uid, price) => run('market', () => listItem(player, uid, price, { now: clock() })),
+    cancelListing: id => run('market', () => cancelListing(player, id, { now: clock() })),
+    // NPC market activity. Always saved (so simulated time is never replayed), announced only if something happened.
+    tickMarket() {
+      const result = tickMarket(player, { rng, now: clock() });
+      persist();
+      if (result.changed) emit({ type: 'market', result, tick: true });
+      return result;
+    },
 
     reset() {
       player = createPlayer(clock());

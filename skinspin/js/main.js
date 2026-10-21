@@ -10,12 +10,18 @@ import { toast } from './ui/toast.js';
 import { closeModal } from './ui/modal.js';
 import { setSoundEnabled } from './ui/sound.js';
 import { coins } from './ui/components.js';
+import { ITEMS_BY_ID } from './items.js';
 import homeView from './views/home.js';
 import casesView from './views/cases.js';
 import caseView from './views/case.js';
 import inventoryView from './views/inventory.js';
 import profileView from './views/profile.js';
 import settingsView from './views/settings.js';
+import upgradeView from './views/upgrade.js';
+import contractsView from './views/contracts.js';
+import collectionsView from './views/collections.js';
+import battlesView from './views/battles.js';
+import marketView from './views/marketplace.js';
 import { placeholderView } from './views/placeholder.js';
 
 let storage;
@@ -27,20 +33,20 @@ const ROUTES = {
   home: homeView,
   cases: casesView,
   case: caseView,
-  upgrade: placeholderView('upgrade'),
-  battles: placeholderView('battles'),
+  upgrade: upgradeView,
+  battles: battlesView,
   inventory: inventoryView,
-  marketplace: placeholderView('marketplace'),
-  contracts: placeholderView('contracts'),
-  collections: placeholderView('collections'),
+  marketplace: marketView,
+  contracts: contractsView,
+  collections: collectionsView,
   missions: placeholderView('missions'),
   profile: profileView,
   settings: settingsView,
 };
 
 const NAV = [
-  { group: 'Play', items: [['home', 'Home'], ['cases', 'Cases'], ['upgrade', 'Upgrade', true], ['battles', 'Case Battles', true]] },
-  { group: 'Items', items: [['inventory', 'Inventory'], ['marketplace', 'Marketplace', true], ['contracts', 'Contracts', true], ['collections', 'Collections', true]] },
+  { group: 'Play', items: [['home', 'Home'], ['cases', 'Cases'], ['upgrade', 'Upgrade'], ['battles', 'Case Battles']] },
+  { group: 'Items', items: [['inventory', 'Inventory'], ['marketplace', 'Marketplace'], ['contracts', 'Contracts'], ['collections', 'Collections']] },
   { group: 'You', items: [['missions', 'Missions', true], ['profile', 'Profile'], ['settings', 'Settings']] },
 ];
 
@@ -148,6 +154,7 @@ store.subscribe(event => {
   if (event.type === 'settings' || event.type === 'reset' || event.type === 'external') applyPreferences();
   if (!active) return;
   if (active.view.onStore) active.view.onStore(event, ctx);
+  else if (event.tick) return; // background market activity never re-renders a page the user is reading
   else {
     const y = window.scrollY;
     active.view.destroy?.();
@@ -171,6 +178,16 @@ applyPreferences();
 renderTopbar();
 if (!location.hash) history.replaceState(null, '', '#/home');
 route();
+
+// NPC market activity runs in the background on every page.
+function marketTick() {
+  const r = store.tickMarket();
+  for (const { listing, payout } of r.sold) {
+    toast(`Your listing sold: ${ITEMS_BY_ID[listing.item.itemId].name} for ${money(listing.price)}. You received ${money(payout)} after the market fee.`, { kind: 'success', timeout: 7000 });
+  }
+}
+marketTick();
+setInterval(marketTick, 20000);
 
 const notices = {
   repaired: 'Some saved data was damaged and has been repaired.',

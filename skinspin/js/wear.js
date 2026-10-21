@@ -17,9 +17,14 @@ export const WEAR_CHANCES = Object.freeze(Object.fromEntries(WEARS.map(w => [w.i
 
 export function rollWear(rng) {
   const w = pickWeighted(WEARS.map(x => ({ weight: x.weight, value: x })), rng);
+  return { wear: w.id, float: floatInTier(w.id, rng) };
+}
+
+// A random float inside a wear tier, to 4 decimals.
+export function floatInTier(wearId, rng) {
+  const w = WEAR_BY_ID[wearId];
   const raw = w.min + rng() * (w.max - w.min);
-  const float = Math.min(Math.floor(raw * 1e4) / 1e4, w.max - 1e-4);
-  return { wear: w.id, float: Math.max(w.min, float) };
+  return Math.max(w.min, Math.min(Math.floor(raw * 1e4) / 1e4, w.max - 1e-4));
 }
 
 export function wearForFloat(float) {
