@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 
 const dir = new URL('../../idle-empire/js/', import.meta.url);
 const { default: BigNum } = await import(new URL('bigNum.js', dir));
-const { formatNumber } = await import(new URL('numberFormatter.js', dir));
+const { formatNumber, formatGoal } = await import(new URL('numberFormatter.js', dir));
 const { createState } = await import(new URL('gameState.js', dir));
 const economy = await import(new URL('economy.js', dir));
 const { BUILDINGS, BUILDINGS_BY_ID } = await import(new URL('buildings.js', dir));
@@ -74,6 +74,9 @@ test('formatNumber: small, separated, suffixed and scientific', () => {
   assert.equal(formatNumber('1.234e70'), '1.23e70');
   assert.equal(formatNumber('4.5e123456'), '4.50e123456');
   assert.equal(formatNumber(-2500000), '-2.50 M');
+  // goals drop trailing zeros
+  assert.deepEqual([1e6, 1.5e9, 2.25e12, 1e15, 12345, 100, 0.5, '1e70', '1.5e70'].map(formatGoal),
+    ['1 M', '1.5 B', '2.25 T', '1 Qa', '12,345', '100', '0.5', '1e70', '1.5e70']);
 });
 
 test('building costs: escalate by the growth factor and sum in closed form', () => {
@@ -439,7 +442,7 @@ test('ownership milestones: multipliers stack, events report the highest with th
   s.buildings.stall = 60; // Max buying jumped past 10, 25 and 50
   assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'milestone'), [{ type: 'milestone', id: 'stall', count: 50, mult: 1.5 ** 3 }]);
   assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'milestone'), []);
-  near(economy.unitRate(s, BUILDINGS_BY_ID.stall), 0.1 * 1.5 ** 3, 'milestones in the unit rate');
+  near(economy.unitRate(s, BUILDINGS_BY_ID.stall), 0.1 * 1.5 ** 3 * economy.achievementMult(s), 'milestones in the unit rate');
 });
 
 test('empire ranks: thresholds, +5% per rank, reported once', () => {
@@ -455,7 +458,8 @@ test('empire ranks: thresholds, +5% per rank, reported once', () => {
   assert.deepEqual(ranks, [{ type: 'rank', index: 2 }]);
   assert.equal(s.rank, 2);
   assert.deepEqual(progression.checkProgress(s).filter(e => e.type === 'rank'), []);
-  near(economy.unitRate(s, BUILDINGS_BY_ID.workshop), 1 * 1.1, 'rank bonus');
+  near(economy.unitRate(s, BUILDINGS_BY_ID.workshop), 1 * 1.1 * economy.achievementMult(s), 'rank bonus');
+  assert.ok(economy.achievementMult(s) > 1); // checkProgress granted achievements too
 });
 
 test('progression events include newly unlocked upgrades', () => {
@@ -486,4 +490,117 @@ test('pacing: a simulated player opens the first nine buildings within two hours
   const open = BUILDINGS.filter(b => s.buildingsUnlocked[b.id]).length;
   assert.ok(open >= 9 && open <= 11, `${open} buildings open after 2 h`);
   assert.ok(s.rank >= 4, `rank ${s.rank}`);
+});
+
+// ---- phase 5: achievements ----
+
+const { ACHIEVEMENTS, ACHIEVEMENTS_BY_ID, ACHIEVEMENT_BONUS } = await import(new URL('achievements.js', dir));
+const ach = await import(new URL('achievementSystem.js', dir));
+const store = await import(new URL('achievementStore.js', dir));
+const NOON = new Date(2026, 5, 1, 12, 0, 0).getTime(), TWO_AM = new Date(2026, 5, 1, 2, 0, 0).getTime();
+
+test('achievement catalogue: unique ids, every kind of goal, hidden ones', () => {
+  assert.equal(ACHIEVEMENTS.length, 72);
+  assert.equal(new Set(ACHIEVEMENTS.map(a => a.id)).size, ACHIEVEMENTS.length);
+  for (const a of ACHIEVEMENTS) assert.ok(a.name && a.description && a.icon && typeof a.check === 'function', a.id);
+  assert.ok(ACHIEVEMENTS.filter(a => a.hidden).length >= 8);
+  for (const g of ['Clicking', 'Earning', 'Production', 'Buildings', 'Upgrades', 'Progress', 'Hidden']) {
+    assert.ok(ACHIEVEMENTS.some(a => a.group === g), g);
+  }
+});
+
+test('achievements unlock once, with a timestamp, and nothing unlocks for nothing', () => {
+  const s = createState();
+  assert.deepEqual(ach.checkAchievements(s, NOON), []);
+  economy.click(s, NOON);
+  assert.deepEqual(ach.checkAchievements(s, NOON + 5), ['clicks-1']);
+  assert.equal(s.achievements['clicks-1'], NOON + 5);
+  assert.deepEqual(ach.checkAchievements(s, NOON + 10), []); // never again
+  assert.equal(s.achievements['clicks-1'], NOON + 5);   // and the time is kept
+  for (let i = 0; i < 99; i++) economy.click(s, NOON + 2000 * (i + 1));
+  const got = ach.checkAchievements(s, NOON + 1e6);
+  assert.ok(got.includes('clicks-100') && got.includes('earned-100'), got.join());
+  assert.equal(ach.grant(s, 'clicks-100'), false);
+  assert.equal(ach.grant(s, 'not-a-thing'), false);
+  assert.ok(!('not-a-thing' in s.achievements));
+  assert.equal(ach.unlockedCount(s), Object.keys(s.achievements).length);
+});
+
+test('achievement reward: +1% production each, counted once', () => {
+  const s = createState();
+  s.buildings.workshop = 5;
+  near(economy.productionPerSecond(s), 5, 'none');
+  for (const id of ['clicks-1', 'clicks-100', 'earned-100']) ach.grant(s, id, NOON);
+  ach.grant(s, 'clicks-1', NOON); // a second grant changes nothing
+  near(economy.achievementMult(s), 1 + 3 * ACHIEVEMENT_BONUS, 'mult');
+  near(economy.productionPerSecond(s), 5 * 1.03, 'with three');
+});
+
+test('hidden achievements: unusual things are noticed', () => {
+  const base = () => { const s = unlockAll(createState()); return s; };
+  const ids = s => ach.checkAchievements(s, NOON);
+  let s = base();
+  for (let i = 0; i < 15; i++) economy.click(s, NOON + i * 50); // 15 clicks in 0.7 s
+  assert.ok(ids(s).includes('hidden-burst'));
+  s = base(); for (let i = 0; i < 15; i++) economy.click(s, NOON + i * 200); // 15 clicks over 2.8 s
+  assert.ok(!ids(s).includes('hidden-burst'));
+  s = base(); s.currency = BigNum.from(777.4); assert.ok(ids(s).includes('hidden-sevens'));
+  s = base(); s.currency = BigNum.from(2e6); s.buildings.stall = 10; assert.ok(ids(s).includes('hidden-hoarder'));
+  s = base(); s.totalEarned = BigNum.from(1e4); assert.ok(ids(s).includes('hidden-handson'));
+  s = base(); s.buildings.stall = 100; assert.ok(ids(s).includes('hidden-mono'));
+  s = base(); s.buildings.stall = 100; s.buildings.workshop = 1; assert.ok(!ids(s).includes('hidden-mono'));
+  s = base(); s.currency = economy.buildingCost(BUILDINGS_BY_ID.bank, 0, 1); economy.buyBuilding(s, 'bank', 1);
+  assert.ok(ids(s).includes('hidden-spent'));
+  s = base(); s.currency = BigNum.from(1e9); economy.buyBuilding(s, 'stall', 'max'); assert.ok(ids(s).includes('hidden-bigmax'));
+  s = base(); for (let i = 0; i < 25; i++) economy.buyBuilding(s, 'bank', 1); assert.ok(ids(s).includes('hidden-window'));
+  s = base(); for (let i = 0; i < 20; i++) economy.setBuyMode(s, i % 2 ? 1 : 10); assert.ok(ids(s).includes('hidden-indecisive'));
+  s = base(); economy.setBuyMode(s, 1); assert.equal(s.stats.modeSwitches, 0); // re-selecting the same mode isn't a switch
+  s = base(); assert.ok(ach.checkAchievements(s, TWO_AM).includes('hidden-nightowl'));
+});
+
+test('achievement progress for the collection bars', () => {
+  const s = createState();
+  s.totalClicks = 250;
+  assert.equal(ach.achievementProgress(s, 'clicks-1000', NOON), 0.25);
+  assert.equal(ach.achievementProgress(s, 'hidden-burst', NOON), 0); // hidden ones show no progress
+  ach.checkAchievements(s, NOON);
+  assert.equal(ach.achievementProgress(s, 'clicks-100', NOON), 1);
+});
+
+test('progression reports achievements as events', () => {
+  const s = createState();
+  economy.click(s, NOON);
+  const ev = progression.checkProgress(s, NOON).filter(e => e.type === 'achievement');
+  assert.deepEqual(ev, [{ type: 'achievement', id: 'clicks-1' }]);
+});
+
+test('achievement store: survives a reload, rejects garbage, tolerates broken storage', () => {
+  const mem = new Map();
+  globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };
+  try {
+    assert.deepEqual(store.loadAchievements(NOON), {}); // nothing saved yet
+    const s = createState();
+    ach.grant(s, 'clicks-1', NOON); ach.grant(s, 'hidden-sevens', NOON + 1);
+    assert.ok(store.saveAchievements(s.achievements));
+    // "refresh": a brand-new state picks them back up, and the reward with them
+    const fresh = createState();
+    fresh.achievements = store.loadAchievements(NOON + 100);
+    assert.deepEqual(fresh.achievements, { 'clicks-1': NOON, 'hidden-sevens': NOON + 1 });
+    assert.equal(ach.unlockedCount(fresh), 2);
+    near(economy.achievementMult(fresh), 1.02, 'reward after reload');
+    assert.deepEqual(ach.checkAchievements(fresh, NOON + 200).filter(id => id === 'clicks-1'), []); // not granted twice
+    // garbage is dropped, good entries kept
+    mem.set(store.STORAGE_KEY, JSON.stringify({ version: 1, unlocked: { 'clicks-1': NOON, bogus: NOON, 'earned-100': 'yesterday', 'pps-1': -5, 'owned-1': NOON + 1e10 } }));
+    assert.deepEqual(store.loadAchievements(NOON), { 'clicks-1': NOON });
+    for (const bad of ['{not json', 'null', '42', '[]', JSON.stringify({ unlocked: 'x' })]) {
+      mem.set(store.STORAGE_KEY, bad);
+      assert.deepEqual(store.loadAchievements(NOON), {}, bad);
+    }
+    // a full or blocked storage doesn't throw
+    globalThis.localStorage = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('full'); } };
+    assert.deepEqual(store.loadAchievements(NOON), {});
+    assert.equal(store.saveAchievements({ 'clicks-1': NOON }), false);
+  } finally {
+    delete globalThis.localStorage;
+  }
 });

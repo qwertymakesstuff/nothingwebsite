@@ -20,6 +20,16 @@ export function createState() {
     milestones: {},       // { buildingId: highest ownership milestone already celebrated }
     rank: 0,              // highest empire rank reached (index into RANKS)
     buyMode: ECONOMY.defaultBuyMode, // 1, 10, 100 or 'max'
+    achievements: {},     // { id: unlock time (ms since 1970) }; also kept in localStorage, see achievementStore.js
+    // counters that achievements look at (the full statistics screen is a later phase)
+    stats: {
+      clickEarned: ZERO,  // crowns earned by clicking
+      bestBurst: 0,       // most clicks inside one second
+      burstStart: 0, burstCount: 0,
+      denied: 0,          // purchases refused for lack of crowns
+      modeSwitches: 0,    // times the buy mode was changed
+    },
+    flags: {},            // one-off notable moments, e.g. { bigMax: true } (see economy.buyBuilding)
     startedAt: Date.now(),
   };
 }

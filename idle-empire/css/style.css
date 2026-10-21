@@ -238,3 +238,62 @@ a { color: var(--gold); }
 .toast-milestone .toast-icon { color: var(--good); }
 .toast-upgrade { border-left-color: #9cc4e8; }
 .toast-upgrade .toast-icon { color: #9cc4e8; }
+
+/* top bar actions */
+.top-actions { display: flex; align-items: center; gap: 14px; }
+.top-btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; cursor: pointer;
+  border: 1px solid #4a3d2b; border-radius: 9px; background: #221d18; color: var(--text); font-size: 13px;
+  transition: border-color .15s, background .15s;
+}
+.top-btn:hover { border-color: var(--gold); background: #2a231b; }
+.top-btn svg { width: 17px; height: 17px; color: var(--gold); }
+.top-btn b { color: var(--gold-2); font-variant-numeric: tabular-nums; }
+
+/* dialogs */
+.dialog {
+  width: min(760px, calc(100vw - 24px)); max-height: min(86vh, 900px); padding: 0;
+  border: 1px solid #4a3d2b; border-radius: 16px; background: var(--bg-2); color: var(--text);
+  box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+.dialog[open] { display: flex; flex-direction: column; }
+.dialog::backdrop { background: rgba(8,6,8,.7); backdrop-filter: blur(2px); }
+.dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 18px 8px; }
+.dialog-head h2 { color: var(--gold); font-size: 20px; }
+.dialog-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.dialog-close { border: 0; background: none; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.dialog-close:hover { color: var(--text); }
+
+/* achievements */
+.ach-total { height: 5px; margin: 0 18px 10px; border-radius: 3px; background: rgba(255,255,255,.06); overflow: hidden; }
+.ach-total span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-deep), var(--gold-2)); transition: width .4s; }
+.ach-filters { display: flex; gap: 6px; padding: 0 18px 10px; }
+.ach-filter { padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--muted); cursor: pointer; font-size: 13px; }
+.ach-filter[aria-pressed="true"] { border-color: var(--gold); color: var(--gold-2); background: #2a231b; }
+.ach-list { overflow-y: auto; padding: 0 18px 18px; overscroll-behavior: contain; }
+.ach-group h3 { font: 600 12px var(--body); text-transform: uppercase; letter-spacing: .15em; color: var(--muted); margin: 12px 0 8px; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.ach {
+  position: relative; overflow: hidden; display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px 11px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); opacity: .62;
+}
+.ach.unlocked { opacity: 1; border-color: rgba(232,181,74,.55); background: linear-gradient(#2c2620, var(--panel)); }
+.ach.secret { border-style: dashed; }
+.ach-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: #1a1719; color: #5a5052; border: 1px solid var(--line); }
+.ach.unlocked .ach-icon { color: #2a1c05; background: radial-gradient(circle at 35% 30%, var(--gold-2), var(--gold) 60%, var(--gold-deep)); border-color: var(--gold-deep); }
+.ach-icon svg { width: 20px; height: 20px; }
+.ach-text { display: flex; flex-direction: column; min-width: 0; }
+.ach-text strong { font-size: 13px; }
+.ach-desc { color: var(--muted); font-size: 12px; }
+.ach-date { color: var(--gold); font-size: 11px; }
+.ach-date:empty { display: none; }
+.ach-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.04); }
+.ach-progress span { display: block; height: 100%; width: 0; background: var(--gold-deep); }
+
+/* achievement toast and sparkles */
+.toast-achievement { border-left-color: var(--gold-2); background: linear-gradient(110deg, #3a2f1c, #221c16 60%); }
+.toast-achievement .toast-icon { color: #2a1c05; background: radial-gradient(circle at 35% 30%, var(--gold-2), var(--gold) 60%, var(--gold-deep)); }
+.sparkle {
+  position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+  background: var(--gold-2); box-shadow: 0 0 8px var(--gold);
+}

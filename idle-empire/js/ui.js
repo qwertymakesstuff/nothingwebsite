@@ -6,7 +6,9 @@ import { conditionProgress } from './conditions.js';
 import { nextLockedBuilding, lockedCount } from './progression.js';
 import { createNotifier } from './notifications.js';
 import { createSkyline } from './skyline.js';
-import { formatNumber } from './numberFormatter.js';
+import { createAchievementsView } from './achievementsView.js';
+import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_BONUS } from './achievements.js';
+import { formatNumber, formatGoal } from './numberFormatter.js';
 import * as economy from './economy.js';
 import { ECONOMY } from './config.js';
 import * as upgradeSystem from './upgradeSystem.js';
@@ -92,8 +94,8 @@ function lockedCard() {
 function conditionText(c) {
   switch (c.type) {
     case 'owned': return `own ${c.count} ${c.count === 1 ? BUILDINGS_BY_ID[c.building].name : BUILDINGS_BY_ID[c.building].plural}`;
-    case 'earned': return `earn ${formatNumber(c.amount)} crowns in total`;
-    case 'pps': return `make ${formatNumber(c.amount)} per second`;
+    case 'earned': return `earn ${formatGoal(c.amount)} crowns in total`;
+    case 'pps': return `make ${formatGoal(c.amount)} per second`;
     case 'clicks': return `click ${formatNumber(c.count)} times`;
     default: return '';
   }
@@ -170,6 +172,7 @@ export function createUI(state) {
   els.shop.appendChild(moreNote);
   const notify = createNotifier($('toasts'));
   const renderSkyline = createSkyline($('skyline'));
+  const achievementsView = createAchievementsView(state);
   const rankEls = { name: $('rankName'), bonus: $('rankBonus'), bar: $('rankBar'), next: $('rankNext') };
   els.mint.innerHTML = mintSvg();
   const shown = {};
@@ -304,7 +307,7 @@ export function createUI(state) {
     show('rankName', rankEls.name, RANKS[i].name);
     show('rankBonus', rankEls.bonus, i > 0 ? `+${Math.round(i * RANK_BONUS * 100)}% production` : '');
     if (next) {
-      show('rankNext', rankEls.next, `Next: ${next.name} at ${formatNumber(next.earned)} crowns earned (+${Math.round(RANK_BONUS * 100)}%)`);
+      show('rankNext', rankEls.next, `Next: ${next.name} at ${formatGoal(next.earned)} crowns earned (+${Math.round(RANK_BONUS * 100)}%)`);
       // progress on a log scale, so each rank's bar fills at a steady pace
       const lo = Math.log10(Math.max(1, RANKS[i].earned)), hi = Math.log10(next.earned);
       const p = Math.max(0, Math.min(1, (state.totalEarned.log10() - lo) / (hi - lo)));
@@ -319,6 +322,7 @@ export function createUI(state) {
 
   // turn progression events into notifications
   function announce(events) {
+    if (events.some(e => e.type === 'achievement')) achievementsView.render();
     for (const ev of events) {
       if (ev.type === 'building') {
         const b = BUILDINGS_BY_ID[ev.id];
@@ -329,6 +333,10 @@ export function createUI(state) {
         else notify({ kind: 'milestone', icon: b.icon, title: `${ev.count} ${b.plural}`, body: `Milestone: ${b.plural} produce x${formatNumber(ev.mult)}.` });
       } else if (ev.type === 'rank') {
         notify({ kind: 'rank', icon: RANK_ICON, title: `Rank up: ${RANKS[ev.index].name}`, body: `All production +${Math.round(ev.index * RANK_BONUS * 100)}% in total.` });
+      } else if (ev.type === 'achievement') {
+        const a = ACHIEVEMENTS_BY_ID[ev.id];
+        notify({ kind: 'achievement', icon: a.icon, title: `Achievement: ${a.name}`, body: `${a.description} +${Math.round(ACHIEVEMENT_BONUS * 100)}% production.` });
+        achievementsView.celebrate();
       } else if (ev.type === 'upgrades') {
         const n = ev.ids.length;
         notify({ kind: 'upgrade', icon: UPGRADE_ICON, title: n === 1 ? 'New upgrade available' : `${n} new upgrades available`, body: n === 1 ? UPGRADES_BY_ID[ev.ids[0]].name : ev.ids.slice(0, 3).map(id => UPGRADES_BY_ID[id].name).join(', ') + (n > 3 ? '…' : '') });
@@ -417,9 +425,11 @@ export function createUI(state) {
     }
   }
 
+  function renderAchievements() { achievementsView.render(); }
+
   function renderTitle() {
     document.title = `${formatNumber(state.currency.floor())} crowns · Idle Empire`;
   }
 
-  return { renderTreasury, renderShop, renderUpgrades, renderRank, renderTitle, announce };
+  return { renderTreasury, renderShop, renderUpgrades, renderRank, renderAchievements, renderTitle, announce };
 }

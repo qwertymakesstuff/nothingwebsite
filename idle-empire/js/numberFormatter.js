@@ -36,3 +36,8 @@ export function formatNumber(value, decimals = 1) {
   if (tier < SUFFIXES.length) return `${threeDigits(m, e - tier * 3)} ${SUFFIXES[tier]}`;
   return `${cut(m, 2).toFixed(2)}e${e}`;
 }
+
+// for round targets ("earn 1 M crowns", "rank up at 10 B"): like formatNumber, minus trailing zeros
+export function formatGoal(value) {
+  return formatNumber(value).replace(/\.(\d*?)0+(?=\s|e|$)/, (_, digits) => (digits ? `.${digits}` : ''));
+}

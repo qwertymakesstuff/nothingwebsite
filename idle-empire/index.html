@@ -16,7 +16,13 @@
 <body>
   <header class="topbar">
     <h1 class="wordmark"><span class="wordmark-crown" aria-hidden="true"></span>Idle Empire</h1>
-    <a class="back-link" href="/">missing.website</a>
+    <div class="top-actions">
+      <button id="achievementsBtn" class="top-btn" type="button" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12v2h3v3a5 5 0 0 1-4.4 5A6 6 0 0 1 13 16v2h3v3H8v-3h3v-2a6 6 0 0 1-3.6-3A5 5 0 0 1 3 8V5h3zm0 4H5v1a3 3 0 0 0 1.5 2.6A7 7 0 0 1 6 8zm12 0v1a7 7 0 0 1-.5 2.6A3 3 0 0 0 19 8V7z"/></svg>
+        <span class="top-btn-label">Achievements</span> <b id="achievementCount">0/0</b>
+      </button>
+      <a class="back-link" href="/">missing.website</a>
+    </div>
   </header>
 
   <main class="game">
@@ -65,6 +71,25 @@
 
   <div id="floaters" class="floaters" aria-hidden="true"></div>
   <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <dialog id="achievementsDialog" class="dialog" aria-labelledby="achievementTitle">
+    <div class="dialog-head">
+      <div>
+        <h2 id="achievementTitle">Achievements</h2>
+        <p id="achievementSummary" class="dialog-sub"></p>
+      </div>
+      <button id="achievementClose" class="dialog-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="ach-total" aria-hidden="true"><span id="achievementBar"></span></div>
+    <div class="ach-filters" role="group" aria-label="Show">
+      <button class="ach-filter" type="button" data-filter="all" aria-pressed="true">All</button>
+      <button class="ach-filter" type="button" data-filter="unlocked" aria-pressed="false">Unlocked</button>
+      <button class="ach-filter" type="button" data-filter="locked" aria-pressed="false">Locked</button>
+    </div>
+    <div id="achievementList" class="ach-list">
+      <p id="achievementEmpty" class="empty-note" hidden>Nothing here yet. Keep building.</p>
+    </div>
+  </dialog>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

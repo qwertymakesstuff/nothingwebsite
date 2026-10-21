@@ -1,10 +1,11 @@
 // Progression: notices what the player has just reached and reports it once.
-// checkProgress(state) records every new building unlock, ownership milestone and rank in
+// checkProgress(state) records every new building unlock, ownership milestone, rank and achievement in
 // the state and returns them as events for the notifications; calling it again reports nothing new.
 import { BUILDINGS } from './buildings.js';
 import { allMet } from './conditions.js';
 import { OWNERSHIP_MILESTONES, rankIndex } from './milestones.js';
 import { checkUnlocks } from './upgradeSystem.js';
+import { checkAchievements } from './achievementSystem.js';
 
 export function isBuildingUnlocked(state, id) {
   return !!state.buildingsUnlocked[id];
@@ -19,7 +20,7 @@ export function lockedCount(state) {
   return BUILDINGS.filter(b => !state.buildingsUnlocked[b.id]).length;
 }
 
-export function checkProgress(state) {
+export function checkProgress(state, now = Date.now()) {
   const events = [];
 
   for (const b of BUILDINGS) {
@@ -48,6 +49,9 @@ export function checkProgress(state) {
 
   const fresh = checkUnlocks(state);
   if (fresh.length) events.push({ type: 'upgrades', ids: fresh });
+
+  // last, so achievements see this tick's ranks and unlocks
+  for (const id of checkAchievements(state, now)) events.push({ type: 'achievement', id });
 
   return events;
 }

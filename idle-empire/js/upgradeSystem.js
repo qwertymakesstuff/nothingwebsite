@@ -49,8 +49,9 @@ export function buyUpgrade(state, id) {
   const def = UPGRADES_BY_ID[id];
   if (!def || !state.upgradesUnlocked[id] || isMaxed(state, id)) return null;
   const cost = upgradeCost(state, id);
-  if (!state.currency.gte(cost)) return null;
+  if (!state.currency.gte(cost)) { state.stats.denied += 1; return null; }
   state.currency = BigNum.max(ZERO, state.currency.sub(cost));
+  if (state.currency.lt(1) && cost.gte(1000)) state.flags.spentAll = true;
   state.upgrades = { ...state.upgrades, [id]: levelOf(state, id) + 1 };
   return cost;
 }

@@ -56,6 +56,9 @@
   .upgrade-list, .shop-list { overflow: visible; }
 }
 @media (max-width: 420px) {
+  .top-btn-label { display: none; }
+  .back-link { display: none; }
+  .ach-grid { grid-template-columns: 1fr; }
   .panel-head { flex-wrap: wrap; }
   .buy-mode { min-width: 0; padding: 5px 8px; }
   .rates p { min-width: 0; flex: 1; }

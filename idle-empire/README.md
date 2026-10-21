@@ -4,7 +4,8 @@ An incremental idle game: strike crowns at the Mint, buy buildings that strike c
 grow a market stall into an industrial empire. Plain HTML, CSS and ES modules, no build step,
 no dependencies. Built in phases (see the roadmap in the project brief); done so far:
 **phase 1** (foundation and core gameplay), **phase 2** (economy and purchase systems),
-**phase 3** (upgrades and multipliers) and **phase 4** (empire buildings and progression).
+**phase 3** (upgrades and multipliers), **phase 4** (empire buildings and progression) and
+**phase 5** (achievements and milestones).
 
 | File | Job |
 | --- | --- |
@@ -21,6 +22,10 @@ no dependencies. Built in phases (see the roadmap in the project brief); done so
 | `js/progression.js` | `checkProgress()`: records new unlocks / milestones / ranks and returns them as events |
 | `js/skyline.js` | the skyline SVG that grows with what you own |
 | `js/notifications.js` | toast notifications |
+| `js/achievements.js` | the 72 achievements as data (check + progress functions) |
+| `js/achievementSystem.js` | checking and granting achievements (once each, timestamped) |
+| `js/achievementStore.js` | keeps unlocked achievements in `localStorage` across refreshes |
+| `js/achievementsView.js` | the achievement collection dialog and the unlock celebration |
 | `js/upgrades.js` | upgrade catalogue as data, and `collectModifiers()`: how effects combine |
 | `js/upgradeSystem.js` | upgrade actions: unlock checks, prices, buying, before-purchase preview |
 | `js/economy.js` | pure rules: prices, bulk quotes, Buy Max, production, click, buy, tick |
@@ -68,6 +73,7 @@ Stacking rule, the same for every effect:
 ```
 building unit rate = baseRate x (its building multipliers) x (its ownership milestones)
                      x (1 + its synergy % / 100) x (global multipliers) x (1 + 5% per empire rank)
+                     x (1 + 1% per achievement)
 click value        = (1 + click additions) x (click multipliers) + per-second x (click share of per-second)
 ```
 
@@ -98,13 +104,33 @@ prestige): Factory 5 min, Bank 22 min, Railway 1.1 h, Stock Exchange 3.6 h, Airs
 Aether Refinery 11 h, Sky Colony 19 h, Imperial Mint 30 h. Prestige (phase 7) is meant to
 shorten the later stretch.
 
+## Achievements (phase 5)
+
+72 achievements in seven groups: clicking (clicks, crowns earned by clicking), earning, production
+per second, buildings (in total, and 100 of each kind), upgrades (counts, all of them, both
+repeatables maxed), progress (buildings unlocked, ranks) and 10 **hidden** ones that show as "???"
+until done (holding exactly 777 crowns, 15 clicks in a second, a 100+ Buy Max, emptying the
+treasury on a big purchase, playing between midnight and 4 a.m., ...).
+
+* Each one adds **+1% to all production**. `grant()` refuses an id that is already unlocked or
+  unknown, so a reward can never be counted twice; the unlock time is stored with it.
+* The **collection** (top-bar button, which also shows the count) lists every group with locked,
+  unlocked and hidden states, unlock dates, progress bars toward locked goals, and All / Unlocked /
+  Locked filters.
+* Unlocking shows a gold toast with a sheen, sparkles burst from the top-bar button and it pulses.
+* **Persistence**: unlocked achievements are written to `localStorage` (`idleEmpire:achievements`)
+  the moment one unlocks and read back on load, dropping unknown ids, bad or future timestamps and
+  corrupted JSON. This is the only thing saved so far; the full save system (phase 8) will take
+  it over. Because the reward is kept too, a returning player starts slightly faster.
+
 ## Scope so far
 
 Clicking, six buildings with escalating prices, passive income, per-second and per-click counters
 (phase 1); x1 / x10 / x100 / Max buying, exact bulk prices, the economy config, affordability
 states and purchase feedback (phase 2); upgrades, multipliers and the upgrade panel (phase 3); 14 buildings, tiered unlocks,
-milestones, ranks, skyline and notifications (phase 4). Not yet (later phases): achievements, statistics, prestige, saving and
-offline earnings. **Progress is not saved yet**: a refresh starts over.
+milestones, ranks, skyline and notifications (phase 4); achievements with rewards, hidden ones, the
+collection and their persistence (phase 5). Not yet (later phases): statistics, prestige, saving
+and offline earnings. **Only achievements are saved yet**: a refresh starts the empire over.
 
 `window.idleEmpire` exposes `{ state, economy }` for testing from the console.
 
@@ -116,4 +142,6 @@ hour of greedy play, bulk prices = sum of singles, Buy Max exactness from 0 to 3
 all-or-nothing buy modes, config defaults, the upgrade catalogue, unlocks, one-time and
 repeatable purchases, multiplier stacking, preview = result, and a simulated session with and
 without upgrades, the roster, tiered unlocks, milestones and ranks (including bulk-buy events),
-skyline levels, and a two-hour pacing check.
+skyline levels, a two-hour pacing check, the achievement catalogue, once-only grants with
+timestamps, the reward, every hidden achievement, progress bars, and the store (reload, garbage,
+blocked storage).

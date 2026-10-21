@@ -11,6 +11,7 @@ import { BUILDINGS, BUILDINGS_BY_ID } from './buildings.js';
 import { ECONOMY } from './config.js';
 import { collectModifiers } from './upgrades.js';
 import { milestoneMult, rankIndex, rankMult } from './milestones.js';
+import { ACHIEVEMENT_BONUS } from './achievements.js';
 
 const EXACT_LIMIT = 2 ** 53;  // above this every double is already a whole number
 const MAX_EXACT_STEPS = 2000; // safety net for growth values very close to 1
@@ -98,7 +99,13 @@ export function unitRate(state, def) {
     .mul(milestoneMult(state.buildings[def.id] || 0))
     .mul(1 + bonus / 100)
     .mul(mods.global)
-    .mul(rankMult(rankIndex(state.totalEarned)));
+    .mul(rankMult(rankIndex(state.totalEarned)))
+    .mul(achievementMult(state));
+}
+
+// +1% production per achievement unlocked (state.achievements only ever holds known ids)
+export function achievementMult(state) {
+  return 1 + ACHIEVEMENT_BONUS * Object.keys(state.achievements).length;
 }
 
 export function buildingProduction(state, id) {
@@ -127,10 +134,16 @@ export function earn(state, amount) {
   state.totalEarned = state.totalEarned.add(a);
 }
 
-export function click(state) {
+// `now` (ms) only feeds the clicks-per-second record
+export function click(state, now = Date.now()) {
   const value = clickValue(state);
   earn(state, value);
   state.totalClicks += 1;
+  const st = state.stats;
+  st.clickEarned = st.clickEarned.add(value);
+  if (now - st.burstStart < 1000) st.burstCount += 1;
+  else { st.burstStart = now; st.burstCount = 1; }
+  if (st.burstCount > st.bestBurst) st.bestBurst = st.burstCount;
   return value;
 }
 
@@ -139,7 +152,9 @@ export function canAfford(state, cost) {
 }
 
 export function setBuyMode(state, mode) {
-  state.buyMode = validBuyMode(mode);
+  const next = validBuyMode(mode);
+  if (next !== state.buyMode) state.stats.modeSwitches += 1;
+  state.buyMode = next;
 }
 
 // buys in the given mode (default: the selected one); locked buildings can't be bought. All or nothing: x10 buys exactly
@@ -147,9 +162,13 @@ export function setBuyMode(state, mode) {
 export function buyBuilding(state, id, mode = state.buyMode) {
   if (!state.buildingsUnlocked[id]) return null;
   const q = quote(state, id, mode);
-  if (!q || !q.affordable) return null;
+  if (!q) return null;
+  if (!q.affordable) { state.stats.denied += 1; return null; }
   state.currency = BigNum.max(ZERO, state.currency.sub(q.cost));
   state.buildings[id] = (state.buildings[id] || 0) + q.count;
+  // notable purchases, for hidden achievements
+  if (q.count >= 100 && validBuyMode(mode) === 'max') state.flags.bigMax = true;
+  if (state.currency.lt(1) && q.cost.gte(1000)) state.flags.spentAll = true;
   return { count: q.count, cost: q.cost };
 }
 
