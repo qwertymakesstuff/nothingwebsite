@@ -6,6 +6,8 @@ import { NATIONS } from '../data/setting.js';
 import { esc } from './html.js';
 import { emblemSVG } from './documentRenderer.js';
 import { formatLong } from './dates.js';
+import { SCORING } from '../data/scoring.js';
+import { SETTING } from '../data/setting.js';
 
 export const RULEBOOK_TABS = [['rules', 'Rules'], ['nations', 'Nations'], ['directive', 'Directive']];
 
@@ -30,7 +32,14 @@ function nationsPage() {
 
 function directivePage(day, date) {
   const b = day.bulletin;
-  return `<h3>${esc(b.title)}</h3><p class="bulletin-date">${esc(formatLong(date))}</p><ul>${b.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
+  const k = n => `${SETTING.currency.symbol}${n}`;
+  const pay = [
+    `${k(SCORING.wage)} for each correct decision.`,
+    `The first ${SCORING.warningsPerShift} mistakes in a shift bring a warning. After that, each mistake is fined ${k(SCORING.fine)}.`,
+    `Admitting an entrant on a forged passport (unrecognised issuing office or false seal) is fined ${k(SCORING.seriousFine)} at once.`,
+  ];
+  return `<h3>${esc(b.title)}</h3><p class="bulletin-date">${esc(formatLong(date))}</p><ul>${b.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
+    <h3 class="rulebook-sub">Pay and penalties</h3><ul>${pay.map(l => `<li>${esc(l)}</li>`).join('')}</ul>`;
 }
 
 export function renderRulebook({ tab, regulations, day, date }) {

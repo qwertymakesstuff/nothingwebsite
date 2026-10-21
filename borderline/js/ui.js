@@ -6,6 +6,8 @@ import { currentVisitor, currentDay, decisionFor, visitorById } from './gameStat
 import { createDesk, deskToolbarHTML } from './desk.js';
 import { renderRulebook, RULEBOOK_TABS } from './rulebook.js';
 import { activeRegulations } from '../data/regulations.js';
+import { SCORING } from '../data/scoring.js';
+import { shiftReport, warningsUsed } from './decisionSystem.js';
 import { portraitSVG } from './portrait.js';
 import { formatLong, formatDoc } from './dates.js';
 import { esc } from './html.js';
@@ -49,6 +51,7 @@ export function createUI(act) {
       <div><dt>Day</dt><dd>${state.day}</dd></div>
       <div><dt>Date</dt><dd>${esc(formatLong(state.date))}</dd></div>
       <div><dt>Entrants</dt><dd>${s.decisions.length} / ${s.queue.length} processed</dd></div>
+      <div><dt>Warnings</dt><dd class="${warningsUsed(s.decisions) >= SCORING.warningsPerShift ? 'hud-alert' : ''}">${warningsUsed(s.decisions)} / ${SCORING.warningsPerShift}</dd></div>
       <div><dt>Savings</dt><dd class="hud-money">${money(state.money)}</dd></div>`;
   }
 
@@ -109,33 +112,59 @@ export function createUI(act) {
     const text = {
       waiting: s.next === 0 ? 'Your shift has begun. Call the first entrant when you are ready.' : 'Call the next entrant.',
       inspecting: `Inspecting ${v?.name}. Read and compare the papers, then stamp a decision.`,
-      departing: `Passport stamped. Return the papers to ${v?.name}.`,
+      departing: `Papers stamped. Return them to ${v?.name}.`,
       shiftEnd: 'The queue is empty. Shift complete.',
     }[s.phase];
     $('status').textContent = text;
   }
 
+  const ruleNumber = id => activeRegulations(lastState.day).findIndex(r => r.id === id) + 1;
+  const citationHTML = c => `
+    <p class="notice-level">${c.level === 'warning' ? `Citation · Warning` : `Citation · Fine ${money(c.amount)}`}${c.serious ? ' · Serious breach' : ''}</p>
+    <p>${esc(c.reason)}</p>
+    ${c.rules.length ? `<ul class="notice-rules">${c.rules.map(r => `<li>Rule ${ruleNumber(r.id)}: ${esc(r.text)}</li>`).join('')}</ul>` : ''}`;
+
+  // the Ministry's verdict on the stamp just made, shown until the papers are returned
+  function renderNotice(state) {
+    const v = currentVisitor(state);
+    const d = v && state.shift.phase === 'departing' ? decisionFor(state, v.id) : null;
+    const el = $('notice');
+    el.hidden = !d;
+    if (!d) { el.innerHTML = ''; return; }
+    el.className = `notice ${d.correct ? 'notice-ok' : `notice-${d.citation.level}`}`;
+    el.innerHTML = d.correct
+      ? `<p class="notice-level">Correct · +${money(d.pay)}</p><p>${d.decision === 'accept' ? 'The papers were in order.' : esc(d.violations[0].message)}${d.notes.length ? ` ${esc(d.notes.join(' '))}` : ''}</p>`
+      : citationHTML(d.citation);
+  }
+
+  const amountText = d => (d.fine ? `−${money(d.fine)}` : d.pay ? `+${money(d.pay)}` : d.citation?.level === 'warning' ? 'warning' : '—');
   function renderLog(state) {
     const items = state.shift.decisions.map(d =>
-      `<li class="log-${esc(d.decision)}"><span>${esc(visitorById(state, d.visitorId).name)}</span><span>${DECISION_TEXT[d.decision]}</span><span>+${money(d.pay)}</span></li>`);
+      `<li class="log-${esc(d.decision)} ${d.correct ? 'log-correct' : 'log-wrong'}"><span>${esc(visitorById(state, d.visitorId).name)}</span><span>${DECISION_TEXT[d.decision]} <b class="log-mark" aria-label="${d.correct ? 'correct' : 'mistake'}">${d.correct ? '✓' : '✗'}</b></span><span>${amountText(d)}</span></li>`);
     $('log').innerHTML = items.join('') || '<li class="log-empty">No entrants processed yet.</li>';
   }
 
   function renderSummary(state) {
-    const s = state.shift;
-    const granted = s.decisions.filter(d => d.decision === 'accept').length;
+    const r = shiftReport(state.shift.decisions);
+    const mistakes = state.shift.decisions.filter(d => !d.correct);
     $('summaryBody').innerHTML = `
       <p class="kicker">${esc(SETTING.checkpoint.post)} · End of shift</p>
-      <h2 id="summaryTitle">Day ${state.day} complete</h2>
+      <h2 id="summaryTitle">Day ${state.day} report</h2>
       <dl class="summary-stats">
-        <div><dt>Entrants processed</dt><dd>${s.decisions.length}</dd></div>
-        <div><dt>Granted entry</dt><dd>${granted}</dd></div>
-        <div><dt>Denied entry</dt><dd>${s.decisions.length - granted}</dd></div>
-        <div><dt>Wages earned</dt><dd>${money(s.earned)}</dd></div>
+        <div><dt>Entrants processed</dt><dd>${r.processed}</dd></div>
+        <div><dt>Correct decisions</dt><dd>${r.correct} (${r.accuracy}%)</dd></div>
+        <div><dt>Mistakes</dt><dd>${r.mistakes}</dd></div>
+        <div><dt>Warnings issued</dt><dd>${r.warnings} / ${SCORING.warningsPerShift}</dd></div>
+        <div><dt>Wages earned</dt><dd>+${money(r.wages)}</dd></div>
+        <div><dt>Fines</dt><dd>${r.fines ? `−${money(r.fines)}` : money(0)}</dd></div>
+        <div class="summary-total"><dt>Net for the shift</dt><dd>${r.net < 0 ? '−' : '+'}${money(Math.abs(r.net))}</dd></div>
         <div><dt>Savings</dt><dd>${money(state.money)}</dd></div>
       </dl>
-      <p class="summary-note">The training shift is paid at a flat rate. The Ministry has not yet reviewed your decisions.</p>
-      <div class="btn-row"><button type="button" class="btn primary" data-action="restart">Work the training shift again</button></div>`;
+      ${mistakes.length ? `<h3 class="summary-sub">Citations</h3><ol class="summary-mistakes">${mistakes.map(d =>
+        `<li><b>${esc(visitorById(state, d.visitorId).name)}</b>: ${d.decision === 'accept' ? 'admitted' : 'refused'}, should have been ${d.verdict === 'accept' ? 'admitted' : 'refused'}. ${esc(d.citation.reason)} <span class="summary-penalty">${d.fine ? `Fined ${money(d.fine)}` : 'Warning'}</span></li>`).join('')}</ol>`
+        : '<p class="summary-note">A clean shift. The Ministry has no citations to record.</p>'}
+      <p class="summary-note">Later days are not built yet; a new shift starts Day 1 again with fresh entrants.</p>
+      <div class="btn-row"><button type="button" class="btn primary" data-action="restart">Start a new shift</button></div>`;
   }
 
   // move focus to the control the player needs next, so keyboard play never gets lost
@@ -152,7 +181,7 @@ export function createUI(act) {
       const v = currentVisitor(state);
       const arriving = Boolean(v) && v.id !== shownVisitor;
       shownVisitor = v ? v.id : null;
-      renderHUD(state); renderBulletin(state); renderBooth(state, arriving); renderTray(state, arriving); renderStatus(state); renderLog(state);
+      renderHUD(state); renderBulletin(state); renderBooth(state, arriving); renderTray(state, arriving); renderStatus(state); renderNotice(state); renderLog(state);
       const ended = state.shift.phase === 'shiftEnd';
       if (ended) renderSummary(state);
       $('summary').hidden = !ended;

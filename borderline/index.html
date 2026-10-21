@@ -9,9 +9,9 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1' y='1' width='22' height='22' rx='3' fill='%23262722'/%3E%3Cpath d='M4 12h16' stroke='%23c9a24a' stroke-width='2.4'/%3E%3Cpath d='M4 7h6M14 17h6' stroke='%23b0302a' stroke-width='2.4'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=3" />
-  <link rel="stylesheet" href="css/desk.css?v=3" />
-  <link rel="stylesheet" href="css/documents.css?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
+  <link rel="stylesheet" href="css/desk.css?v=5" />
+  <link rel="stylesheet" href="css/documents.css?v=5" />
 </head>
 <body>
   <section id="intro" class="screen intro">
@@ -35,6 +35,7 @@
       <section class="booth" aria-label="Inspection booth">
         <div class="booth-window" id="boothWindow"></div>
         <div class="speech" id="speech" aria-live="polite"></div>
+        <div class="notice" id="notice" role="status" hidden></div>
         <button type="button" class="btn primary booth-call" data-action="callNext">Call next entrant</button>
       </section>
       <section class="desk" aria-label="Inspection desk">
@@ -69,6 +70,6 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle" id="summaryBody"></div>
   </div>
 
-  <script type="module" src="js/main.js?v=3"></script>
+  <script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>

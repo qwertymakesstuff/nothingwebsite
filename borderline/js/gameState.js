@@ -8,6 +8,7 @@ import { dayByNumber } from '../data/campaignDays.js';
 import { VISITORS } from '../data/visitors.js';
 import { generateVisitor, FLAWS } from './visitorGenerator.js';
 import { activeRegulations } from '../data/regulations.js';
+import { assess } from './decisionSystem.js';
 import { createRng } from './rng.js';
 
 const DECISIONS = ['accept', 'reject'];
@@ -41,8 +42,9 @@ export function createGame(dayNumber = 1, seed = newSeed()) {
       next: 0,          // index into queue of the next entrant to call
       current: null,    // id of the entrant at the booth
       phase: 'waiting',
-      decisions: [],    // { visitorId, decision, pay }, one per processed entrant
-      earned: 0,
+      decisions: [],    // decision records from decisionSystem.assess, one per processed entrant
+      earned: 0,        // wages paid this shift
+      fines: 0,         // fines charged this shift
     },
   };
 }
@@ -64,15 +66,16 @@ function reduce(state, action) {
       if (s.phase !== 'inspecting' || !s.current) return 'No entrant is being inspected.';
       if (!DECISIONS.includes(action.decision)) return `Unknown decision "${action.decision}".`;
       if (decisionFor(state, s.current)) return 'This entrant has already been processed.';
-      const pay = currentDay(state).wagePerEntrant;
+      const record = assess(currentVisitor(state), action.decision, { regulations: activeRegulations(state.day), date: state.date }, s.decisions);
       return {
         ...state,
-        money: state.money + pay,
+        money: state.money + record.pay - record.fine,
         shift: {
           ...s,
           phase: 'departing',
-          decisions: [...s.decisions, { visitorId: s.current, decision: action.decision, pay }],
-          earned: s.earned + pay,
+          decisions: [...s.decisions, record],
+          earned: s.earned + record.pay,
+          fines: s.fines + record.fine,
         },
       };
     }

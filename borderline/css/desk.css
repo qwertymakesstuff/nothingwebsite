@@ -130,7 +130,7 @@
 @media (max-width: 900px) {
   .post { grid-template-columns: 1fr; }
   .booth { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; align-items: start; }
-  .booth-call { grid-column: 1 / -1; }
+  .booth-call, .notice { grid-column: 1 / -1; }
 }
 @media (max-width: 640px) {
   .desk { grid-template-columns: minmax(0, 1fr); padding: 12px; }
@@ -143,3 +143,21 @@
   .stamp-btn { flex: 1 1 40%; }
   .controls .btn { margin-left: 0; flex: 1 1 100%; }
 }
+
+/* the Ministry's verdict on the last stamp */
+.notice { padding: .6rem .8rem; border-radius: 3px; background: #efe6cc; color: var(--ink); border-left: 6px solid var(--green); box-shadow: 0 3px 8px #0006; animation: notice-in .3s ease-out; }
+.notice p { margin: 0; font-size: .88rem; }
+.notice p + p { margin-top: .2rem; }
+.notice-level { font: 700 .8rem var(--font-head); letter-spacing: .12em; text-transform: uppercase; color: #24713a; }
+.notice-warning { background: #f6e3b4; border-left-color: #b8862a; }
+.notice-warning .notice-level { color: #7a5410; }
+.notice-fine { background: #f3d4cc; border-left-color: var(--red); }
+.notice-fine .notice-level { color: #9a221c; }
+.notice-rules { margin: .3rem 0 0; padding-left: 1.1rem; font-size: .8rem; color: #4a4030; }
+@keyframes notice-in { from { transform: translateY(-6px); opacity: 0; } }
+.hud-alert { color: #f08070; }
+.log-mark { font-weight: 700; margin-left: .3rem; }
+.log-correct .log-mark { color: #6fc27f; }
+.log-wrong .log-mark { color: #f08070; }
+.log-wrong span:last-child { color: #f08070 !important; }
+.rulebook-sub { margin-top: .8rem; }

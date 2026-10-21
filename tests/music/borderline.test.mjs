@@ -13,6 +13,8 @@ const { evaluate, nationalityOf } = await import(new URL('js/rulesEngine.js', ro
 const { REGULATIONS, activeRegulations } = await import(new URL('data/regulations.js', root));
 const { renderRulebook } = await import(new URL('js/rulebook.js', root));
 const { FLAWS_BY_ID } = await import(new URL('js/visitorGenerator.js', root));
+const { assess, shiftReport } = await import(new URL('js/decisionSystem.js', root));
+const { SCORING } = await import(new URL('data/scoring.js', root));
 const { DOCUMENT_TYPES } = await import(new URL('data/documents.js', root));
 const { renderDocument } = await import(new URL('js/documentRenderer.js', root));
 const { formatDoc, formatLong, isValidDate } = await import(new URL('js/dates.js', root));
@@ -93,8 +95,9 @@ test('shift loop: call, decide, return, through to the end of the shift', () => 
   });
   assert.equal(s.shift.phase, 'shiftEnd');
   assert.equal(s.shift.decisions.length, day.entrants.length);
-  assert.equal(s.shift.earned, day.wagePerEntrant * day.entrants.length);
-  assert.equal(s.money, SETTING.startingMoney + s.shift.earned);
+  const correct = s.shift.decisions.filter(d => d.correct).length;
+  assert.equal(s.shift.earned, SCORING.wage * correct);
+  assert.equal(s.money, SETTING.startingMoney + s.shift.earned - s.shift.fines);
   assert.ok(dispatch(s, { type: 'callNext' }).error);
 });
 
@@ -109,7 +112,9 @@ test('a visitor can only be processed once and actions are phase-checked', () =>
   const again = dispatch(s2, { type: 'decide', decision: 'reject' });
   assert.ok(again.error, 'second stamp refused');
   assert.equal(again.state, s2, 'refused action leaves state untouched');
-  assert.equal(s2.money, s0.money + DAYS[0].wagePerEntrant, 'paid once');
+  const rec = s2.shift.decisions[0];
+  assert.equal(s2.money, s0.money + rec.pay - rec.fine, 'paid or fined once');
+  assert.equal(s2.shift.decisions.length, 1);
   assert.equal(s0.money, SETTING.startingMoney, 'dispatch never mutates its input');
   assert.equal(s0.shift.phase, 'waiting');
   assert.ok(dispatch(s0, { type: 'bogus' }).error);
@@ -297,5 +302,75 @@ test('rulebook shows exactly the active regulations and the reference data the e
   for (const n of Object.values(NATIONS)) {
     assert.ok(nations.includes(`data-value="${n.emblem}"`), `${n.name} seal`);
     assert.ok(nations.includes(n.cities.join(', ')), `${n.name} offices`);
+  }
+});
+
+const ctx1 = { regulations: RULES, date: DAYS[0].date };
+const planted = (flaw, start = 0) => {
+  for (let i = start; i < start + 2000; i++) {
+    const clean = generateVisitor(createRng(i), { id: `p${i}`, date: CTX.date });
+    if (!flaw || FLAWS_BY_ID[flaw].applies(clean, CTX)) return generateVisitor(createRng(i), { id: `p${i}`, date: CTX.date, flaw });
+  }
+  throw new Error(`no entrant for ${flaw}`);
+};
+
+test('scoring: correct decisions are paid, mistakes warned then fined', () => {
+  const ok = planted(null), bad = planted('expiredPassport');
+  assert.deepEqual([assess(ok, 'accept', ctx1).pay, assess(ok, 'accept', ctx1).fine], [SCORING.wage, 0]);
+  const rightReject = assess(bad, 'reject', ctx1);
+  assert.ok(rightReject.correct && rightReject.pay === SCORING.wage && !rightReject.citation);
+  const history = [];
+  const levels = [];
+  for (let i = 0; i < SCORING.warningsPerShift + 2; i++) {
+    const r = assess(i % 2 ? ok : bad, i % 2 ? 'reject' : 'accept', ctx1, history);
+    assert.ok(!r.correct && r.pay === 0);
+    history.push(r); levels.push(r.citation.level);
+  }
+  assert.deepEqual(levels, [...Array(SCORING.warningsPerShift).fill('warning'), 'fine', 'fine']);
+  assert.deepEqual(history.map(r => r.fine), [...Array(SCORING.warningsPerShift).fill(0), SCORING.fine, SCORING.fine]);
+  assert.match(history[1].citation.reason, /papers were in order/);
+  assert.match(history[0].citation.reason, /expired/);
+  assert.equal(history[0].citation.rules[0].id, 'passport-valid');
+});
+
+test('scoring: admitting forged papers is a serious breach, fined at once', () => {
+  for (const flaw of ['unknownIssuer', 'forgedSeal']) {
+    const r = assess(planted(flaw), 'accept', ctx1, []);
+    assert.equal(r.citation.level, 'fine'); assert.ok(r.citation.serious);
+    assert.equal(r.fine, SCORING.seriousFine);
+    // and it does not use up a warning
+    const next = assess(planted('expiredPassport'), 'accept', ctx1, [r]);
+    assert.equal(next.citation.level, 'warning');
+  }
+  // refusing a forger is simply correct; wrongly refusing is never 'serious'
+  assert.ok(assess(planted('forgedSeal'), 'reject', ctx1).correct);
+  assert.ok(!assess(planted(null), 'reject', ctx1).citation.serious);
+  // the exception case: refusing an elderly citizen in their grace year is a mistake, explained
+  const elder = assess(planted('elderGrace'), 'reject', ctx1);
+  assert.ok(!elder.correct); assert.match(elder.citation.reason, /exception/);
+});
+
+test('scoring stays consistent with the rules engine and the money across whole shifts', () => {
+  for (let seed = 1; seed <= 60; seed++) {
+    let s = createGame(1, seed);
+    const rng = createRng(seed * 7);
+    while (s.shift.phase !== 'shiftEnd') {
+      s = run(s, { type: 'callNext' });
+      const v = currentVisitor(s);
+      const decision = rng.chance(0.5) ? 'accept' : 'reject';
+      s = run(s, { type: 'decide', decision });
+      assert.ok(dispatch(s, { type: 'decide', decision }).error, 'second stamp refused');
+      const d = decisionFor(s, v.id);
+      assert.equal(d.verdict, evaluate(v, RULES, CTX).verdict);
+      assert.equal(d.correct, d.decision === d.verdict);
+      s = run(s, { type: 'returnPapers' });
+    }
+    const r = shiftReport(s.shift.decisions);
+    assert.equal(r.processed, s.shift.queue.length);
+    assert.equal(r.correct + r.mistakes, r.processed);
+    assert.equal(r.wages, s.shift.earned); assert.equal(r.fines, s.shift.fines);
+    assert.equal(s.money, SETTING.startingMoney + r.net);
+    assert.ok(r.warnings <= SCORING.warningsPerShift);
+    assert.equal(r.wages, r.correct * SCORING.wage);
   }
 });
