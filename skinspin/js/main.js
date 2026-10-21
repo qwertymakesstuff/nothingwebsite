@@ -5,7 +5,7 @@ import { SAVE_KEY } from './config.js';
 import { levelInfo } from './playerState.js';
 import { inventoryValue, refillEligible } from './economy.js';
 import { ICONS, LOGO } from './ui/icons.js';
-import { $, fmt } from './ui/dom.js';
+import { $, fmt, money } from './ui/dom.js';
 import { toast } from './ui/toast.js';
 import { closeModal } from './ui/modal.js';
 import { setSoundEnabled } from './ui/sound.js';
@@ -55,7 +55,7 @@ function renderShell() {
   $('#scrim').addEventListener('click', () => setMenu(false));
   $('#refillBtn').addEventListener('click', () => {
     const r = store.claimRefill();
-    toast(r.ok ? `${fmt(r.amount)} free coins added. Good luck!` : r.message, { kind: r.ok ? 'success' : 'error' });
+    toast(r.ok ? `${money(r.amount)} free cash added. Good luck!` : r.message, { kind: r.ok ? 'success' : 'error' });
   });
 }
 
@@ -178,4 +178,4 @@ const notices = {
   newer: 'This save was made by a newer version of SkinSpin. A backup was kept before loading it.',
 };
 if (notices[store.loadStatus]) toast(notices[store.loadStatus], { kind: 'error', timeout: 8000 });
-if (store.loadStatus === 'new') toast(`Welcome to SkinSpin, ${store.player.name}! You start with 5,000 coins.`, { kind: 'success', timeout: 6000 });
+if (store.loadStatus === 'new') toast(`Welcome to SkinSpin, ${store.player.name}! You start with $5,000 of play money.`, { kind: 'success', timeout: 6000 });

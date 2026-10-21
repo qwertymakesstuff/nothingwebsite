@@ -13,7 +13,7 @@ import { findItem } from '../economy.js';
 import { itemArt, caseArt } from '../art.js';
 import { coins, itemCard, rarityPill, itemTitle, wearName, emptyState } from '../ui/components.js';
 import { ICONS } from '../ui/icons.js';
-import { $, esc, fmt, fmtPct, prefersReducedMotion } from '../ui/dom.js';
+import { $, esc, fmt, money, fmtPct, prefersReducedMotion } from '../ui/dom.js';
 import { toast } from '../ui/toast.js';
 import { sound } from '../ui/sound.js';
 
@@ -75,7 +75,7 @@ function updateButtons() {
   const again = $('#againBtn', root);
   if (again) {
     again.disabled = spinning || short > 0;
-    again.title = short > 0 ? `You need ${fmt(short)} more coins` : '';
+    again.title = short > 0 ? `You need ${money(short)} more` : '';
   }
 }
 
@@ -192,7 +192,7 @@ function sellRevealed() {
   if (!r.ok) { toast(r.message, { kind: 'error' }); drawRevealActions(); return; }
   s.sold = true;
   sound.sell();
-  toast(`Sold for ${fmt(r.total)} coins.`, { kind: 'success' });
+  toast(`Sold for ${money(r.total)}.`, { kind: 'success' });
   drawRevealActions();
 }
 

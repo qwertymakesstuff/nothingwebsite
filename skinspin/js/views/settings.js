@@ -71,7 +71,7 @@ export default {
       const text = await file.text();
       openModal({
         title: 'Replace your progress?',
-        body: '<p>Importing replaces your current coins, inventory and statistics with the ones in the file. This cannot be undone.</p>',
+        body: '<p>Importing replaces your current balance, inventory and statistics with the ones in the file. This cannot be undone.</p>',
         actions: [{ label: 'Cancel' }, { label: 'Import', kind: 'danger', onClick: () => {
           const r = store.importData(text);
           toast(r.ok ? (r.repaired ? 'Save imported; some invalid data was dropped.' : 'Save imported.') : r.message, { kind: r.ok ? 'success' : 'error' });
@@ -81,8 +81,8 @@ export default {
     $('#resetBtn', root).addEventListener('click', () => {
       openModal({
         title: 'Reset all progress?',
-        body: '<p>This deletes your coins, inventory, level and statistics and starts you again with 5,000 coins. Export your save first if you might want it back.</p>',
-        actions: [{ label: 'Cancel' }, { label: 'Reset everything', kind: 'danger', onClick: () => { store.reset(); toast('Progress reset. You have 5,000 coins.', { kind: 'success' }); } }],
+        body: '<p>This deletes your balance, inventory, level and statistics and starts you again with $5,000. Export your save first if you might want it back.</p>',
+        actions: [{ label: 'Cancel' }, { label: 'Reset everything', kind: 'danger', onClick: () => { store.reset(); toast('Progress reset. You have $5,000.', { kind: 'success' }); } }],
       });
     });
   },

@@ -6,7 +6,7 @@ import { STARTING_COINS, REFILL_AMOUNT } from '../config.js';
 import { levelInfo } from '../playerState.js';
 import { inventoryValue } from '../economy.js';
 import { coins, itemCard, caseName, emptyState } from '../ui/components.js';
-import { $, esc, fmt, timeAgo, dateTime } from '../ui/dom.js';
+import { $, esc, fmt, money, timeAgo, dateTime } from '../ui/dom.js';
 import { toast } from '../ui/toast.js';
 
 const ui = { filter: 'all', editing: false };
@@ -15,7 +15,7 @@ function activityText(e) {
   const item = e.itemId ? esc(ITEMS_BY_ID[e.itemId].name) + (e.wear ? ` (${e.wear})` : '') : '';
   if (e.type === 'open') return `Opened <b>${esc(caseName(e.caseId))}</b> and unboxed <b>${item}</b>`;
   if (e.type === 'sell') return e.count === 1 && item ? `Sold <b>${item}</b>` : `Sold <b>${fmt(e.count)} items</b>`;
-  if (e.type === 'refill') return 'Claimed free coins';
+  if (e.type === 'refill') return 'Claimed free cash';
   return esc(e.type);
 }
 
@@ -46,11 +46,11 @@ const view = {
 <section class="stat-grid">
   <div class="stat"><dt>Balance</dt><dd>${coins(p.coins)}</dd></div>
   <div class="stat"><dt>Inventory value</dt><dd>${coins(inv)}</dd></div>
-  <div class="stat"><dt>Net result</dt><dd class="${net >= 0 ? 'good' : 'bad'}">${net >= 0 ? '+' : '−'}${fmt(Math.abs(net))}</dd></div>
+  <div class="stat"><dt>Net result</dt><dd class="${net >= 0 ? 'good' : 'bad'}">${net >= 0 ? '+' : '−'}${money(Math.abs(net))}</dd></div>
   <div class="stat"><dt>Cases opened</dt><dd>${fmt(s.casesOpened)}</dd></div>
-  <div class="stat"><dt>Coins spent on cases</dt><dd>${fmt(s.coinsSpent)}</dd></div>
+  <div class="stat"><dt>Spent on cases</dt><dd>${money(s.coinsSpent)}</dd></div>
   <div class="stat"><dt>Items sold</dt><dd>${fmt(s.itemsSold)}</dd></div>
-  <div class="stat"><dt>Coins from sales</dt><dd>${fmt(s.coinsFromSales)}</dd></div>
+  <div class="stat"><dt>Earned from sales</dt><dd>${money(s.coinsFromSales)}</dd></div>
   <div class="stat"><dt>Most opened case</dt><dd>${favCase ? `${esc(caseName(favCase[0]))} <span class="muted">×${fmt(favCase[1])}</span>` : '—'}</dd></div>
 </section>
 
@@ -63,9 +63,9 @@ const view = {
   </section>
   <section class="section">
     <div class="section-head"><h2>Activity</h2>
-      <label class="select"><span class="sr-only">Filter activity</span><select id="actFilter"><option value="all">Everything</option><option value="open">Openings</option><option value="sell">Sales</option><option value="refill">Free coins</option></select></label>
+      <label class="select"><span class="sr-only">Filter activity</span><select id="actFilter"><option value="all">Everything</option><option value="open">Openings</option><option value="sell">Sales</option><option value="refill">Free cash</option></select></label>
     </div>
-    ${acts.length ? `<ol class="activity">${acts.map(e => `<li><span>${activityText(e)}</span><span class="act-meta"><span class="${e.delta >= 0 ? 'good' : 'bad'}">${e.delta >= 0 ? '+' : '−'}${fmt(Math.abs(e.delta))}</span><time datetime="${new Date(e.at).toISOString()}" title="${esc(dateTime(e.at))}">${timeAgo(e.at)}</time></span></li>`).join('')}</ol>`
+    ${acts.length ? `<ol class="activity">${acts.map(e => `<li><span>${activityText(e)}</span><span class="act-meta"><span class="${e.delta >= 0 ? 'good' : 'bad'}">${e.delta >= 0 ? '+' : '−'}${money(Math.abs(e.delta))}</span><time datetime="${new Date(e.at).toISOString()}" title="${esc(dateTime(e.at))}">${timeAgo(e.at)}</time></span></li>`).join('')}</ol>`
       : emptyState({ icon: 'profile', title: 'No activity yet', text: ui.filter === 'all' ? 'Opening and selling show up here.' : 'Nothing of this kind yet.' })}
     <p class="muted small">The latest 200 events are kept.</p>
   </section>

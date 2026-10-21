@@ -18,7 +18,7 @@ export default {
   <div class="hero-copy">
     <p class="eyebrow">Welcome back, ${esc(p.name)}</p>
     <h2 class="hero-title">Spin. Reveal. <span>Collect.</span></h2>
-    <p class="hero-sub">Open cases of original, fictional weapon skins, build your inventory and chase Extraordinary knives and gloves. Coins are play money and can't be bought or cashed out.</p>
+    <p class="hero-sub">Open cases of original, fictional weapon skins, build your inventory and chase Extraordinary knives and gloves. Your $ balance is play money: it can't be bought, deposited or cashed out.</p>
     <div class="hero-actions"><a class="btn btn-primary btn-lg" href="#/cases">Browse cases</a><a class="btn btn-ghost btn-lg" href="#/inventory">My inventory</a></div>
   </div>
   <div class="hero-side">

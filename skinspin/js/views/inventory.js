@@ -6,7 +6,7 @@ import { instanceValue, inventoryValue, quoteSale, findItem } from '../economy.j
 import { itemArt } from '../art.js';
 import { coins, itemCard, rarityPill, itemTitle, wearName, caseName, emptyState, itemDescription } from '../ui/components.js';
 import { ICONS } from '../ui/icons.js';
-import { $, esc, fmt, dateTime } from '../ui/dom.js';
+import { $, esc, fmt, money, dateTime } from '../ui/dom.js';
 import { openModal, closeModal } from '../ui/modal.js';
 import { toast } from '../ui/toast.js';
 import { sound } from '../ui/sound.js';
@@ -153,7 +153,7 @@ function inspect(uid) {
       const r = ctxRef.store.sell([uid]);
       if (!r.ok) { toast(r.message, { kind: 'error' }); confirming = false; return redraw(); }
       sound.sell();
-      toast(`Sold ${it.name} for ${fmt(r.total)} coins.`, { kind: 'success' });
+      toast(`Sold ${it.name} for ${money(r.total)}.`, { kind: 'success' });
       closeModal();
     }
   });
@@ -177,12 +177,12 @@ function confirmBulk() {
     actions: [
       { label: 'Cancel', kind: 'ghost' },
       {
-        label: `Sell for ${fmt(q.total)} coins`, kind: 'danger', onClick: () => {
+        label: `Sell for ${money(q.total)}`, kind: 'danger', onClick: () => {
           const r = store.sell(uids, { allowFavorites });
           if (!r.ok) { toast(r.message, { kind: 'error' }); return; }
           sound.sell();
           ui.selected.clear();
-          toast(`Sold ${r.count} item${r.count === 1 ? '' : 's'} for ${fmt(r.total)} coins.`, { kind: 'success' });
+          toast(`Sold ${r.count} item${r.count === 1 ? '' : 's'} for ${money(r.total)}.`, { kind: 'success' });
         },
       },
     ],

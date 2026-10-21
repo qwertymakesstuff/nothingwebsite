@@ -43,7 +43,7 @@ export function openCase(player, caseId, { rng = secureRandom, now = Date.now() 
   const c = CASES_BY_ID[caseId];
   if (!c) return fail('unknown-case', 'That case does not exist.');
   if (!canAfford(player, c.price)) {
-    return fail('insufficient-funds', `You need ${c.price - Math.max(0, player.coins | 0)} more coins to open ${c.name}.`);
+    return fail('insufficient-funds', `You need $${(c.price - Math.max(0, player.coins | 0)).toLocaleString('en-US')} more to open ${c.name}.`);
   }
   const drop = rollCase(c, rng);
   const item = ITEMS_BY_ID[drop.itemId];

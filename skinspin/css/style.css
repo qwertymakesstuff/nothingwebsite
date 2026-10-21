@@ -133,8 +133,7 @@ main { padding: 24px; outline: none; max-width: 1400px; width: 100%; }
 .link:hover { text-decoration: underline; }
 
 .coins { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-.coins .coin-icon { width: 1.05em; height: 1.05em; }
-.coins b { font-weight: 700; color: #ffd27a; }
+.coins b { font-weight: 700; color: #7dffb0; font-variant-numeric: tabular-nums; }
 
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
 .search { flex: 1 1 240px; position: relative; }

@@ -1,4 +1,4 @@
-// Reusable markup: coins, rarity pills, item cards, case cards.
+// Reusable markup: money amounts, rarity pills, item cards, case cards.
 
 import { ITEMS_BY_ID, itemValue, WEAPON_TYPE_BY_ID, COLLECTION_BY_ID } from '../items.js';
 import { RARITY_BY_ID } from '../rarities.js';
@@ -6,9 +6,9 @@ import { WEAR_BY_ID } from '../wear.js';
 import { CASE_CATEGORY_BY_ID, CASES_BY_ID } from '../cases.js';
 import { itemArt, caseArt } from '../art.js';
 import { ICONS } from './icons.js';
-import { esc, fmt, fmtPct } from './dom.js';
+import { esc, fmt, money, fmtPct } from './dom.js';
 
-export const coins = (n, cls = '') => `<span class="coins ${cls}">${ICONS.coin}<b>${fmt(n)}</b></span>`;
+export const coins = (n, cls = '') => `<span class="coins ${cls}"><b>${money(n)}</b></span>`;
 
 export function rarityPill(rarityId) {
   const r = RARITY_BY_ID[rarityId];

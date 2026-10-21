@@ -4,7 +4,7 @@ A case-opening simulator with original, fictional weapon skins and fictional coi
 CSS and ES modules, no build step, no dependencies. Built in phases; done so far: **Phase 1**
 (website foundation, item database and case catalogue, case opening, inventory).
 
-Coins are play money only: there is no way to buy them or cash them out.
+The $ balance is play money only: there is no way to buy it, deposit into it or cash it out.
 
 | File | Job |
 | --- | --- |

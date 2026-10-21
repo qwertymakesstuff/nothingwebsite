@@ -28,7 +28,6 @@ export const ICONS = {
   sound: st('M4 9 H8 L13 5 V19 L8 15 H4 Z M16 9 Q18 12 16 15 M18.5 6.5 Q22.5 12 18.5 17.5'),
   sell: st('M12 2 V22 M17 6 H9.5 A3.5 3.5 0 0 0 9.5 13 H14.5 A3.5 3.5 0 0 1 14.5 20 H6'),
   star: svg('<path d="M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z" fill="currentColor"/>'),
-  coin: svg('<circle cx="12" cy="12" r="10" fill="#f5b829"/><circle cx="12" cy="12" r="7" fill="none" stroke="#b07a0c" stroke-width="1.6"/><path d="M14.5 9.2 A3.2 3.2 0 1 0 14.5 14.8" fill="none" stroke="#7a5306" stroke-width="2" stroke-linecap="round"/>', 'class="icon coin-icon"'),
 };
 
 export const LOGO = `<svg class="logo-mark" viewBox="0 0 40 40" aria-hidden="true">

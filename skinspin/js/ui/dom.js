@@ -7,6 +7,7 @@ export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 export const fmt = n => Math.round(n).toLocaleString('en-US');
+export const money = n => `$${fmt(n)}`;
 
 export function fmtPct(fraction) {
   const v = fraction * 100;
