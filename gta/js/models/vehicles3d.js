@@ -107,6 +107,38 @@ const barRed = new THREE.MeshBasicMaterial({ color: 0xff2020 }), barBlue = new T
 const barGeo = new THREE.BoxGeometry(.7, .16, .3);
 export const lampTint = lampMat; // exposed so the environment can brighten headlights at night
 
+
+/* ---- photographic car bodies: ped-style GLB models for the ordinary sedan and the police cruiser ----
+ * The procedural car above stays as the fallback (and its wheels, lamps and light-bar flashing keep running). Once a GLB has loaded, a
+ * car of that type swaps the paint mesh's geometry for the model's (shared by every car of the type), and the other procedural meshes
+ * are given empty geometry so nothing shows through. The model faces -x and is normalised to about 1.9 units long; it is scaled to the
+ * type's length and stood on the ground. Sedans are tinted towards their paint colour; the cruiser keeps its own livery. */
+const SKIN_FILES = { sedan: 'car_sedan.glb', cruiser: 'car_cruiser.glb' };
+const skins = {}, emptyGeo = new THREE.BufferGeometry();
+let skinLoading = null;
+const scriptTag = src => new Promise((res, rej) => { if (THREE.GLTFLoader) return res(); const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('could not load ' + src)); document.head.appendChild(s); });
+export function loadCarSkins() {
+  if (skinLoading) return skinLoading;
+  const base = new URL('../../', import.meta.url).href;
+  return (skinLoading = scriptTag(base + 'lib/GLTFLoader.js').then(() => Promise.all(Object.entries(SKIN_FILES).map(([type, file]) => new Promise(res => new THREE.GLTFLoader().load(base + 'models/' + file, g => {
+    let mesh = null; g.scene.traverse(o => { if (o.isMesh && !mesh) mesh = o; });
+    if (mesh) { const geo = mesh.geometry; geo.computeBoundingBox(); const bb = geo.boundingBox, T = CAR_TYPES[type], k = T.L / (bb.max.x - bb.min.x);
+      skins[type] = { geo, map: mesh.material.map, k, ox: -(bb.max.x + bb.min.x) / 2, oz: -(bb.max.z + bb.min.z) / 2, oy: -bb.min.y }; }
+    res();
+  }, undefined, () => res()))))).catch(e => console.warn('[car models]', e)));
+}
+export const hasSkin = type => !!skins[type];
+/** put the GLB body on a car's model (idempotent) */
+export function skinCar(m, type, colorHex) {
+  const sk = skins[type]; if (!sk || m.skinned) return false; m.skinned = true;
+  const b = m.parts.body, mat = new THREE.MeshLambertMaterial({ map: sk.map });
+  if (type === 'sedan' && colorHex != null) mat.color.set(colorHex).lerp(new THREE.Color(0xffffff), .55).multiplyScalar(1.15);   // silver paint, nudged towards the car's own colour
+  b.geometry = sk.geo; b.material = mat; b.rotation.y = Math.PI / 2; b.scale.setScalar(sk.k); b.position.set(sk.oz * sk.k, sk.oy * sk.k, -sk.ox * sk.k);
+  const p = m.parts; for (const k of ['glass', 'dark', 'lamps', 'wf', 'wr']) p[k].geometry = emptyGeo;
+  if (p.bar) { p.bar[0].position.y = p.bar[1].position.y = 1.52; p.bar[0].scale.setScalar(.6); p.bar[1].scale.setScalar(.6); }
+  return true;
+}
+
 /** Create the scene objects for one car. Returns { group, pivot, parts, ... } - animate with animateCarModel(). */
 export function createCarMesh(type, colorHex) {
   const t = carTemplate(type), group = new THREE.Group(), pivot = new THREE.Group(); group.add(pivot);
@@ -122,7 +154,9 @@ export function createCarMesh(type, colorHex) {
     r.position.set(-.38, t.roof + .15, .1); b.position.set(.38, t.roof + .15, .1); pivot.add(r, b); parts.bar = [r, b];
     const gr = new THREE.Sprite(fxMats.red), gb = new THREE.Sprite(fxMats.blue); gr.scale.set(3.2, 3.2, 1); gb.scale.set(3.2, 3.2, 1); gr.position.copy(r.position); gb.position.copy(b.position); gr.position.y += .3; gb.position.y += .3; pivot.add(gr, gb); parts.glows = [gr, gb];
   }
-  return { group, pivot, parts, t, spin: 0, pitch: 0, roll: 0, prevSpeed: 0 };
+  const model = { group, pivot, parts, t, spin: 0, pitch: 0, roll: 0, prevSpeed: 0, colorHex };
+  if (skins[type]) skinCar(model, type, colorHex);
+  return model;
 }
 /** Per-frame look of a car: suspension lean, wheel spin and steer, brake lights, police lights, headlight pool. */
 export function animateCarModel(m, st, dt) {
