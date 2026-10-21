@@ -8,6 +8,7 @@ const { createGame, dispatch, currentVisitor, decisionFor, buildEntrants } = awa
 const { generateVisitor, FLAWS, misspell } = await import(new URL('js/visitorGenerator.js', root));
 const { documentFields } = await import(new URL('js/documentFactory.js', root));
 const { createRng } = await import(new URL('js/rng.js', root));
+const { compare } = await import(new URL('js/inspectionEngine.js', root));
 const { DOCUMENT_TYPES } = await import(new URL('data/documents.js', root));
 const { renderDocument } = await import(new URL('js/documentRenderer.js', root));
 const { formatDoc, formatLong, isValidDate } = await import(new URL('js/dates.js', root));
@@ -190,4 +191,24 @@ test('rendered text is escaped', () => {
   const v = { look: {} };
   const html = renderDocument({ type: 'declaration', surname: '<script>', given: 'A&B', nationality: 'OSK', passportNo: '"x"', purpose: 'p', duration: 3, destination: 'z' }, v);
   assert.ok(!html.includes('<script>') && html.includes('&lt;script&gt;') && html.includes('A&amp;B'));
+});
+
+test('comparison tool reports agreement, discrepancies and validity', () => {
+  const item = (kind, value, where = 'passport', extra = {}) => ({ kind, value, display: Array.isArray(value) ? '' : String(value), label: kind, where, ...extra });
+  assert.equal(compare(item('surname', 'REYL'), item('surname', 'REYL', 'declaration')).status, 'match');
+  const d = compare(item('given', 'MIKEL'), item('given', 'MIKKEL', 'declaration'));
+  assert.equal(d.status, 'mismatch'); assert.match(d.message, /MIKEL.*MIKKEL/);
+  assert.equal(compare(item('passportNo', 'CR-1'), item('passportNo', 'CR-2', 'work permit')).status, 'mismatch');
+  const today = item('today', '1982-03-12', 'date plate');
+  assert.equal(compare(item('expiry', '1981-12-01'), today).status, 'mismatch');
+  assert.equal(compare(today, item('expiry', '1982-03-12')).status, 'match', 'valid on its last day');
+  assert.match(compare(item('dob', '1913-04-08'), today).message, /68 years/);
+  const cities = item('issuerList', ['Mirn', 'Tavrask'], 'rulebook', { label: 'Oskaria' });
+  assert.equal(compare(item('issuer', 'Mirn'), cities).status, 'match');
+  assert.equal(compare(cities, item('issuer', 'Nordmirn')).status, 'mismatch');
+  const seal = item('sealRef', 'wheel', 'rulebook', { label: 'Oskaria' });
+  assert.equal(compare(item('seal', 'wheel'), seal).status, 'match');
+  assert.equal(compare(item('seal', 'wheel3'), seal).status, 'mismatch');
+  assert.equal(compare(item('surname', 'A'), item('district', 'Brenna', 'identity card')).status, 'unrelated');
+  assert.equal(compare(item('surname', 'A'), item('given', 'A')).status, 'unrelated', 'a surname is not a given name');
 });

@@ -3,9 +3,9 @@
 import { SETTING } from '../data/setting.js';
 import { dayByNumber } from '../data/campaignDays.js';
 import { currentVisitor, currentDay, decisionFor, visitorById } from './gameState.js';
-import { renderDocument } from './documentRenderer.js';
+import { createDesk, deskToolbarHTML } from './desk.js';
 import { portraitSVG } from './portrait.js';
-import { formatLong } from './dates.js';
+import { formatLong, formatDoc } from './dates.js';
 import { esc } from './html.js';
 
 const $ = id => document.getElementById(id);
@@ -22,6 +22,8 @@ const BACKDROP = `<svg class="backdrop" viewBox="0 0 320 200" preserveAspectRati
 export function createUI(act) {
   let shownVisitor = null;
   let lastPhase = null;
+  let toolbarDate = null;
+  const desk = createDesk({ tray: $('tray'), toolbar: $('deskTools'), result: $('compareResult'), examine: $('examine') });
 
   document.addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
@@ -67,12 +69,13 @@ export function createUI(act) {
   }
 
   function renderTray(state, arriving) {
+    if (toolbarDate !== state.date) {
+      $('deskTools').innerHTML = deskToolbarHTML({ value: state.date, display: formatDoc(state.date) });
+      toolbarDate = state.date;
+    }
     const v = currentVisitor(state);
     const d = v && decisionFor(state, v.id);
-    $('tray').innerHTML = v
-      ? v.documents.map((doc, i) => renderDocument(doc, v, { docIndex: i, stamp: doc.type === 'passport' && d ? d.decision : null })).join('')
-      : `<p class="tray-empty">No documents on the desk.</p>`;
-    $('tray').classList.toggle('fresh', Boolean(arriving));
+    desk.show(v, { stamp: d ? d.decision : null, arriving });
     const inspecting = state.shift.phase === 'inspecting';
     for (const b of document.querySelectorAll('[data-action="decide"]')) b.disabled = !inspecting;
     document.querySelector('[data-action="returnPapers"]').disabled = state.shift.phase !== 'departing';
@@ -83,7 +86,7 @@ export function createUI(act) {
     const v = currentVisitor(state);
     const text = {
       waiting: s.next === 0 ? 'Your shift has begun. Call the first entrant when you are ready.' : 'Call the next entrant.',
-      inspecting: `Inspecting ${v?.name}. Read the papers, then stamp a decision.`,
+      inspecting: `Inspecting ${v?.name}. Read and compare the papers, then stamp a decision.`,
       departing: `Passport stamped. Return the papers to ${v?.name}.`,
       shiftEnd: 'The queue is empty. Shift complete.',
     }[s.phase];
@@ -115,7 +118,8 @@ export function createUI(act) {
 
   // move focus to the control the player needs next, so keyboard play never gets lost
   function focusFor(phase) {
-    const sel = { waiting: '[data-action="callNext"]', inspecting: '.stamp-btn.stamp-accept', departing: '[data-action="returnPapers"]', shiftEnd: '#summary [data-action="restart"]' }[phase];
+    if (phase === 'inspecting') { desk.firstDocument()?.focus({ preventScroll: true }); return; }
+    const sel = { waiting: '[data-action="callNext"]', departing: '[data-action="returnPapers"]', shiftEnd: '#summary [data-action="restart"]' }[phase];
     document.querySelector(sel)?.focus({ preventScroll: phase === 'inspecting' });
   }
 
