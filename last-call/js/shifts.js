@@ -110,8 +110,8 @@ export const SHIFTS = {
   },
   'halcyon-2': {
     id: 'halcyon-2', title: 'Fully Booked', venue: 'halcyon', date: '2031-03-29', clock: ['21:00', '02:00'],
-    duration: 360, target: 66, strikes: 4, fillers: 9, flawRate: 0.45, startQueue: 3, patience: 0.95, focus: ['booking'],
-    inside: 104, outflow: 22,
+    duration: 360, target: 66, strikes: 4, fillers: 10, flawRate: 0.45, startQueue: 3, patience: 0.95, focus: ['booking'],
+    inside: 104, outflow: 22, transitStrike: true,
     rules: [
       { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'dress', params: { banned: DRESS_SMART } },
@@ -132,7 +132,7 @@ export const SHIFTS = {
   },
   'voltage-1': {
     id: 'voltage-1', title: 'Pulse', venue: 'voltage', date: '2031-04-04', clock: ['22:00', '04:00'],
-    duration: 390, target: 66, strikes: 4, fillers: 11, flawRate: 0.45, startQueue: 4, patience: 0.9, wristbandRate: 0.25, focus: ['sober', 'pass'],
+    duration: 390, target: 66, strikes: 4, fillers: 13, flawRate: 0.45, startQueue: 4, patience: 0.9, wristbandRate: 0.25, focus: ['sober', 'pass'],
     rules: [
       { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'pass', params: { accept: ['ticket', 'wristband'], event: 'VOLTAGE: PULSE', codePrefix: 'VP-', wristband: { color: 'green', pattern: 'triangles' }, oldBands: [{ color: 'pink', pattern: 'dots' }, { color: 'green', pattern: 'stripes' }, { color: 'blue', pattern: 'triangles' }], decoyEvents: ['VOLTAGE: SURGE', 'NIGHT FERRY'] } },
@@ -151,7 +151,7 @@ export const SHIFTS = {
   },
   'halcyon-3': {
     id: 'halcyon-3', title: 'The Launch', venue: 'halcyon', date: '2031-04-04', clock: ['21:00', '02:00'],
-    duration: 380, target: 66, strikes: 4, fillers: 10, flawRate: 0.5, startQueue: 4, patience: 0.9, guestListOnly: true, focus: ['sober', 'booking'],
+    duration: 380, target: 66, strikes: 4, fillers: 12, flawRate: 0.5, startQueue: 4, patience: 0.9, guestListOnly: true, focus: ['sober', 'booking'],
     inside: 70, outflow: 30,
     rules: [
       { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
@@ -173,7 +173,7 @@ export const SHIFTS = {
   },
   'voltage-2': {
     id: 'voltage-2', title: 'Afterdark', venue: 'voltage', date: '2031-04-11', clock: ['22:00', '04:00'],
-    duration: 400, target: 68, strikes: 4, fillers: 12, flawRate: 0.48, startQueue: 4, patience: 0.88, wristbandRate: 0.22, focus: ['banned'], bannedDecoys: 3,
+    duration: 400, target: 68, strikes: 4, fillers: 14, flawRate: 0.48, startQueue: 4, patience: 0.88, wristbandRate: 0.22, focus: ['banned'], bannedDecoys: 3,
     rules: [
       { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'pass', params: { accept: ['ticket', 'wristband'], event: 'VOLTAGE: AFTERDARK', codePrefix: 'VA-', wristband: { color: 'orange', pattern: 'stripes' }, oldBands: [{ color: 'green', pattern: 'triangles' }, { color: 'orange', pattern: 'dots' }, { color: 'yellow', pattern: 'stripes' }], decoyEvents: ['VOLTAGE: PULSE', 'BASS COLLECTIVE'] } },
@@ -194,7 +194,7 @@ export const SHIFTS = {
   },
   'orchid-1': {
     id: 'orchid-1', title: 'Members Only', venue: 'orchid', date: '2031-04-18', clock: ['20:00', '01:00'],
-    duration: 380, target: 68, strikes: 4, fillers: 11, flawRate: 0.48, startQueue: 3, patience: 0.95, sponsoredRate: 0.35, focus: ['membership'],
+    duration: 380, target: 68, strikes: 4, fillers: 12, flawRate: 0.48, startQueue: 3, patience: 0.95, sponsoredRate: 0.35, focus: ['membership'],
     rules: [
       { id: 'age', params: { min: 25 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'membership', params: { sponsored: [], suspended: [] } },
@@ -212,7 +212,7 @@ export const SHIFTS = {
   },
   'orchid-2': {
     id: 'orchid-2', title: 'The Printer', venue: 'orchid', date: '2031-04-19', clock: ['20:00', '01:00'],
-    duration: 400, target: 70, strikes: 4, fillers: 11, flawRate: 0.5, startQueue: 3, patience: 0.9, sponsoredRate: 0.35, focus: ['forgery'], bannedDecoys: 3,
+    duration: 400, target: 70, strikes: 4, fillers: 13, flawRate: 0.5, startQueue: 3, patience: 0.9, sponsoredRate: 0.35, focus: ['forgery'], bannedDecoys: 3,
     rules: [
       { id: 'age', params: { min: 25 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'membership', params: { sponsored: ['Theodore Vale'], suspended: [] } },
@@ -234,7 +234,7 @@ export const SHIFTS = {
   },
   'lantern-finale': {
     id: 'lantern-finale', title: 'Last Call', venue: 'lantern', date: '2031-04-25', clock: ['21:00', '02:00'],
-    duration: 420, target: 70, strikes: 4, fillers: 12, flawRate: 0.48, startQueue: 4, patience: 0.9, focus: ['forgery', 'age'], bannedDecoys: 3,
+    duration: 420, target: 70, strikes: 4, fillers: 13, flawRate: 0.48, startQueue: 4, patience: 0.9, focus: ['forgery', 'age'], bannedDecoys: 3,
     inside: 44, outflow: 26,
     rules: [
       { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },

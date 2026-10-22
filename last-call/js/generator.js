@@ -268,7 +268,7 @@ function buildCustomer(src, entry, s, venue, rng, uid) {
   const idName = c.docs.id?.name ?? c.name;
   const pass = ruleParams(s.rules, 'pass');
   if (pass) {
-    const useBand = pass.accept.includes('wristband') && (mods.wristband === 'valid' || mods.wristband === 'old' || (!entry && chance(rng, s.def.wristbandRate ?? 0)));
+    const useBand = (pass.wristband && (mods.wristband === 'valid' || mods.wristband === 'old')) || (!entry && pass.accept.includes('wristband') && chance(rng, s.def.wristbandRate ?? 0));
     const useGuest = mods.guest || (!entry && pass.accept.includes('guestlist') && !pass.accept.includes('ticket'));
     if (useGuest) c.guest = idName;
     else if (useBand) c.wristband = { ...pass.wristband };
