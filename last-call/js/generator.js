@@ -6,7 +6,7 @@
 import { seededRandom, pick, int, chance, shuffle, weighted } from './rng.js';
 import { addDays, addYears, ageOn, dobFor, toClock } from './dates.js';
 import { ISSUERS, EMBLEMS, FAKE_EMBLEMS, CARD_LIFE, MIN_ISSUE_AGE } from './issuers.js';
-import { SKIN, FACE_SHAPES, NOSES, BROWS, EYES, HAIR, HAIR_COLORS, FACIAL, OUTFIT, faceKey } from './appearance.js';
+import { SKIN, FACE_SHAPES, NOSES, BROWS, EYES, HAIR, OUTFIT, faceKey } from './appearance.js';
 import { PROFILE_BY_ID, FIRST_NAMES, LAST_NAMES, REASONS, LINES, DRUNK_LINES, DRUNK_CUES, SOBER_FLAVOUR } from './customers.js';
 import { rulesAt, ruleParams } from './rules.js';
 import { clockAt, arrivalTimes } from './timeline.js';
@@ -74,14 +74,8 @@ export function makeId(c, date, rng, opts = {}) {
   const idAge = opts.idAge ?? c.age;
   const dob = dobFor(date, idAge, opts.bday ?? -int(rng, 15, 340));
   const { issued, expires } = issueDates(dob, date, iss.kind, rng);
+  // A genuine photo is an exact likeness of its holder.
   const photo = { ...c.face, ...(opts.photo ?? {}) };
-  if (!opts.photo && chance(rng, 0.3)) { // people change: hair, beards and glasses on old photos
-    const what = pick(rng, ['hair', 'hairColor', 'facial', 'glasses']);
-    if (what === 'hair') photo.hair = pick(rng, others(HAIR, c.face.hair));
-    if (what === 'hairColor') photo.hairColor = pick(rng, others(Object.keys(HAIR_COLORS), c.face.hairColor));
-    if (what === 'facial') photo.facial = pick(rng, others(FACIAL, c.face.facial));
-    if (what === 'glasses') photo.glasses = !c.face.glasses;
-  }
   const id = {
     issuer: iss.id, header: iss.full, idType: iss.kind, number: iss.number(rng),
     name: opts.idName ?? c.name, dob, issued, expires,
@@ -124,7 +118,8 @@ export const FLAW_ORDER = ['underage', 'noid', 'expired', 'photo', 'height', 'ey
 export const FLAWS_BY_RULE = {
   age: ['underage', 'underage', 'noid'],
   expiry: ['expired'],
-  identity: ['photo', 'height', 'eyes'],
+  photo: ['photo'],
+  identity: ['height', 'eyes'],
   forgery: ['header', 'number', 'hologram', 'nohologram', 'color', 'dates'],
   pass: ['noticket', 'ticketdate', 'ticketevent', 'ticketname', 'ticketcode', 'oldband'],
   booking: ['noreservation', 'early', 'lapsed'],

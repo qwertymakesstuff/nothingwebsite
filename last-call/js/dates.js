@@ -3,7 +3,6 @@
 // still a simple increasing number (22:00 = 240, 01:30 = 450).
 
 const DAY = 86400000;
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const pad = n => String(n).padStart(2, '0');
@@ -45,10 +44,11 @@ export const bornOnOrBefore = (date, min) => addYears(date, -min);
 
 export const isBirthday = (dob, date) => dob.slice(5) === date.slice(5);
 
-export function fmtDoc(s) { const [y, m, d] = split(s); return `${pad(d)} ${MONTHS[m - 1]} ${y}`; }
+// Shown to the player as MM/DD/YYYY.
+export function fmtDoc(s) { const [y, m, d] = split(s); return `${pad(m)}/${pad(d)}/${y}`; }
 export function fmtLong(s) {
   const [y, m, d] = split(s);
-  return `${DAYS[new Date(parse(s)).getUTCDay()]} ${d} ${MONTHS_LONG[m - 1]} ${y}`;
+  return `${DAYS[new Date(parse(s)).getUTCDay()]}, ${MONTHS_LONG[m - 1]} ${d}, ${y} (${fmtDoc(s)})`;
 }
 export function fmtShort(s) { const [, m, d] = split(s); return `${d} ${MONTHS_LONG[m - 1].slice(0, 3)}`; }
 
@@ -56,6 +56,14 @@ export function toClock(min) {
   const total = Math.floor(min) + 18 * 60;
   return `${pad(Math.floor(total / 60) % 24)}:${pad(total % 60)}`;
 }
+// 12-hour time for display ("11:45 PM"); game data keeps 24-hour "HH:MM" strings.
+export function fmtTime(min) {
+  const total = Math.floor(min) + 18 * 60;
+  const h = Math.floor(total / 60) % 24;
+  return `${h % 12 || 12}:${pad(total % 60)} ${h < 12 ? 'AM' : 'PM'}`;
+}
+export const fmtHHMM = hhmm => fmtTime(fromClock(hhmm));
+
 export function fromClock(hhmm) {
   const [h, m] = hhmm.split(':').map(Number);
   const hh = h < 12 ? h + 24 : h;

@@ -13,11 +13,14 @@ export const FACIAL = ['none', 'stubble', 'beard', 'mustache'];
 
 // The traits a photo must share with the person. Hair, facial hair and glasses can change.
 export const IDENTITY_TRAITS = ['skin', 'faceShape', 'nose', 'brows', 'eyes'];
+// A genuine photo is an exact likeness: any of these differing means the photo isn't them.
+export const PHOTO_TRAITS = [...IDENTITY_TRAITS, 'hair', 'hairColor', 'facial', 'glasses'];
 export const faceKey = f => IDENTITY_TRAITS.map(k => f[k]).join('|');
 export const sameFace = (a, b) => IDENTITY_TRAITS.every(k => a[k] === b[k]);
 
 export const TRAIT_LABELS = {
   skin: 'skin tone', faceShape: 'face shape', nose: 'nose', brows: 'eyebrows', eyes: 'eye colour',
+  hair: 'hairstyle', hairColor: 'hair colour', facial: 'facial hair', glasses: 'glasses',
 };
 
 export const OUTFIT = {

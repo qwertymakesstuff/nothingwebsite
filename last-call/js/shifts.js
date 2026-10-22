@@ -12,8 +12,8 @@ export const SHIFTS = {
   'lantern-1': {
     id: 'lantern-1', title: 'First Night', venue: 'lantern', date: '2031-03-07', clock: ['21:00', '01:00'],
     duration: 300, target: 50, strikes: 4, fillers: 3, flawRate: 0.35, startQueue: 2, patience: 1.3, tutorial: true,
-    rules: [{ id: 'age', params: { min: 21 } }], newRules: ['age'],
-    briefing: { from: 'dee', text: 'One rule tonight, love: twenty-one or over, and no ID means no entry. Read the date of birth, do the sums, make the call. Don\'t let me lose my licence on your first night.' },
+    rules: [{ id: 'age', params: { min: 21 } }, { id: 'photo' }], newRules: ['age', 'photo'],
+    briefing: { from: 'dee', text: 'Two rules, love: twenty-one or over, and the photo on the card has to be the person holding it. No ID, no entry. Photo doesn\'t match? They\'re out. Don\'t let me lose my licence on your first night.' },
     roster: [
       { p: 'gus', pos: 0.0, expect: 'admit' },
       { p: 'lou', pos: 0.15, expect: 'refuse' },
@@ -27,7 +27,7 @@ export const SHIFTS = {
   'lantern-2': {
     id: 'lantern-2', title: 'Old Faces', venue: 'lantern', date: '2031-03-08', clock: ['21:00', '01:00'],
     duration: 300, target: 55, strikes: 4, fillers: 5, flawRate: 0.4, startQueue: 2, patience: 1.25, focus: ['expiry'],
-    rules: [{ id: 'age', params: { min: 21 } }, { id: 'expiry' }], newRules: ['expiry'],
+    rules: [{ id: 'age', params: { min: 21 } }, { id: 'photo' }, { id: 'expiry' }], newRules: ['expiry'],
     briefing: { from: 'dee', text: 'Expired cards are as good as no card. The council fined the Crown & Anchor two grand last month for exactly that. I don\'t care if it\'s the Pope — check the expiry.' },
     roster: [
       { p: 'rosa', pos: 0.05, expect: 'admit' },
@@ -39,14 +39,14 @@ export const SHIFTS = {
   },
   'lantern-3': {
     id: 'lantern-3', title: 'Borrowed Faces', venue: 'lantern', date: '2031-03-14', clock: ['21:00', '01:00'],
-    duration: 320, target: 60, strikes: 4, fillers: 6, flawRate: 0.4, startQueue: 2, patience: 1.2, focus: ['identity'],
-    rules: [{ id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }], newRules: ['identity'],
-    briefing: { from: 'kwame', text: 'Dee asked me to show you something. Kids borrow their big brother\'s card. Look at the face, not the haircut — face shape, nose, brows, eyes, skin. Then check height on the door frame and the eye colour on the card.' },
+    duration: 320, target: 60, strikes: 4, fillers: 6, flawRate: 0.4, startQueue: 2, patience: 1.2, focus: ['identity', 'photo'],
+    rules: [{ id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }], newRules: ['identity'],
+    briefing: { from: 'kwame', text: 'Dee asked me to show you something. Kids borrow a lookalike brother\'s card, so the photo might pass. Check the height on the door frame and the eye colour printed on the card. Any mismatch, they\'re out.' },
     incidents: [{ at: 0.45, id: 'spill' }],
     roster: [
-      { p: 'rafael', pos: 0.05, mods: { photo: { facial: 'beard' } }, expect: 'admit' },
+      { p: 'rafael', pos: 0.05, expect: 'admit' },
       { p: 'marcus', pos: 0.2, mods: { idName: 'Darnell Bell', idAge: 26 }, flaws: ['photo'], expect: 'refuse' },
-      { p: 'ellie', pos: 0.35, mods: { photo: { hair: 'long', hairColor: 'black' } }, expect: 'admit' },
+      { p: 'ellie', pos: 0.35, expect: 'admit' },
       { p: 'oskar', pos: 0.5, mods: { idName: 'Erik Lind', idAge: 23 }, flaws: ['height'], expect: 'refuse' },
       { p: 'bea', pos: 0.68, mods: { idName: 'Clara Hollis', idAge: 24 }, flaws: ['eyes'], expect: 'refuse' },
       { p: 'hattie', pos: 0.85, expect: 'admit' },
@@ -56,7 +56,7 @@ export const SHIFTS = {
     id: 'sump-1', title: 'Moth & Static', venue: 'sump', date: '2031-03-21', clock: ['20:00', '00:30'],
     duration: 330, target: 60, strikes: 4, fillers: 7, flawRate: 0.42, startQueue: 3, patience: 1.1, focus: ['pass'],
     rules: [
-      { id: 'age', params: { min: 18 } }, { id: 'expiry' }, { id: 'identity' },
+      { id: 'age', params: { min: 18 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' },
       { id: 'pass', params: { accept: ['ticket'], event: 'MOTH & STATIC', codePrefix: 'MS-', decoyEvents: ['VELVET RIOT', 'SUNDAY SERMON'] } },
     ],
     newRules: ['pass'],
@@ -74,7 +74,7 @@ export const SHIFTS = {
     id: 'sump-2', title: 'Print Run', venue: 'sump', date: '2031-03-22', clock: ['20:00', '00:30'],
     duration: 340, target: 62, strikes: 4, fillers: 7, flawRate: 0.45, startQueue: 3, patience: 1.05, focus: ['forgery'],
     rules: [
-      { id: 'age', params: { min: 18 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 18 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'pass', params: { accept: ['ticket'], event: 'MOTH & STATIC', codePrefix: 'MS-', decoyEvents: ['VELVET RIOT', 'GUTTER CHOIR'] } },
     ],
     changes: [{ at: 0.4, message: 'Saffron radios: the support band\'s guest list just landed. Listed names get in without a ticket.', rules: { pass: { accept: ['ticket', 'guestlist'], guests: ['Arlo Finch', 'Imogen Reyes', 'Teddy Nakamura', 'Bex Achterberg'] } } }],
@@ -94,7 +94,7 @@ export const SHIFTS = {
     id: 'halcyon-1', title: 'Thirty-One Floors Up', venue: 'halcyon', date: '2031-03-28', clock: ['21:00', '02:00'],
     duration: 350, target: 64, strikes: 4, fillers: 8, flawRate: 0.45, startQueue: 3, patience: 1.0, focus: ['dress'],
     rules: [
-      { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'dress', params: { banned: DRESS_SMART } },
     ],
     newRules: ['dress'],
@@ -113,7 +113,7 @@ export const SHIFTS = {
     duration: 360, target: 66, strikes: 4, fillers: 10, flawRate: 0.45, startQueue: 3, patience: 0.95, focus: ['booking'],
     inside: 104, outflow: 22, transitStrike: true,
     rules: [
-      { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'dress', params: { banned: DRESS_SMART } },
       { id: 'booking', params: { before: 60, after: 90, reservations: [], vip: ['Kiki Lumen', 'Harold Vance', 'Edith Nkemelu'] } },
     ],
@@ -134,7 +134,7 @@ export const SHIFTS = {
     id: 'voltage-1', title: 'Pulse', venue: 'voltage', date: '2031-04-04', clock: ['22:00', '04:00'],
     duration: 390, target: 66, strikes: 4, fillers: 13, flawRate: 0.45, startQueue: 4, patience: 0.9, wristbandRate: 0.25, focus: ['sober', 'pass'],
     rules: [
-      { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'pass', params: { accept: ['ticket', 'wristband'], event: 'VOLTAGE: PULSE', codePrefix: 'VP-', wristband: { color: 'green', pattern: 'triangles' }, oldBands: [{ color: 'pink', pattern: 'dots' }, { color: 'green', pattern: 'stripes' }, { color: 'blue', pattern: 'triangles' }], decoyEvents: ['VOLTAGE: SURGE', 'NIGHT FERRY'] } },
       { id: 'sober' },
     ],
@@ -154,7 +154,7 @@ export const SHIFTS = {
     duration: 380, target: 66, strikes: 4, fillers: 12, flawRate: 0.5, startQueue: 4, patience: 0.9, guestListOnly: true, focus: ['sober', 'booking'],
     inside: 70, outflow: 30,
     rules: [
-      { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 23 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'booking', params: { before: 60, after: 90, reservations: [], vip: ['Edith Nkemelu', 'Kiki Lumen', 'Harold Vance', 'Graham Vane', 'Nadia Ross'] } },
       { id: 'dress', params: { banned: DRESS_SMART } },
       { id: 'sober' },
@@ -175,7 +175,7 @@ export const SHIFTS = {
     id: 'voltage-2', title: 'Afterdark', venue: 'voltage', date: '2031-04-11', clock: ['22:00', '04:00'],
     duration: 400, target: 68, strikes: 4, fillers: 14, flawRate: 0.48, startQueue: 4, patience: 0.88, wristbandRate: 0.22, focus: ['banned'], bannedDecoys: 3,
     rules: [
-      { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'pass', params: { accept: ['ticket', 'wristband'], event: 'VOLTAGE: AFTERDARK', codePrefix: 'VA-', wristband: { color: 'orange', pattern: 'stripes' }, oldBands: [{ color: 'green', pattern: 'triangles' }, { color: 'orange', pattern: 'dots' }, { color: 'yellow', pattern: 'stripes' }], decoyEvents: ['VOLTAGE: PULSE', 'BASS COLLECTIVE'] } },
       { id: 'sober' },
       { id: 'banned', params: { entries: [] } },
@@ -196,7 +196,7 @@ export const SHIFTS = {
     id: 'orchid-1', title: 'Members Only', venue: 'orchid', date: '2031-04-18', clock: ['20:00', '01:00'],
     duration: 380, target: 68, strikes: 4, fillers: 12, flawRate: 0.48, startQueue: 3, patience: 0.95, sponsoredRate: 0.35, focus: ['membership'],
     rules: [
-      { id: 'age', params: { min: 25 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 25 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'membership', params: { sponsored: [], suspended: [] } },
       { id: 'dress', params: { banned: DRESS_FORMAL } },
     ],
@@ -214,7 +214,7 @@ export const SHIFTS = {
     id: 'orchid-2', title: 'The Printer', venue: 'orchid', date: '2031-04-19', clock: ['20:00', '01:00'],
     duration: 400, target: 70, strikes: 4, fillers: 13, flawRate: 0.5, startQueue: 3, patience: 0.9, sponsoredRate: 0.35, focus: ['forgery'], bannedDecoys: 3,
     rules: [
-      { id: 'age', params: { min: 25 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 25 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'membership', params: { sponsored: ['Theodore Vale'], suspended: [] } },
       { id: 'dress', params: { banned: DRESS_FORMAL } },
       { id: 'sober' },
@@ -237,7 +237,7 @@ export const SHIFTS = {
     duration: 420, target: 70, strikes: 4, fillers: 13, flawRate: 0.48, startQueue: 4, patience: 0.9, focus: ['forgery', 'age'], bannedDecoys: 3,
     inside: 44, outflow: 26,
     rules: [
-      { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' },
+      { id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' },
       { id: 'sober' },
       { id: 'banned', params: { entries: [] } },
       { id: 'capacity', params: { max: 52, exempt: ['Ilse Varga'] } },

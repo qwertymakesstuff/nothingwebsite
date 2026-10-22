@@ -2,9 +2,9 @@
 // reads only what the player can see: the documents, the person, tonight's lists and the clock.
 // No rule looks at how a customer was generated.
 
-import { ageOn, fmtDoc, daysBetween, isBirthday, addYears, toClock, fromClock } from './dates.js';
+import { ageOn, fmtDoc, daysBetween, isBirthday, addYears, fmtTime, fmtHHMM, fromClock } from './dates.js';
 import { ISSUERS, MIN_ISSUE_AGE, MEMBER_PATTERN } from './issuers.js';
-import { sameFace, IDENTITY_TRAITS, TRAIT_LABELS, faceKey, OUTFIT, DRESS_TAGS } from './appearance.js';
+import { PHOTO_TRAITS, TRAIT_LABELS, faceKey, OUTFIT, DRESS_TAGS } from './appearance.js';
 import { HEIGHT_TOLERANCE } from './config.js';
 
 export const sameName = (a, b) => typeof a === 'string' && typeof b === 'string' && a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -13,12 +13,15 @@ const ok = detail => ({ pass: true, detail });
 const bad = detail => ({ pass: false, detail });
 const na = detail => ({ pass: true, detail, na: true });
 
-export const RULE_ORDER = ['age', 'expiry', 'identity', 'forgery', 'pass', 'booking', 'membership', 'dress', 'sober', 'banned', 'capacity'];
+export const RULE_ORDER = ['age', 'expiry', 'photo', 'identity', 'forgery', 'pass', 'booking', 'membership', 'dress', 'sober', 'banned', 'capacity'];
+
+export function photoProblems(id, c) {
+  const diff = PHOTO_TRAITS.filter(k => id.photo[k] !== c.face[k]);
+  return diff.length ? [`The ID photo doesn't match them (${diff.map(k => TRAIT_LABELS[k]).join(', ')}).`] : [];
+}
 
 export function identityProblems(id, c) {
   const out = [];
-  const diff = IDENTITY_TRAITS.filter(k => id.photo[k] !== c.face[k]);
-  if (diff.length) out.push(`The photo is a different person (${diff.map(k => TRAIT_LABELS[k]).join(', ')} don't match).`);
   if (Math.abs(id.heightCm - c.heightCm) > HEIGHT_TOLERANCE) out.push(`The ID says ${id.heightCm} cm; they stand about ${c.heightCm} cm.`);
   if (id.eyes !== c.face.eyes) out.push(`The ID lists ${id.eyes} eyes; theirs are ${c.face.eyes}.`);
   return out;
@@ -72,15 +75,26 @@ export const RULES = {
       return bad(`Expired ${fmtDoc(id.expires)}, ${-d} day${d === -1 ? '' : 's'} ago.`);
     },
   },
+  photo: {
+    title: 'Photo matches', cite: 'Photo mismatch',
+    short: () => 'ID photo must match the person exactly. If not, deny.',
+    explain: () => ['Compare the ID photo with the person in front of you: face shape, nose, eyebrows, skin tone, eyes, hair, facial hair and glasses.', 'If anything about the photo doesn\'t match, refuse them. This rule applies at every venue, every night.'],
+    check(c) {
+      const id = c.docs.id;
+      if (!id) return na('No ID.');
+      const p = photoProblems(id, c);
+      return p.length ? bad(p[0]) : ok('Photo matches.');
+    },
+  },
   identity: {
-    title: 'ID belongs to them', cite: "Not their ID",
-    short: () => 'Photo, height and eyes must match the person.',
-    explain: () => ['Compare the photo with the face in front of you: skin tone, face shape, nose, eyebrows and eye colour must match. Hair, beards and glasses change — ignore them.', `Height on the card should be within ${HEIGHT_TOLERANCE} cm of the door-frame marks. Listed eye colour must match their eyes.`],
+    title: 'Height and eyes', cite: 'Not their ID',
+    short: () => 'Height and eye colour on the ID must match.',
+    explain: () => ['Borrowed cards often come from a lookalike sibling, so the photo can pass. Check the details too.', `Height on the card should be within ${HEIGHT_TOLERANCE} cm of the door-frame marks. Listed eye colour must match their eyes.`],
     check(c) {
       const id = c.docs.id;
       if (!id) return na('No ID.');
       const p = identityProblems(id, c);
-      return p.length ? bad(p[0]) : ok('Photo, height and eye colour match.');
+      return p.length ? bad(p[0]) : ok('Height and eye colour match.');
     },
   },
   forgery: {
@@ -142,9 +156,9 @@ export const RULES = {
       const r = (p.reservations ?? []).find(x => sameName(x.name, name));
       if (!r) return bad('No reservation under that name.');
       const t = fromClock(r.time);
-      if (ctx.clockMin < t - p.before) return bad(`Booked for ${r.time}; it's ${toClock(ctx.clockMin)} — too early (window opens ${toClock(t - p.before)}).`);
-      if (ctx.clockMin > t + p.after) return bad(`Booked for ${r.time}; it's ${toClock(ctx.clockMin)} — the booking lapsed at ${toClock(t + p.after)}.`);
-      return ok(`Reservation at ${r.time}, arrived ${toClock(ctx.clockMin)}.`);
+      if (ctx.clockMin < t - p.before) return bad(`Booked for ${fmtHHMM(r.time)}; it's ${fmtTime(ctx.clockMin)} — too early (window opens ${fmtTime(t - p.before)}).`);
+      if (ctx.clockMin > t + p.after) return bad(`Booked for ${fmtHHMM(r.time)}; it's ${fmtTime(ctx.clockMin)} — the booking lapsed at ${fmtTime(t + p.after)}.`);
+      return ok(`Reservation at ${fmtHHMM(r.time)}, arrived ${fmtTime(ctx.clockMin)}.`);
     },
   },
   membership: {

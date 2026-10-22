@@ -4,7 +4,7 @@
 import { esc, money, signed } from './dom.js';
 import { explain } from '../validation.js';
 import { VENUES } from '../venues.js';
-import { toClock } from '../dates.js';
+import { fmtTime } from '../dates.js';
 import { CAREER } from '../config.js';
 
 export function renderSummary(app, def, result, pay, onContinue) {
@@ -43,7 +43,7 @@ export function renderSummary(app, def, result, pay, onContinue) {
       </section>
       <section class="card log">
         <h2>Decisions</h2>
-        <ol class="decisions">${result.records.map(r => { const ex = explain(r.judgement, r.name); return `<li class="${r.correct ? 'ok' : 'miss'}"><details><summary><span class="dmark">${r.correct ? '✓' : '✗'}</span> <span class="mono">${toClock(r.clock)}</span> ${esc(r.name)} — ${r.verdict === 'admit' ? 'admitted' : 'refused'}${r.fine ? ` <small class="neg">−$${r.fine}</small>` : r.tip ? ` <small class="pos">+$${r.tip}</small>` : ''}</summary><p>${esc(ex.headline)}</p><ul>${ex.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></details></li>`; }).join('') || '<li class="muted">No decisions made.</li>'}</ol>
+        <ol class="decisions">${result.records.map(r => { const ex = explain(r.judgement, r.name); return `<li class="${r.correct ? 'ok' : 'miss'}"><details><summary><span class="dmark">${r.correct ? '✓' : '✗'}</span> <span class="mono">${fmtTime(r.clock)}</span> ${esc(r.name)} — ${r.verdict === 'admit' ? 'admitted' : 'refused'}${r.fine ? ` <small class="neg">−$${r.fine}</small>` : r.tip ? ` <small class="pos">+$${r.tip}</small>` : ''}</summary><p>${esc(ex.headline)}</p><ul>${ex.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></details></li>`; }).join('') || '<li class="muted">No decisions made.</li>'}</ol>
         ${result.incidentLog.length ? `<h3>Incidents</h3><ul class="incidents">${result.incidentLog.map(i => `<li><b>${esc(i.title)}</b>: ${esc(i.choice)} — <span class="muted">${esc(i.result)}</span></li>`).join('')}</ul>` : ''}
       </section>
     </div>

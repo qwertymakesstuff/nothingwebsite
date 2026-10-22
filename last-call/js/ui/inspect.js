@@ -6,7 +6,7 @@ import { $, $$, esc, money, modal, toast } from './dom.js';
 import { createShift, tick, decide, resolveIncident, summarize, rulesNow, clockNow, choiceAvailable } from '../shiftEngine.js';
 import { RULES, sameName } from '../rules.js';
 import { explain } from '../validation.js';
-import { toClock, fmtDoc, daysBetween } from '../dates.js';
+import { fmtTime, fmtDoc, daysBetween } from '../dates.js';
 import { describeOutfit, OUTFIT } from '../appearance.js';
 import { customerPortrait, portraitSvg, moodFor } from '../portrait.js';
 import { idCardHtml, ticketHtml, memberHtml, wristbandHtml } from './docs.js';
@@ -129,7 +129,7 @@ export function runShift(app, prepared, onFinish) {
   }
 
   function updateHud() {
-    els.clock.textContent = toClock(clockNow(s));
+    els.clock.textContent = fmtTime(clockNow(s));
     const left = Math.max(0, def.duration - s.t);
     els.timebar.style.width = `${(left / def.duration) * 100}%`;
     els.timebar.classList.toggle('late', left < def.duration * 0.15);
@@ -168,11 +168,11 @@ export function runShift(app, prepared, onFinish) {
   }
 
   function showHint() {
-    const ids = def.tutorial ? ['age'] : def.newRules;
+    const ids = def.tutorial ? ['age', 'photo'] : def.newRules;
     const lines = ids.flatMap(id => RULES[id].explain(rulesNow(s).find(r => r.id === id)?.params ?? {}));
     const box = document.createElement('div');
     box.className = 'coach';
-    box.innerHTML = `<b>${def.tutorial ? 'How to check a guest' : `New rule: ${ids.map(id => RULES[id].title).join(', ')}`}</b>${def.tutorial ? '<p>Find the date of birth on the ID card. Work out whether they are 21 or older tonight. Then press <b>Admit</b> or <b>Refuse</b>.</p>' : ''}${lines.map(l => `<p>${esc(l)}</p>`).join('')}<button type="button" class="btn small">Got it</button>`;
+    box.innerHTML = `<b>${def.tutorial ? 'How to check a guest' : `New rule: ${ids.map(id => RULES[id].title).join(', ')}`}</b>${def.tutorial ? '<p>Find the date of birth on the ID card (MM/DD/YYYY) and work out whether they are 21 or older tonight. Check the photo is them. Then press <b>Admit</b> or <b>Refuse</b>.</p>' : ''}${lines.map(l => `<p>${esc(l)}</p>`).join('')}<button type="button" class="btn small">Got it</button>`;
     els.papers.prepend(box);
     box.querySelector('button').onclick = () => box.remove();
   }
@@ -228,7 +228,7 @@ export function runShift(app, prepared, onFinish) {
     if (!open) { ui.paused = false; ui.overlay?.close(); ui.overlay = null; return; }
     if (ui.paused) return;
     ui.paused = true;
-    ui.overlay = modal(`<h2>Paused</h2><p class="muted">${esc(def.title)} · ${toClock(clockNow(s))}</p>
+    ui.overlay = modal(`<h2>Paused</h2><p class="muted">${esc(def.title)} · ${fmtTime(clockNow(s))}</p>
       <div class="stack"><button class="btn" data-a="resume" autofocus>Resume</button><button class="btn ghost" data-a="rules">Rulebook</button><button class="btn ghost" data-a="quit">Abandon shift</button></div>`,
     { onClose: () => { ui.paused = false; ui.overlay = null; }, label: 'Paused' });
     ui.overlay.el.querySelector('[data-a=resume]').onclick = () => pause(false);

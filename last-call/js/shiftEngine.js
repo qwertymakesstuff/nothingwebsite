@@ -175,7 +175,7 @@ export function summarize(s) {
     incidentMoney: s.incidentMoney, incidentLog: s.incidentLog, outcomes: s.outcomes, flagInc: s.flagInc, flagSet: s.flagSet,
     fakesCaught: s.records.filter(r => r.correct && r.verdict === 'refuse' && r.judgement.violations.includes('forgery')).length,
     underageStopped: s.records.filter(r => r.correct && r.verdict === 'refuse' && r.judgement.violations.includes('age')).length,
-    seriousMisses: wrongAdmits.filter(r => r.judgement.violations.some(v => ['age', 'forgery', 'identity', 'sober'].includes(v))).length,
+    seriousMisses: wrongAdmits.filter(r => r.judgement.violations.some(v => ['age', 'forgery', 'photo', 'identity', 'sober'].includes(v))).length,
     records: s.records,
   };
 }

@@ -4,7 +4,7 @@
 import { esc, modal } from './dom.js';
 import { RULES } from '../rules.js';
 import { ISSUERS } from '../issuers.js';
-import { fmtDoc, bornOnOrBefore } from '../dates.js';
+import { fmtDoc, fmtHHMM, bornOnOrBefore } from '../dates.js';
 import { mugshotSvg } from '../portrait.js';
 import { sampleCardHtml, bandSwatch } from './docs.js';
 import { MIN_ISSUE_AGE } from '../issuers.js';
@@ -50,7 +50,7 @@ export function listsHtml(rules, activeTab) {
   if (!lists.length) return '';
   const cur = lists.find(l => l.id === activeTab) ?? lists[0];
   const body = cur.kind === 'res'
-    ? `<table class="res-table"><thead><tr><th>Time</th><th>Name</th></tr></thead><tbody>${cur.items.map(r => `<tr><td class="mono">${esc(r.time)}</td><td>${esc(r.name)}</td></tr>`).join('')}</tbody></table>`
+    ? `<table class="res-table"><thead><tr><th>Time</th><th>Name</th></tr></thead><tbody>${cur.items.map(r => `<tr><td class="mono">${esc(fmtHHMM(r.time))}</td><td>${esc(r.name)}</td></tr>`).join('')}</tbody></table>`
     : cur.kind === 'banned'
       ? `<div class="banned-grid">${cur.items.map(e => `<figure class="mug">${mugshotSvg(e.face)}<figcaption><b>${esc(e.name)}</b><span>${esc(e.reason)}</span></figcaption></figure>`).join('')}</div>`
       : cur.items.length ? `<ul class="name-list">${cur.items.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : '<p class="muted">Nobody yet.</p>';
@@ -73,6 +73,7 @@ export function openRulebook(rules, def, opts = {}) {
       <li><b>Admit</b> (A) or <b>Refuse</b> (X). When refusing, cite the rule that failed (number keys) for a small bonus.</li>
       <li>The slip on the right explains every decision. Mistakes cost money; too many and you're sent home.</li>
       <li>The line is impatient. People leave if they wait too long — but a wrong call costs more than a slow one.</li>
+      <li>Dates are shown as MM/DD/YYYY. If the ID photo doesn't match the person, refuse — at every venue.</li>
       <li>Height: the door frame has marks every 10 cm. The card should be within ${HEIGHT_TOLERANCE} cm.</li>
       <li>Space or Esc pauses. B opens this rulebook. C toggles Compare (after forensics training).</li></ol>`;
     root.innerHTML = `<header class="rb-head"><h2>Rulebook — ${esc(def.title)}</h2><button class="btn ghost small" data-close aria-label="Close">Close ✕</button></header>

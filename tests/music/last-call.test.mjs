@@ -65,7 +65,11 @@ test('date maths: ages, birthdays, leap days, clocks', () => {
   assert.equal(dates.toClock(dates.fromClock('23:45')), '23:45');
   assert.equal(dates.toClock(dates.fromClock('01:30')), '01:30');
   assert.ok(dates.fromClock('01:00') > dates.fromClock('23:00'));
-  assert.equal(dates.fmtDoc('2031-03-07'), '07 MAR 2031');
+  assert.equal(dates.fmtDoc('2031-03-07'), '03/07/2031');
+  assert.equal(dates.fmtTime(dates.fromClock('23:45')), '11:45 PM');
+  assert.equal(dates.fmtTime(dates.fromClock('00:05')), '12:05 AM');
+  assert.equal(dates.fmtHHMM('01:30'), '1:30 AM');
+  assert.match(dates.fmtLong('2031-03-07'), /^Friday, March 7, 2031/);
 });
 
 test('at least 40 original customer profiles with complete structured data', () => {
@@ -82,10 +86,10 @@ test('at least 40 original customer profiles with complete structured data', () 
 });
 
 test('valid IDs pass every ID rule; each flaw fails exactly its own rule', () => {
-  const rules = rulesAt({ rules: [{ id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'identity' }, { id: 'forgery' }] }, 0);
+  const rules = rulesAt({ rules: [{ id: 'age', params: { min: 21 } }, { id: 'expiry' }, { id: 'photo' }, { id: 'identity' }, { id: 'forgery' }] }, 0);
   const g = guest();
   assert.equal(evaluate(g, ctx(rules)).admit, true);
-  const expect = { underage: 'age', expired: 'expiry', photo: 'identity', height: 'identity', eyes: 'identity', header: 'forgery', number: 'forgery', hologram: 'forgery', nohologram: 'forgery', color: 'forgery', dates: 'forgery' };
+  const expect = { underage: 'age', expired: 'expiry', photo: 'photo', height: 'identity', eyes: 'identity', header: 'forgery', number: 'forgery', hologram: 'forgery', nohologram: 'forgery', color: 'forgery', dates: 'forgery' };
   for (const [flaw, rule] of Object.entries(expect)) {
     for (let seed = 0; seed < 20; seed++) {
       const c = guest(); c.docs.id = clone(c.docs.id);
@@ -111,11 +115,20 @@ test('edge cases: birthday today admits, birthday tomorrow refuses, expiry today
   assert.deepEqual(evaluate(exp, ctx(rules)).violations, ['expiry']);
 });
 
-test('hair, beard and glasses changes on the photo are not identity failures', () => {
-  const rules = rulesAt({ rules: [{ id: 'age', params: { min: 21 } }, { id: 'identity' }] }, 0);
-  const g = guest();
-  g.docs.id.photo = { ...g.face, hair: 'long', hairColor: 'blonde', facial: 'beard', glasses: !g.face.glasses };
-  assert.equal(evaluate(g, ctx(rules)).admit, true);
+test('any photo mismatch is a refusal, and the photo rule runs in every shift', () => {
+  const rules = rulesAt({ rules: [{ id: 'age', params: { min: 21 } }, { id: 'photo' }] }, 0);
+  assert.equal(evaluate(guest(), ctx(rules)).admit, true);
+  for (const change of [{ hair: 'mohawk' }, { hairColor: 'pink' }, { facial: 'beard' }, { glasses: true }, { nose: 'hooked' }, { faceShape: 'long' }]) {
+    const g = guest();
+    g.docs.id.photo = { ...g.face, ...change };
+    if (Object.entries(change).every(([k, v]) => g.face[k] === v)) continue;
+    assert.deepEqual(evaluate(g, ctx(rules)).violations, ['photo'], JSON.stringify(change));
+  }
+  for (const def of Object.values(SHIFTS)) assert.ok(def.rules.some(r => r.id === 'photo'), def.id);
+  // Genuine cards carry an exact photo of their holder.
+  for (const id of Object.keys(SHIFTS)) for (const c of prepareShift(SHIFTS[id], {}, 'ph').customers) {
+    if (c.docs.id && !c.flaws.includes('photo')) assert.deepEqual(c.docs.id.photo, c.face, `${id} ${c.name}`);
+  }
 });
 
 test('tickets, wristbands and guest lists', () => {

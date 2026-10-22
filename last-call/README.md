@@ -8,6 +8,8 @@ are procedural SVG, music and sound are synthesised with WebAudio).
 
 ## Playing
 
+Dates on documents are MM/DD/YYYY and the shift clock is 12-hour. Genuine ID photos are an exact likeness: if anything about the photo doesn't match the person, refuse.
+
 Each shift a line forms outside. The guest at the front steps up; their face, height (read it off
 the door-frame marks), outfit and behaviour are on the left, their papers in the middle, tonight's
 rules and lists on the right.
@@ -32,9 +34,9 @@ settings save to `localStorage`.
 
 | # | Shift | Venue | New |
 |---|---|---|---|
-| 1 | First Night | The Lantern (local bar) | minimum age, no ID no entry |
+| 1 | First Night | The Lantern (local bar) | minimum age, no ID no entry; the photo must match (applies every shift) |
 | 2 | Old Faces | The Lantern | expiry dates |
-| 3 | Borrowed Faces | The Lantern | photo / height / eye colour must match |
+| 3 | Borrowed Faces | The Lantern | height and eye colour must match (lookalike siblings' cards) |
 | 4 | Moth & Static | The Sump (underground club) | event tickets (event, date, code, name) |
 | 5 | Print Run | The Sump | forgeries vs. the ID reference sheet; mid-shift guest list |
 | 6 | Thirty-One Floors Up | Halcyon (rooftop lounge) | dress code |

@@ -6,7 +6,7 @@ import { RULES, rulesAt } from '../rules.js';
 import { VENUES } from '../venues.js';
 import { CHARACTERS } from '../story.js';
 import { portraitSvg } from '../portrait.js';
-import { fmtLong, toClock } from '../dates.js';
+import { fmtLong, fmtTime } from '../dates.js';
 import { clockRange } from '../timeline.js';
 import { rulesCardHtml, openRulebook } from './rulebook.js';
 import { totalShifts } from '../campaign.js';
@@ -35,7 +35,7 @@ export function renderBriefing(app, def, onStart) {
       </section>
       <section class="card">
         <dl class="brief-facts">
-          <dt>Hours</dt><dd>${toClock(a)}–${toClock(b)} <small class="muted">(${Math.round(def.duration / 60 * 10) / 10} real minutes)</small></dd>
+          <dt>Hours</dt><dd>${fmtTime(a)} – ${fmtTime(b)} <small class="muted">(${Math.round(def.duration / 60 * 10) / 10} real minutes)</small></dd>
           <dt>Target rating</dt><dd>${def.target}</dd>
           <dt>Mistakes allowed</dt><dd>${def.strikes + mods.extraStrikes}${mods.extraStrikes ? ' <small class="muted">(well rested +1)</small>' : ''}</dd>
           <dt>Base wage</dt><dd>$${venue.wage}</dd>
