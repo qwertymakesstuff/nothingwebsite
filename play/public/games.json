@@ -194,5 +194,12 @@
     "url": "https://missing.website/last-call/",
     "description": "Nightclub bouncer simulator: check IDs, tickets and dress codes against changing rules, manage the line and keep your job across twelve shifts.",
     "group": "sims"
+  },
+  {
+    "name": "Little Acre",
+    "image": "/banners/little-acre.svg",
+    "url": "https://missing.website/little-acre/",
+    "description": "Farming and life sim: restore an overgrown farm, grow crops through four seasons, befriend the villagers of Bramblewick, fish, craft and decorate.",
+    "group": "sims"
   }
 ]
