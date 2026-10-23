@@ -24,13 +24,24 @@ test('every elemental module has valid syntax', () => {
 
 test('recipe data is sound: no unknown ids, duplicate pairs or unreachable elements', () => {
   assert.deepEqual(E.validateData(DATA), []);
-  assert.ok(DATA.RECIPES.length >= 200, `only ${DATA.RECIPES.length} recipes`);
+  assert.ok(DATA.RECIPES.length >= 6000, `only ${DATA.RECIPES.length} recipes`);
+  assert.ok(DATA.ELEMENTS.length >= 1200, `only ${DATA.ELEMENTS.length} elements`);
   assert.deepEqual(DATA.STARTING, ['air', 'water', 'earth', 'fire']);
   assert.equal(E.reachable(index).size, DATA.ELEMENTS.length);
   for (const c of ['nature', 'science', 'food', 'technology', 'fantasy', 'objects', 'humor']) {
     assert.ok(DATA.ELEMENTS.filter(e => e.category === c).length >= 10, `category ${c} is thin`);
   }
   for (const e of DATA.ELEMENTS) assert.ok(e.desc.length > 10 && e.icon && e.name, e.id);
+});
+
+test('obvious pairs combine: every pair of the first elements makes something', () => {
+  assert.equal(E.findRecipe(index, 'sea', 'land')?.result, 'beach');
+  const early = ['air', 'water', 'earth', 'fire', 'steam', 'lava', 'mud', 'energy', 'pressure', 'sea', 'dust', 'land'];
+  for (const a of early) for (const b of early) assert.ok(E.findRecipe(index, a, b), `${a} + ${b} does nothing`);
+  const common = ['human', 'animal', 'plant', 'tree', 'house', 'tool', 'wood', 'metal', 'glass', 'water', 'fire', 'earth', 'air', 'bread', 'milk', 'egg', 'cheese', 'fruit', 'cat', 'dog', 'bird', 'fish', 'car', 'boat', 'paper', 'book', 'money', 'computer', 'music', 'love', 'time', 'magic', 'ice', 'snow', 'rain', 'sun', 'moon', 'star', 'sky', 'cloud', 'sea', 'beach', 'sand', 'stone', 'mountain', 'river', 'city', 'farm', 'flower', 'grass', 'cloth', 'box', 'sword', 'dragon', 'king', 'wizard', 'robot', 'smartphone', 'coffee', 'sugar'];
+  let pairs = 0, hits = 0;
+  for (let i = 0; i < common.length; i++) for (let j = i; j < common.length; j++) { pairs++; if (E.findRecipe(index, common[i], common[j])) hits++; }
+  assert.ok(hits / pairs > 0.85, `only ${hits} of ${pairs} common pairs combine`);
 });
 
 test('validateData catches broken recipes', () => {
@@ -89,8 +100,9 @@ test('a new discovery is added once; making it again is a repeat, not a second d
 test('invalid combinations change nothing except the attempt counters', () => {
   const p = fresh();
   E.combine(p, index, 'water', 'fire');
+  grant(p, 'horse', 'coffee');
   const before = JSON.stringify({ d: p.discovered, r: p.recipes });
-  const res = E.combine(p, index, 'steam', 'steam');
+  const res = E.combine(p, index, 'horse', 'coffee');
   assert.deepEqual(res, { ok: false, reason: 'no-recipe' });
   assert.equal(JSON.stringify({ d: p.discovered, r: p.recipes }), before);
   assert.equal(p.stats.failures, 1);
@@ -115,7 +127,7 @@ test('the whole game can be completed from the four starting elements', () => {
 
 test('search ranks prefix matches first, matches words, and ignores case', () => {
   const all = index.list.map(e => e.id);
-  assert.deepEqual(E.searchIds(index, all, 'steam'), ['steam']);
+  assert.deepEqual(E.searchIds(index, all, 'steam'), ['steam', 'steam_engine', 'steamboat']);
   const fire = E.searchIds(index, all, 'FIRE');
   assert.equal(fire[0], 'fire');
   assert.ok(fire.includes('campfire') && fire.includes('fireworks') && fire.includes('firewall'));

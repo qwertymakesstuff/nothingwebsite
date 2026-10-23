@@ -89,6 +89,7 @@ export function showBook(ctx) {
     const makes = index.byResult.get(id) || [];
     const uses = index.byInput.get(id) || [];
     const usesFound = uses.filter(r => ctx.progress.recipes[r.key]);
+    const makesLeft = makes.filter(r => !ctx.progress.recipes[r.key]).length;
     const via = d.via && index.byKey.get(d.via);
     fill(detail, 
       h('div', { class: 'd-icon', 'aria-hidden': 'true' }, e.icon),
@@ -99,9 +100,11 @@ export function showBook(ctx) {
         ? h('p', { class: 'tag' }, 'A starting element.')
         : h('p', { class: 'tag' }, `Discovery #${d.order + 1} · ${fmtDate(d.at)}`, via ? h('br') : null, via ? `First made from ${recipeLabel(via)}` : null),
       makes.length ? [h('h4', {}, `Made from (${makes.filter(r => ctx.progress.recipes[r.key]).length} of ${makes.length} recipes found)`),
-        h('ul', {}, makes.map(r => (ctx.progress.recipes[r.key] ? h('li', {}, recipeLabel(r)) : h('li', { class: 'unknown' }, '? + ? (not found yet)'))))] : null,
+        h('ul', {}, makes.filter(r => ctx.progress.recipes[r.key]).map(r => h('li', {}, recipeLabel(r))),
+          makesLeft ? h('li', { class: 'unknown' }, `? + ? (${makesLeft} more way${makesLeft === 1 ? '' : 's'} to make it)`) : null)] : null,
       uses.length ? [h('h4', {}, `Used in (${usesFound.length} of ${uses.length} found)`),
-        h('ul', {}, usesFound.map(r => h('li', {}, `${recipeLabel(r)} → ${el(r.result).icon} ${el(r.result).name}`)),
+        h('ul', {}, usesFound.slice(0, 40).map(r => h('li', {}, `${recipeLabel(r)} → ${el(r.result).icon} ${el(r.result).name}`)),
+          usesFound.length > 40 ? h('li', { class: 'unknown' }, `…and ${usesFound.length - 40} more you've found`) : null,
           usesFound.length < uses.length ? h('li', { class: 'unknown' }, `${uses.length - usesFound.length} more combination${uses.length - usesFound.length === 1 ? '' : 's'} to find`) : null)] : null,
       h('div', { class: 'row', style: { 'margin-top': '14px' } }, h('button', { type: 'button', class: 'btn small primary', onclick: () => ctx.placeOnBoard(id) }, 'Place on workspace')),
     );
