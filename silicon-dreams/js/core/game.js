@@ -515,7 +515,7 @@ export class Game {
     const s = this.state;
     s.xp += n;
     const lvl = B.levelFor(s.xp);
-    if (lvl > s.level) { s.level = lvl; this.log(`Workshop reached level ${lvl}!`, 'good'); this.emit('levelup', lvl); }
+    if (lvl > s.level) { s.level = lvl; this.log(`Workshop reached level ${lvl}!`, 'good'); this.emit('levelup', lvl); this.milestones(); }
   }
 
   milestones() {

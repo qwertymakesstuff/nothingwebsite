@@ -319,7 +319,10 @@ export function assemble(state, spec, opts = {}) {
   put('cpu', mk(spec.cpu, ex(spec.cpu)).uid);
   put('cooler', mk(spec.cooler, { pasteFresh: false, ...ex(spec.cooler) }).uid);
   pc.paste = { state: 'good', amount: 45 };
-  (spec.ram || []).forEach((id, i) => put(`ram${i}`, mk(id, ex(id)).uid));
+  // pairs go in B and D on four-slot boards so they run in dual channel
+  const mbd = PART[spec.motherboard];
+  const ramSlots = mbd.ramSlots === 4 && (spec.ram || []).length <= 2 ? [1, 3] : [0, 1, 2, 3];
+  (spec.ram || []).forEach((id, i) => put(`ram${ramSlots[i]}`, mk(id, ex(id)).uid));
   const csd = PART[spec.case];
   let b35 = 0, b25 = 0, m2 = 0;
   (spec.storage || []).forEach((id, i) => {

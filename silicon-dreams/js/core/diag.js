@@ -111,7 +111,7 @@ export function thermalCamera(state, pc) {
   const t = thermals(snap, 0.6);
   const e = [];
   const lines = [`CPU area: ~${t.cpu}°C`, `Graphics: ~${t.gpu}°C`, `Inside the case: +${t.caseRise}°C over room`];
-  if (snap.cooler && ['none', 'thin', 'dried', 'used'].includes(snap.paste) && t.cpu > 70) e.push(ev('paste', 'Thermal camera: the CPU is hot but the cooler\'s heatsink stays cool — heat isn\'t getting across. Bad thermal paste contact.', 'bad'));
+  if (snap.cooler && ['none', 'thin', 'dried', 'used'].includes(snap.paste) && t.cpu > 55) e.push(ev('paste', 'Thermal camera: the CPU is hot but the cooler\'s heatsink stays cool — heat isn\'t getting across. Bad thermal paste contact.', 'bad'));
   else if (snap.cooler && !snap.coolerOn && t.cpu > 70) e.push(ev('coolerfan', 'Thermal camera: the heatsink is hot all over — the cooler\'s fan isn\'t moving air.', 'bad'));
   if (t.caseRise > 14) e.push(ev('airflow', `Thermal camera: hot air is pooling inside the case (+${t.caseRise}°C). Airflow is poor.`, 'warn'));
   if (snap.psuP && snap.psuP.fault === 'unstable') e.push(ev('psu', 'Thermal camera: the power supply is unusually hot for the load.', 'warn'));

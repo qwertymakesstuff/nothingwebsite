@@ -147,7 +147,7 @@ function estimateParts(state, pc, faults) {
   const price = z => (pc.slots[z] ? PART[state.parts[pc.slots[z]].id].price : 0);
   for (const f of faults) {
     if (f.startsWith('psu')) s += price('psu');
-    else if (f === 'ram_errors') s += PART[state.parts[pc.slots.ram0].id].price;
+    else if (f === 'ram_errors') s += PART[state.parts[pc.slots[Object.keys(pc.slots).find(z => z.startsWith('ram'))]].id].price;
     else if (f === 'disk_failing') s += 60;
     else if (f.startsWith('gpu')) s += price('gpu');
     else if (f === 'cooler_dead') s += 35;
