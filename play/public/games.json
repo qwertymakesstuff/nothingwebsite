@@ -215,5 +215,12 @@
     "url": "https://missing.website/little-acre/",
     "description": "Farming and life sim: restore an overgrown farm, grow crops through four seasons, befriend the villagers of Bramblewick, fish, craft and decorate.",
     "group": "sims"
+  },
+  {
+    "name": "Silicon Dreams",
+    "image": "/banners/silicon-dreams.svg",
+    "url": "https://missing.website/silicon-dreams/",
+    "description": "PC building, repair and computer shop sim: diagnose broken machines, build custom PCs part by part, run benchmarks and grow your repair business.",
+    "group": "sims"
   }
 ]

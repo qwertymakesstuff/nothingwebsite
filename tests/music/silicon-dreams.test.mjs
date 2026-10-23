@@ -296,6 +296,7 @@ test('every customer machine is valid and healthy before faults are added', () =
     const pc = benchMachine(g, m.spec, { owner: 'jx', os: m.os });
     if (m.bios) Object.assign(s.parts[pc.slots.mb].bios, m.bios);
     assert.deepEqual(J.healthIssues(s, pc).map(i => i.msg), [], m.id);
+    assert.deepEqual(PC.cableList(s, pc).filter(c => !c.ok).map(c => c.label), [], `${m.id}: every cable has a connector`);
     const r = g.runTool(pc.uid, 'stability');
     assert.ok(r.record.ok, `${m.id}: ${r.lines.join(' / ')}`);
   }
@@ -644,6 +645,37 @@ test('generated jobs are always well-formed and their machines are sound', () =>
     }
     if (kind === 'build' || kind === 'fleet') assert.ok(job.req.cpuMark > 0);
     if (job.kind !== 'build' && job.kind !== 'fleet') assert.ok(job.fee > 0 && job.budget >= job.fee);
+  }
+});
+
+test('upgrade jobs can always reach their target with parts the shop sells', () => {
+  for (let i = 0; i < 24; i++) {
+    const g = rich(fresh(30 + i)), s = g.state;
+    const job = J.makeJob(s, rngFor(7, i), 1 + (i % 3), 'upgrade');
+    if (job.kind !== 'upgrade') continue;
+    s.jobs[job.id] = job;
+    const pcU = job.machines[0];
+    const pc = s.pcs[pcU];
+    s.benches[0] = pcU;
+    const snap = SIM.snapshot(s, pc);
+    const cpuMark = (snap.cpu.single * 35 + snap.cpu.multi * 5) * 0.95;
+    const gpu = PARTS.filter(d => d.cat === 'gpu' && d.tier <= 2 && d.length <= snap.cs.gpuMax).sort((a, b) => a.price - b.price).find(d => d.perf * 100 * Math.min(1, Math.max(0.5, cpuMark / (d.perf * 110))) ** 0.35 >= job.req.gpuMark);
+    assert.ok(gpu, `${job.machine}: a card reaches ${job.req.gpuMark}`);
+    g.setClosed(pcU, false);
+    if (pc.slots.gpu) assert.ok(g.remove(pcU, 'gpu').ok);
+    if (gpu.pins > snap.psu.pcie || snap.psu.watts < snap.cpu.peak + gpu.tdp + 80) { assert.ok(g.remove(pcU, 'psu').ok); assert.ok(g.install(pcU, shelf(g, 'psu-volt-550'), 'psu').ok); }
+    const r = g.install(pcU, shelf(g, gpu.id), 'gpu');
+    assert.ok(r.ok, r.reason);
+    // a good technician also cleans it out and gives the hot air a way out
+    while (pc.dust >= 15) assert.ok(g.blowDust(pcU).ok);
+    const mount = PC.zoneList(s, pc).find(z => z.startsWith('fan:') && !pc.slots[z] && !PC.blockedByRadiator(s, pc, z) && PC.defaultFanDir(z) === 'out');
+    if (mount) assert.ok(g.install(pcU, shelf(g, 'fan-zp-breeze120'), mount).ok);
+    for (const c of PC.cableList(s, pc)) if (c.ok && pc.cables[c.key] !== 'ok') assert.ok(g.connect(pcU, c.key).ok, c.key);
+    g.setClosed(pcU, true);
+    morning(g);
+    const b = g.runTool(pcU, 'gpuBench');
+    assert.ok(b.ok && b.record.score >= job.req.gpuMark, `${job.machine} with ${gpu.id}: ${b.reason || b.lines.join(' / ')} vs ${job.req.gpuMark}`);
+    assert.ok(job.budget >= job.fee + gpu.price, 'the budget covers the card');
   }
 });
 

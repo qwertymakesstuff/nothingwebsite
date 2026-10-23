@@ -246,6 +246,8 @@ async function inspectCase(app, pc) {
   const r = app.game.runTool(pc.uid, 'visual');
   if (!r.ok) return report(r);
   play('click');
+  document.body.classList.add('sweep');
+  setTimeout(() => document.body.classList.remove('sweep'), 1200);
   modal({ title: 'Visual inspection', body: h('ul.evidence', r.evidence.map(e => h(`li.${e.level}`, statusIcon(e.level), h('span', e.text)))), actions: [{ label: 'OK', cls: 'primary' }] });
 }
 

@@ -3,7 +3,7 @@
 // results recorded on the machine's current fingerprint, and repairs are judged against the
 // machine's real condition after it leaves.
 
-import { PART } from '../data/catalog.js';
+import { PART, PARTS } from '../data/catalog.js';
 import { CUSTOMERS, CUSTOMER, PERSONALITIES } from '../data/customers.js';
 import { TIERS, BUILDS, MACHINES, FAULT_DEFS, FILE_SETS } from '../data/jobs.js';
 import { DIFFICULTIES, DUST_PROBLEM } from './config.js';
@@ -181,26 +181,61 @@ function makeBuild(state, rng, tier) {
   return job;
 }
 
+// the best GPU Mark a machine could reach with a graphics card the shop can always buy (tier 1-2)
+// that fits its case and power supply, accounting for the CPU holding a fast card back
+const upgradeGpus = (state, pc) => {
+  const snap = snapshot(state, pc);
+  const cpuMark = (snap.cpu.single * 35 + snap.cpu.multi * 5) * 0.95;
+  return PARTS.filter(d => d.cat === 'gpu' && d.tier <= 2 && d.length <= snap.cs.gpuMax).map(d => ({ d, mark: d.perf * 100 * clamp(cpuMark / (d.perf * 110), 0.5, 1) ** 0.35 })).sort((a, b) => a.d.price - b.d.price);
+};
+export const bestUpgradeGpu = (state, pc) => Math.max(0, ...upgradeGpus(state, pc).map(x => x.mark));
+
+// rough cost of the parts an upgrade to `target` needs: the cheapest card that reaches it, plus
+// a power supply, memory, an SSD and an OS licence if the machine lacks them
+function upgradeCost(state, pc, target) {
+  const snap = snapshot(state, pc);
+  const gpu = upgradeGpus(state, pc).find(x => x.mark >= target);
+  let cost = gpu ? gpu.d.price : 400;
+  if (gpu && (gpu.d.pins > snap.psu.pcie || snap.psu.watts < snap.cpu.peak + gpu.d.tdp + 80)) cost += 65;
+  if (snap.ram.reduce((a, r) => a + r.d.gb, 0) < 16) cost += 50;
+  const boot = bootDrive(snap);
+  if (!boot || boot.d.kind === 'hdd') cost += 60 + 110;
+  return cost;
+}
+
 function makeUpgrade(state, rng, tier) {
   const job = baseJob(state, rng, 'upgrade', tier);
-  const m = machineFor(rng, Math.min(tier, 2), x => ['family', 'old-gamer', 'budget-gamer', 'apu-box'].includes(x.id));
-  const pc = customerMachine(state, rng, job, m, { dust: randInt(rng, 20, 50) });
+  const options = shuffle(rng, MACHINES.filter(x => ['family', 'old-gamer', 'budget-gamer', 'apu-box', 'old-office'].includes(x.id)));
+  let m, pc, target;
+  for (const cand of options) {
+    const trial = customerMachine(state, rng, job, cand, { dust: randInt(rng, 20, 50) });
+    const snap = snapshot(state, trial);
+    const cur = snap.gpu ? snap.gpu.perf * 100 : snap.cpu.igpu * 100;
+    const cap = Math.floor(bestUpgradeGpu(state, trial) * 0.92 / 100) * 100;
+    const want = Math.max(3000, Math.round(cur * (1.8 + rng() * 0.6) / 100) * 100);
+    if (cap >= cur * 1.3 && cap >= 2500) { m = cand; pc = trial; target = Math.min(want, cap); break; }
+    discardPc(state, trial);
+  }
+  if (!pc) return makeRepair(state, rng, tier, 'repair');
   job.machines = [pc.uid];
   job.machine = m.id;
-  const snap = snapshot(state, pc);
-  const curGpu = snap.gpu ? snap.gpu.perf * 100 : snap.cpu.igpu * 100;
-  const target = Math.max(3500, round10(curGpu * (1.8 + rng() * 0.6) / 100) * 100);
   job.req = { gpuMark: target, ramGB: 16, ssd: true, keep: ['case', 'motherboard', 'cpu'], files: 100, healthy: true };
   job.title = `Upgrade my ${m.label}`;
   job.story = `I can't afford a whole new computer. Keep the case, motherboard and processor, but make it play newer games — ${target.toLocaleString('en-US')} GPU Mark at least — with 16 GB of memory and a fast SSD to boot from. And don't lose my files!`;
   job.fee = round10(90 * TIER_MULT[tier]);
-  job.partsEstimate = round10(target / 100 * 6 + 120);
-  job.budget = round10(job.fee + job.partsEstimate * 1.3);
+  job.partsEstimate = round10(upgradeCost(state, pc, target));
+  job.budget = round10(job.fee + job.partsEstimate * 1.3 + 30);
   job.deadline = deadline(state, rng, 3, 5);
   job.tests = ['boot', 'stability', 'gpuBench'];
   job.keepOld = rng() < 0.5;
   job.bonus = [{ id: 'early', label: 'Done at least a day early', cash: 25 }, { id: 'clean', label: 'Clean out the dust', cash: 20 }];
   return job;
+}
+
+function discardPc(state, pc) {
+  for (const u of Object.values(pc.slots)) delete state.parts[u];
+  delete state.parts[pc.caseUid];
+  delete state.pcs[pc.uid];
 }
 
 function makeFleet(state, rng) {

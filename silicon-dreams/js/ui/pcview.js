@@ -112,8 +112,8 @@ export function renderPC(state, pc, opts = {}) {
     <rect x="22" y="22" width="856" height="596" rx="12" fill="url(#lamp)" pointer-events="none"/></g></svg>`).firstElementChild);
   const g = (cls, attrs = {}) => { const el = s('g', { class: cls, ...attrs }); root.append(el); return el; };
   const partsG = g('parts');
-  const cablesG = g('cables');
   const zonesG = g('zones');
+  const cablesG = g('cables');
   const portsG = g('ports');
   const fx = g('fx');
   const zs = zoneList(state, pc);
@@ -193,6 +193,11 @@ export function renderPC(state, pc, opts = {}) {
       const st = zoneState(`port:${c.key}`);
       portsG.append(s('rect', { x: r.x - 3, y: r.y - 3, width: r.w + 6, height: r.h + 6, rx: 4, class: ['port', c.ok ? 'avail' : 'blocked', st ? `z-${st.state}` : ''], 'data-port': c.key, 'data-tip': c.ok ? `${c.label}${pc.cables[c.key] === 'loose' ? ' (loose — reseat)' : ''}` : `${c.label}: ${c.reason}` }));
     }
+  }
+  // a little burst where something was just fitted
+  if (opts.justInstalled && L.zones[opts.justInstalled]) {
+    const r = L.zones[opts.justInstalled];
+    fx.append(s('circle', { cx: r.x + r.w / 2, cy: r.y + r.h / 2, r: Math.min(60, Math.max(r.w, r.h) / 2), class: 'burst', 'pointer-events': 'none' }));
   }
   // dust
   if (pc.dust > 8) fx.append(s('rect', { x: 22, y: 22, width: 856, height: 596, rx: 12, fill: 'url(#dust)', opacity: Math.min(0.5, pc.dust / 160), 'pointer-events': 'none', class: 'dust' }));

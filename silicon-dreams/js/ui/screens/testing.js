@@ -105,7 +105,7 @@ function monitor(app, pc, pw, mon) {
   else if (mon.view === 'disks') screen.append(disksScreen(app, pc, back));
   else if (mon.view === 'desktop' && pw.os) screen.append(desktop(app, pc, pw));
   else {
-    screen.append(h('div.post', h('pre', pw.screen.join('\n')),
+    screen.append(h('div.post', h('div.post-lines', pw.screen.map((l, i) => h('div.type-line', { style: { animationDelay: `${i * 140}ms` } }, l))),
       h('div.post-actions',
         button('Enter BIOS (Del)', () => { mon.view = 'bios'; app.render(true); }),
         button('Boot OS installer (USB)', () => { mon.view = 'installer'; app.render(true); }),

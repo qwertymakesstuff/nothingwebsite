@@ -550,6 +550,7 @@ export class Game {
         j.result = { paid: j.ledger ? j.ledger.paid : 0, rep, penalty: pen, message: `${CUSTOMER[j.customer].name} gave up waiting${j.machines.length ? ' and collected their machine unfinished' : ''}.` };
         ev(`Failed: ${j.title} — the deadline passed. Reputation ${rep}.`, 'bad');
       } else if (j.status === 'active' && s.day === j.deadline) ev(`${j.title} is due today. Tomorrow it will be late.`, 'warn');
+      else if (j.status === 'active' && s.day + 1 === j.deadline) ev(`${CUSTOMER[j.customer].name.split(' ')[0]} called: ${callLine(j)}`, 'info');
       if (j.status === 'offered' && s.day >= j.expires) { j.status = 'expired'; this.discardMachines(j); }
     }
     s.day++;
@@ -580,6 +581,11 @@ export class Game {
 
 export function toolName(id) {
   return { visual: 'Visual inspection', psu: 'PSU tester', memtest: 'MemSweep', postcard: 'POST card', thermalcam: 'Thermal camera', syscheck: 'SysCheck', storage: 'DiskDoctor', temps: 'TempEye', cpuBench: 'CPU benchmark', gpuBench: 'GPU benchmark', stability: 'Stability test', malware: 'ClamShield scan' }[id] || id;
+}
+
+function callLine(j) {
+  const t = CUSTOMER[j.customer].trait;
+  return { rushed: '"Is it done yet? I really need it tomorrow!"', frugal: '"Just checking the price hasn\'t gone up."', picky: '"I trust you\'re testing it properly."', friendly: '"No rush — well, a little rush. See you tomorrow!"', patient: '"Whenever it\'s ready, dear. Tomorrow would be lovely."', techie: '"How are the temps looking?"' }[t] || '"Is it ready tomorrow?"';
 }
 
 function review(j, sat, st, L) {

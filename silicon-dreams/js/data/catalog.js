@@ -32,7 +32,7 @@ export const CATEGORY = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 export const PARTS = [];
 export const PART = {};
 for (const c of CATEGORIES) for (const p of c.list) {
-  const def = Object.freeze({ ...p, cat: c.id, full: `${p.brand} ${p.name}` });
+  const def = Object.freeze({ ...p, cat: c.id, full: c.id === 'os' ? p.name : `${p.brand} ${p.name}` });
   PARTS.push(def);
   PART[def.id] = def;
 }
