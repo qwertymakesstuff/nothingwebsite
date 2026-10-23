@@ -1,9 +1,10 @@
 # Elemental (`/elemental/`)
 
 An original element-combining discovery game. Start with air, water, earth and fire, drag them
-onto the workspace, and drop one onto another to discover something new: 397 elements and 484
-recipes across nature, weather, space, life, food, science, technology, fantasy, everyday objects
-and some silly ones. Plain HTML, CSS and ES modules, no build step, no dependencies, no asset
+onto the workspace, and drop one onto another to discover something new: 1,302 elements and
+6,306 recipes across nature, weather, space, life, food, science, technology, fantasy, everyday
+objects and some silly ones. Most sensible pairs do something: every pair of the first dozen
+elements combines, and so do almost nine in ten pairs of the common everyday elements. Plain HTML, CSS and ES modules, no build step, no dependencies, no asset
 files (icons are emoji, sounds are synthesised with WebAudio).
 
 ## Playing
@@ -70,7 +71,7 @@ recipes that make a starting element, and any element that can't be reached from
 
 ## Tests
 
-`node --test tests/music/elemental.test.mjs` covers the data (at least 200 recipes, all reachable),
+`node --test tests/music/elemental.test.mjs` covers the data (over 6,000 recipes, all elements reachable, obvious pairs like sea + land combining),
 order-independent and ordered recipes, new vs duplicate discoveries, invalid combinations leaving
 progress untouched, completing the whole game, search and sorting, hint levels and stability,
 save round-trips through `localStorage`, rejecting and cleaning tampered imports, and workspace undo.
