@@ -196,6 +196,20 @@
     "group": "sims"
   },
   {
+    "name": "Rentfall",
+    "image": "/banners/rentfall.svg",
+    "url": "https://missing.website/rentfall/",
+    "description": "Slot-machine roguelike: collect quirky symbols, chain their synergies and earn enough to survive twelve rent deadlines. Fictional money only.",
+    "group": "rogue"
+  },
+  {
+    "name": "Elemental",
+    "image": "/banners/elemental.svg",
+    "url": "https://missing.website/elemental/",
+    "description": "Element-combining discovery puzzle: start with air, water, earth and fire and combine your way to 397 discoveries, with hints and an encyclopedia.",
+    "group": "puzzles"
+  },
+  {
     "name": "Little Acre",
     "image": "/banners/little-acre.svg",
     "url": "https://missing.website/little-acre/",
