@@ -7,9 +7,9 @@ Plain HTML + ES modules on a 320×180 canvas scaled with nearest-neighbour. No b
 no dependencies, no backend. Code, pixel art and sound are made for this game (all audio is
 synthesised with Web Audio at runtime); the bitmap font is shared with `/hollow-saint/`.
 
-The game is being built in stages. **Stages 1–5 are done**: the foundation, the 28-day
-timeline, the Darko house, Frank and the engine, and school. The story is playable from
-Saturday, October 1 to Friday, October 7, 1988.
+The game was built in twelve stages, and **all twelve are done**. The story is playable from
+Saturday, October 1, 1988, through the last night of October 30 and the morning of October 2
+again, then the credits.
 
 ## What's in it
 
@@ -41,9 +41,41 @@ Gretchen's arrival, Grandma Death on Old Gun Road, Dr. Thurman, the 2 AM flood, 
 day and walking Gretchen home, hypnosis, the police in English class, and the
 "Controlling Fear" tape.
 
-Fifteen connected areas: Donnie's room, the upstairs hall, the living room, the kitchen, the
-front yard, the street, the golf course, the hotel, Old Gun Road, Dr. Thurman's office, the
-school courtyard, the main hallway, the English room, the health room and the basement.
+**Stage 6, the town.** Old Gun Road and the ruins above it, the Wizard's Arcade, the golf
+course trail, Powderham Drive and Jim Cunningham's house, the Byrd Theatre, Carpathian Ridge,
+the auditorium, the physics room and the principal's office, the backyard, the bathroom and
+Mom and Dad's room.
+
+**Stage 7, Frank and the visions.** Frank in the bathroom mirror and the knife that bounces off
+him; the spears, which you follow (Dad's closet on October 16, the fridge on the 30th); Frank in
+Dr. Thurman's office and at the Byrd, where he takes off his mask. Storm clouds gather outdoors
+in the last week, and in the last few days Frank flickers into the corner of rooms.
+
+**Stage 8, the investigation.** Dr. Monnitoff, Hawking and the Einstein-Rosen bridge;
+*The Philosophy of Time Travel* (readable from your pockets, with chapters that unlock as Donnie
+understands more: vessels, the Tangent Universe, the Manipulated Living and the Manipulated
+Dead); Roberta Sparrow's 1944 class photo; the letter; destiny and God's channel.
+
+**Stage 9, the set pieces.** The PTA meeting intercut with the mirror, the assembly and the
+microphone, the fire intercut with Sparkle Motion's talent show, the news, Ms. Pomeroy fired,
+Kitty Farmer at the door, Mom leaving for Los Angeles, Cherita's earmuffs.
+
+**Stage 10, the last night.** The last session and the placebos, Elizabeth's Harvard letter,
+the Halloween party, the answering machine, the spears and FRANK WAS HERE, Grandma Death's
+cellar, Old Gun Road and the Trans-Am, the gun, carrying Gretchen home, the ridge, Flight 2806
+and the portal as the countdown reaches zero. Then the tracking lines roll back to October 2,
+the engine falls, and the street the next morning, with the wave.
+
+**Stage 11, polish.** New synthesised sounds (gunshot, crash, jet, piano, rewind, answering
+machine) and ambiences (crowd, party, arcade, theatre, storm, plane, portal). Reduced flashing
+turns off white flashes, the subliminal Frank and the countdown blink and softens the vision
+wobble; reduced shake, volume sliders and fullscreen are in Settings.
+
+**Stage 12, saves and the full playthrough.** Every beat autosaves; three manual slots;
+Continue after the ending replays the epilogue. The test suite plays the whole story headless,
+from the fridge note to the credits.
+
+Twenty-eight connected areas, from Donnie's room to Grandma Death's cellar.
 
 Dialogue paraphrases the film. The few lines the plot turns on (Frank's countdown, Grandma
 Death's warning) stay close to it.
@@ -68,14 +100,14 @@ js/app.js             scene stack, settings, new game / continue
 js/engine/            gfx (rects, dither, bitmap text), font, input, audio, storage, collision
 js/game/              tiles, art, cast, calendar, timeline (beats, countdown), state, world,
                       lighting, script runner, journal, items
-js/game/rooms/        house, town and school rooms
-js/game/scripts/      prologue, house (day-by-day), chapters 1-4
+js/game/rooms/        house, town, places (arcade, theatre, ridge, cellar, plane...) and school
+js/game/scripts/      prologue, house (day-by-day), school routing, chapters 1-10
 js/ui/                text box and choices, menus, panels
-js/scenes/            title, play, pause, settings, journal, save/load, credits, end
+js/scenes/            title, play, pause, settings, journal, reader, save/load, credits, end
 ```
 
 Story is data. Rooms list props, people and exits with conditions on story flags and beats
 (`'beat:oct4'`, `'from:flood'`). Scripts are lists of steps (`say`, `choice`, `set`, `go`,
 `walk`, `time`, `sleep`, …) run by `game/script.js`. Tests:
 `node --test tests/music/darko.test.mjs`. They include reachability checks for every room in
-every beat and a full headless playthrough from October 1 to the end of the current build.
+every beat and a full headless playthrough from October 1 to the closing credits.

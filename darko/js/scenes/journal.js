@@ -9,6 +9,7 @@ import { NOTES } from '../game/journal.js';
 import { ITEMS } from '../game/items.js';
 import { formatDate, formatTime, weekday } from '../game/calendar.js';
 import { countdown, formatCountdown, CALENDAR_MARKS, beatById } from '../game/timeline.js';
+import { ReaderScene } from './reader.js';
 
 const TABS = ['JOURNAL', 'POCKETS', 'CALENDAR'];
 const LIST = { x: 14, y: 46, w: 112, rowH: 11 };
@@ -26,7 +27,7 @@ export class JournalScene {
     const s = this.play.state;
     if (this.tab === 2) return [];
     if (this.tab === 0) return s.notes.slice().reverse().map(n => ({ title: NOTES[n.id]?.title || n.id, text: NOTES[n.id]?.text || '', stamp: `${formatDate(n.day)}, ${formatTime(n.time)}` }));
-    return s.items.map(id => ({ title: ITEMS[id]?.name || id, text: ITEMS[id]?.text || '' }));
+    return s.items.map(id => ({ id, title: ITEMS[id]?.name || id, text: ITEMS[id]?.text || '', readable: !!ITEMS[id]?.pages }));
   }
 
   update(dt, input) {
@@ -37,6 +38,10 @@ export class JournalScene {
     const list = this.entries();
     if (input.pressed('menuUp') && list.length) { this.sel = (this.sel - 1 + list.length) % list.length; a.sfx('move'); }
     if (input.pressed('menuDown') && list.length) { this.sel = (this.sel + 1) % list.length; a.sfx('move'); }
+    const pick = list[this.sel];
+    if (this.tab === 1 && pick?.readable && (input.pressed('confirm') || (input.mouse.clicked && input.mouse.x > 130))) {
+      a.sfx('select'); input.consume(); this.app.push(new ReaderScene(this.app, pick.id, this.play.state)); return;
+    }
     const m = input.mouse;
     if (m.clicked || m.moved) {
       TABS.forEach((_, i) => {
@@ -77,6 +82,7 @@ export class JournalScene {
       g.text(e.title, dx, y, C.bone); y += 11;
       if (e.stamp) { g.text(e.stamp, dx, y, C.grey); y += 13; }
       for (const line of wrap(e.text, 28)) { g.text(line, dx, y, C.mist); y += 10; }
+      if (e.readable) g.text('Enter: read it', dx, y + 4, C.lamp);
     }
     g.rect(14, H - 26, W - 28, 1, C.slate);
     g.text(s.objective ? `NOW: ${s.objective}` : '', 14, H - 20, C.lamp);

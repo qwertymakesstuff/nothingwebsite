@@ -5,6 +5,7 @@ import { C } from '../palette.js';
 import { NIGHTLIGHT, HOUSE_THEME, OUTSIDE_THEME, SCHOOL_MORNING } from './common.js';
 
 const BUS_STOP = [SCHOOL_MORNING, '!bus_gone'];
+const DAY_TRAIL = ['beat:oct18', 'golf_walk'];
 
 export const TOWN = {
   street: {
@@ -24,7 +25,7 @@ export const TOWN = {
       'X,,,#########,,,,##########,,,##########,,,X',
     ],
     theme: OUTSIDE_THEME,
-    spawns: { from_yard: [17.9, 5.3, 'down'], from_golf: [42, 6.4, 'left'], bus_stop: [31.2, 8.9, 'left'] },
+    spawns: { from_yard: [17.9, 5.3, 'down'], from_golf: [42, 6.4, 'left'], bus_stop: [31.2, 8.9, 'left'], epilogue: [29, 8.4, 'left'] },
     exits: [
       { x: 16.6, y: 4, w: 3, h: 0.55, to: 'yard', spawn: 'from_street', blockWhen: s => (s.beat === 'engine' && !s.has('officer_ok')) || s.has('walking_gretchen'), script: 'path_blocked' },
       { x: 1, y: 4, w: 0.4, h: 6, script: 'edge' },
@@ -59,17 +60,17 @@ export const TOWN = {
       { id: 'busstop', type: 'sign', x: 30.6, y: 7.9, w: 0.6, h: 1.3, solid: [30.7, 8.9, 0.3, 0.3], script: 'bus_stop', label: 'bus stop' },
       { id: 'roadline', type: 'roadline', x: 1, y: 6.95, w: 42, h: 0.1, layer: 'floor' },
       // the morning after the engine
-      { id: 'firetruck', type: 'firetruck', x: 19.6, y: 6.1, w: 4.6, h: 1.5, solid: true, script: 'firetruck', label: 'fire engine', when: 'beat:engine' },
-      { id: 'police1', type: 'policecar', x: 11.6, y: 6.2, w: 2.4, h: 1.2, solid: true, script: 'policecar', label: 'police car', when: 'beat:engine' },
-      { id: 'police2', type: 'policecar', x: 27, y: 7.1, w: 2.4, h: 1.2, solid: true, script: 'policecar', label: 'police car', when: 'beat:engine' },
-      { id: 'newsvan', type: 'newsvan', x: 6.4, y: 6.2, w: 3, h: 1.3, solid: true, script: 'newsvan', label: 'news van', when: 'beat:engine' },
-      { id: 'barricade', type: 'barricade', x: 14.6, y: 5.0, w: 1.8, h: 0.7, solid: true, when: 'beat:engine' },
-      { id: 'barricade2', type: 'barricade', x: 20, y: 5.0, w: 2, h: 0.7, solid: true, when: 'beat:engine' },
+      { id: 'firetruck', type: 'firetruck', x: 19.6, y: 6.1, w: 4.6, h: 1.5, solid: true, script: 'firetruck', label: 'fire engine', when: 'beat:engine|tangent' },
+      { id: 'police1', type: 'policecar', x: 11.6, y: 6.2, w: 2.4, h: 1.2, solid: true, script: 'policecar', label: 'police car', when: 'beat:engine|tangent' },
+      { id: 'police2', type: 'policecar', x: 27, y: 7.1, w: 2.4, h: 1.2, solid: true, script: 'policecar', label: 'police car', when: 'beat:engine|tangent' },
+      { id: 'newsvan', type: 'newsvan', x: 6.4, y: 6.2, w: 3, h: 1.3, solid: true, script: 'newsvan', label: 'news van', when: 'beat:engine|tangent' },
+      { id: 'barricade', type: 'barricade', x: 14.6, y: 5.0, w: 1.8, h: 0.7, solid: true, when: 'beat:engine|tangent' },
+      { id: 'barricade2', type: 'barricade', x: 20, y: 5.0, w: 2, h: 0.7, solid: true, when: 'beat:engine|tangent' },
     ],
     npcs: [
       { id: 'officer', who: 'officer', x: 18, y: 5.5, facing: 'down', script: 'officer', when: 'beat:engine' },
-      { id: 'crowd1', who: 'student', x: 13.4, y: 5.6, facing: 'up', script: 'crowd', when: 'beat:engine' },
-      { id: 'crowd2', who: 'student2', x: 22.8, y: 5.5, facing: 'up', script: 'crowd', when: 'beat:engine' },
+      { id: 'crowd1', who: 'student', x: 13.4, y: 5.6, facing: 'up', script: 'crowd', when: 'beat:engine|tangent' },
+      { id: 'crowd2', who: 'student2', x: 22.8, y: 5.5, facing: 'up', script: 'crowd', when: 'beat:engine|tangent' },
       { id: 'sean', who: 'sean', x: 32, y: 8.6, facing: 'left', script: 'sean', when: BUS_STOP },
       { id: 'ronald', who: 'ronald', x: 32.9, y: 9.0, facing: 'left', script: 'ronald', when: BUS_STOP },
       { id: 'cherita', who: 'cherita', x: 28.6, y: 8.7, facing: 'down', script: 'cherita', when: BUS_STOP },
@@ -79,6 +80,13 @@ export const TOWN = {
       { id: 'gretchen', who: 'gretchen', x: 39.6, y: 8.7, facing: 'left', script: 'gretchen_corner', when: ['beat:oct4', 'cancelled', '!walking_gretchen', '!gretchen_home'] },
       { id: 'seth', who: 'seth', x: 40.6, y: 8.5, facing: 'left', script: 'bullies', when: ['beat:oct4', 'cancelled', '!gretchen_home'] },
       { id: 'ricky', who: 'ricky', x: 38.5, y: 9.1, facing: 'right', script: 'bullies', when: ['beat:oct4', 'cancelled', '!gretchen_home'] },
+      // October 2, again: the morning the engine fell, and Donnie with it
+      { id: 'gretchen_e', who: 'gretchen', x: 25.2, y: 8.4, facing: 'left', when: 'beat:tangent' },
+      { id: 'david', who: 'david', x: 23.8, y: 8.4, facing: 'right', when: 'beat:tangent' },
+      { id: 'rose_e', who: 'rose', x: 16.2, y: 5.2, facing: 'down', when: 'beat:tangent' },
+      { id: 'liz_e', who: 'elizabeth', x: 17.4, y: 5.0, facing: 'down', when: 'beat:tangent' },
+      { id: 'eddie_e', who: 'eddie', x: 19.2, y: 5.0, facing: 'down', when: 'beat:tangent' },
+      { id: 'sam_e', who: 'samantha', x: 18.4, y: 5.1, facing: 'down', when: 'beat:tangent' },
       { id: 'gretchen_f', who: 'gretchen', x: 37.6, y: 8.9, facing: 'left', follow: true, script: 'gretchen_follow', when: ['walking_gretchen', '!gretchen_home'] },
     ],
     lights: [
@@ -110,8 +118,9 @@ export const TOWN = {
     ambient: 0.9,
     spawns: { from_street: [0.8, 6, 'right'], green: [19.2, 6.3, 'down'] },
     exits: [
-      { x: 0, y: 3, w: 0.4, h: 6, to: 'street', spawn: 'from_golf', blockWhen: s => s.beat === 'frank' || (s.beat === 'engine' && !s.has('golf_done')), script: 'golf_leave' },
+      { x: 0, y: 3, w: 0.4, h: 6, to: 'street', spawn: 'from_golf', blockWhen: s => s.beat === 'frank' || (s.beat === 'engine' && !s.has('golf_done')) || s.beat === 'oct18', script: 'golf_leave' },
       { x: 14, y: 1, w: 0.6, h: 10, trigger: true, once: 'frank_seen', when: ['beat:frank', 'woke_oct2'], script: 'frank_golf' },
+      { x: 16, y: 1, w: 0.6, h: 10, trigger: true, once: 'trail_kiss', when: DAY_TRAIL, script: 'trail_kiss' },
     ],
     props: [
       { id: 'green', type: 'green', x: 16.5, y: 3.6, w: 6.5, h: 4.6, layer: 'floor' },
@@ -126,6 +135,8 @@ export const TOWN = {
     ],
     npcs: [
       { id: 'frank', who: 'frank', x: 22.2, y: 6, facing: 'left', script: 'frank_golf_talk', when: ['beat:frank', 'frank_seen', '!frank_gone'] },
+      { id: 'gretchen_g', who: 'gretchen', x: 2.6, y: 6.4, facing: 'right', follow: true, script: 'gretchen_trail', when: [...DAY_TRAIL, '!trail_done'] },
+      { id: 'jogger', who: 'jogger', x: 24.8, y: 8.6, facing: 'left', script: 'jogger', when: [...DAY_TRAIL, 'trail_kiss'] },
       { id: 'fisher', who: 'fisher', x: 20.8, y: 7.4, facing: 'left', script: 'fisher', when: ['beat:engine', 'golf_woken', '!golf_done'] },
       { id: 'cunningham', who: 'cunningham', x: 22.4, y: 7.9, facing: 'left', script: 'cunningham_golf', when: ['beat:engine', 'golf_woken', '!golf_done'] },
     ],
@@ -186,26 +197,54 @@ export const TOWN = {
       'XhhhhhhhhhhhhhhhhhhhhhhhhX',
     ],
     theme: OUTSIDE_THEME,
-    spawns: { car: [10.4, 9.6, 'up'] },
+    spawns: { car: [10.4, 9.6, 'up'], west: [2.4, 8.4, 'right'], ruins: [15.4, 6.2, 'right'], cellar_out: [13.8, 4.4, 'down'], porch: [12.6, 4.2, 'up'] },
     exits: [
       { x: 1, y: 0, w: 0.4, h: 12, script: 'oldgun_edge' },
       { x: 24.6, y: 0, w: 0.4, h: 12, script: 'oldgun_edge' },
       { x: 1, y: 0, w: 24, h: 0.4, script: 'oldgun_edge' },
+      { x: 9, y: 7, w: 0.5, h: 2, trigger: true, once: 'og_walk', when: ['beat:oct20', 'gretchen_og'], script: 'oldgun_walk' },
     ],
     props: [
       { id: 'field', type: 'field', x: 1, y: 0, w: 24, h: 7, layer: 'floor' },
-      { id: 'sparrow_house', type: 'sparrowhouse', x: 10.6, y: 0.4, w: 4.2, h: 2.8, solid: [10.6, 1.4, 4.2, 1.8], script: 'sparrow_house', label: 'brick house' },
+      { id: 'sparrow_house', type: 'sparrowhouse', x: 10.6, y: 0.4, w: 4.2, h: 2.8, solid: [10.6, 1.4, 4.2, 1.8], script: 'sparrow_house', label: "Roberta Sparrow's house" },
+      { id: 'cellar_door', type: 'cellardoor', x: 14.9, y: 2.7, w: 1, h: 0.7, layer: 'floor', script: 'cellar_door', label: 'cellar door', when: 'beat:oct30' },
       { id: 'sparrow_mail', type: 'mailbox', x: 13.6, y: 5.9, w: 0.5, h: 1, solid: [13.6, 6.65, 0.5, 0.25], script: 'sparrow_mailbox', label: 'mailbox' },
-      { id: 'taurus', type: 'carh', x: 7.2, y: 7.15, w: 3.4, h: 1.6, solid: true, script: 'taurus', label: 'the car' },
+      { id: 'chimney', type: 'chimney', x: 18.2, y: 2.6, w: 1.4, h: 2.4, solid: [18.2, 4.5, 1.4, 0.5], script: 'chimney', label: 'old chimney' },
+      { id: 'taurus', type: 'carh', x: 7.2, y: 7.15, w: 3.4, h: 1.6, solid: true, script: 'taurus', label: 'the car', when: 'beat:oct3_eve' },
+      { id: 'minivan', type: 'carh', x: 3.4, y: 7.15, w: 3.6, h: 1.6, solid: true, col: '#4a4a6a', script: 'minivan', label: 'minivan', when: ['beat:oct7_pm', 'farmer_stop', '!farmer_gone'] },
+      { id: 'wreck', type: 'carh', x: 17.6, y: 4.6, w: 3.4, h: 1.6, col: '#16161c', solid: true, script: 'wreck', label: 'the Trans-Am', when: ['beat:oct30', 'crashed_car'] },
       { id: 'roadline', type: 'roadline', x: 1, y: 7.95, w: 24, h: 0.1, layer: 'floor' },
       { id: 'pine1', type: 'tree', x: 2, y: 1, w: 3, h: 3.4, solid: [3.2, 3.9, 0.6, 0.4], script: 'golf_tree', label: 'pines' },
-      { id: 'pine2', type: 'tree', x: 20, y: 1.6, w: 3, h: 3.4, solid: [21.2, 4.5, 0.6, 0.4], script: 'golf_tree', label: 'pines' },
+      { id: 'pine2', type: 'tree', x: 21.4, y: 1.6, w: 3, h: 3.4, solid: [22.6, 4.5, 0.6, 0.4], script: 'golf_tree', label: 'pines' },
     ],
     npcs: [
-      { id: 'sparrow', who: 'sparrow', x: 12.4, y: 8.1, facing: 'down', script: 'sparrow', when: ['beat:oct3_eve', '!sparrow_done'] },
+      { id: 'sparrow', who: 'sparrow', x: 12.4, y: 8.1, facing: 'down', script: 'sparrow', when: ['beat:oct3_eve', '!sparrow_done', '!sparrow_led'] },
       { id: 'sparrow_f', who: 'sparrow', x: 12.4, y: 8.1, facing: 'up', follow: true, script: 'sparrow_follow', when: ['beat:oct3_eve', 'sparrow_led', '!sparrow_done'] },
+      // Friday at the ruins
+      { id: 'sean', who: 'sean', x: 16.6, y: 5.6, facing: 'right', script: 'sean_ruins', when: 'beat:oct7_pm' },
+      { id: 'ronald', who: 'ronald', x: 17.4, y: 6.4, facing: 'up', script: 'ronald_ruins', when: 'beat:oct7_pm' },
+      { id: 'farmer', who: 'farmer', x: 7.4, y: 8.2, facing: 'right', script: 'farmer_road', when: ['beat:oct7_pm', 'farmer_stop', '!farmer_gone'] },
+      { id: 'sparrow_r', who: 'sparrow', x: 13.4, y: 6.9, facing: 'up', script: 'sparrow_ruins', when: s => s.beat === 'oct7_pm' || s.beat === 'oct27' },
+      // with Gretchen, the day of the assembly
+      { id: 'gretchen_og', who: 'gretchen', x: 3.4, y: 8.6, facing: 'right', follow: true, script: 'gretchen_og', when: ['beat:oct20', 'gretchen_og'] },
+      // the last night
+      { id: 'gretchen_n', who: 'gretchen', x: 12.4, y: 5.4, facing: 'up', script: 'gretchen_night', when: ['beat:oct30', 'to_sparrow', '!in_cellar', '!cellar_done'] },
+      { id: 'sean_n', who: 'sean', x: 10.6, y: 6, facing: 'up', script: 'sean_night', when: ['beat:oct30', 'to_sparrow', '!sean_gone'] },
+      { id: 'ronald_n', who: 'ronald', x: 9.6, y: 6.4, facing: 'up', script: 'ronald_night', when: ['beat:oct30', 'to_sparrow', '!sean_gone'] },
+      { id: 'seth', who: 'seth', x: 13.6, y: 4.8, facing: 'down', when: ['beat:oct30', 'cellar_done', '!seth_gone'] },
+      { id: 'ricky', who: 'ricky', x: 15.8, y: 8.6, facing: 'left', when: ['beat:oct30', 'cellar_done', '!seth_gone'] },
+      { id: 'gretchen_road', who: 'gretchen', x: 15, y: 8.5, facing: 'left', pose: 'sit', when: ['beat:oct30', 'cellar_done', '!carried_home'] },
+      { id: 'sparrow_road', who: 'sparrow', x: 11, y: 7.8, facing: 'left', script: 'sparrow_end', when: ['beat:oct30', 'sparrow_road'] },
+      { id: 'transam', who: 'transam', x: 30, y: 7.6, facing: 'left', when: ['beat:oct30', 'car_coming', '!crashed_car'] },
+      { id: 'frankman', who: 'frankman', x: 16.2, y: 6.6, facing: 'left', when: ['beat:oct30', 'crashed_car', '!frank_shot'] },
+      { id: 'passenger', who: 'passenger', x: 19.4, y: 6.6, facing: 'left', when: ['beat:oct30', 'crashed_car', '!passenger_gone'] },
     ],
-    lights: [{ x: 11.8, y: 2.6, r: 2.5, i: 0.5, phases: NIGHTLIGHT }],
+    lights: [
+      { x: 11.8, y: 2.6, r: 2.5, i: 0.5, phases: NIGHTLIGHT, when: '!beat:oct30' },
+      { x: 15.4, y: 3, r: 2, i: 0.6, when: ['beat:oct30', 'cellar_open'] },
+      { x: 23, y: 7.8, r: 7, i: 0.9, when: ['beat:oct30', 'car_coming', '!crashed_car'] },
+      { x: 17, y: 5.4, r: 4, i: 0.5, when: ['beat:oct30', 'crashed_car'] },
+    ],
   },
 
   thurman: {
@@ -236,6 +275,9 @@ export const TOWN = {
     ],
     npcs: [
       { id: 'thurman', who: 'thurman', x: 8.1, y: 5.3, facing: 'left', pose: 'sit', sy: 5.8, script: 'thurman' },
+      { id: 'rose', who: 'rose', x: 3, y: 6.4, facing: 'right', pose: 'sit', sy: 6.5, when: 'parents_thurman' },
+      { id: 'eddie', who: 'eddie', x: 4.4, y: 6.4, facing: 'right', pose: 'sit', sy: 6.5, when: 'parents_thurman' },
+      { id: 'frank', who: 'frank', x: 2, y: 4.4, facing: 'right', when: 'frank_office' },
     ],
     lights: [{ x: 9.9, y: 3.6, r: 5, i: 0.8 }],
   },

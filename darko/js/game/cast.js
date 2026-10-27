@@ -8,11 +8,13 @@ const look = (h, hair, style, top, topD, bottom, extra = {}) => ({ h, skin: C.sk
 
 export const CAST = {
   donnie: { name: 'DONNIE', col: C.bone, look: look(18, C.hairBk, 'messy', C.slate, C.deep, C.blueD, { hood: true }) },
+  // Halloween: the skeleton suit and the face painted white like a skull
+  skeleton: { name: 'DONNIE', col: C.bone, look: look(18, C.hairBk, 'messy', C.ink, '#2a2a2a', C.ink, { skin: C.white, bones: true }) },
   rose: { name: 'ROSE', col: '#c9a49a', look: look(17, C.hairLt, 'bob', C.teal, C.tealD, C.creamD, { shoes: C.woodD }) },
   eddie: { name: 'EDDIE', col: '#9fb0c8', look: look(19, C.hairBr, 'receding', '#4f6584', '#36475e', C.cream, { shoes: C.woodD }) },
   elizabeth: { name: 'ELIZABETH', col: '#c98c8c', look: look(17, C.hairBk, 'long', C.red, C.redD, C.blue) },
   samantha: { name: 'SAMANTHA', col: '#d8b6c4', look: look(13, C.hairBl, 'pony', C.pink, '#6e3e4e', C.blue, { shoes: C.bone }) },
-  callie: { name: 'CALLIE', col: C.mist },
+  dog: { name: 'THE DOG', col: C.mist },
 
   frank: { name: 'FRANK', col: '#d8d4dc' },
   voice: { name: '...', col: C.mist },
@@ -38,6 +40,18 @@ export const CAST = {
   leroy: { name: 'LEROY', col: '#a0b0c0', look: look(18, '#3a3a3a', 'short', '#4a5a6a', '#36424e', '#4a5a6a', { skin: C.skinD }) },
   seth: { name: 'SETH', col: '#a0a0a0', look: look(19, C.hairBk, 'short', '#2a2a2a', '#1a1a1a', C.blueD) },
   ricky: { name: 'RICKY', col: '#c0a080', look: look(18, C.hairLt, 'messy', '#5a3a2a', '#40281c', C.blueD) },
+  anne: { name: 'ANNE FISHER', col: '#c8b0a0', look: look(17, C.hairBl, 'bob', '#5a6a4a', '#44503a', C.creamD) },
+  beth: { name: 'BETH FARMER', col: '#e0c0a0', look: look(12, '#c8a050', 'pony', '#a05878', '#7a405a', C.blue, { shoes: C.bone }) },
+  david: { name: 'DAVID', col: '#a0b8a0', look: look(13, C.hairBr, 'short', '#3a5a7a', '#2a4058', C.blueD) },
+  jogger: { name: 'MAN IN RED', col: C.red, look: look(19, C.hairBr, 'short', '#8a1e1e', '#5a1414', '#8a1e1e') },
+  passenger: { name: 'PASSENGER', col: '#e0d080', look: look(18, '#d06030', 'messy', '#d8c860', '#a89840', '#4a6aaa', { skin: C.white }) },
+  frankman: { name: 'FRANK', col: '#d8d4dc' },
+  transam: { name: 'TRANS-AM', col: '#16161c' },
+  newscaster: { name: 'NEWSCASTER', col: C.tv },
+  machine: { name: 'ANSWERING MACHINE', col: C.lamp },
+  partier: { name: 'PARTYGOER', col: C.fog, look: look(17, C.hairBr, 'short', '#2a2a2a', '#1a1a1a', C.ink, { mask: '#b8b0a0' }) },
+  partier2: { name: 'PARTYGOER', col: C.fog, look: look(17, C.hairBk, 'long', '#5a2a5a', '#3a1a3a', C.ink, { mask: '#5a8a4a' }) },
+  partier3: { name: 'PARTYGOER', col: C.fog, look: look(18, C.hairLt, 'messy', '#7a4a2a', '#5a361e', C.blueD, { mask: '#d8c890' }) },
   student: { name: 'STUDENT', col: C.fog, look: look(17, C.hairBr, 'short', '#4a5a7a', '#36425a', C.blueD) },
   student2: { name: 'STUDENT', col: C.fog, look: look(16, C.hairBl, 'long', '#7a4a5a', '#5a3442', C.creamD) },
 };

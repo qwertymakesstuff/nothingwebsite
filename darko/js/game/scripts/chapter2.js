@@ -151,7 +151,7 @@ export const CHAPTER2 = {
   ],
   sparrow_follow: [n('She shuffles along beside him, holding on.')],
 
-  sparrow_mailbox: s => {
+  sparrow_mailbox_first: s => {
     if (s.has('sparrow_done')) return [n('Her mailbox. Empty.')];
     if (!s.has('sparrow_led')) return [n('A rusted mailbox on a post. The flag is down.')];
     return [

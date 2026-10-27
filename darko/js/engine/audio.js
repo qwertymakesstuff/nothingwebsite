@@ -128,6 +128,37 @@ export class Audio {
         this.tone('sawtooth', 55, 52, 2.4, 0.08, this.sfxBus);
         this.tone('sine', 1244, 1180, 2.0, 0.025, this.sfxBus);
         break;
+      case 'gunshot':
+        this.hiss(0.35, 0.5, 'lowpass', 2400, 0.7, this.sfxBus, t, 0.002);
+        this.tone('sine', 120, 40, 0.25, 0.5);
+        break;
+      case 'crash':
+        this.hiss(1.4, 0.35, 'lowpass', 900, 0.8, this.sfxBus, t, 0.01);
+        this.tone('sine', 60, 30, 0.8, 0.4);
+        for (let i = 0; i < 6; i++) this.tone('square', 900 + Math.random() * 1600, 400, 0.05, 0.04, this.sfxBus, t + 0.1 + i * 0.08);
+        break;
+      case 'skid': {
+        const f = this.hiss(1.1, 0.12, 'bandpass', 2600, 4, this.sfxBus, t, 0.05);
+        f.frequency.linearRampToValueAtTime(1600, t + 1.1);
+        break;
+      }
+      case 'carengine': this.tone('sawtooth', 50, 140, 2.4, 0.06); this.hiss(2.4, 0.05, 'lowpass', 400, 1, this.sfxBus, t, 0.6); break;
+      case 'jet':
+        this.tone('sawtooth', 80, 30, 3.5, 0.12);
+        this.hiss(3.5, 0.25, 'bandpass', 600, 0.6, this.sfxBus, t, 0.4);
+        break;
+      case 'rewind':
+        for (let i = 0; i < 12; i++) this.tone('square', 200 + i * 140, 2400 + i * 200, 0.12, 0.025, this.sfxBus, t + i * 0.09);
+        this.hiss(1.4, 0.08, 'highpass', 4000, 0.7, this.sfxBus, t, 0.05);
+        break;
+      case 'doorbell': this.tone('sine', 660, 660, 0.4, 0.12); this.tone('sine', 523, 523, 0.6, 0.12, this.sfxBus, t + 0.35); break;
+      case 'bb': this.tone('square', 1800, 300, 0.05, 0.08); this.hiss(0.05, 0.08, 'highpass', 3000); break;
+      case 'glass': for (let i = 0; i < 5; i++) this.tone('triangle', 2200 + Math.random() * 2000, 1500, 0.08, 0.04, this.sfxBus, t + i * 0.03); break;
+      case 'piano': this.tone('triangle', 55, 55, 2.5, 0.25); this.tone('sine', 110, 110, 2, 0.08); break;
+      case 'laugh': for (let i = 0; i < 6; i++) this.tone('triangle', 260 - i * 8, 220, 0.09, 0.06, this.sfxBus, t + i * 0.12); break;
+      case 'fire': this.hiss(2.5, 0.18, 'lowpass', 700, 0.6, this.sfxBus, t, 0.6); break;
+      case 'beep': this.tone('square', 1000, 1000, 0.15, 0.05); break;
+      case 'plane': this.tone('sine', 110, 90, 3, 0.06); this.hiss(3, 0.05, 'lowpass', 300, 1, this.sfxBus, t, 1); break;
       default: break;
     }
   }
@@ -197,6 +228,39 @@ export class Audio {
       drone('sine', 60, 0.02);
       loopNoise('bandpass', 1400, 0.025, 1.5);
       every(1000, t => this.tone('square', 3200, 3000, 0.008, 0.01, g, t));
+    } else if (name === 'crowd' || name === 'school') {
+      // a room full of people murmuring, rising and falling
+      const m = loopNoise('bandpass', 700, name === 'crowd' ? 0.06 : 0.035, 0.9);
+      lfo(m.v.gain, 0.3, 0.015);
+      every(1700, t => { if (Math.random() < 0.3) this.tone('triangle', 240 + Math.random() * 120, 200, 0.12, 0.012, g, t); });
+    } else if (name === 'party') {
+      // the bass through the floor, and voices
+      loopNoise('bandpass', 800, 0.05, 0.8);
+      every(500, t => { this.tone('sine', 55, 40, 0.18, 0.12, g, t); if (Math.random() < 0.5) this.tone('square', 110, 110, 0.06, 0.02, g, t + 0.25); });
+    } else if (name === 'arcade') {
+      loopNoise('bandpass', 1200, 0.02, 1);
+      every(260, t => { if (Math.random() < 0.6) this.tone('square', 300 + Math.floor(Math.random() * 8) * 110, 300, 0.05, 0.012, g, t); });
+    } else if (name === 'theatre') {
+      drone('sine', 48, 0.03);
+      const p = loopNoise('bandpass', 2400, 0.012, 3);
+      lfo(p.v.gain, 24, 0.008);
+      every(3000, t => { if (Math.random() < 0.4) this.tone('sawtooth', 90, 70, 0.6, 0.015, g, t); });
+    } else if (name === 'storm') {
+      // the sky over Middlesex, the last days: wind that doesn't stop, and something under it
+      const w = loopNoise('bandpass', 300, 0.1, 0.4);
+      lfo(w.f.frequency, 0.13, 160);
+      lfo(w.v.gain, 0.07, 0.05);
+      const d = drone('sine', 41, 0.035);
+      lfo(d.v.gain, 0.05, 0.02);
+      every(7000, t => { if (Math.random() < 0.4) this.hiss(2.5, 0.06, 'lowpass', 160, 0.7, g, t, 0.8); });
+    } else if (name === 'plane') {
+      drone('sine', 95, 0.03);
+      loopNoise('lowpass', 500, 0.08);
+    } else if (name === 'portal') {
+      drone('sine', 220, 0.02); drone('sine', 221.5, 0.02);
+      const c = drone('sine', 330, 0.012);
+      lfo(c.v.gain, 0.2, 0.01);
+      loopNoise('highpass', 5000, 0.015);
     }
 
     this.amb = {

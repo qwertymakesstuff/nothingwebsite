@@ -21,7 +21,7 @@ const ST = await load('engine/storage.js');
 const { App } = await load('app.js');
 const { PlayScene } = await load('scenes/play.js');
 const { TitleScene } = await load('scenes/title.js');
-const { EndScene } = await load('scenes/end.js');
+const { EndScene, CreditsRoll } = await load('scenes/end.js');
 
 const root = new URL('../../darko/', import.meta.url).pathname;
 const jsFiles = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? jsFiles(path.join(d, e.name)) : e.name.endsWith('.js') ? [path.join(d, e.name)] : []);
@@ -98,7 +98,8 @@ test('timeline: beats run forward in time, start with real scripts, and only the
   let prev = -1;
   for (const b of TL.BEATS) {
     const at = TL.abs(b.day, parseTime(b.time));
-    assert.ok(at > prev, `${b.id} starts before the beat before it`);
+    // the last beat is the epilogue: October 2 again
+    assert.ok(b.last ? at < prev : at > prev, `${b.id} starts before the beat before it`);
     prev = at;
     assert.ok(SCRIPTS[b.start], `${b.id}: missing start script ${b.start}`);
     if (b.until) assert.ok(parseTime(b.until) > parseTime(b.time), `${b.id}: until is before start`);
@@ -116,13 +117,20 @@ test('state: conditions read flags, negations, lists, beats and functions', () =
   assert.ok(cond(s, 'from:flood')); assert.ok(!cond(s, 'from:oct5')); assert.ok(cond(s, 'before:oct5')); assert.ok(cond(s, '!beat:frank|flood'));
 });
 
+// a door that only opens later in a beat still counts as a way back
+const wayBackStates = beat => {
+  const withGas = stateAt(beat, ['portal_seen']);
+  withGas.give('gascan');
+  return [stateAt(beat, ['oct7_english']), stateAt(beat, ['spears']), stateAt(beat, ['house_burned']), withGas];
+};
+
 test('rooms: exits lead to real spawns, and there is always a way back', () => {
   for (const [id, r] of Object.entries(ROOMS)) {
     for (const ex of r.exits) {
       if (!ex.to) { assert.ok(SCRIPTS[ex.script], `${id}: exit with no script`); continue; }
       assert.ok(ROOMS[ex.to], `${id}: exit to missing room ${ex.to}`);
       assert.ok(ROOMS[ex.to].spawns[ex.spawn], `${id}: exit to missing spawn ${ex.to}.${ex.spawn}`);
-      const back = ROOMS[ex.to].exits.some(b => b.to === id) || ROOMS[ex.to].props.some(p => p.script && TL.BEATS.some(b => (resolveAll(p.script, stateAt(b.id, ['oct7_english'])) || []).some(s => s[0] === 'go' && s[1] === id)));
+      const back = ROOMS[ex.to].exits.some(b => b.to === id) || [...ROOMS[ex.to].props, ...ROOMS[ex.to].exits].some(p => p.script && TL.BEATS.some(b => wayBackStates(b.id).some(st => (resolveAll(p.script, st) || []).some(s => s[0] === 'go' && s[1] === id))));
       assert.ok(back, `${ex.to} has no way back to ${id}`);
     }
   }
@@ -292,6 +300,14 @@ function stand(app, room, tx, ty) {
   finishScene(app);
 }
 
+// step into the middle of the room's exit that runs a script or leads to a room
+function leave(app, room, which) {
+  goTo(app, room);
+  const ex = ROOMS[room].exits.find(e => e.script === which || e.to === which);
+  assert.ok(ex, `${room}: no exit ${which}`);
+  stand(app, room, ex.x + ex.w / 2, ex.y + ex.h / 2 + (ex.h < 1 ? 0.2 : 0));
+}
+
 function walkInto(app, room, tx, ty, key) {
   goTo(app, room);
   const play = playOf(app);
@@ -301,7 +317,7 @@ function walkInto(app, room, tx, ty, key) {
   finishScene(app);
 }
 
-test('playthrough: October 1 through the "Controlling Fear" tape, in order', () => {
+test('playthrough: October 1, 1988 to the end, in order', () => {
   const app = newApp();
   app.newGame();
   const play = app.top;
@@ -330,7 +346,7 @@ test('playthrough: October 1 through the "Controlling Fear" tape, in order', () 
   assert.ok(s.has('rose_talk'));
   use(app, 'donnie_room', 'bed');
   assert.equal(s.beat, 'oct1', 'no sleeping before the pills');
-  use(app, 'hall', 'door_bath');
+  use(app, 'bathroom', 'mirror');
   use(app, 'donnie_room', 'bed');
 
   // ---- October 2: Frank
@@ -427,19 +443,223 @@ test('playthrough: October 1 through the "Controlling Fear" tape, in order', () 
   assert.ok(s.hasNote('handwriting'));
   use(app, 'school_hall', 'door_health');
   assert.equal(play.world.room.id, 'health');
-  const ends = () => app.top instanceof EndScene;
-  const t = play.world.interactables().find(x => x.ref.id === 'my_desk');
-  play.interact(t);
-  for (let i = 0; i < 40000 && !ends(); i++) pump(app, 1);
-  assert.ok(ends(), 'the build ends after the tape');
+  use(app, 'health', 'my_desk');
   assert.ok(s.hasNote('controlling_fear'));
-  const saved = app.store.load('auto');
-  assert.equal(saved.beat, 'build_end');
 
-  // Continue comes back to the end of the build without breaking
-  for (let i = 0; i < 300 && !(app.top instanceof TitleScene); i++) pump(app, 1);
+  // ---- October 7, evening
+  assert.equal(s.beat, 'oct7_pm');
+  assert.ok(s.hasNote('mailbox_loop'));
+  leave(app, 'oldgun', 'oldgun_edge');
+  assert.equal(play.world.room.id, 'living');
+  use(app, 'bathroom', 'mirror');
+  assert.ok(s.hasNote('mirror') && s.hasNote('pta'));
+  use(app, 'living', 'couch');
+
+  // ---- October 8: the arcade
+  assert.equal(s.beat, 'oct8');
+  use(app, 'arcade', 'gretchen');
+  assert.ok(s.hasNote('arcade'));
+  leave(app, 'arcade', 'arcade_leave');
+  use(app, 'living', 'couch');
+
+  // ---- October 13: Poetry Day, the Lifeline
+  assert.equal(s.beat, 'oct13');
+  use(app, 'school_hall', 'door_health');
+  assert.equal(play.world.room.id, 'school_hall', 'English first');
+  use(app, 'school_hall', 'door_english');
+  use(app, 'english', 'my_desk');
+  assert.ok(s.hasNote('poem'));
+  use(app, 'school_hall', 'door_health');
+  use(app, 'health', 'my_desk');
+  assert.ok(s.hasNote('lifeline') && s.hasNote('suspended'));
+  assert.equal(s.beat, 'oct13_eve');
+  assert.equal(play.world.room.id, 'donnie_room');
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 14: the book; Roberta Sparrow
+  assert.equal(s.beat, 'oct14');
+  assert.ok(s.hasItem('philosophy') && s.hasNote('monnitoff_book'));
+  leave(app, 'school_front', 'school_leave');
+  assert.ok(!s.has('dinner14'), 'not home before the photograph');
+  use(app, 'school_hall', 'old_photos');
+  assert.ok(s.hasNote('sparrow_photo'));
+  leave(app, 'school_front', 'school_leave');
+  assert.ok(s.has('dinner14') && s.hasNote('sparrow_gems'));
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 15: the trampoline
+  assert.equal(s.beat, 'oct15');
+  use(app, 'backyard', 'trampoline');
+  assert.ok(s.hasNote('trampoline'));
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 16: Dr. Thurman; the spears; the gun
+  assert.equal(s.beat, 'oct16');
+  assert.ok(s.hasNote('searching'));
+  use(app, 'living', 'recliner');
+  assert.ok(s.has('spears'));
+  use(app, 'hall', 'door_parents');
+  assert.equal(play.world.room.id, 'parents_room');
+  use(app, 'parents_room', 'closet');
+  assert.ok(s.has('gun_found') && !s.hasItem('gun'), 'he puts it back');
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 18: Watership Down, Seth, the trail, the wallet, the knife
+  assert.equal(s.beat, 'oct18');
+  use(app, 'school_hall', 'door_physics');
+  assert.equal(play.world.room.id, 'school_hall', 'physics is in the afternoon');
+  use(app, 'school_hall', 'door_english');
+  use(app, 'english', 'my_desk');
+  assert.ok(s.hasItem('watership') && s.hasNote('greene_banned'));
+  use(app, 'school_front', 'seth');
+  assert.ok(s.hasNote('seth'));
+  use(app, 'school_hall', 'door_physics');
+  use(app, 'physics', 'my_desk');
+  assert.equal(play.world.room.id, 'golf');
+  leave(app, 'golf', 'trail_kiss');
+  assert.ok(s.hasNote('jogger'));
+  assert.equal(play.world.room.id, 'powderham');
+  leave(app, 'powderham', 'wallet_spot');
+  use(app, 'powderham', 'wallet');
+  assert.ok(s.hasItem('wallet') && s.hasNote('wallet'));
+  leave(app, 'powderham', 'powderham_leave');
+  assert.ok(s.has('pumpkin_carved') && s.hasNote('daylight'));
+  use(app, 'kitchen', 'counter1');
+  assert.ok(s.hasItem('knife'));
+  use(app, 'bathroom', 'mirror');
+  use(app, 'bathroom', 'frank'); use(app, 'bathroom', 'frank'); use(app, 'bathroom', 'frank');
+  assert.ok(s.has('knife_done') && !s.hasItem('knife') && s.hasNote('knife'));
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 20: the assembly; Grandma Death's house; the letter
+  assert.equal(s.beat, 'oct20');
+  assert.equal(play.world.room.id, 'auditorium');
+  leave(app, 'auditorium', 'assembly_stay');
+  assert.equal(play.world.room.id, 'auditorium');
+  use(app, 'auditorium', 'mic');
+  assert.ok(s.hasNote('antichrist'));
+  assert.equal(play.world.room.id, 'oldgun');
+  leave(app, 'oldgun', 'oldgun_walk');
+  use(app, 'oldgun', 'sparrow_house');
+  use(app, 'oldgun', 'sparrow_mail');
+  assert.ok(s.hasNote('silhouette'));
+  leave(app, 'oldgun', 'oldgun_edge');
+  use(app, 'donnie_room', 'desk');
+  assert.ok(s.hasItem('letter'));
+  use(app, 'yard', 'mailbox');
+  assert.ok(s.has('letter_sent') && !s.hasItem('letter'));
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 23
+  assert.equal(s.beat, 'oct23');
+  assert.ok(s.hasNote('workers') && s.has('dinner23'));
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 24: the Infant Memory Generators; the Byrd; the fire
+  assert.equal(s.beat, 'oct24');
+  assert.equal(play.world.room.id, 'school_front');
+  use(app, 'school_front', 'gretchen_f');
+  assert.ok(s.hasNote('kiss'));
+  assert.equal(play.world.room.id, 'theatre');
+  leave(app, 'theatre', 'powderham');
+  assert.equal(play.world.room.id, 'theatre', 'not before Frank');
+  use(app, 'theatre', 'frank');
+  assert.ok(s.hasNote('unmasked'));
+  leave(app, 'theatre', 'powderham');
+  use(app, 'powderham', 'mdoor');
+  assert.equal(play.world.room.id, 'powderham', 'he needs the gas first');
+  use(app, 'powderham', 'gascan');
+  use(app, 'powderham', 'mdoor');
+  assert.equal(play.world.room.id, 'cunningham');
+  use(app, 'cunningham', 'couch'); use(app, 'cunningham', 'curtain1');
+  leave(app, 'cunningham', 'powderham');
+  assert.equal(play.world.room.id, 'cunningham', 'not halfway done');
+  use(app, 'cunningham', 'chair');
+  assert.ok(s.has('house_burned') && s.hasNote('fire'));
+  leave(app, 'powderham', 'powderham_leave');
+  assert.ok(s.has('fire_done'));
+
+  // ---- October 25: the ridge; Dad; the news; destiny
+  assert.equal(s.beat, 'oct25');
+  assert.equal(play.world.room.id, 'ridge');
+  leave(app, 'ridge', 'ridge_stay');
+  use(app, 'backyard', 'eddie_rake');
+  assert.ok(s.hasNote('eddie') && s.hasNote('arrested') && s.hasNote('destiny') && s.hasNote('pomeroy_fired'));
+  goTo(app, 'kitchen');
+  assert.ok(s.hasNote('family'));
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 26: Watership Down; Kitty; Mom
+  assert.equal(s.beat, 'oct26');
+  use(app, 'school_hall', 'door_english');
+  use(app, 'english', 'my_desk');
+  assert.ok(s.hasNote('rabbits'));
+  use(app, 'school_hall', 'gretchen_h');
+  assert.ok(s.hasNote('whats_wrong') && s.hasNote('kitty'));
+  goTo(app, 'donnie_room');
+  assert.ok(s.hasNote('wacko'), 'Mom is waiting in his room');
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 27: Mom leaves; cellar door; Cherita
+  assert.equal(s.beat, 'oct27');
+  use(app, 'yard', 'rose_lv');
+  assert.ok(s.hasNote('nothing_broken'));
+  use(app, 'school_hall', 'gretchen_h');
+  assert.ok(s.has('gretchen_ignored'));
+  use(app, 'school_hall', 'door_english');
+  use(app, 'english', 'pomeroy_box');
+  assert.ok(s.hasNote('cellar_door'));
+  use(app, 'school_hall', 'cherita_h');
+  assert.ok(s.hasItem('earmuffs') && s.hasNote('cherita'));
+  leave(app, 'oldgun', 'oldgun_edge');
+  use(app, 'donnie_room', 'bed');
+
+  // ---- October 29: the last session; Harvard; the party
+  assert.equal(s.beat, 'oct29');
+  assert.ok(s.hasNote('placebos') && s.has('ptt4'));
+  assert.ok(s.hasNote('harvard') && s.has('costume'));
+  use(app, 'hall', 'door_parents');
+  assert.ok(!s.has('gretchen_up'), 'Gretchen is not here yet');
+  walkInto(app, 'living', 10, 10.3, 'ArrowDown');
+  assert.ok(s.has('gretchen_arrived'));
+  use(app, 'hall', 'door_parents');
+  assert.ok(s.hasNote('redeye'));
+  use(app, 'parents_room', 'closet');
+  assert.ok(s.hasItem('gun'));
+
+  // ---- October 30
+  assert.equal(s.beat, 'oct30');
+  assert.ok(s.has('spears'));
+  use(app, 'kitchen', 'fridge');
+  assert.ok(s.hasNote('frank_was_here'));
+  assert.equal(play.world.room.id, 'oldgun');
+  use(app, 'oldgun', 'cellar_door');
+  assert.equal(play.world.room.id, 'cellar');
+  use(app, 'cellar', 'piano');
+  assert.ok(s.has('frank_shot') && !s.hasItem('gun') && s.hasNote('storm_coming'));
+  assert.equal(play.world.room.id, 'living');
+  use(app, 'yard', 'car');
+  assert.ok(!s.has('at_ridge'), 'Elizabeth first');
+  use(app, 'living', 'liz_asleep');
+  goTo(app, 'yard');
+  assert.ok(s.has('portal_sound'));
+  use(app, 'yard', 'car');
+
+  // ---- October 2, 1988, again
+  assert.equal(s.beat, 'tangent');
+  assert.equal(s.day, 2);
+  assert.equal(TL.countdown(30, s.time + 1).total, 0, 'the engine falls as the countdown ends');
+  const rolls = () => app.top instanceof CreditsRoll;
+  for (let i = 0; i < 60000 && !rolls() && !(app.top instanceof TitleScene); i++) pump(app, 1);
+  assert.ok(rolls(), 'the credits roll');
+  assert.ok(s.has('engine_fell') && s.has('epilogue_morning'));
+  for (let i = 0; i < 60 * 300 && !(app.top instanceof TitleScene); i++) pump(app, 1);
+  assert.ok(app.top instanceof TitleScene, 'and then back to the title');
+
+  // Continue after the ending replays the epilogue rather than stranding him on the street
   app.continueGame();
-  assert.equal(app.top.state.beat, 'build_end');
+  assert.equal(app.top.state.beat, 'tangent');
+  assert.ok(app.top.busy);
 });
 
 test('playthrough: a save mid-day restores beat, place, time, flags and journal', () => {

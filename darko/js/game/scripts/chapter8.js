@@ -1,0 +1,257 @@
+// Chapter 8, "Burn It to the Ground": Monday, October 24 and Tuesday, October 25. The Infant
+// Memory Generators; the first kiss; the Byrd Theatre, where Frank takes off his mask; Jim
+// Cunningham's house, intercut with Sparkle Motion; the Ridge at sunrise; Dad and the leaves;
+// the news; Dr. Monnitoff and destiny; Ms. Pomeroy fired.
+
+import { n, say } from './util.js';
+
+const doused = ['doused_couch', 'doused_curtains', 'doused_chair'];
+const douse = (flag, what) => s => {
+  if (!s.hasItem('gascan')) return [n(what.idle)];
+  if (s.has(flag)) return [n('Already soaked. The fumes sting his eyes.')];
+  const last = doused.filter(f => f !== flag).every(f => s.has(f));
+  return [
+    ['set', 'dousing'], ['sfx', 'tap'],
+    n(what.douse),
+    ['set', flag],
+    ...(last ? [['run', 'light_it']] : [['obj', 'More. The couch, the curtains, the chair.']]),
+  ];
+};
+
+export const CHAPTER8 = {
+  oct24_physics: [
+    ['card', ['OCTOBER 24 1988'], 2.4],
+    ['set', 'in_class'],
+    ['go', 'physics', 'front'],
+    ['time', '12:00'],
+    n('The Young Inventors Fair. Donnie and Gretchen at the front of the room, presenting.'),
+    say('donnie', 'So, we call them IMGs.'),
+    say('gretchen', 'Infant Memory Generators.'),
+    say('donnie', 'You buy these glasses for your infant, and they wear them at night when they sleep.'),
+    say('gretchen', 'And inside the glasses are slides. Each one is of something peaceful, or beautiful. Whatever pictures the parents want to put in.'),
+    say('monnitoff', 'What effect do you think this would have on an infant?'),
+    say('donnie', "Nobody remembers their infancy. Anyone who says they do is lying. We think this would help develop memory earlier in life."),
+    say('monnitoff', 'Did you stop and think that maybe infants need darkness? That darkness is part of their natural development?'),
+    n('Seth raises his hand.'),
+    say('seth', 'What if the parents put in pictures of Satan? Pentagrams, dead people, stuff like that?'),
+    say('gretchen', "Is that what you'd show your kids?"),
+    say('seth', "I mean, didn't your dad, like, stab your mom?"),
+    n('The room goes silent. Dr. Monnitoff looks at Seth, very calmly.'),
+    say('monnitoff', 'Get out.'),
+    ['set', 'seth_out'],
+    n('Gretchen doesn\'t answer. She walks out of the room.'),
+    ['unset', 'in_class'],
+    ['set', 'imgs_done'],
+    ['fadeOut'],
+    ['time', '14:15'],
+    ['go', 'school_front', 'from_hall'],
+    ['obj', 'Gretchen.'],
+    ['save'],
+  ],
+
+  gretchen_kiss: [
+    say('donnie', 'Gretchen! Gretchen, wait up!'),
+    n('She turns to face him. There are tears in her eyes.'),
+    say('donnie', "I'm so sorry."),
+    n('They hold each other. And they kiss, for the first time.'),
+    ['note', 'kiss'],
+    ['set', 'kissed'],
+    ['fadeOut'],
+    ['card', ['THE BYRD THEATRE', '', 'HALLOWEEN FRIGHTMARE', 'THE EVIL DEAD  /  THE LAST TEMPTATION OF CHRIST'], 3.6],
+    ['time', '17:30'],
+    ['set', 'screen_movie'],
+    ['go', 'theatre', 'seat'],
+    n('Two for The Evil Dead. They sit in the middle of the huge, empty theater with a bucket of popcorn and watch in silence.'),
+    n('After a while, Gretchen is asleep against his shoulder. Donnie keeps watching. He starts to feel sick.'),
+    ['set', 'frank_theatre'], ['sfx', 'sting'], ['wobble', 0.8, 1e9],
+    say('frank', 'Feeling sick?'),
+    n('He looks across Gretchen. Frank is sitting on her other side.'),
+    ['obj', 'Frank.'],
+  ],
+
+  frank_theatre: [
+    say('frank', 'I want to show you something.'),
+    say('donnie', 'You have to do something for me first.'),
+    say('frank', 'You have a request?'),
+    say('donnie', 'Yeah. Tell me why you\'re wearing that stupid bunny suit.'),
+    say('frank', 'Why are you wearing that stupid man suit?'),
+    say('donnie', 'Take it off. I want to see you.'),
+    n('After a moment, Frank slowly reaches up and lifts off the rabbit head.'),
+    ['set', 'frank_unmasked'], ['sfx', 'sting'],
+    n('Underneath is the face of a young man. His left eye is gone, a dark wound where it should be.'),
+    say('frank', 'Satisfied?'),
+    say('donnie', 'What happened to your eye?'),
+    say('frank', 'I am so sorry.'),
+    say('donnie', 'Why do they call you Frank?'),
+    say('frank', 'It is the name of my father, and his father before me.'),
+    say('donnie', 'How much longer is this going to last?'),
+    say('frank', 'You should already know that. Watch the movie, Donnie. I have something to show you.'),
+    ['set', 'screen_portal'], ['sfx', 'rewind'],
+    n('On the screen, the movie bends and folds into something else: a spiral of light.'),
+    say('frank', "There's a storm coming. Have you ever seen a portal, Donnie?"),
+    ['unset', 'screen_portal'], ['set', 'screen_house'],
+    n('The screen becomes a picture of a large Tudor house.'),
+    say('frank', 'Burn it to the ground.'),
+    ['note', 'unmasked'],
+    ['unset', 'frank_unmasked'], ['unset', 'frank_theatre'], ['wobble', 0, 0],
+    n("Donnie takes Jim Cunningham's wallet out of his pocket. He sits for a long time. Then he gets up and walks out."),
+    ['set', 'portal_seen'],
+    ['obj', '42 Powderham Drive.'],
+    ['save'],
+  ],
+  gretchen_asleep: s => [n(s.has('house_burned') ? 'Still asleep.' : 'Gretchen, asleep. Her popcorn is spilling.')],
+  movie: s => [n(s.has('screen_house') ? 'The Tudor house, still there on the screen, glowing.' : 'The Evil Dead. Someone is screaming in a cabin in the woods.')],
+  theatre_stay: s => [n(s.has('house_burned') ? 'Gretchen.' : 'Not yet.')],
+
+  gascan: [n('A red gas can by the garage door. Full.'), ['give', 'gascan'], ['set', 'have_gas'], ['obj', 'Inside.']],
+  mansion_door: s => {
+    if (s.beat === 'oct24' && s.has('portal_seen') && !s.has('house_burned')) {
+      if (!s.hasItem('gascan')) return [n('The door gives at a push. Not yet. He needs something first. By the garage.')];
+      return [['sfx', 'door'], ['go', 'cunningham', 'from_door'], n('Nobody home. Deer heads, leather couches, framed photos of Jim Cunningham shaking hands with people.'), ['obj', 'Douse it. (The couch, the curtains, the chair.)']];
+    }
+    return [['sfx', 'locked'], n('Locked.')];
+  },
+  douse_couch: douse('doused_couch', { idle: 'A white leather couch.', douse: 'He soaks the couch in gasoline, with a force that surprises him.' }),
+  douse_curtains: douse('doused_curtains', { idle: 'Heavy red curtains.', douse: 'He swings the can and the gas arcs across the curtains.' }),
+  douse_chair: douse('doused_chair', { idle: 'An armchair, angled at the TV.', douse: 'The armchair. The carpet. A trail of gas back to the door.' }),
+  deer: [n('A mounted deer head. Its glass eyes catch the light.')],
+  cunningham_tapes: [n('Rows of CONTROLLING FEAR tapes, still in their shrink-wrap.')],
+  basement_door: [n('A door, locked tight. Something about it makes his skin crawl.')],
+  not_done: [n('Not yet.')],
+
+  light_it: [
+    n('He strikes a match.'),
+    ['sfx', 'fire'], ['set', 'house_burned'], ['take', 'gascan'], ['flash'], ['shake', 2, 0.8],
+    n('A trail of fire spreads across the room. The couch and the curtains go up.'),
+    // the talent show, at the same time
+    ['fadeOut'], ['set', 'hide_player'], ['set', 'talent_show'],
+    ['go', 'auditorium', 'back'],
+    ['time', '19:20'],
+    say('cunningham', '(on stage, beaming) Next, it is my distinct pleasure to introduce Emily Bates, Suzy Bailey, Samantha Darko, Beth Farmer, and Joanie James. They are... SPARKLE MOTION!'),
+    ['sfx', 'laugh'],
+    n('The lights come up. Sparkle Motion, in perfect synchronicity.'),
+    ['fadeOut'], ['unset', 'hide_player'],
+    ['go', 'cunningham', 'from_door'],
+    ['sfx', 'fire'], ['shake', 1, 1],
+    n('In slow motion: fire swallows the mounted deer head.'),
+    ['fadeOut'], ['set', 'hide_player'],
+    ['go', 'auditorium', 'back'],
+    n('Middlesex girls jump up and down in the aisles. Eddie and Rose are smiling ear to ear. Elizabeth is cracking up. Even Ms. Pomeroy gets into the groove.'),
+    n('Slow motion: Sparkle Motion stands triumphant.'),
+    ['fadeOut'], ['unset', 'hide_player'], ['unset', 'talent_show'],
+    ['go', 'powderham', 'from_house'],
+    n('Slow motion: Donnie stands in front of a wall of flames.'),
+    ['note', 'fire'],
+    ['obj', 'Back to the theatre. (Either end of the street.)'],
+    ['save'],
+  ],
+
+  theatre_return: [
+    n('He walks back into the theater and sits down next to Gretchen. The credits are rolling. He wakes her.'),
+    say('gretchen', '(disoriented) What? How long was I asleep?'),
+    say('donnie', "The whole movie. Let's go."),
+    // the house on Powderham Drive, later
+    ['fadeOut'], ['set', 'hide_player'],
+    ['time', '21:45'],
+    ['go', 'cunningham', 'from_door'],
+    n('Firemen walk through the charred room with flashlights. One of them shines his beam on a door with smoke curling from under it. He kicks it in, and shines the light down into the dark.'),
+    ['fadeOut'], ['unset', 'hide_player'],
+    ['set', 'fire_done'],
+  ],
+
+  // ---- Tuesday, October 25 -------------------------------------------------------------------
+
+  ridge_sunrise: [
+    ['card', ['OCTOBER 25 1988'], 2.4],
+    ['go', 'ridge', 'edge'],
+    n('Sunrise on Carpathian Ridge. Donnie and Gretchen lie awake on a pile of blankets, staring out over the canyon, over the endless evergreens.'),
+    ['note', 'ridge_sunrise'],
+    ['obj', 'Home, when you\'re ready.'],
+    ['save'],
+  ],
+  gretchen_ridge: [say('gretchen', "Let's not go back yet.")],
+  ridge_car: s => [n(s.has('at_ridge') ? 'The Taurus. Gretchen is in the passenger seat.' : 'The car.')],
+  ridge_stay: s => {
+    if (s.beat === 'oct25') return [['fadeOut'], ['time', '11:00'], ['go', 'backyard', 'from_kitchen'], n('Late morning. Dad is raking the backyard leaves onto a giant sheet.'), ['obj', 'Help Dad rake.'], ['save']];
+    return [n('The edge of the ridge. Nothing past it but trees, a long way down.')];
+  },
+
+  raking: [
+    n('They rake in silence for a while.'),
+    say('donnie', "I know everybody thinks I'm a nutcase. I've been getting a lot of weird looks from people lately."),
+    say('eddie', "(angry) Who's been giving you weird looks?"),
+    say('donnie', "A lot of people. Teachers. Younger kids. It's like they're afraid of me. But that's okay, because I know I deserve it."),
+    n('Dad stops raking.'),
+    say('eddie', "You're my only son. I know I'm not the best communicator. But whatever happens in your life, whatever obstacles you come up against, you just say and do whatever is in your heart."),
+    say('eddie', "You be honest, and tell the truth, even if they look at you funny. And they will. They'll tell you you're wrong. They'll call you a fool."),
+    say('eddie', "But what you've got to understand, son, is that almost all of those people are full of it. And they're scared of people like you. Because you're smarter than all of them."),
+    n('Donnie smiles at his father.'),
+    ['set', 'raked'],
+    ['note', 'eddie'],
+    ['fadeOut'],
+    ['time', '13:05'],
+    ['go', 'living', 'from_stairs'],
+    n('He takes three pills from his nightstand. There is noise from downstairs. Elizabeth is glued to the TV.'),
+    say('elizabeth', "Oh my God, that's him. That's the guy from last night."),
+    say('newscaster', '...as firefighters continue their investigation, arson has not been ruled out, particularly because of the discovery made today in the burned ruins. In the basement of the house, authorities found a hidden room containing child pornography.'),
+    say('newscaster', 'Cunningham, who has become a celebrity for his motivational books and videos, hid his face from cameras as he was arrested this morning at the Sarasota Heights Golf Club. Cunning Visions has called it a conspiracy.'),
+    n('On the TV, Jim Cunningham hides his face. Donnie stares, speechless.'),
+    say('elizabeth', 'Oh my God. Dad played golf with that guy.'),
+    n('Donnie says nothing. He turns around and walks upstairs.'),
+    ['note', 'arrested'],
+    ['fadeOut'],
+    ['time', '14:00'],
+    ['set', 'in_physics'],
+    ['go', 'physics', 'front'],
+    ['run', 'destiny'],
+  ],
+  liz_news: [say('elizabeth', 'Shh.')],
+
+  destiny: [
+    say('monnitoff', 'Each vessel travels along a vector path through space-time, along its center of gravity.'),
+    say('donnie', '(to himself) Like a spear.'),
+    say('monnitoff', 'Beg pardon?'),
+    say('donnie', 'Like a spear that comes out of your stomach?'),
+    say('monnitoff', 'Uh... sure. And in order for the vessel to travel through time, it must find the portal. In this case a wormhole, or some unforeseen portal that lies undiscovered.'),
+    say('donnie', 'Could these wormholes appear in nature?'),
+    say('monnitoff', "That's highly unlikely. You're talking about an act of God."),
+    say('donnie', 'If God controls time, then all time is pre-decided. Then every living thing travels along a set path.'),
+    say('donnie', "If you could see your path, your channel, growing out of your stomach, you could see into the future. And that's a form of time travel, right?"),
+    say('monnitoff', 'You are contradicting yourself, Donnie. If we could see our destinies manifest themselves visually, then we would be given the choice to betray them. The very fact that the choice exists would mean that all pre-formed destiny would end.'),
+    say('donnie', "Not if you chose to stay within God's channel..."),
+    say('monnitoff', "Donnie, I'm afraid I can't continue this conversation. I could lose my job."),
+    ['note', 'destiny'],
+    ['unset', 'in_physics'],
+    ['set', 'monnitoff_destiny'],
+    // the rest of the school afternoon, without him
+    ['fadeOut'], ['set', 'hide_player'],
+    ['go', 'office', 'chair'],
+    n('Later, in the teachers\' lounge, Dr. Monnitoff stares across at Ms. Pomeroy for a long moment. "Donnie Darko," he says. She is haunted by something too.'),
+    say('cole', "I'm sorry, Karen. This is a specialized school. We don't think the methods you've undertaken here are appropriate."),
+    say('pomeroy', 'With all due respect, what specifically about my methods do you find inappropriate?'),
+    say('cole', "I don't have to get myself into a debate about this. I believe I've made myself clear."),
+    say('pomeroy', "You call this clarity? You don't think the kids can smell nonsense from a mile away? Every day we fail to inspire them is another day we lose them. To apathy, and this prescribed nonsense."),
+    say('cole', "I'm sorry that you have failed. You can finish out the week."),
+    n('Outside, through an emergency exit, Ms. Pomeroy stares at the forest with tears in her eyes, and screams one long word at the trees. Cherita, eating lunch alone by the wall, hears it.'),
+    say('cole', '(over the intercom) Good afternoon. It is my great pleasure to announce that our dance team has been invited to perform on Star Search \'88, in Los Angeles, California...'),
+    n('In the office, the Sparkle Motion girls squeal. Ms. Farmer pumps her fist. Then someone hands her a newspaper. JIM CUNNINGHAM CHARGED.'),
+    ['note', 'pomeroy_fired'],
+    ['fadeOut'], ['unset', 'hide_player'],
+    ['time', '18:30'],
+    ['go', 'living', 'from_front'],
+    ['obj', 'Home. (Dad leaves for New York tonight.)'],
+    ['save'],
+  ],
+
+  family_moment: [
+    n('From the doorway, Donnie looks into the kitchen.'),
+    ['set', 'family_moment'],
+    n('Dad is packing for a business trip. Samantha is jumping up and down, and Elizabeth is jumping and dancing with her, and Mom is laughing at both of them.'),
+    n('A serene, happy moment. He chooses not to interrupt it.'),
+    ['note', 'family'],
+    ['place', 'player', 0.9, 6.2, 'right'],
+    ['obj', 'Bed.'],
+  ],
+  eddie_pack: [say('eddie', 'Back Sunday, bud. Hold down the fort.')],
+  family_dance: [n('They don\'t notice him. He doesn\'t want them to.')],
+};

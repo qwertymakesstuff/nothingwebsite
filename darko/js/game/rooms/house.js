@@ -1,8 +1,14 @@
-// The Darko house: Donnie's bedroom, the upstairs hall, the living room, the kitchen and the
-// front yard. Who is where depends on the story beat.
+// The Darko house: Donnie's bedroom, the upstairs hall, the bathroom, his parents' room, the
+// living room, the kitchen, the front yard and the backyard. Who is where depends on the beat.
 
 import { C } from '../palette.js';
-import { NIGHTLIGHT, HOUSE_THEME, OUTSIDE_THEME, AT_HOME } from './common.js';
+import { NIGHTLIGHT, HOUSE_THEME, OUTSIDE_THEME, AT_HOME, during } from './common.js';
+
+// who is home in the evenings, by beat
+const SAM_TV = [...AT_HOME, 'oct7_pm', 'oct8', 'oct13_eve', 'oct14', 'oct15', 'oct18', 'oct20', 'oct23', 'oct25', 'oct26'];
+const EDDIE_HOME = [...AT_HOME, 'oct8', 'oct14', 'oct15', 'oct20', 'oct23'];
+const ROSE_HOME = [...AT_HOME, 'oct8', 'oct14', 'oct15', 'oct16', 'oct20', 'oct23', 'oct25'];
+const party = s => s.beat === 'oct30' || (s.beat === 'oct29' && s.has('party_on'));
 
 export const HOUSE = {
   donnie_room: {
@@ -21,24 +27,27 @@ export const HOUSE = {
     ],
     theme: { ...HOUSE_THEME, floor: '#262636', floorAlt: '#30304a', wall: '#2c3c46', wallD: '#26343c' },
     ambience: 'house',
-    spawns: { start: [6.5, 6.5, 'down'], from_hall: [6, 8.7, 'up'], bed: [3.6, 5.2, 'left'], crash: [6, 8.6, 'up'] },
-    exits: [{ x: 5, y: 9.6, w: 2, h: 0.4, to: 'hall', spawn: 'from_room', blockWhen: 'beat:frank', script: 'nothing_there' }],
+    spawns: { start: [6.5, 6.5, 'down'], from_hall: [6, 8.7, 'up'], bed: [3.6, 5.2, 'left'], crash: [6, 8.6, 'up'], desk: [9.9, 6.2, 'up'] },
+    exits: [{ x: 5, y: 9.6, w: 2, h: 0.4, to: 'hall', spawn: 'from_room', blockWhen: 'beat:tangent', script: 'tangent_stay' }],
     props: [
       { id: 'window', type: 'window', x: 1.5, y: 1.15, w: 2.2, h: 1.55, layer: 'wall', script: 'room_window', label: 'window' },
       { id: 'poster', type: 'poster', x: 4.7, y: 1.1, w: 1.1, h: 1.45, layer: 'wall', script: 'poster', label: 'poster' },
+      { id: 'calendar', type: 'calendar', x: 6.3, y: 1.3, w: 0.9, h: 1, layer: 'wall', script: 'room_calendar', label: 'calendar', when: ['from:oct13_eve', '!beat:tangent'] },
       { id: 'shelf', type: 'shelf', x: 7.8, y: 1.4, w: 2.2, h: 2.1, solid: [7.8, 3, 2.2, 0.5], script: 'shelf', label: 'shelf' },
       { id: 'bed', type: 'bed', x: 1, y: 3, w: 2, h: 3.1, solid: true, script: 'bed', label: 'bed', when: '!engine_fell' },
       { id: 'book', type: 'book', x: 1.7, y: 4.9, w: 0.5, h: 0.4, when: ['!took_book', '!engine_fell'], script: 'book', label: 'book', sy: 6.2 },
-      { id: 'engine', type: 'engine', x: 0.6, y: 2.9, w: 3, h: 3.4, solid: true, when: ['engine_fell', 'beat:frank'], script: 'engine_room', label: 'engine' },
+      { id: 'engine', type: 'engine', x: 0.6, y: 2.9, w: 3, h: 3.4, solid: true, when: ['engine_fell', 'beat:frank|tangent'], script: 'engine_room', label: 'engine' },
       { id: 'debris', type: 'debris', x: 0.6, y: 3, w: 4.2, h: 4, layer: 'floor', when: 'engine_fell' },
       { id: 'stereo', type: 'stereo', x: 5.6, y: 3.0, w: 1.5, h: 0.75, solid: true, script: 'stereo', label: 'tape deck' },
       { id: 'desk', type: 'desk', x: 9, y: 4.2, w: 2, h: 1.25, solid: true, script: 'desk', label: 'desk' },
       { id: 'lamp', type: 'desklamp', x: 10.3, y: 3.75, w: 0.6, h: 0.85, script: 'lamp', label: 'lamp', sy: 5.5 },
       { id: 'rug', type: 'rug', x: 4, y: 5, w: 4, h: 2.4, layer: 'floor' },
-      { id: 'clothes', type: 'clothes', x: 7.9, y: 7.4, w: 0.9, h: 0.6, layer: 'floor', script: 'clothes', label: 'clothes' },
+      { id: 'clothes', type: 'clothes', x: 7.9, y: 7.4, w: 0.9, h: 0.6, layer: 'floor', script: 'clothes', label: 'clothes', when: 'before:oct13_eve' },
     ],
     npcs: [
       { id: 'rose', who: 'rose', x: 6, y: 9.3, facing: 'up', when: ['beat:oct1', 'rose_visit'], script: 'rose_room' },
+      { id: 'liz_door', who: 'elizabeth', x: 6, y: 8.9, facing: 'up', when: ['beat:oct13_eve', 'liz_phone', '!liz_phone_done'], script: 'rose_room' },
+      { id: 'rose2', who: 'rose', x: 7.2, y: 2.9, facing: 'down', when: ['beat:oct26', 'kitty_done', '!rose_talk2'], script: 'rose_room2' },
     ],
     lights: [
       { x: 10.6, y: 4.2, r: 5, i: 0.85, when: '!lamp_off' },
@@ -47,6 +56,7 @@ export const HOUSE = {
     ],
     onEnter: [
       { when: ['beat:oct1', 'dinner_done', '!rose_talk'], script: 'rose_bedroom' },
+      { when: ['beat:oct26', 'kitty_done', '!rose_talk2'], script: 'rose_room2' },
     ],
   },
 
@@ -63,11 +73,12 @@ export const HOUSE = {
     ],
     theme: { ...HOUSE_THEME, floor: '#3a3230', floorAlt: '#443a36', wall: '#4a4a3c', wallD: '#403f33' },
     ambience: 'house',
-    spawns: { from_room: [2.5, 3.9, 'down'], from_stairs: [15.9, 4.4, 'up'] },
+    spear: [16.1, 3.3],
+    spawns: { from_room: [2.5, 3.9, 'down'], from_stairs: [15.9, 4.4, 'up'], from_bath: [5.5, 3.9, 'down'], from_parents: [16.1, 3.9, 'down'] },
     exits: [{ x: 15, y: 6.3, w: 2, h: 0.7, to: 'living', spawn: 'from_stairs' }],
     props: [
       { id: 'door_donnie', type: 'door', x: 2, y: 1.15, w: 1, h: 1.85, layer: 'wall', script: 'door_donnie', label: 'your room' },
-      { id: 'tarp_door', type: 'tarp', x: 2, y: 1.15, w: 1, h: 1.85, layer: 'wall', when: 'from:engine', script: 'door_donnie', label: 'your room' },
+      { id: 'tarp_door', type: 'tarp', x: 2, y: 1.15, w: 1, h: 1.85, layer: 'wall', when: ['from:engine', 'before:oct13_eve'], script: 'door_donnie', label: 'your room' },
       { id: 'door_bath', type: 'door', x: 5, y: 1.15, w: 1, h: 1.85, layer: 'wall', script: 'door_bath', label: 'bathroom', col: C.bone },
       { id: 'door_liz', type: 'door', x: 8.2, y: 1.15, w: 1, h: 1.85, layer: 'wall', script: 'door_liz', label: "Elizabeth's room" },
       { id: 'photos', type: 'photos', x: 10.1, y: 1.4, w: 1.7, h: 0.8, layer: 'wall', script: 'hall_photos', label: 'photos' },
@@ -75,9 +86,69 @@ export const HOUSE = {
       { id: 'door_parents', type: 'door', x: 15.6, y: 1.15, w: 1, h: 1.85, layer: 'wall', script: 'door_parents', label: "parents' room", light: true },
     ],
     lights: [
-      { x: 9.5, y: 3.5, r: 6, i: 0.55, phases: NIGHTLIGHT, when: '!beat:frank' },
-      { x: 16.1, y: 3.1, r: 2, i: 0.35, phases: ['night'], when: 'rose_talk' },
+      { x: 9.5, y: 3.5, r: 6, i: 0.55, phases: NIGHTLIGHT, when: '!beat:frank|tangent' },
+      { x: 16.1, y: 3.1, r: 2, i: 0.35, phases: ['night'], when: ['rose_talk', 'beat:oct1'] },
     ],
+  },
+
+  bathroom: {
+    name: 'Bathroom', w: 9, h: 7,
+    map: [
+      '#########',
+      '#########',
+      '#########',
+      '#.......#',
+      '#.......#',
+      '#.......#',
+      '####_####',
+    ],
+    theme: { ...HOUSE_THEME, floorKind: 'tile', floor: '#6a7078', floorAlt: '#5a6068', grout: '#3a4048', wall: '#5a6a6e', wallD: '#4c5a5e', wallStyle: 'plain' },
+    ambience: 'house',
+    spawns: { start: [4.5, 5.6, 'up'], mirror: [4.5, 3.9, 'up'] },
+    exits: [{ x: 4, y: 6.5, w: 1, h: 0.5, to: 'hall', spawn: 'from_bath', blockWhen: s => s.has('mirror_scene'), script: 'mirror_stay' }],
+    props: [
+      { id: 'mirror', type: 'mirror', x: 3.6, y: 1.1, w: 1.8, h: 1.5, layer: 'wall', script: 'cabinet', label: 'medicine cabinet' },
+      { id: 'sink', type: 'sink', x: 3.5, y: 2.5, w: 2, h: 1, solid: [3.5, 3, 2, 0.5], script: 'cabinet', label: 'sink' },
+      { id: 'toilet', type: 'toilet', x: 1.2, y: 2.8, w: 0.9, h: 1.1, solid: true, script: 'toilet', label: 'toilet' },
+      { id: 'tub', type: 'tub', x: 5.8, y: 3, w: 2.1, h: 2.6, solid: true, script: 'tub', label: 'bathtub' },
+    ],
+    npcs: [
+      { id: 'samantha', who: 'samantha', x: 4.5, y: 6.2, facing: 'up', script: 'sam_bath', when: 'sam_doorway' },
+      { id: 'frank', who: 'frank', x: 4.6, y: 5.9, facing: 'up', script: 'frank_bath', when: 'frank_behind' },
+    ],
+    lights: [{ x: 4.5, y: 2.6, r: 4, i: 0.7 }],
+  },
+
+  parents_room: {
+    name: "Mom and Dad's room", w: 12, h: 9,
+    map: [
+      '############',
+      '############',
+      '############',
+      '#..........#',
+      '#..........#',
+      '#..........#',
+      '#..........#',
+      '#..........#',
+      '#####__#####',
+    ],
+    theme: { ...HOUSE_THEME, floor: '#3a3440', floorAlt: '#443e4a', wall: '#4e4a5a', wallD: '#44404e' },
+    ambience: 'house',
+    spear: [9.3, 3.3],
+    spawns: { from_hall: [6, 7.6, 'up'] },
+    exits: [{ x: 5, y: 8.6, w: 2, h: 0.4, to: 'hall', spawn: 'from_parents', blockWhen: s => s.has('spears') || (s.beat === 'oct29' && s.has('gretchen_up') && !s.has('party_go')), script: 'parents_stay' }],
+    props: [
+      { id: 'window', type: 'window', x: 2, y: 1.15, w: 2.2, h: 1.5, layer: 'wall', script: 'parents_window', label: 'window', curtain: '#6a5a7a' },
+      { id: 'closet', type: 'closet', x: 8.2, y: 1.15, w: 2.2, h: 1.85, layer: 'wall', script: 'closet', label: 'closet' },
+      { id: 'bed', type: 'hotelbed', x: 1.2, y: 4.2, w: 3, h: 2.8, solid: true, script: 'parents_bed', label: 'bed' },
+      { id: 'nightstand', type: 'dresser', x: 4.4, y: 4.2, w: 0.9, h: 0.9, solid: true },
+      { id: 'machine', type: 'phone', x: 4.6, y: 3.4, w: 0.5, h: 1, sy: 5.2, script: 'answering', label: 'answering machine' },
+      { id: 'dresser', type: 'dresser', x: 6.2, y: 2.6, w: 1.6, h: 1, solid: [6.2, 3, 1.6, 0.6], script: 'parents_dresser', label: 'dresser' },
+    ],
+    npcs: [
+      { id: 'gretchen', who: 'gretchen', x: 3.6, y: 6.9, facing: 'up', pose: 'sit', sy: 6.8, script: 'gretchen_bed', when: ['beat:oct29', 'gretchen_up'] },
+    ],
+    lights: [{ x: 4.9, y: 4.4, r: 4, i: 0.6, phases: NIGHTLIGHT }],
   },
 
   living: {
@@ -97,12 +168,14 @@ export const HOUSE = {
     ],
     theme: { ...HOUSE_THEME, floor: '#3a2e28', floorAlt: '#46382e', wall: '#5a5440', wallD: '#4c4636', wallLow: '#3e3a2e', wallStyle: 'panel', stair: '#5a4434', stairD: '#2a1e18' },
     ambience: 'tv',
-    spawns: { from_stairs: [1.9, 3.7, 'down'], from_kitchen: [18.6, 8.3, 'left'], from_front: [10, 9.6, 'up'], couch: [7.2, 8.5, 'up'], crash: [10, 9.4, 'up'] },
+    spear: s => (s.beat === 'oct30' ? [19.6, 7.8] : [1.9, 1.6]),
+    spawns: { from_stairs: [1.9, 3.7, 'down'], from_kitchen: [18.6, 8.3, 'left'], from_front: [10, 9.6, 'up'], couch: [7.2, 8.5, 'up'], crash: [10, 9.4, 'up'], recliner: [11.4, 6.6, 'up'] },
     exits: [
-      { x: 1, y: 1, w: 2, h: 0.9, to: 'hall', spawn: 'from_stairs', blockWhen: 'beat:flood', script: 'flood_stairs' },
-      { x: 19.6, y: 7, w: 0.4, h: 2, to: 'kitchen', spawn: 'from_living', blockWhen: 'beat:flood', script: 'flood_stairs' },
+      { x: 1, y: 1, w: 2, h: 0.9, to: 'hall', spawn: 'from_stairs', blockWhen: s => s.beat === 'flood' || (s.beat === 'oct30' && s.has('spears')), script: 'flood_stairs' },
+      { x: 19.6, y: 7, w: 0.4, h: 2, to: 'kitchen', spawn: 'from_living', blockWhen: s => s.beat === 'flood' || (s.beat === 'oct16' && s.has('spears')), script: 'flood_stairs' },
       { x: 9, y: 10.6, w: 2, h: 0.4, to: 'yard', spawn: 'from_house',
-        blockWhen: s => (s.beat === 'oct1' && s.has('dinner_done')) || (s.beat === 'frank' && !s.has('took_marker')) || s.beat === 'flood' || (AT_HOME.includes(s.beat) && s.time >= 21 * 60),
+        blockWhen: s => (s.beat === 'oct1' && s.has('dinner_done')) || (s.beat === 'frank' && !s.has('took_marker')) || s.beat === 'flood' || s.has('spears') || (party(s) && !(s.beat === 'oct30' && s.has('kissed_liz')))
+          || (!['oct30', 'frank', 'oct1', 'oct29'].includes(s.beat) && s.time >= 21 * 60),
         script: 'front_door_blocked' },
     ],
     props: [
@@ -117,16 +190,35 @@ export const HOUSE = {
       { id: 'recliner', type: 'recliner', x: 12, y: 4.6, w: 1.4, h: 1.4, solid: true, script: 'recliner', label: 'La-Z-Boy' },
       { id: 'coatrack', type: 'coatrack', x: 7.4, y: 8.4, w: 0.6, h: 1.3, solid: [7.4, 9.3, 0.6, 0.4], script: 'coatrack', label: 'coats' },
       { id: 'plaster', type: 'debris', x: 3, y: 3.2, w: 6, h: 3, layer: 'floor', when: ['crashed', 'beat:frank'] },
+      { id: 'cups', type: 'leaves', x: 4, y: 8, w: 10, h: 1.6, layer: 'floor', when: party },
     ],
     npcs: [
-      { id: 'samantha', who: 'samantha', x: 9.4, y: 5.3, facing: 'up', pose: 'sit', script: 'samantha', when: s => (s.beat === 'oct1' && !s.has('dinner_ready')) || (AT_HOME.includes(s.beat) && s.time < 21 * 60) },
-      { id: 'eddie', who: 'eddie', x: 12.7, y: 5.55, facing: 'up', pose: 'sit', sy: 6.1, script: 'eddie_after', when: s => (s.beat === 'oct1' && s.has('dinner_done')) || s.beat === 'frank' || (AT_HOME.includes(s.beat) && s.time >= 17 * 60) },
+      { id: 'samantha', who: 'samantha', x: 9.4, y: 5.3, facing: 'up', pose: 'sit', script: 'samantha', when: s => (s.beat === 'oct1' && !s.has('dinner_ready')) || (SAM_TV.includes(s.beat) && s.time < 21 * 60 && !s.has('dinner_scene')) },
+      { id: 'eddie', who: 'eddie', x: 12.7, y: 5.55, facing: 'up', pose: 'sit', sy: 6.1, script: 'eddie_after', when: s => (s.beat === 'oct1' && s.has('dinner_done')) || s.beat === 'frank' || (EDDIE_HOME.includes(s.beat) && s.time >= 17 * 60 && !s.has('dinner_scene')) || (s.beat === 'oct16' && s.has('thurman3_done') && !s.has('spears')) },
       { id: 'elizabeth', who: 'elizabeth', x: 9.6, y: 9.2, facing: 'up', script: 'liz_crash', when: ['beat:frank', 'crash_scene'] },
       { id: 'frank', who: 'frank', x: 17.4, y: 4.2, facing: 'down', script: 'frank_living', when: ['beat:flood', '!flood_go'] },
-      { id: 'callie', who: 'callie', x: 14.8, y: 8.2, facing: 'left', script: 'callie' },
+      { id: 'dog', who: 'dog', x: 14.8, y: 8.2, facing: 'left', script: 'dog' },
+      // Sunday football
+      { id: 'fisher', who: 'fisher', x: 6.6, y: 7.5, facing: 'up', pose: 'sit', sy: 8, script: 'fisher_game', when: ['beat:oct16', 'thurman3_done', '!gun_found'] },
+      { id: 'ronald', who: 'ronald', x: 8, y: 7.5, facing: 'up', pose: 'sit', sy: 8, script: 'ronald_game', when: ['beat:oct16', 'thurman3_done', '!gun_found'] },
+      // the news, the day after the fire
+      { id: 'liz_news', who: 'elizabeth', x: 7.2, y: 7.5, facing: 'up', pose: 'sit', sy: 8, script: 'liz_news', when: during(['oct25'], '12:30', '14:00') },
+      // Kitty Farmer at the front door
+      { id: 'kitty', who: 'farmer', x: 10, y: 9.4, facing: 'up', script: 'kitty_door', when: ['beat:oct26', 'kitty_scene'] },
+      { id: 'rose_door', who: 'rose', x: 10, y: 8.1, facing: 'down', script: 'kitty_door', when: ['beat:oct26', 'kitty_scene'] },
+      // the party
+      { id: 'p1', who: 'partier', x: 3.4, y: 5.6, facing: 'right', script: 'partier', when: party },
+      { id: 'p2', who: 'partier2', x: 14.6, y: 6.8, facing: 'left', script: 'partier', when: party },
+      { id: 'p3', who: 'partier3', x: 11.2, y: 8.6, facing: 'up', script: 'partier', when: party },
+      { id: 'p4', who: 'student', x: 16.6, y: 4.4, facing: 'down', script: 'partier', when: party },
+      { id: 'liz_party', who: 'elizabeth', x: 13.6, y: 4.2, facing: 'down', script: 'liz_party', when: s => party(s) && !s.has('carried_home') },
+      { id: 'sean_p', who: 'sean', x: 4.4, y: 8.6, facing: 'right', script: 'sean_party', when: ['beat:oct29', 'party_friends'] },
+      { id: 'ronald_p', who: 'ronald', x: 5.4, y: 9, facing: 'up', script: 'ronald_party', when: ['beat:oct29', 'party_friends'] },
+      { id: 'gretchen_p', who: 'gretchen', x: 12.4, y: 7.6, facing: 'left', script: 'gretchen_party', when: s => (s.beat === 'oct29' && s.has('gretchen_arrived') && !s.has('gretchen_up')) || (s.beat === 'oct30' && !s.has('to_sparrow')) },
+      { id: 'liz_asleep', who: 'elizabeth', x: 6.6, y: 7.5, facing: 'up', pose: 'sit', sy: 8, script: 'liz_asleep', when: ['beat:oct30', 'carried_home'] },
     ],
     lights: [
-      { x: 3.9, y: 3.5, r: 4.5, i: 0.75, phases: NIGHTLIGHT, when: '!beat:frank|flood' },
+      { x: 3.9, y: 3.5, r: 4.5, i: 0.75, phases: NIGHTLIGHT, when: '!beat:frank|flood|tangent' },
       { x: 9.4, y: 4.6, r: 4, i: 0.55, flicker: true },
     ],
   },
@@ -147,11 +239,12 @@ export const HOUSE = {
     ],
     theme: { ...HOUSE_THEME, floorKind: 'tile', floor: '#4a4a40', floorAlt: '#3a3a34', grout: '#2e2e2a', wall: '#5e5a3e', wallD: '#504c34', wallStyle: 'plain' },
     ambience: 'house',
-    spawns: { from_living: [0.9, 6.2, 'right'] },
-    exits: [{ x: 0, y: 5, w: 0.4, h: 2, to: 'living', spawn: 'from_kitchen' }],
+    spear: [1.6, 3.4],
+    spawns: { from_living: [0.9, 6.2, 'right'], from_back: [12.6, 3.8, 'down'], seat: [7.5, 7.75, 'up'] },
+    exits: [{ x: 0, y: 5, w: 0.4, h: 2, to: 'living', spawn: 'from_kitchen', blockWhen: s => s.beat === 'oct30' && s.has('spears'), script: 'spear_pull' }],
     props: [
       { id: 'fridge', type: 'fridge', x: 1.1, y: 1.3, w: 1.1, h: 2.2, solid: [1.1, 3, 1.1, 0.5], script: 'fridge', label: 'fridge' },
-      { id: 'counter1', type: 'counter', x: 2.3, y: 2.4, w: 1.2, h: 1.1, solid: [2.3, 3, 1.2, 0.5] },
+      { id: 'counter1', type: 'counter', x: 2.3, y: 2.4, w: 1.2, h: 1.1, solid: [2.3, 3, 1.2, 0.5], script: 'knives', label: 'knife drawer' },
       { id: 'sink', type: 'sink', x: 3.5, y: 2.4, w: 1.3, h: 1.1, solid: [3.5, 3, 1.3, 0.5], script: 'sink', label: 'sink' },
       { id: 'stove', type: 'stove', x: 4.8, y: 2.4, w: 1.2, h: 1.1, solid: [4.8, 3, 1.2, 0.5], script: 'stove', label: 'stove' },
       { id: 'counter2', type: 'counter', x: 6, y: 2.4, w: 1.1, h: 1.1, solid: [6, 3, 1.1, 0.5] },
@@ -160,18 +253,31 @@ export const HOUSE = {
       { id: 'phone', type: 'phone', x: 11.2, y: 1.6, w: 0.5, h: 1.1, layer: 'wall', script: 'phone', label: 'phone' },
       { id: 'backdoor', type: 'door', x: 12.1, y: 1.15, w: 1, h: 1.85, layer: 'wall', script: 'back_door', label: 'patio door', col: C.bone },
       { id: 'table', type: 'table', x: 6, y: 5.6, w: 3, h: 1.5, solid: true, script: 'table', label: 'table' },
+      { id: 'pumpkin', type: 'pumpkin', x: 7.1, y: 5.5, w: 0.8, h: 0.8, sy: 7.2, script: 'pumpkin', label: 'pumpkin', when: 'from:oct18' },
     ],
     npcs: [
-      { id: 'rose', who: 'rose', x: 6.8, y: 5.5, facing: 'down', pose: 'sit', script: 'rose', when: ['beat:oct1', '!dinner_done'] },
-      { id: 'rose_sink', who: 'rose', x: 4.1, y: 3.95, facing: 'up', script: 'rose', when: s => (s.beat === 'oct1' && s.has('dinner_done') && !s.has('rose_talk')) || (AT_HOME.includes(s.beat) && s.time < 21 * 60) },
-      { id: 'eddie', who: 'eddie', x: 8.3, y: 5.5, facing: 'down', pose: 'sit', script: 'eddie_kitchen', when: ['beat:oct1', 'told_dad', '!dinner_done'] },
-      { id: 'elizabeth', who: 'elizabeth', x: 5.55, y: 6.9, facing: 'right', pose: 'sit', script: 'liz_kitchen', when: ['beat:oct1', 'told_liz', '!dinner_done'] },
-      { id: 'samantha', who: 'samantha', x: 9.45, y: 6.9, facing: 'left', pose: 'sit', script: 'sam_kitchen', when: ['beat:oct1', 'dinner_ready', '!dinner_done'] },
+      { id: 'rose', who: 'rose', x: 6.8, y: 5.5, facing: 'down', pose: 'sit', script: 'rose', when: s => (s.beat === 'oct1' && !s.has('dinner_done')) || (s.has('dinner_scene') && ['oct14', 'oct23'].includes(s.beat)) },
+      { id: 'rose_sink', who: 'rose', x: 4.1, y: 3.95, facing: 'up', script: 'rose', when: s => (s.beat === 'oct1' && s.has('dinner_done') && !s.has('rose_talk')) || (ROSE_HOME.includes(s.beat) && s.time < 21 * 60 && !s.has('dinner_scene') && !(s.beat === 'oct16' && s.has('thurman3_done'))) },
+      { id: 'eddie', who: 'eddie', x: 8.3, y: 5.5, facing: 'down', pose: 'sit', script: 'eddie_kitchen', when: s => (s.beat === 'oct1' && s.has('told_dad') && !s.has('dinner_done')) || (s.has('dinner_scene') && ['oct14', 'oct23'].includes(s.beat)) },
+      { id: 'elizabeth', who: 'elizabeth', x: 5.55, y: 6.9, facing: 'right', pose: 'sit', script: 'liz_kitchen', when: s => (s.beat === 'oct1' && s.has('told_liz') && !s.has('dinner_done')) || (s.has('dinner_scene') && ['oct14', 'oct23'].includes(s.beat)) || (s.beat === 'oct18' && s.has('pumpkin_time')) || (s.beat === 'oct29' && s.has('thurman4_done') && !s.has('party_on')) },
+      { id: 'samantha', who: 'samantha', x: 9.45, y: 6.9, facing: 'left', pose: 'sit', script: 'sam_kitchen', when: s => (s.beat === 'oct1' && s.has('dinner_ready') && !s.has('dinner_done')) || (s.has('dinner_scene') && ['oct14', 'oct23'].includes(s.beat)) },
+      { id: 'anne', who: 'anne', x: 6.8, y: 5.5, facing: 'down', pose: 'sit', script: 'anne', when: ['beat:oct16', 'thurman3_done', '!gun_found'] },
+      { id: 'rose_wine', who: 'rose', x: 8.3, y: 5.5, facing: 'down', pose: 'sit', script: 'rose_wine', when: ['beat:oct16', 'thurman3_done', '!gun_found'] },
+      { id: 'eddie_pack', who: 'eddie', x: 10.2, y: 4.3, facing: 'left', script: 'eddie_pack', when: ['beat:oct25', 'family_moment'] },
+      { id: 'sam_dance', who: 'samantha', x: 5.2, y: 8.2, facing: 'right', script: 'family_dance', when: ['beat:oct25', 'family_moment'] },
+      { id: 'liz_dance', who: 'elizabeth', x: 6.4, y: 8.4, facing: 'left', script: 'family_dance', when: ['beat:oct25', 'family_moment'] },
+      { id: 'kp1', who: 'partier2', x: 3.4, y: 7.2, facing: 'right', script: 'partier', when: party },
+      { id: 'kp2', who: 'partier', x: 10.4, y: 7.4, facing: 'left', script: 'partier', when: party },
+      { id: 'kp3', who: 'partier3', x: 11.6, y: 4.6, facing: 'left', script: 'partier', when: party },
     ],
     lights: [
-      { x: 7.5, y: 6, r: 5, i: 0.75, phases: NIGHTLIGHT, when: '!beat:frank' },
+      { x: 7.5, y: 6, r: 5, i: 0.75, phases: NIGHTLIGHT, when: '!beat:frank|tangent' },
       { x: 9.8, y: 3.4, r: 3, i: 0.3, phases: ['day', 'dusk'] },
-      { x: 1.6, y: 3.6, r: 2.5, i: 0.4, when: 'beat:frank' },
+      { x: 1.6, y: 3.6, r: 2.5, i: 0.4, when: 'beat:frank|oct30' },
+    ],
+    onEnter: [
+      { when: ['beat:oct25', 'monnitoff_destiny', '!family_moment'], script: 'family_moment' },
+      { when: ['beat:oct29', 'thurman4_done', '!harvard'], script: 'harvard' },
     ],
   },
 
@@ -194,7 +300,8 @@ export const HOUSE = {
     exits: [
       { x: 0, y: 9, w: 0.4, h: 1, script: 'edge' },
       { x: 21.6, y: 9, w: 0.4, h: 1, script: 'edge' },
-      { x: 0, y: 9.75, w: 22, h: 0.25, to: 'street', spawn: 'from_yard', blockWhen: s => s.beat === 'engine' && !s.has('hotel_go'), script: 'engine_stay' },
+      { x: 0, y: 9.75, w: 22, h: 0.25, to: 'street', spawn: 'from_yard',
+        blockWhen: s => (s.beat === 'engine' && !s.has('hotel_go')) || s.beat === 'oct27' && !s.has('rose_gone') || s.beat === 'oct30', script: 'engine_stay' },
     ],
     props: [
       { id: 'house', type: 'facade', x: 0, y: 2, w: 15.6, h: 2, layer: 'wall', col: '#66647a', colD: '#56546a', script: 'house_front', label: 'house',
@@ -205,6 +312,7 @@ export const HOUSE = {
       { id: 'dormer1', type: 'litwindow', x: 2.8, y: 0.35, w: 1.2, h: 1, layer: 'wall', script: 'dormer', label: 'your window', when: ['!lamp_off', '!engine_fell'] },
       { id: 'roofhole', type: 'tarp', x: 2.2, y: 0.2, w: 2.6, h: 1.4, layer: 'wall', script: 'roofhole', label: 'the roof', when: 'engine_fell' },
       { id: 'dormer2', type: 'litwindow', x: 11.2, y: 0.35, w: 1.2, h: 1, layer: 'wall', lit: false },
+      { id: 'portal', type: 'stormsky', x: 0, y: 0, w: 22, h: 2, layer: 'wall', when: ['beat:oct30', 'carried_home'] },
       { id: 'bush1', type: 'bush', x: 0.6, y: 3.6, w: 1.4, h: 0.9, solid: true },
       { id: 'bush2', type: 'bush', x: 5.6, y: 3.6, w: 1.4, h: 0.9, solid: true },
       { id: 'bush3', type: 'bush', x: 10.6, y: 3.6, w: 1.4, h: 0.9, solid: true },
@@ -214,8 +322,9 @@ export const HOUSE = {
       { id: 'car', type: 'car', x: 16.6, y: 4.3, w: 2.6, h: 3.6, solid: true, script: 'car', label: 'car', when: '!beat:engine' },
       { id: 'crane', type: 'crane', x: 16.2, y: 1.4, w: 3.4, h: 4.6, solid: [16.2, 4.6, 3.4, 1.4], script: 'crane', label: 'crane', when: 'beat:engine' },
       { id: 'flatbed', type: 'flatbed', x: 12.5, y: 7.2, w: 5, h: 1.4, solid: true, cargo: true, script: 'flatbed', label: 'the engine', when: 'beat:engine' },
+      { id: 'van', type: 'van', x: 10.6, y: 8.15, w: 4, h: 1.3, solid: true, script: 'van', label: 'airport van', when: ['beat:oct27', '!rose_gone'] },
       { id: 'bike', type: 'bike', x: 14.2, y: 7.6, w: 1.4, h: 0.6, script: 'bike', label: 'bike', when: '!beat:engine' },
-      { id: 'mailbox', type: 'mailbox', x: 6.6, y: 8.15, w: 0.5, h: 1, solid: [6.6, 8.9, 0.5, 0.25], script: 'mailbox', label: 'mailbox' },
+      { id: 'mailbox', type: 'letterbox', x: 6.6, y: 8.15, w: 0.5, h: 1, solid: [6.6, 8.9, 0.5, 0.25], script: 'mailbox', label: 'mailbox' },
     ],
     npcs: [
       { id: 'eddie', who: 'eddie', x: 12.4, y: 6.6, facing: 'left', pose: 'blower', script: 'eddie_yard', when: ['beat:oct1', '!told_dad'] },
@@ -226,14 +335,63 @@ export const HOUSE = {
       { id: 'garland', who: 'garland', x: 8.6, y: 7.4, facing: 'left', script: 'garland', when: 'beat:engine' },
       { id: 'fireman', who: 'fireman', x: 11, y: 5.2, facing: 'down', script: 'fireman', when: 'beat:engine' },
       { id: 'fireman2', who: 'fireman', x: 19.8, y: 6.4, facing: 'left', script: 'fireman', when: 'beat:engine' },
+      // Mom and the girls leave for Los Angeles
+      { id: 'rose_lv', who: 'rose', x: 12.4, y: 7.4, facing: 'left', script: 'rose_leave', when: ['beat:oct27', '!rose_gone'] },
+      { id: 'sam_lv', who: 'samantha', x: 9.8, y: 7.6, facing: 'right', script: 'sam_leave', when: ['beat:oct27', '!rose_gone'] },
+      { id: 'liz_lv', who: 'elizabeth', x: 8.6, y: 7.2, facing: 'right', script: 'liz_leave', when: ['beat:oct27', '!rose_gone'] },
+      { id: 'beth_lv', who: 'beth', x: 14.6, y: 7.6, facing: 'left', script: 'beth', when: ['beat:oct27', '!rose_gone'] },
+      // someone across the street with a flashlight, the night of the party
+      { id: 'jogger', who: 'jogger', x: 20.4, y: 9.2, facing: 'left', script: 'jogger', when: s => s.beat === 'oct29' && s.has('party_on') },
     ],
     lights: [
       { x: 9.8, y: 3.5, r: 3.5, i: 0.8, phases: NIGHTLIGHT },
       { x: 2, y: 4.2, r: 2.5, i: 0.4, phases: NIGHTLIGHT, when: '!beat:frank' },
       { x: 11.5, y: 4.2, r: 2.5, i: 0.4, phases: NIGHTLIGHT, when: '!beat:frank' },
       { x: 3.4, y: 1.3, r: 1.6, i: 0.5, phases: NIGHTLIGHT, when: ['!lamp_off', '!engine_fell'] },
+      { x: 19.6, y: 8.6, r: 2.2, i: 0.6, when: s => s.beat === 'oct29' && s.has('party_on') },
+      { x: 11, y: 0.8, r: 6, i: 0.6, when: ['beat:oct30', 'carried_home'] },
     ],
-    onEnter: [{ when: ['beat:engine', '!engine_seen'], script: 'engine_arrive' }],
+    onEnter: [
+      { when: ['beat:engine', '!engine_seen'], script: 'engine_arrive' },
+      { when: ['beat:oct30', 'carried_home', '!portal_seen_house'], script: 'portal_house' },
+    ],
+  },
+
+  backyard: {
+    name: 'Backyard', w: 18, h: 10, outside: true,
+    map: [
+      '##################',
+      '##################',
+      '##################',
+      'h,,,,,,,,,,,,,,,,h',
+      'h,,,,,,,,,,,,,,,,h',
+      'h,,,,,,,,,,,,,,,,h',
+      'h,,,,,,,,,,,,,,,,h',
+      'h,,,,,,,,,,,,,,,,h',
+      'h,,,,,,,,,,,,,,,,h',
+      'hhhhhhhhhhhhhhhhhh',
+    ],
+    theme: OUTSIDE_THEME,
+    spawns: { from_kitchen: [12.6, 3.9, 'down'], trampoline: [4.6, 6.4, 'down'] },
+    exits: [],
+    props: [
+      { id: 'house', type: 'facade', x: 0, y: 1, w: 18, h: 2, layer: 'wall', col: '#66647a', colD: '#56546a', script: 'house_back', label: 'house',
+        windows: [{ x: 40, y: 9, w: 14, h: 10 }, { x: 150, y: 9, w: 14, h: 10 }] },
+      { id: 'backdoor', type: 'door', x: 12.1, y: 1.2, w: 1, h: 1.8, layer: 'wall', script: 'back_in', label: 'kitchen door', col: C.bone },
+      { id: 'patio', type: 'patio', x: 8, y: 3, w: 7, h: 2.4, layer: 'floor' },
+      { id: 'ptable', type: 'patiotable', x: 9.4, y: 3.4, w: 1.6, h: 1.1, solid: true, script: 'ptable', label: 'patio table' },
+      { id: 'trampoline', type: 'trampoline', x: 2.6, y: 5, w: 3.6, h: 2.8, layer: 'floor', script: 'trampoline', label: 'trampoline' },
+      { id: 'sheet', type: 'leafsheet', x: 11, y: 6.4, w: 3, h: 2, layer: 'floor', script: 'leafsheet', label: 'leaf sheet', when: 'from:oct25' },
+      { id: 'rake', type: 'rake', x: 15, y: 5.8, w: 0.4, h: 1.4, solid: [15, 7, 0.4, 0.2], script: 'rake', label: 'rake', when: 'beat:oct25' },
+      { id: 'tree', type: 'tree', x: 14.6, y: 3, w: 3, h: 3.4, solid: [15.8, 6, 0.6, 0.4], script: 'oak', label: 'tree' },
+    ],
+    npcs: [
+      { id: 'gretchen', who: 'gretchen', x: 5.2, y: 7.4, facing: 'up', script: 'gretchen_tramp', when: ['beat:oct15', '!trampoline_done'] },
+      { id: 'eddie_rake', who: 'eddie', x: 13.6, y: 7.2, facing: 'left', script: 'eddie_rake', when: ['beat:oct25', '!raked'] },
+      { id: 'sean_b', who: 'sean', x: 9, y: 5, facing: 'down', script: 'sean_party', when: party },
+      { id: 'ronald_b', who: 'ronald', x: 10.4, y: 5.2, facing: 'down', script: 'ronald_party', when: party },
+      { id: 'bp1', who: 'partier3', x: 6.4, y: 4.4, facing: 'right', script: 'partier', when: party },
+    ],
+    lights: [{ x: 12.6, y: 3.4, r: 4, i: 0.7, phases: NIGHTLIGHT }],
   },
 };
-

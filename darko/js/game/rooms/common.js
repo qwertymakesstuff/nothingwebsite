@@ -32,4 +32,13 @@ export const SCHOOL_THEME = {
 // the evenings and quiet days the family is simply at home
 export const AT_HOME = ['oct3_eve', 'oct4', 'oct5', 'oct6'];
 // mornings at the bus stop
-export const SCHOOL_MORNING = 'beat:oct3|oct4|oct7';
+export const SCHOOL_MORNING = 'beat:oct3|oct4|oct7|oct18';
+// school days, when the halls are full
+export const SCHOOL_DAY = 'beat:oct3|oct7|oct13|oct14|oct18|oct24|oct25|oct26|oct27';
+
+// during(['oct8', 'oct20'], '17:00', '21:00'): true in those beats, between those times
+export const during = (beats, from = '00:00', to = '24:00') => {
+  const m = t => { const [h, mm] = t.split(':').map(Number); return h * 60 + mm; };
+  const a = m(from), b = m(to);
+  return s => beats.includes(s.beat) && s.time >= a && s.time < b;
+};

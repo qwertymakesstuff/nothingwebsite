@@ -156,7 +156,7 @@ export const PROLOGUE = {
     ['note', 'election'],
   ],
   recliner: [n("Dad's La-Z-Boy. Technically anyone can sit in it. Technically.")],
-  couch: [n('The couch. Callie isn\'t allowed on it, which is why it\'s covered in dog hair.')],
+  couch: [n('The couch. The dog isn\'t allowed on it, which is why it\'s covered in dog hair.')],
   floorlamp: [n('A lamp Mom found at a yard sale. It makes the whole room look like an old photograph.')],
   plant: [n("A plant nobody remembers to water. It's doing fine anyway.")],
   coatrack: [n("Dad's windbreaker. Mom's raincoat. Donnie's jacket isn't here; it's on his floor.")],
@@ -180,9 +180,9 @@ export const PROLOGUE = {
       ['set', 'seen:samantha'],
     ];
   },
-  callie: s => (phase(s.time) === 'night' && s.has('rose_talk')
-    ? [n('Callie is asleep by the door, paws twitching. Chasing something.')]
-    : [n('Callie thumps her tail against the floor and rolls over for a belly scratch.')]),
+  dog: s => (phase(s.time) === 'night' && s.has('rose_talk')
+    ? [n('The dog is asleep by the door, paws twitching. Chasing something.')]
+    : [n('The dog thumps her tail against the floor and rolls over for a belly scratch.')]),
   eddie_after: [say('eddie', "Your mother's upset, bud."), say('eddie', '...Get some sleep. Okay?')],
 
   // ---- kitchen -------------------------------------------------------------------------------

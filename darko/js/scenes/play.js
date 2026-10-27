@@ -14,10 +14,12 @@ import { NOTES } from '../game/journal.js';
 import { TILE } from '../game/tiles.js';
 import { overlaps } from '../engine/collision.js';
 import { TextBox, ChoiceBox } from '../ui/textbox.js';
+import { drawFrank } from '../game/art.js';
 import { keyHint } from '../ui/panel.js';
 import { PauseScene } from './pause.js';
 import { JournalScene } from './journal.js';
-import { Card, EndScene } from './end.js';
+import { Card, EndScene, CreditsRoll } from './end.js';
+import { DocReader } from './reader.js';
 
 const approach = (v, target, step) => (v < target ? Math.min(target, v + step) : Math.max(target, v - step));
 const FADE_SPEED = 4;
@@ -44,9 +46,10 @@ export class PlayScene {
     this.stepAcc = 0;
     this.safe = { x: this.world.player.x, y: this.world.player.y };
     this.cam = { x: 0, y: 0 };
-    this.fx = { wobble: 0, wobbleT: 0, flash: 0, dust: 0, particles: [] };
+    this.fx = { wobble: 0, wobbleT: 0, flash: 0, dust: 0, particles: [], rewind: 0 };
     this.snapCamera();
-    if (intro) this.start(beatById(state.beat).start);
+    // a save from inside the epilogue has nothing to walk around in: replay it
+    if (intro || this.beat.last) this.start(beatById(state.beat).start);
     else if (!this.checkBeat()) this.checkOnEnter();
   }
 
@@ -89,10 +92,21 @@ export class PlayScene {
     return { t: this.world.t, state: this.state, phase: phase(this.state.time), flash: this.app.settings.reduceFlashing };
   }
 
+  // days left on the countdown, or Infinity before Frank and after the end
+  daysLeft() {
+    const s = this.state;
+    if (!s.has('countdown') || s.beat === 'tangent') return Infinity;
+    return countdown(s.day, s.time).total / 86400;
+  }
+
   updateAmbience() {
-    const room = this.world.room;
-    const ph = phase(this.state.time);
-    const name = room.outside ? (ph === 'night' ? 'night' : 'dusk') : (room.ambience || 'house');
+    const room = this.world.room, s = this.state;
+    const ph = phase(s.time);
+    const partying = (s.beat === 'oct30' || (s.beat === 'oct29' && s.has('party_on'))) && ['living', 'kitchen', 'backyard', 'hall', 'parents_room', 'bathroom'].includes(room.id);
+    let name = room.outside ? (ph === 'night' ? 'night' : 'dusk') : (room.ambience || 'house');
+    if (room.outside && this.daysLeft() < 6) name = 'storm';
+    if (partying) name = 'party';
+    if (s.has('portal_sound')) name = 'portal';
     this.app.audio.ambience(name);
   }
 
@@ -135,6 +149,9 @@ export class PlayScene {
       case 'flash': if (!this.app.settings.reduceFlashing) this.fx.flash = 1; return null;
       case 'dust': this.fx.dust = args[0]; return null;
       case 'follow': { const e = w.entity(args[0]); if (e) e.follow = args[1] !== false; return null; }
+      case 'rewind': return this.rewind(args[0], args[1], parseTime(args[2]));
+      case 'read': return new DocReader(this.app, args[0], s);
+      case 'credits': this.app.replace(new CreditsRoll(this.app)); return { update: () => false };
       default:
         console.warn(`unknown script step: ${op}`);
         return null;
@@ -157,6 +174,24 @@ export class PlayScene {
           entered = true;
         }
         return entered && this.fade <= 0;
+      },
+    };
+  }
+
+  // the end of the tangent: the picture tears and the calendar runs backward to a day and time
+  rewind(secs, day, time) {
+    const from = s => s.day * 1440 + s.time;
+    const a = from(this.state), b = day * 1440 + time;
+    let t = 0;
+    this.fx.rewind = 1;
+    this.app.audio.sfx('rewind');
+    return {
+      update: dt => {
+        t += dt;
+        const k = Math.min(1, t / secs), now = a + (b - a) * (k * k);
+        this.state.day = Math.floor(now / 1440); this.state.time = now - this.state.day * 1440;
+        if (k >= 1) { this.fx.rewind = 0; return true; }
+        return false;
       },
     };
   }
@@ -370,8 +405,30 @@ export class PlayScene {
   }
 
   drawEffects(g) {
-    const fx = this.fx, st = this.app.settings;
+    const fx = this.fx, st = this.app.settings, t = this.world.t;
+    // the last week: outside, the sky closes in; inside, something stands at the edge of the frame
+    const left = this.daysLeft();
+    if (left < 8 && this.world.room.outside) {
+      const k = Math.min(1, (8 - left) / 8);
+      for (let i = 0; i < 5; i++) {
+        const cx = ((i * 97 - t * (3 + i)) % (W + 120) + W + 120) % (W + 120) - 60;
+        g.dither(cx, i * 8, 90 + i * 16, 8 + k * 10, '#1a1826', 0.3 + k * 0.4);
+      }
+    }
+    if (left < 5 && !this.busy && !st.reduceFlashing && Math.sin(t * 0.37) > 0.995 && !this.world.room.outside) {
+      g.alpha(0.35, () => drawFrank(g, W - 18, H - 30, 'left', t, true));
+    }
     for (const q of fx.particles) g.rect(q.x, q.y, 1, 2, q.c);
+    if (fx.rewind) {
+      // tape tracking: torn bands of the picture racing sideways, with snow
+      const src = g.ctx.canvas;
+      for (let y = 0; y < H; y += 6) {
+        const dx = Math.round(Math.sin(y * 0.3 + t * 30) * 12);
+        g.ctx.drawImage(src, 0, y, W, 6, dx, y, W, 6);
+      }
+      for (let i = 0; i < 160; i++) g.px((i * 53 + Math.floor(t * 900)) % W, (i * 31 + Math.floor(t * 700)) % H, i % 2 ? C.white : C.grey);
+      g.alpha(0.5, () => g.rect(0, (t * 140) % H, W, 6, C.white));
+    }
     if (fx.wobble > 0) {
       // the picture bends: each band of rows slides sideways a little
       const amt = fx.wobble * (st.reduceFlashing ? 0.4 : 1), t = this.world.t;
@@ -389,10 +446,10 @@ export class PlayScene {
     const label = `${formatDate(s.day)}  ${formatTime(s.time)}`;
     g.alpha(0.7, () => g.rect(2, 2, g.textWidth(label) + 8, 12, C.black));
     g.text(label, 6, 4, C.mist);
-    if (s.has('countdown')) {
+    if (s.has('countdown') && s.beat !== 'tangent') {
       // the numbers on his arm, counting down
       const c = countdown(s.day, s.time), txt = formatCountdown(c);
-      const urgent = c.d < 3;
+      const urgent = c.d < 3 && !this.app.settings.reduceFlashing;
       g.alpha(0.7, () => g.rect(2, 15, g.textWidth(txt) + 8, 11, C.black));
       g.text(txt, 6, 16, urgent && Math.floor(this.world.t * 2) % 2 ? C.white : C.red);
     }

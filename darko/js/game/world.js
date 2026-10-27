@@ -7,7 +7,7 @@ import { TILE, isSolidChar, bakeRoom } from './tiles.js';
 import { cond } from './state.js';
 import { CAST } from './cast.js';
 import { overlaps, moveBox } from '../engine/collision.js';
-import { drawPerson, drawDog, drawFrank, drawProp } from './art.js';
+import { drawPerson, drawDog, drawFrank, drawSpear, drawProp, PROPS } from './art.js';
 import { C } from './palette.js';
 
 export const PW = 8, PH = 5;
@@ -17,9 +17,9 @@ export const feetBox = (x, y) => ({ x: x - PW / 2, y: y - PH, w: PW, h: PH });
 const T = v => v * TILE;
 const tileRect = a => ({ x: T(a[0]), y: T(a[1]), w: T(a[2]), h: T(a[3]) });
 
-const npcBox = n => (n.who === 'callie' ? { x: n.x - 7, y: n.y - 4, w: 14, h: 4 } : { x: n.x - 5, y: n.y - 4, w: 10, h: 4 });
-const bodyH = n => (n.who === 'frank' ? 36 : CAST[n.who]?.look?.h || 18);
-const npcBody = n => (n.who === 'callie' ? { x: n.x - 8, y: n.y - 12, w: 16, h: 13 } : { x: n.x - 6, y: n.y - bodyH(n) - 1, w: 12, h: bodyH(n) + 2 });
+const npcBox = n => (n.who === 'dog' ? { x: n.x - 7, y: n.y - 4, w: 14, h: 4 } : { x: n.x - 5, y: n.y - 4, w: 10, h: 4 });
+const bodyH = n => (n.who === 'frank' || n.who === 'frankman' ? 36 : CAST[n.who]?.look?.h || 18);
+const npcBody = n => (n.who === 'dog' ? { x: n.x - 8, y: n.y - 12, w: 16, h: 13 } : { x: n.x - 6, y: n.y - bodyH(n) - 1, w: 12, h: bodyH(n) + 2 });
 
 export class World {
   constructor(state) {
@@ -244,14 +244,33 @@ export class World {
     for (const p of this.props) if (!p.layer) list.push([p.sortY, () => drawProp(g, p, view)]);
     for (const n of this.npcs) list.push([n.sy !== undefined ? T(n.sy) : n.y, () => this.drawNpc(g, n, view)]);
     const pl = this.player;
-    if (!this.state.has('hide_player')) list.push([pl.y, () => drawPerson(g, pl.x, pl.y, CAST.donnie.look, pl.facing, walkFrame(pl))]);
+    const look = this.state.has('costume') ? CAST.skeleton.look : CAST.donnie.look;
+    if (!this.state.has('hide_player')) list.push([pl.y, () => drawPerson(g, pl.x, pl.y, look, pl.facing, walkFrame(pl))]);
     list.sort((a, b) => a[0] - b[0]);
     for (const [, fn] of list) fn();
+    if (this.state.has('spears')) this.drawSpears(g);
+  }
+
+  // during a vision, everyone's spear shows where they are about to go. Donnie's own points
+  // at the room's spear target, if it has one, and he follows it
+  drawSpears(g) {
+    const dir = f => ({ up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[f] || [0, 1]);
+    for (const n of this.npcs) {
+      if (n.who === 'dog' || n.who === 'transam' || n.who === 'frankman') continue;
+      const [dx, dy] = dir(n.facing);
+      drawSpear(g, n.x, n.y - 9, dx, dy, (CAST[n.who]?.look?.h || 18) * 1.4, this.t + n.x);
+    }
+    if (this.state.has('hide_player')) return;
+    const p = this.player, tg = typeof this.room.spear === 'function' ? this.room.spear(this.state) : this.room.spear;
+    const [dx, dy] = tg ? [T(tg[0]) - p.x, T(tg[1]) - p.y] : dir(p.facing);
+    drawSpear(g, p.x, p.y - 9, dx, dy, Math.min(40, Math.hypot(dx, dy) || 40), this.t);
   }
 
   drawNpc(g, n, view) {
-    if (n.who === 'frank') { drawFrank(g, n.x, n.y, n.facing, this.t, view.flash); return; }
-    if (n.who === 'callie') {
+    if (n.who === 'frank') { drawFrank(g, n.x, n.y, n.facing, this.t, view.flash, this.state.has('frank_unmasked') ? { unmasked: true, wounded: true } : {}); return; }
+    if (n.who === 'frankman') { drawFrank(g, n.x, n.y, n.facing, this.t, true, { unmasked: true, helmet: true, still: true }); return; }
+    if (n.who === 'transam') { PROPS.carh(g, { x: n.x - 27, y: n.y - 13, w: 54, h: 26, col: '#16161c' }); return; }
+    if (n.who === 'dog') {
       const asleep = view.phase === 'night' && this.state.has('rose_talk');
       drawDog(g, n.x, n.y, n.facing, Math.floor(this.t * 2) % 2, asleep, this.t);
       return;

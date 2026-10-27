@@ -76,9 +76,4 @@ export const CHAPTER4 = {
     ['unset', 'in_class'], ['unset', 'tape_on'],
     ['set', 'oct7_health'],
   ]),
-
-  build_end: [
-    ['save'],
-    ['end', ['Friday afternoon continues in the next stages:', 'Old Gun Road, Frank in the mirror,', 'and the emergency PTA meeting.']],
-  ],
 };

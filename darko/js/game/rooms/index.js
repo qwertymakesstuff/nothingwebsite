@@ -1,10 +1,11 @@
-// Every room in the game, by id. Rooms are grouped by place in house.js, town.js and school.js.
+// Every room in the game, by id, grouped by place: house.js, town.js, places.js and school.js.
 
 import { HOUSE } from './house.js';
 import { TOWN } from './town.js';
 import { SCHOOL } from './school.js';
+import { PLACES } from './places.js';
 
-export const ROOMS = { ...HOUSE, ...TOWN, ...SCHOOL };
+export const ROOMS = { ...HOUSE, ...TOWN, ...PLACES, ...SCHOOL };
 
 // fill in ids and defaults, and fail loudly at load time if a map is the wrong shape
 for (const [id, room] of Object.entries(ROOMS)) {

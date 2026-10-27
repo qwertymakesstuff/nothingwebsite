@@ -45,3 +45,31 @@ export class EndScene {
     if (this.t > 2 && Math.floor(this.t * 2) % 2) g.text('press any key', W / 2, H - 16, C.grey, { align: 'center' });
   }
 }
+
+// The end of the story: the credits, slowly, over the dark. Any key after a moment returns to
+// the title screen.
+const CREDITS = [
+  ['DONNIE DARKO', C.bone], ['', null],
+  ['Based on the film written and directed by', C.fog], ['Richard Kelly', C.mist], ['', null],
+  ['A retro adaptation', C.fog], ['', null],
+  ['Code, pixel art and synthesized sound', C.grey], ['made for this game.', C.grey], ['', null],
+  ['Middlesex, Virginia', C.fog], ['October 1988', C.fog], ['', null], ['', null],
+  ['Every living creature on this earth', C.grey], ['dies alone.', C.grey], ['', null], ['', null],
+  ['THE END', C.red],
+];
+
+export class CreditsRoll {
+  constructor(app) { this.app = app; this.opaque = true; this.t = 0; }
+  enter() { this.app.audio.ambience('title'); }
+  update(dt, input) {
+    this.t += dt;
+    if (this.t > 3 && (input.advance() || input.pressed('cancel'))) { input.consume(); this.app.toTitle(); }
+    if (this.t > 40) this.app.toTitle();
+  }
+  draw(g) {
+    g.rect(0, 0, W, H, C.black);
+    const y0 = H - this.t * 12;
+    CREDITS.forEach(([s, col], i) => { if (s) g.text(s, W / 2, y0 + i * 12, col, { align: 'center' }); });
+    if (this.t > 3) g.text('press any key', W / 2, H - 10, C.grey, { align: 'center' });
+  }
+}
