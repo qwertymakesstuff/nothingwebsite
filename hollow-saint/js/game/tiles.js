@@ -23,6 +23,19 @@ export const TILES = {
   '_': { name: 'floorboards', surface: 'wood' },
   'd': { name: 'threshold', surface: 'wood' },
   '+': { name: 'flagstone', surface: 'stone' },
+  'p': { name: 'pavement', surface: 'stone' },
+  'S': { name: 'stone wall', solid: true },
+  'r': { name: 'slate roof', solid: true },
+  'v': { name: 'stained window', solid: true },
+  'i': { name: 'iron railing', solid: true },
+  'y': { name: 'warm window', solid: true },
+  'X': { name: 'boarded door', solid: true },
+  'K': { name: 'brick', solid: true },
+  'L': { name: 'ladder', solid: true },
+  'n': { name: 'concrete', surface: 'stone' },
+  '~': { name: 'puddle', surface: 'water' },
+  'c': { name: 'runner', surface: 'cloth' },
+  'Z': { name: 'stairs', surface: 'wood' },
 };
 
 export const isSolidChar = ch => !TILES[ch] || !!TILES[ch].solid;
@@ -136,10 +149,92 @@ const PAINT = {
   },
 };
 
-export function bakeRoom(room) {
+Object.assign(PAINT, {
+  'p'(f, px, py, tx, ty) {
+    f.rect(px, py, TILE, TILE, C.INK);
+    speckle(f, px, py, tx, ty, [C.SLATE, C.NEAR], 0.1, 11);
+    if (tx % 3 === 0) f.vline(px, py, py + 7, C.NEAR);
+  },
+  'S'(f, px, py, tx, ty, at) {
+    f.rect(px, py, TILE, TILE, C.ASH);
+    const off = ty % 2 ? 4 : 0;
+    f.hline(px, px + 7, py + 3, C.SLATE); f.hline(px, px + 7, py + 7, C.SLATE);
+    f.vline(px + off, py, py + 3, C.SLATE); f.vline(px + ((off + 4) % 8), py + 4, py + 7, C.SLATE);
+    speckle(f, px, py, tx, ty, [C.STONE, C.SLATE, C.MOSS], 0.06, 12);
+    if (at(tx, ty + 1) !== 'S' && at(tx, ty + 1) !== 'v' && at(tx, ty + 1) !== 'X' && at(tx, ty + 1) !== 'D') f.hline(px, px + 7, py + 7, C.INK);
+  },
+  'r'(f, px, py, tx, ty, at) {
+    f.rect(px, py, TILE, TILE, C.SLATE);
+    for (let j = 1; j < TILE; j += 3) {
+      f.hline(px, px + 7, py + j, C.INK);
+      for (let i = (j + tx * 2) % 4; i < TILE; i += 4) f.pset(px + i, py + j + 1, C.INK);
+    }
+    if (at(tx, ty + 1) !== 'r') f.hline(px, px + 7, py + 7, C.NEAR);
+  },
+  'v'(f, px, py, tx, ty) {
+    PAINT['S'](f, px, py, tx, ty, () => 'S');
+    f.rect(px + 1, py, 6, 8, C.NEAR);
+    f.rect(px + 2, py + 1, 4, 6, C.DRIED);
+    f.pset(px + 3, py + 1, C.NEAR); f.pset(px + 4, py + 1, C.NEAR);
+    f.vline(px + 4, py + 2, py + 6, C.NEAR); f.hline(px + 2, px + 5, py + 4, C.NEAR);
+  },
+  'i'(f, px, py, tx, ty) {
+    PAINT[ty % 2 ? '.' : ','](f, px, py, tx, ty);
+    f.hline(px, px + 7, py + 1, C.NEAR); f.hline(px, px + 7, py + 6, C.NEAR);
+    for (let i = 1; i < TILE; i += 3) { f.vline(px + i, py, py + 7, C.INK); f.pset(px + i, py, C.SLATE); }
+  },
+  'y'(f, px, py, tx, ty) {
+    PAINT['B'](f, px, py, tx, ty);
+    f.rect(px + 1, py + 1, 6, 6, C.BLACK);
+  },
+  'X'(f, px, py) {
+    f.rect(px, py, TILE, TILE, C.NEAR);
+    f.vline(px, py, py + 7, C.SLATE); f.vline(px + 7, py, py + 7, C.SLATE);
+    f.rect(px, py + 1, TILE, 2, C.DIRT); f.rect(px, py + 5, TILE, 2, C.DIRT);
+    f.pset(px + 1, py + 1, C.STONE); f.pset(px + 6, py + 5, C.STONE);
+  },
+  'K'(f, px, py, tx, ty, at) {
+    f.rect(px, py, TILE, TILE, C.DRIED);
+    const off = ty % 2 ? 2 : 6;
+    f.hline(px, px + 7, py + 3, C.NEAR); f.hline(px, px + 7, py + 7, C.NEAR);
+    f.pset(px + off, py + 1, C.NEAR); f.pset(px + off, py + 2, C.NEAR);
+    f.pset(px + ((off + 4) % 8), py + 5, C.NEAR); f.pset(px + ((off + 4) % 8), py + 6, C.NEAR);
+    speckle(f, px, py, tx, ty, [C.BLOOD, C.INK], 0.05, 13);
+    if (at(tx, ty + 1) !== 'K' && at(tx, ty + 1) !== 'L') f.hline(px, px + 7, py + 7, C.BLACK);
+  },
+  'L'(f, px, py, tx, ty, at) {
+    PAINT['K'](f, px, py, tx, ty, at);
+    f.vline(px + (tx % 2 ? 6 : 1), py, py + 7, C.DIRT);
+    for (let j = 1; j < TILE; j += 3) f.hline(px, px + 7, py + j, C.DIRT);
+  },
+  'n'(f, px, py, tx, ty) {
+    f.rect(px, py, TILE, TILE, C.SLATE);
+    speckle(f, px, py, tx, ty, [C.INK, C.ASH], 0.08, 14);
+    if ((tx + ty * 3) % 7 === 0) f.line(px + 1, py + 2, px + 5, py + 6, C.INK);
+  },
+  '~'(f, px, py, tx, ty) {
+    PAINT['n'](f, px, py, tx, ty);
+    f.rect(px + 1, py + 2, 6, 4, C.COLD); f.rect(px + 2, py + 1, 4, 6, C.COLD);
+    f.pset(px + 3, py + 3, C.STONE);
+  },
+  'c'(f, px, py, tx, ty) {
+    f.rect(px, py, TILE, TILE, C.DRIED);
+    if (tx % 2) f.vline(px + 7, py, py + 7, C.BLOOD); else f.vline(px, py, py + 7, C.BLOOD);
+    speckle(f, px, py, tx, ty, [C.BLOOD, C.NEAR], 0.06, 15);
+  },
+  'Z'(f, px, py, tx, ty, at) {
+    f.rect(px, py, TILE, TILE, C.INK);
+    for (let j = 0; j < TILE; j += 2) f.hline(px, px + 7, py + j, at(tx, ty - 1) === 'Z' ? C.ASH : C.SLATE);
+    if (at(tx - 1, ty) !== 'Z') f.vline(px, py, py + 7, C.NEAR);
+    if (at(tx + 1, ty) !== 'Z') f.vline(px + 7, py, py + 7, C.NEAR);
+  },
+});
+
+export function bakeRoom(room, at0) {
   const tw = room.map[0].length, th = room.map.length;
   const f = new Frame(tw * TILE, th * TILE);
-  const at = (x, y) => (y >= 0 && y < th && x >= 0 && x < tw ? room.map[y][x] : undefined);
+  // at0: the world's tile lookup (with story overrides applied), if there is one
+  const at = at0 || ((x, y) => (y >= 0 && y < th && x >= 0 && x < tw ? room.map[y][x] : undefined));
   for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
     const paint = PAINT[at(tx, ty)];
     if (paint) paint(f, tx * TILE, ty * TILE, tx, ty, at);

@@ -136,6 +136,23 @@ export class Audio {
     amb.timers.push(setTimeout(tick, (minS + Math.random() * (maxS - minS)) * 1000));
   }
 
+  // ---- loops: sounds that run until stopped (tape hiss) -----------------------------------
+
+  loop(name) {
+    if (!this.ready || !LOOPS[name]) return { stop() {} };
+    const out = this.gain(0.0001, this.sfxBus);
+    out.gain.setTargetAtTime(1, this.ctx.currentTime, 0.05);
+    const nodes = [];
+    try { LOOPS[name](this, out, nodes); } catch { /* ignore */ }
+    return {
+      stop: () => {
+        const t = this.ctx.currentTime;
+        out.gain.setTargetAtTime(0.0001, t, 0.05);
+        setTimeout(() => { nodes.forEach(n => { try { n.stop?.(); } catch { /* done */ } n.disconnect?.(); }); out.disconnect(); }, 400);
+      },
+    };
+  }
+
   // ---- effects ---------------------------------------------------------------------------
 
   sfx(name, opts = {}) {
@@ -224,6 +241,69 @@ const AMBIENCE = {
   },
 };
 
+function drip(a, out, level = 0.04) {
+  const t = a.ctx.currentTime, g = a.gain(0.0001, out);
+  const o = a.osc('sine', 900 + Math.random() * 700, g, t);
+  o.frequency.exponentialRampToValueAtTime(300, t + 0.08);
+  a.env(g, t, 0.002, level, 0.09); o.stop(t + 0.12);
+}
+
+function bark(a, out, level = 0.03) {
+  const t = a.ctx.currentTime;
+  for (let i = 0; i < 2; i++) {
+    const tt = t + i * 0.28, f = a.filter('bandpass', 700, 2, out), g = a.gain(0.0001, f);
+    const o = a.osc('sawtooth', 220, g, tt); o.frequency.exponentialRampToValueAtTime(140, tt + 0.12);
+    a.env(g, tt, 0.01, level, 0.14); o.stop(tt + 0.2);
+  }
+}
+
+Object.assign(AMBIENCE, {
+  town(a, out, nodes, amb) {
+    wind(a, out, nodes, 0.05, 380);
+    const g = a.gain(0.008, out); nodes.push(g, a.osc('sine', 120, g)); // a streetlight's hum
+    a.every(amb, 25, 60, () => bark(a, out, 0.02));
+  },
+  house(a, out, nodes, amb) {
+    drone(a, out, nodes, 46, 0.03, 'triangle', 140);
+    // a clock somewhere, not quite even
+    const tick = () => { if (amb.stopped) return; snap(a, out, 0.012); amb.timers.push(setTimeout(tick, 1000 + Math.random() * 60)); };
+    tick();
+    a.every(amb, 14, 30, () => creak(a, out, 0.02));
+  },
+  chapel_out(a, out, nodes, amb) {
+    wind(a, out, nodes, 0.06, 300);
+    drone(a, out, nodes, 43.6, 0.04, 'sawtooth', 160);
+    a.every(amb, 20, 40, () => toll(a, out, 65.4, 0.05));
+  },
+  chapel(a, out, nodes, amb) {
+    drone(a, out, nodes, 32.7, 0.08, 'sawtooth', 120);
+    drone(a, out, nodes, 49, 0.03, 'sine', 300);
+    const g = a.gain(0.01, out);
+    nodes.push(g, a.osc('sine', 523, g), a.osc('sine', 526, g), a.osc('sine', 784, g));
+    a.every(amb, 10, 25, () => creak(a, out, 0.02));
+  },
+  cemetery(a, out, nodes, amb) {
+    wind(a, out, nodes, 0.08, 520);
+    drone(a, out, nodes, 51.9, 0.03, 'sine', 200);
+    a.every(amb, 8, 20, () => snap(a, out, 0.03));
+  },
+  passages(a, out, nodes, amb) {
+    drone(a, out, nodes, 36.7, 0.06, 'triangle', 110);
+    const f = a.filter('lowpass', 180, 0.5); const g = a.gain(0.05, out); f.connect(g);
+    nodes.push(a.noise(f), f, g);
+    a.every(amb, 1.5, 5, () => drip(a, out, 0.03));
+  },
+});
+
+const LOOPS = {
+  hiss(a, out, nodes) {
+    const f = a.filter('highpass', 2500, 0.5, out); const g = a.gain(0.025, f);
+    nodes.push(a.noise(g), f, g);
+    const f2 = a.filter('lowpass', 120, 0.7, out); const g2 = a.gain(0.03, f2);
+    nodes.push(a.osc('sine', 50, g2), f2, g2); // motor hum
+  },
+};
+
 const SFX = {
   ui_move(a, t) {
     const g = a.gain(0.0001, a.sfxBus); const o = a.osc('square', 330, g, t);
@@ -244,7 +324,7 @@ const SFX = {
     a.env(g, t, 0.002, 0.012, 0.02); o.stop(t + 0.04);
   },
   step(a, t, { surface = 'dirt' }) {
-    const p = { dirt: [260, 0.10, 0.07], grass: [900, 0.05, 0.06], wood: [520, 0.12, 0.05], stone: [1500, 0.07, 0.035], gravel: [1100, 0.08, 0.06] }[surface] || [300, 0.08, 0.06];
+    const p = { dirt: [260, 0.10, 0.07], grass: [900, 0.05, 0.06], wood: [520, 0.12, 0.05], stone: [1500, 0.07, 0.035], gravel: [1100, 0.08, 0.06], cloth: [400, 0.05, 0.05], water: [2200, 0.09, 0.1] }[surface] || [300, 0.08, 0.06];
     const f = a.filter(surface === 'stone' ? 'bandpass' : 'lowpass', p[0] * (0.9 + Math.random() * 0.2), surface === 'stone' ? 3 : 0.8, a.sfxBus);
     const g = a.gain(0.0001, f); const s = a.noise(g, t, false);
     a.env(g, t, 0.004, p[1], p[2]); s.stop(t + p[2] + 0.05);
@@ -291,6 +371,118 @@ const SFX = {
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.8);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 2.5); o.stop(t + 2.6);
     }
+  },
+  relic(a, t) {
+    for (const [fr, d] of [[659, 0], [988, 0.03], [1319, 0.06]]) {
+      const g = a.gain(0.0001, a.sfxBus); const o = a.osc('triangle', fr, g, t + d);
+      a.env(g, t + d, 0.01, 0.05, 0.6); o.stop(t + d + 0.7);
+    }
+    const f = a.filter('highpass', 4000, 0.7, a.sfxBus); const g = a.gain(0.0001, f); const s = a.noise(g, t, false);
+    a.env(g, t, 0.005, 0.05, 0.25); s.stop(t + 0.3);
+  },
+  hurt(a, t) {
+    const f = a.filter('lowpass', 900, 1, a.sfxBus); const g = a.gain(0.0001, f); const s = a.noise(g, t, false);
+    a.env(g, t, 0.003, 0.25, 0.18); s.stop(t + 0.25);
+    const g2 = a.gain(0.0001, a.sfxBus); const o = a.osc('sawtooth', 90, g2, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.3);
+    a.env(g2, t, 0.005, 0.12, 0.3); o.stop(t + 0.35);
+  },
+  death(a, t) {
+    for (const fr of [41, 43.6, 61.7]) {
+      const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sawtooth', fr, g, t);
+      o.frequency.exponentialRampToValueAtTime(fr / 2, t + 3);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 3.5);
+      o.stop(t + 3.6);
+    }
+  },
+  hollow_cue(a, t) {
+    // wet clicking, close to the ear
+    for (let i = 0; i < 5; i++) {
+      const tt = t + i * (0.05 + Math.random() * 0.05);
+      const f = a.filter('bandpass', 1800 + Math.random() * 1200, 8, a.sfxBus); const g = a.gain(0.0001, f); const s = a.noise(g, tt, false);
+      a.env(g, tt, 0.001, 0.35, 0.03); s.stop(tt + 0.05);
+    }
+  },
+  hollow_breath(a, t) {
+    const f = a.filter('bandpass', 500, 3, a.sfxBus); const g = a.gain(0.0001, f); const s = a.noise(g, t, false);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    f.frequency.linearRampToValueAtTime(800, t + 1);
+    s.stop(t + 1.2);
+  },
+  hollow_hurt(a, t) {
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('square', 1200, g, t); o.frequency.exponentialRampToValueAtTime(300, t + 0.25);
+    const f = a.filter('lowpass', 2000, 1); o.disconnect(); o.connect(f); f.connect(g);
+    a.env(g, t, 0.003, 0.06, 0.25); o.stop(t + 0.3);
+  },
+  hollow_die(a, t) {
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sawtooth', 600, g, t); o.frequency.exponentialRampToValueAtTime(60, t + 1.2);
+    a.env(g, t, 0.01, 0.06, 1.2); o.stop(t + 1.3);
+    const f = a.filter('lowpass', 600, 0.7, a.sfxBus); const g2 = a.gain(0.0001, f); const s = a.noise(g2, t + 0.3, false);
+    a.env(g2, t + 0.3, 0.2, 0.1, 1); s.stop(t + 1.6);
+  },
+  shade_cue(a, t) {
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sine', 180, g, t); o.frequency.linearRampToValueAtTime(240, t + 2);
+    const o2 = a.osc('sine', 183, g, t); o2.frequency.linearRampToValueAtTime(236, t + 2);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 1); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+    o.stop(t + 2.3); o2.stop(t + 2.3);
+  },
+  shade_stun(a, t) {
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sine', 2400, g, t); o.frequency.exponentialRampToValueAtTime(200, t + 0.5);
+    a.env(g, t, 0.002, 0.05, 0.5); o.stop(t + 0.55);
+  },
+  penitent_rise(a, t) {
+    for (const fr of [110, 164.8, 220]) {
+      const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sine', fr, g, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.04, t + 1); g.gain.exponentialRampToValueAtTime(0.0001, t + 3);
+      o.stop(t + 3.1);
+    }
+  },
+  pickup(a, t) {
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('triangle', 523, g, t); o.frequency.setValueAtTime(784, t + 0.08);
+    a.env(g, t, 0.004, 0.04, 0.3); o.stop(t + 0.35);
+  },
+  page(a, t) {
+    const f = a.filter('bandpass', 3500, 0.8, a.sfxBus); const g = a.gain(0.0001, f); const s = a.noise(g, t, false);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    s.stop(t + 0.3);
+  },
+  unlock(a, t) {
+    SFX.locked(a, t);
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('square', 140, g, t + 0.22);
+    a.env(g, t + 0.22, 0.003, 0.05, 0.08); o.stop(t + 0.32);
+  },
+  phone_ring(a, t) {
+    for (let i = 0; i < 2; i++) {
+      const tt = t + i * 0.45;
+      const g = a.gain(0.0001, a.sfxBus); const o = a.osc('square', 440, g, tt); const o2 = a.osc('square', 480, g, tt);
+      const lfo = a.osc('square', 20, a.gain(0.02, g.gain), tt);
+      g.gain.setValueAtTime(0.03, tt); g.gain.setValueAtTime(0.0001, tt + 0.38);
+      o.stop(tt + 0.4); o2.stop(tt + 0.4); lfo.stop(tt + 0.4);
+    }
+  },
+  phone_pickup(a, t) { SFX.bump(a, t); SFX.page(a, t + 0.05); },
+  kettle(a, t) {
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sine', 1800, g, t); o.frequency.linearRampToValueAtTime(2300, t + 1.5);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.03, t + 0.8); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+    o.stop(t + 2.5);
+  },
+  tape_click(a, t) {
+    const f = a.filter('bandpass', 1500, 4, a.sfxBus); const g = a.gain(0.0001, f); const s = a.noise(g, t, false);
+    a.env(g, t, 0.001, 0.3, 0.04); s.stop(t + 0.06);
+  },
+  // a voice heard through tape: you can tell it is speech, never what it says
+  voice(a, t, { pitch = 1, dur = 1, rough = false }) {
+    const f1 = a.filter('bandpass', 700 * pitch, 5, a.sfxBus), f2 = a.filter('bandpass', 1400 * pitch, 6, a.sfxBus);
+    const g = a.gain(0.0001); g.connect(f1); g.connect(f2);
+    const o = a.osc(rough ? 'sawtooth' : 'triangle', 140 * pitch, g, t);
+    let tt = t;
+    while (tt < t + dur) {
+      const syl = 0.08 + Math.random() * 0.12;
+      g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(rough ? 0.09 : 0.06, tt + syl * 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + syl);
+      o.frequency.setValueAtTime(140 * pitch * (0.9 + Math.random() * 0.25), tt);
+      tt += syl + Math.random() * 0.05;
+    }
+    o.stop(t + dur + 0.2);
   },
   bump(a, t) {
     const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sine', 70, g, t);

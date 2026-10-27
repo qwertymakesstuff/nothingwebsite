@@ -2,6 +2,10 @@
 
 import { sprite, canvasSprite, withRows } from '../engine/sprite.js';
 import { C } from '../engine/palette.js';
+import { WORLD_SPRITES } from './art-world.js';
+import { CAST_SPRITES } from './art-cast.js';
+
+export { PORTRAITS, ICONS } from './art-cast.js';
 
 // ---- Elias -------------------------------------------------------------------------------
 
@@ -259,6 +263,8 @@ export const SPRITES = {
   candles_lit: [candles(true, 0), candles(true, 1)],
   red_window: redWindow,
   tape_light: tapeLight,
+  ...WORLD_SPRITES,
+  ...CAST_SPRITES,
 };
 
 // sprite lookup that accepts animated entries (arrays) and picks a frame

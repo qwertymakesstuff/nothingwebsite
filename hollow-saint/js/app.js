@@ -6,8 +6,10 @@ import { Frame } from './engine/frame.js';
 import { Input } from './engine/input.js';
 import { Store } from './engine/storage.js';
 import { W, H } from './game/config.js';
+import { C } from './engine/palette.js';
 
 const noop = () => {};
+const POINTER = ['X....', 'XX...', 'XBX..', 'XBBX.', 'XBBBX', 'XBXX.', 'XX...'];
 
 export class App {
   constructor({ store = new Store(), audio = null, platform = {} } = {}) {
@@ -22,6 +24,7 @@ export class App {
     this.fade = null;     // { level, dir, mid, done }
     this.flash = 0;
     this.shake = 0;
+    this.mouseIdle = 999;
     this.applySettings();
   }
 
@@ -64,6 +67,7 @@ export class App {
     } else {
       this.top?.update(this.input);
     }
+    this.mouseIdle = this.input.mouse.moved || this.input.mouse.clicked ? 0 : this.mouseIdle + 1;
     if (this.flash > 0) this.flash--;
     if (this.shake > 0) this.shake--;
     this.input.endFrame();
@@ -77,6 +81,11 @@ export class App {
     for (let i = Math.max(0, from); i < this.scenes.length; i++) this.scenes[i].render(fb);
     if (this.flash) fb.dither(0, 0, W, H, this.flashColor, Math.min(12, this.flash * 2));
     if (this.fade) fb.dither(0, 0, W, H, 0, this.fade.level);
+    // a small pointer for the menus, while the mouse is in use
+    const m = this.input.mouse;
+    if (this.top && this.top.cursor !== false && m.inside && this.mouseIdle < 180) {
+      POINTER.forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== '.') fb.pset(m.x + i, m.y + j, ch === 'B' ? C.BONE : C.BLACK); }));
+    }
     return fb;
   }
 

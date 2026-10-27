@@ -1,11 +1,11 @@
 // Action-based input. The DOM layer feeds raw key codes and mouse events in; game code asks
 // about actions ("up", "interact") so keys can be remapped without touching gameplay.
 
-export const ACTIONS = ['up', 'down', 'left', 'right', 'interact', 'inventory', 'pause'];
+export const ACTIONS = ['up', 'down', 'left', 'right', 'interact', 'relic', 'inventory', 'map', 'pause'];
 
 export const ACTION_LABELS = {
   up: 'Move up', down: 'Move down', left: 'Move left', right: 'Move right',
-  interact: 'Interact', inventory: 'Inventory', pause: 'Pause',
+  interact: 'Interact', relic: 'Raise relic', inventory: 'Pockets', map: 'Map', pause: 'Pause',
 };
 
 export const DEFAULT_BINDINGS = {
@@ -14,7 +14,9 @@ export const DEFAULT_BINDINGS = {
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
   interact: ['KeyE', 'Enter'],
+  relic: ['Space', 'KeyF'],
   inventory: ['Tab', 'KeyI'],
+  map: ['KeyM'],
   pause: ['Escape', 'KeyP'],
 };
 

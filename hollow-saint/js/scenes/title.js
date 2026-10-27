@@ -117,6 +117,6 @@ export class TitleScene {
     }
     centerText(fb, 'B E L L W E T H E R ,   1 9 8 7', 52, C.ASH);
     this.menu.render(fb, this.t);
-    fb.text('v0.1', W - 28, H - 10, C.INK);
+    fb.text('v0.5', W - 28, H - 10, C.INK);
   }
 }

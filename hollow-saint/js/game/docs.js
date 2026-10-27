@@ -1,0 +1,148 @@
+// Readable documents and the journal. A document line is a string or { s, strike, red }.
+// Lines are at most 32 characters so they fit the page at the game's resolution.
+
+export const DOCS = {
+  notebook: {
+    title: "Mara's notebook page", kind: 'hand',
+    pages: [
+      [
+        'Oct 9',
+        "Slept at Halvorsen's again. Ruth",
+        "doesn't know. Or she does.",
+        '',
+        'The deck works. I played the',
+        'tape back and it said my name',
+        'before I said it.',
+        { s: 'I am not making this up', strike: true },
+        '',
+        'Ruth says the numbers are hymns.',
+        "St. Oran's is NOT closed. Lights",
+        'on Sundays. Chairs set out.',
+      ],
+      [
+        'If Eli comes:',
+        "Ruth has Arne's keys. Ask her.",
+        "Don't let Cal drive you",
+        'anywhere.',
+        '',
+        { s: "Don't come", strike: true },
+        { s: 'Please come', strike: true },
+        '',
+        'The hole in the saint goes all',
+        'the way down.',
+      ],
+    ],
+  },
+  hunter_note: {
+    title: 'Folded note', kind: 'hand',
+    pages: [[
+      'To whoever sits here next:',
+      'Things walk this stretch at',
+      'night.',
+      'The thin pale ones back off from',
+      'a cross held up at them. Do it',
+      "three times and they come apart.",
+      "I've seen it.",
+      '',
+      "The tall black one doesn't care",
+      'about crosses. It only moves',
+      "when you aren't looking at it.",
+      'So look at it. Walk backwards.',
+      '                         - D.H.',
+    ]],
+  },
+  prayer_card: {
+    title: 'Prayer card', kind: 'hand',
+    pages: [[
+      'Saint Oran, hollow one,',
+      'take what we carry.',
+      { s: 'take what we are', strike: true },
+      'Empty us as you were emptied',
+      { s: 'and fill us', strike: true },
+      { s: 'fill us', strike: true },
+      'and keep the door below',
+      'shut until it is time.',
+      '',
+      'Amen.',
+    ]],
+  },
+  bulletin: {
+    title: 'Church bulletin', kind: 'print',
+    pages: [[
+      "ST. ORAN'S HOUSE",
+      'ORDER OF SERVICE',
+      'Sunday, October 25, 1987',
+      '',
+      'Processional ........ Hymn 412',
+      'The Emptying',
+      'The Reading of the Names',
+      'Recessional ......... Hymn 417',
+      '',
+      'All are welcome below.',
+    ]],
+  },
+  maint_log: {
+    title: 'Grounds log', kind: 'typed',
+    pages: [
+      [
+        "ST. ORAN'S HOUSE - GROUNDS LOG",
+        'W. PIKE, CARETAKER',
+        '',
+        'KEYS',
+        'Cemetery gate: nail by stove.',
+        { s: 'Vestry door: on my ring', strike: true },
+        'Vestry door: kept in our plot.',
+        '  In the urn.',
+        "Halvorsen hatch: bolted below.",
+        'Undercroft: bolted, nave side.',
+      ],
+      [
+        'NOTES',
+        'Mar 3. Boiler out again.',
+        'Jun 9. Sunday lights. Not mine.',
+        'Aug 30. The kneeler in the low',
+        "  passage won't move for iron",
+        '  or for words. It listens.',
+        '  Play it something.',
+        'Oct 11. Chairs set out again.',
+        { s: 'Oct 25.', strike: true },
+      ],
+    ],
+  },
+  page2: {
+    title: 'Second notebook page', kind: 'hand',
+    pages: [[
+      'Oct 13',
+      "There's a way under. Pike's",
+      "cellar to Halvorsen's to the",
+      'House. Somebody walks it at',
+      'night. Bare feet.',
+      '',
+      "The voice isn't on the tape.",
+      "It's in the deck.",
+      "No. It's in the ground and the",
+      'deck is just close enough.',
+      '',
+      '4 1 7 3. Four rooms? Four bells?',
+      "I'll know Sunday.",
+    ]],
+  },
+};
+
+// journal entries that aren't documents: what people told you, and what you worked out
+export const NOTES = {
+  account_ruth: { title: 'Ruth, about Mara', text: 'Mara left in August with the man from the radio station. A blue car. She did not say goodbye.' },
+  account_cal: { title: 'Cal, about Mara', text: 'Mara left in September. He drove her to the Greyhound in Ashby himself. She sat in the back and said nothing.' },
+  account_price: { title: 'Father Price, about Mara', text: 'Mara "comes Tuesday". She is "always very sorry". He talks as if it already happened.' },
+  account_notebook: { title: "Mara's own pages", text: "Mara was sleeping at Halvorsen's on October 9th and walking the tunnels on the 13th. Not August. Not September." },
+  clue_numbers: { title: 'Four numbers', text: 'Four. One. Seven. Three. Ruth calls them hymn numbers. The bulletin lists hymns 412 and 417.' },
+  clue_closed: { title: 'Two dates', text: "The notice board says St. Oran's closed in 1958. Ruth says 1951, 'when the saint went quiet'. Someone repainted the 8." },
+  clue_below: { title: 'Below the House', text: "Somebody records in St. Oran's chapel, with a microphone wired into a grate in the floor. Whatever the tape hears is underneath." },
+};
+
+export const docNoteId = id => 'doc:' + id;
+
+export function noteTitle(id) {
+  if (id.startsWith('doc:')) return DOCS[id.slice(4)]?.title || id;
+  return NOTES[id]?.title || id;
+}

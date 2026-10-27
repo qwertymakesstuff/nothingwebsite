@@ -69,7 +69,7 @@ export class ControlsScene {
       })),
       { label: 'Reset to defaults', onSelect: () => { app.settings.bindings = structuredClone(DEFAULT_BINDINGS); app.saveSettings(); } },
       { label: 'Back', onSelect: () => app.pop() },
-    ], { x: 40, y: 34, w: 176, lineH: 12 });
+    ], { x: 40, y: 30, w: 176, lineH: 11 });
   }
 
   bind(action, code) {

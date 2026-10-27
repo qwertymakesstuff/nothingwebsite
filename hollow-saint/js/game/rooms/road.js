@@ -1,12 +1,7 @@
-// Room data. Maps are rows of tile characters (see tiles.js). Positions in spawns, exits,
-// triggers and props are in tiles (fractions allowed); spawns give the player's feet.
-//
-// Scripts are lists of variants; the first whose `when` holds is played:
-//   when: { all: [flags], none: [flags], times: n, minTimes: n }   (times = previous interactions)
-//   say: [lines], set: [flags], clear: [flags], sfx, flash, save: true
-// After any interaction the flag `looked:<id>` is set, so repeat visits can be told apart.
+// The road outside Bellwether: where the car died, the shrine, and Halvorsen's station.
+// See index.js for the room format.
 
-export const ROOMS = {
+export const ROAD = {
   forest_path: {
     name: 'Bellwether Road',
     ambience: 'forest',
@@ -74,8 +69,13 @@ export const ROOMS = {
       start: [16, 52.5, 'up'],
       house_door: [25.5, 11.8, 'down'],
       from_shrine: [29.5, 25.5, 'left'],
+      from_row: [15, 1.7, 'down'],
     },
+    mapPos: [3, 4],
+    overrides: [{ when: { all: ['gate_open'] }, x: 13, y: 3, w: 4, ch: '=' }],
+    onEnter: [{ id: 'hint_start', once: true, say: ['[ WASD or arrows to walk. E to look at things. Tab opens your pockets. ]'] }],
     exits: [
+      { x: 13, y: 0, w: 4, h: 1, to: 'mill_row', spawn: 'from_gate' },
       { x: 25, y: 10, w: 1, h: 1, to: 'station_hall', spawn: 'from_outside', sfx: 'door' },
       { x: 31, y: 24, w: 1, h: 2, to: 'shrine', spawn: 'from_path' },
     ],
@@ -123,7 +123,10 @@ export const ROOMS = {
       },
       {
         id: 'gate', sprite: 'chain', x: 13, y: 3, zone: [0, 0, 32, 18],
+        alt: [{ when: { all: ['gate_open'] }, sprite: 'chain_open' }],
         script: [
+          { when: { all: ['gate_open'] }, say: ['The gate stands open. The chain lies in the ditch where you threw it.'] },
+          { when: { has: ['key_ring'] }, say: ["Arne's keys. The third one fits.", 'The padlock opens like it was waiting to. The chain slides off into the ditch.'], set: 'gate_open', sfx: 'unlock' },
           {
             when: { times: 0 },
             say: ['The road gate into Bellwether.', 'Someone has wrapped it in chain and hung a new padlock. The gate has rusted for twenty years. The chain is from this week.'],
@@ -142,12 +145,12 @@ export const ROOMS = {
     ambient: 0.06,
     light: 62,
     map: [
-      'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-      'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-      'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-      'TTTTTTTTTTTTT,......,TTTTTTTTTTT',
-      'TTTTTTTTTTT...++++++...TTTTTTTTT',
-      'TTTTTTTTT,....++++++.....TTTTTTT',
+      'TTTTTTTTTTTTTTTTTTTTTTTT::TTTTTT',
+      'TTTTTTTTTTTTTTTTTTTTTTTT::TTTTTT',
+      'TTTTTTTTTTTTTTTTTTTTTTT.::TTTTTT',
+      'TTTTTTTTTTTTT,......,TT.::TTTTTT',
+      'TTTTTTTTTTT...++++++....::TTTTTT',
+      'TTTTTTTTT,....++++++....::TTTTTT',
       'TTTTTTTT......++++++......TTTTTT',
       'TTTTTTT.......++++++.......TTTTT',
       'TTTTTTT....,..++++++..,....TTTTT',
@@ -167,8 +170,12 @@ export const ROOMS = {
       'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
       'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
     ],
-    spawns: { from_path: [2.5, 12.5, 'right'] },
-    exits: [{ x: 0, y: 11, w: 1, h: 2, to: 'forest_path', spawn: 'from_shrine' }],
+    spawns: { from_path: [2.5, 12.5, 'right'], from_woods: [24.9, 2.7, 'down'] },
+    mapPos: [4, 4],
+    exits: [
+      { x: 0, y: 11, w: 1, h: 2, to: 'forest_path', spawn: 'from_shrine' },
+      { x: 24, y: 0, w: 2, h: 1, to: 'woods', spawn: 'from_shrine' },
+    ],
     props: [
       {
         id: 'saint', sprite: 'shrine', x: 15, y: 3, solid: [0, 27, 32, 13], zone: [0, 20, 32, 26],
@@ -185,16 +192,17 @@ export const ROOMS = {
           {
             when: { none: ['shrine_lit'] },
             say: ['Three tallow stubs and a votive in red glass. Your lighter still works.', 'The wicks take. The red glass throws your shadow up into the trees, and for a moment it is much too tall.', '[ Progress saved. ]'],
-            set: ['shrine_lit'], sfx: 'candle', flash: 'red', save: true,
+            set: ['shrine_lit'], sfx: 'candle', flash: 'red', save: true, heal: true,
           },
-          { say: ['The candles burn without getting any shorter.', '[ Progress saved. ]'], sfx: 'save', save: true },
+          { say: ['The candles burn without getting any shorter. You stand in their light until your hands stop shaking.', '[ Progress saved. Wounds tended. ]'], sfx: 'save', save: true, heal: true },
         ],
       },
       {
         id: 'bowl', sprite: 'bowl', x: 11, y: 9.4,
         script: [
-          { when: { times: 0 }, say: ['An offering bowl. Pennies, a church key, a blue hair ribbon.'] },
-          { say: ['The ribbon is newer than anything else in the bowl.'] },
+          { when: { times: 0 }, say: ['An offering bowl. Pennies, a church key, a blue hair ribbon.', 'Under the pennies, a prayer card.'], give: 'prayer_card', doc: 'prayer_card' },
+          { when: { none: ['found:ribbon'] }, say: ['The ribbon is newer than anything else in the bowl.', 'Mara wore her hair tied back in blue. Everybody does.'], set: 'found:ribbon' },
+          { say: ['Pennies. A church key. The ribbon.'] },
         ],
       },
       {
@@ -226,6 +234,10 @@ export const ROOMS = {
       '########d###########',
     ],
     spawns: { from_outside: [8.5, 9.5, 'up'], from_store: [17.5, 7.5, 'left'] },
+    mapPos: [2, 4],
+    // once Mara's page has been read, the dead payphone rings
+    onEnter: [{ id: 'phone_rings', when: { all: ['read:notebook'], none: ['phone_answered', 'phone_ringing'] }, set: 'phone_ringing' }],
+    ringing: 'phone_ringing',
     exits: [
       { x: 8, y: 10, w: 1, h: 1, to: 'forest_path', spawn: 'house_door', sfx: 'door' },
       { x: 19, y: 6, w: 1, h: 2, to: 'store_room', spawn: 'from_hall' },
@@ -234,7 +246,7 @@ export const ROOMS = {
       {
         id: 'counter', sprite: 'counter', x: 2, y: 3.6, solid: [0, 5, 40, 11],
         script: [
-          { when: { times: 0 }, say: ['The register drawer hangs open. Empty, except for a church bulletin.', 'It is dated next Sunday.'], set: ['read_bulletin'] },
+          { when: { times: 0 }, say: ['The register drawer hangs open. Empty, except for a church bulletin.', 'It is dated next Sunday.'], doc: 'bulletin' },
           { say: ['Next Sunday\'s hymn is number 412. The hymnal you grew up with stops at 400.'] },
         ],
       },
@@ -248,6 +260,8 @@ export const ROOMS = {
       {
         id: 'payphone', sprite: 'payphone', x: 8, y: 1.2, zone: [-2, 0, 12, 28],
         script: [
+          { when: { all: ['phone_ringing'] }, say: ['It is ringing. The cord is cut. It is ringing anyway.', 'You pick the handset up off the floor.'], talk: 'phone', sfx: 'phone_pickup' },
+          { when: { all: ['phone_answered'], none: ['looked:phone_after'] }, say: ['The handset is cold. The cut end of the cord is wet.'], set: 'looked:phone_after' },
           { when: { times: 0 }, say: ['A payphone. The cord has been cut clean through. The handset lies on the floor.'] },
           { when: { times: 1 }, say: ['You lift the handset anyway.', 'Nothing.', 'Then, very faint, a dial tone.'], sfx: 'sting' },
           { say: ['Nothing.'] },
@@ -292,7 +306,8 @@ export const ROOMS = {
       '#____________#',
       '##############',
     ],
-    spawns: { from_hall: [2.5, 5.5, 'right'] },
+    spawns: { from_hall: [2.5, 5.5, 'right'], from_hatch: [6.2, 5.8, 'down'] },
+    mapPos: [1, 4],
     exits: [{ x: 0, y: 4, w: 1, h: 2, to: 'station_hall', spawn: 'from_store' }],
     // the cot cools down the first time you come back after touching it
     onEnter: [{ id: 'cot_cools', when: { all: ['cot_warm'], none: ['cot_cold'] }, set: ['cot_cold'] }],
@@ -300,7 +315,11 @@ export const ROOMS = {
       {
         id: 'cot', sprite: 'cot', x: 9, y: 5.9, solid: [0, 3, 32, 8],
         script: [
-          { when: { none: ['cot_warm'] }, say: ['A camp cot. A blanket pushed back.', 'You put your hand on it. It\'s still warm.'], set: ['cot_warm'] },
+          {
+            when: { none: ['cot_warm'] },
+            say: ['A camp cot. A blanket pushed back.', 'You put your hand on it. It\'s still warm.', 'Under the cot, half under the blanket: a page torn out of a spiral notebook.', 'You know the handwriting before you read a word of it.'],
+            set: ['cot_warm'], give: 'notebook', doc: 'notebook', note: 'account_notebook',
+          },
           { when: { all: ['cot_cold', 'looked:cot_after'] }, say: ['Cold.'] },
           { when: { all: ['cot_cold'] }, say: ['The blanket is cold now.', 'It was warm. You are sure it was warm.'], set: ['looked:cot_after'] },
           { say: ['Still warm. The room is not.'] },
@@ -324,7 +343,9 @@ export const ROOMS = {
       },
       {
         id: 'hatch', sprite: 'hatch', x: 5.2, y: 3.2,
+        alt: [{ when: { all: ['hatch_open'] }, sprite: 'hatch_open' }],
         script: [
+          { when: { all: ['hatch_open'] }, say: ['The hatch hangs open. A ladder goes down into the cold.'], go: { to: 'passages', spawn: 'from_hatch', sfx: 'door' } },
           { when: { times: 0 }, say: ['A trapdoor with a new padlock. Cold air comes up through the gaps, and a smell like wet stone.'], sfx: 'locked', set: ['saw_hatch'] },
           { say: ['Locked. Something underneath settles, the way an old house settles.'], sfx: 'locked' },
         ],
@@ -333,4 +354,3 @@ export const ROOMS = {
   },
 };
 
-export const START = { room: 'forest_path', spawn: 'start' };

@@ -60,6 +60,11 @@ export function sanitizeSave(raw) {
     visited: Array.isArray(raw.visited) ? raw.visited.filter(f => typeof f === 'string') : [],
     counts: Object.fromEntries(Object.entries(raw.counts && typeof raw.counts === 'object' ? raw.counts : {})
       .filter(([, n]) => Number.isInteger(n) && n >= 0)),
+    items: Array.isArray(raw.items) ? [...new Set(raw.items.filter(f => typeof f === 'string'))] : undefined,
+    equipped: typeof raw.equipped === 'string' ? raw.equipped : null,
+    notes: Array.isArray(raw.notes) ? [...new Set(raw.notes.filter(f => typeof f === 'string'))] : [],
+    remains: Object.fromEntries(Object.entries(raw.remains && typeof raw.remains === 'object' ? raw.remains : {})
+      .filter(([, r]) => r && typeof r.room === 'string' && Number.isFinite(r.x) && Number.isFinite(r.y))),
     chapter: Number.isInteger(raw.chapter) ? raw.chapter : 1,
     playtime: Number.isFinite(raw.playtime) ? raw.playtime : 0,
     savedAt: Number.isFinite(raw.savedAt) ? raw.savedAt : 0,
