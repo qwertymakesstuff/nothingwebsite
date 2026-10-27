@@ -36,6 +36,9 @@ const freshWorld = (room = START.room, spawn = START.spawn) => {
   return w;
 };
 
+const goTargets = room => (room.props || []).flatMap(p => (p.script || []).filter(v => v.go).map(v => v.go.to));
+const neighbours = id => [...ROOMS[id].exits.map(e => e.to), ...goTargets(ROOMS[id])];
+
 const scriptsOf = room => [
   ...(room.props || []).filter(p => p.script).map(p => [p.id, p.script]),
   ...(room.triggers || []).map(t => [t.id, t.script]),
@@ -92,7 +95,7 @@ test('rooms: maps are rectangular and use known tiles; every reference resolves'
       assert.ok(ROOMS[ex.to], `${id}: exit to missing room ${ex.to}`);
       assert.ok(ROOMS[ex.to].spawns[ex.spawn], `${id}: exit to missing spawn ${ex.to}.${ex.spawn}`);
       // you can always come back the way you came
-      assert.ok(ROOMS[ex.to].exits.some(b => b.to === id), `${ex.to} has no way back to ${id}`);
+      assert.ok(neighbours(ex.to).includes(id), `${ex.to} has no way back to ${id}`);
     }
     for (const p of r.props) if (p.sprite) assert.ok(SPRITES[p.sprite], `${id}.${p.id}: missing sprite ${p.sprite}`);
     for (const p of r.props) for (const a of p.alt || []) if (a.sprite) assert.ok(SPRITES[a.sprite]);
@@ -112,7 +115,7 @@ test('rooms: spawns stand on open ground, outside every exit and trigger', () =>
 test('scripts: every script ends in an unconditional fallback, so nothing ever goes silent', () => {
   for (const [rid, r] of Object.entries(ROOMS)) for (const [id, s] of scriptsOf(r)) {
     assert.ok(s.length && !s[s.length - 1].when, `${rid}.${id} has no fallback`);
-    for (const v of s) assert.ok((v.say || []).length || v.talk || v.doc || v.tape || v.go, `${rid}.${id}: a variant does nothing`);
+    for (const v of s) assert.ok((v.say || []).length || v.talk || v.doc || v.tape || v.go || v.puzzle, `${rid}.${id}: a variant does nothing`);
   }
 });
 
@@ -137,7 +140,7 @@ function reach(w) {
 }
 
 // every lock opened and every blocker gone: the geometry alone must let you reach everything
-const OPENED = ['gate_open', 'lane_open', 'hatch_open', 'undercroft_open', 'vestry_open', 'cemetery_open', 'dead:kneeler'];
+const OPENED = ['gate_open', 'lane_open', 'hatch_open', 'undercroft_open', 'vestry_open', 'cemetery_open', 'dead:kneeler', 'crypt_open', 'cal_aside', 'maze_solved', 'bells_solved'];
 const progressedWorld = (room, spawn) => {
   const s = newRunState();
   OPENED.forEach(f => s.flags.add(f));
@@ -160,7 +163,7 @@ test('map: from every spawn, every exit, trigger and interactable can be reached
 
 test('map: every room is reachable from the start', () => {
   const seen = new Set([START.room]), q = [START.room];
-  while (q.length) for (const ex of ROOMS[q.pop()].exits) if (!seen.has(ex.to)) { seen.add(ex.to); q.push(ex.to); }
+  while (q.length) for (const to of neighbours(q.pop())) if (!seen.has(to)) { seen.add(to); q.push(to); }
   assert.deepEqual([...seen].sort(), Object.keys(ROOMS).sort());
 });
 
@@ -376,8 +379,13 @@ test('flow: boot, title, new game, intro, play; pause and resume keep the game i
   assert.equal(h.stack(), 'TitleScene');
   const cont = h.app.top.menu.items[1];
   assert.equal(h.app.top.menu.enabled(cont), false, 'Continue enabled with no save');
-  h.tap('Enter');
+  h.tap('Enter', 90);
+  assert.equal(h.stack(), 'CalibrateScene', 'a new game should start by calibrating the dark');
+  h.tap('ArrowRight', 2);
+  assert.equal(h.app.settings.brightness, 0.6);
+  h.tap('Enter', 90);
   assert.equal(h.stack(), 'IntroScene');
+  assert.ok(h.app.settings.calibrated);
   h.tap('Escape', 90);
   assert.equal(h.stack(), 'PlayScene');
   const play = h.app.top;
@@ -398,7 +406,7 @@ test('flow: boot, title, new game, intro, play; pause and resume keep the game i
 
 test('flow: entering a building and coming back out, with autosave on each room', () => {
   const h = harness();
-  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Escape', 90); h.dismiss();
+  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Enter', 90); h.tap('Escape', 90); h.dismiss();
   const play = h.app.top, w = play.world;
   // teleport to the station door and walk in
   w.enter('forest_path', 'house_door');
@@ -411,7 +419,7 @@ test('flow: entering a building and coming back out, with autosave on each room'
 
 test('flow: quit to title saves; continue restores room, position and flags; new game keeps settings', () => {
   const h = harness();
-  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Escape', 90);
+  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Enter', 90); h.tap('Escape', 90);
   let play = h.app.top;
   play.world.enter('shrine', 'from_path');
   play.state.flags.add('shrine_lit');
@@ -432,7 +440,7 @@ test('flow: quit to title saves; continue restores room, position and flags; new
   h.tap('Escape', 5); h.tap('ArrowDown', 2); h.tap('ArrowDown', 2); h.tap('Enter', 5); h.tap('ArrowDown', 2); h.tap('Enter', 90);
   h.tap('ArrowUp', 2); h.tap('Enter', 5);
   assert.equal(h.stack(), 'TitleScene>ConfirmScene');
-  h.tap('ArrowDown', 2); h.tap('Enter', 90); h.tap('Escape', 90);
+  h.tap('ArrowDown', 2); h.tap('Enter', 90); h.tap('Enter', 90); h.tap('Escape', 90);
   assert.equal(h.stack(), 'PlayScene');
   assert.equal(h.app.top.state.room, 'forest_path');
   assert.ok(!h.app.top.state.flags.has('shrine_lit'), 'flags survived a new game');
@@ -446,7 +454,7 @@ test('flow: settings menu changes and persists values', () => {
   assert.equal(h.stack(), 'TitleScene>SettingsScene');
   h.tap('ArrowLeft', 2); h.tap('ArrowLeft', 2);
   assert.equal(h.app.settings.master, 0.6);
-  for (let i = 0; i < 4; i++) h.tap('ArrowDown', 2);
+  for (let i = 0; i < 5; i++) h.tap('ArrowDown', 2);
   h.tap('ArrowRight', 2);
   assert.equal(h.app.settings.reduceFlashing, true);
   h.tap('Escape', 5);
@@ -458,7 +466,7 @@ test('flow: settings menu changes and persists values', () => {
 test('flow: a remapped key moves the player', () => {
   const h = harness();
   h.app.settings.bindings.up = ['KeyI']; h.app.settings.bindings.inventory = ['Tab']; h.app.saveSettings();
-  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Escape', 90); h.dismiss();
+  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Enter', 90); h.tap('Escape', 90); h.dismiss();
   const p = h.app.top.world.player, y0 = p.y;
   h.hold('KeyI', 40);
   assert.ok(p.y < y0);
@@ -875,7 +883,7 @@ test('story: chapter one plays through from the car to the chapel and back under
   w.enter('ruth_house', 'from_row');
   assert.ok(!w.props().some(p => p.id === 'ruth') && w.props().some(p => p.id === 'empty_chair'));
   w.enter('mill_row', 'ruth_door');
-  assert.ok(w.entities.some(e => e.id === 'row_hollow'));
+  assert.ok(w.entities.some(e => e.id === 'row_mimic' && e.looks === 'ruth'));
   assert.ok(!w.props().some(p => p.id === 'cal'));
   // every room has been seen
   for (const id of ['woods', 'mill_row', 'ruth_house', 'oran_lane', 'caretaker_house', 'cemetery', 'chapel_nave', 'passages', 'store_room']) assert.ok(s.visited.has(id), id);
@@ -884,7 +892,8 @@ test('story: chapter one plays through from the car to the chapel and back under
 test('story: no key item can be lost, and nothing on the main path is behind an optional step', () => {
   // keys are never taken back by any script
   const takes = allScripts().flatMap(([, s]) => s.flatMap(v => (Array.isArray(v.take) ? v.take : v.take ? [v.take] : [])));
-  assert.deepEqual(takes, []);
+  // the only things ever taken are laid on the altar at the very end
+  assert.deepEqual([...new Set(takes)].sort(), ['holy_water', 'ribbon', 'votive']);
   // every locked exit's key is given somewhere
   const given = new Set([...allScripts().flatMap(([, s]) => s.flatMap(v => [].concat(v.give || []))), ...dialogueNodes().flatMap(([, , n]) => [].concat(n.give || []))]);
   for (const r of Object.values(ROOMS)) for (const e of r.exits) if (e.lock?.key) assert.ok(given.has(e.lock.key), `${e.lock.key} is never given`);
@@ -924,9 +933,9 @@ test('pockets and map: actions per item; the map shows only where you have been'
   assert.ok(m.boxes.find(b => b.id === 'passages').under);
   // boxes never overlap
   s.visited = new Set(Object.keys(ROOMS));
-  const all = mapLayout(s).boxes;
-  for (const a of all) for (const b of all) if (a !== b) assert.ok(!overlaps(a, b), `${a.id} overlaps ${b.id}`);
-  for (const b of all) assert.ok(b.x + b.w < 256 && b.y + b.h < 160);
+  const all = [...mapLayout(s, 'above').boxes, ...mapLayout(s, 'deep').boxes].filter((b, i, arr) => arr.findIndex(o => o.id === b.id) === i);
+  for (const layer of ['above', 'deep']) { const bs = mapLayout(s, layer).boxes; for (const a of bs) for (const b of bs) if (a !== b) assert.ok(!overlaps(a, b), `${a.id} overlaps ${b.id}`); }
+  for (const b of all) assert.ok(b.x + b.w < 256 && b.y + b.h < 162 && b.y > 34);
 });
 
 test('textbox: choices appear after the last page and report the pick', () => {
@@ -952,7 +961,7 @@ test('textbox: choices appear after the last page and report the pick', () => {
 
 test('flow: pockets open with Tab, the crucifix can be held, and the map opens with M', () => {
   const h = harness();
-  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Escape', 90); h.dismiss();
+  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Enter', 90); h.tap('Escape', 90); h.dismiss();
   h.tap('Tab', 5);
   assert.equal(h.stack(), 'PlayScene>InventoryScene');
   h.tap('Enter', 5);
@@ -972,7 +981,7 @@ test('flow: pockets open with Tab, the crucifix can be held, and the map opens w
 
 test('flow: playing the tape from the pockets, reading a page, talking with choices', () => {
   const h = harness();
-  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Escape', 90); h.dismiss();
+  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Enter', 90); h.tap('Escape', 90); h.dismiss();
   const play = h.app.top;
   h.tap('Tab', 5); h.tap('ArrowDown', 2); h.tap('Enter', 5);
   assert.equal(h.stack(), 'PlayScene>TapeScene');
@@ -1001,7 +1010,7 @@ test('flow: playing the tape from the pockets, reading a page, talking with choi
 
 test('flow: dying shows the death screen; waking returns you to the last save', () => {
   const h = harness();
-  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Escape', 90); h.dismiss();
+  h.run(30); h.tap('Space'); h.tap('Enter'); h.tap('Enter', 90); h.tap('Escape', 90); h.dismiss();
   const play = h.app.top;
   play.world.enter('woods', 'from_shrine'); play.checkpoint(false);
   play.state.hp = 1;
@@ -1014,4 +1023,390 @@ test('flow: dying shows the death screen; waking returns you to the last save', 
   assert.equal(h.stack(), 'PlayScene');
   assert.equal(h.app.top.state.room, 'woods');
   assert.equal(h.app.top.state.hp, MAX_HP);
+});
+
+// ==== calibration and stages 6-10: horror events, puzzles, chapters, endings ================
+
+const { palette32, gammaFor } = await load('engine/palette.js');
+const { lightTuning } = await load('game/lighting.js');
+const { BELL_ORDER, MAZE_PATH, solvePuzzle } = await load('game/puzzles.js');
+const { ENDINGS, ENDING_IDS, endingsAvailable } = await load('game/endings.js');
+const { CHAPTERS, chapterState, readMeta, reachChapter, recordEnding } = await load('game/chapters.js');
+
+test('calibration: brightness lifts the dark colours, keeps black black, and widens the light', () => {
+  const lum = w => (w & 255) + ((w >> 8) & 255) + ((w >> 16) & 255);
+  const mid = palette32(PALETTE, gammaFor(0.5)), lo = palette32(PALETTE, gammaFor(0)), hi = palette32(PALETTE, gammaFor(1));
+  assert.deepEqual([...mid], [...palette32()]);
+  for (let c = 1; c < 16; c++) assert.ok(lum(hi[c]) >= lum(mid[c]) && lum(mid[c]) >= lum(lo[c]), `colour ${c}`);
+  assert.equal(lum(hi[0]), 0, 'black lifted');
+  assert.ok(lum(hi[1]) > lum(mid[1]) * 2, 'the darkest grey barely changes');
+  assert.ok(lightTuning(1).radius > lightTuning(0).radius && lightTuning(1).ambient > lightTuning(0.5).ambient);
+  assert.equal(lightTuning(0.5).ambient, 0);
+  const s = ST.sanitizeSettings({ brightness: 4, calibrated: 'yes' });
+  assert.equal(s.brightness, 1); assert.equal(s.calibrated, false);
+});
+
+// ---- horror events --------------------------------------------------------------------------
+
+const tickN = (w, n, intent = {}) => { const out = []; for (let i = 0; i < n; i++) out.push(...w.update(intent)); return out; };
+
+test('events: they wait for the story, fire once, and come with their effects', () => {
+  const s = newRunState();
+  const w = new World(s);
+  w.enter('station_hall', 'from_outside');
+  assert.ok(!tickN(w, 80).some(e => e.type === 'horror'), 'fired before the chapel was seen');
+  s.flags.add('nave_seen');
+  w.enter('station_hall', 'from_outside');
+  const ev = tickN(w, 80).filter(e => e.type === 'horror');
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].id, 'station_slam');
+  assert.equal(ev[0].sfx, 'door');
+  assert.equal(ev[0].lights.mode, 'flicker');
+  w.enter('station_hall', 'from_outside');
+  assert.ok(!tickN(w, 80).some(e => e.type === 'horror'), 'fired twice');
+  // and the cans have moved up onto the counter
+  const cans = w.props().find(p => p.id === 'cans');
+  assert.ok(cans.py < 4 * TILE);
+});
+
+test('events: something stands where the watcher stood, for a moment, when you come back', () => {
+  const s = newRunState(); s.flags.add('dead:woods_watcher'); s.flags.add('dead:woods_hollow');
+  const w = new World(s); w.enter('woods', 'from_shrine');
+  const ev = tickN(w, 100).find(e => e.id === 'woods_return');
+  assert.ok(ev && ev.figure.sprite === 'watcher' && ev.glitch > 0);
+});
+
+test('events: leaving and coming back changes rooms after a story beat', () => {
+  const s = newRunState();
+  const w = new World(s); w.enter('caretaker_cellar', 'from_house');
+  assert.equal(w.props().find(p => p.id === 'chair_wall').sprite, 'chair_back');
+  s.chapter = 2;
+  w.enter('caretaker_cellar', 'from_house');
+  assert.equal(w.props().find(p => p.id === 'chair_wall').sprite, 'chair_front');
+  assert.ok(tickN(w, 20).some(e => e.id === 'chair_turned'));
+});
+
+test('mimic: wears a familiar shape, shows itself up close, rushes you; the relic sends it away', () => {
+  const { w, s, e } = arena('mimic', { equip: false, dist: 70 });
+  e.looks = 'ruth';
+  tickN(w, 20);
+  assert.equal(e.state, 'idle', 'it should stand still at a distance');
+  e.y = w.player.y - 30;
+  const ev = tickN(w, 2);
+  assert.equal(e.state, 'reveal');
+  assert.ok(ev.some(x => x.sfx === 'mimic_shriek'));
+  let hurt = false;
+  for (let i = 0; i < 120 && !hurt; i++) hurt = w.update({}).some(x => x.type === 'hurt');
+  assert.ok(hurt, 'the rush never landed');
+  const b = arena('mimic', { equip: true, dist: 30 });
+  b.e.state = 'rush'; b.e.t = 100;
+  const hit = raise(b.w).find(x => x.type === 'hit');
+  assert.equal(hit.effect, 'unmasked');
+  assert.ok(b.s.flags.has('dead:' + b.e.id));
+});
+
+test('edge figure: gone when you go near; the choir is slower than you and ignores the relic', () => {
+  const ed = arena('edge', { dist: 30 });
+  assert.ok(tickN(ed.w, 2).some(x => x.type === 'vanished'));
+  const s = newRunState(); s.equipped = 'crucifix';
+  const w = new World(s); w.enter('gallery', 'from_bells');
+  assert.ok(w.update({ relic: true }).some(e => e.type === 'say' && /too many/.test(e.lines[0])));
+  // walk into the pursuit and keep running
+  const ev = [];
+  for (let i = 0; i < 900 && s.room === 'gallery'; i++) {
+    const out = w.update({ dx: 1 });
+    ev.push(...out);
+    if (out.some(e => e.type === 'exit')) break;
+  }
+  assert.ok(ev.some(e => e.id === 'pursuit'), 'no pursuit');
+  assert.ok(ev.some(e => e.id === 'escape'), 'did not reach the far end');
+  assert.ok(!ev.some(e => e.type === 'hurt'), 'caught while running flat out');
+  assert.ok(s.flags.has('escaped'));
+  // standing still is another matter
+  const t = newRunState(); const w2 = new World(t); w2.enter('gallery', 'from_bells');
+  for (let i = 0; i < 40; i++) w2.update({ dx: 1 });
+  assert.ok(tickN(w2, 400).some(e => e.type === 'hurt'), 'the choir never reached a player who stopped');
+});
+
+// ---- puzzles ------------------------------------------------------------------------------
+
+test('bells: the order is on the tape; a wrong bell resets the count and calls something up', () => {
+  const tape = tapeLines('mara', 0).map(l => l.text).join(' ');
+  const spoken = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'];
+  const order = tape.match(/Four\. One\. Seven\. Three\./)[0].split('. ').map(w => spoken.indexOf(w.replace('.', '')) + 1);
+  assert.deepEqual(order, BELL_ORDER);
+  const s = newRunState();
+  const w = new World(s); w.enter('bell_chamber', 'from_ossuary');
+  const ring = n => use(w, 'bell_' + n);
+  ring(4); ring(1);
+  const bad = ring(2);
+  assert.ok(/clangs/.test(bad.lines[0]));
+  assert.equal(bad.spawn[0].type, 'hollow');
+  assert.ok(w.entities.some(e => e.id === bad.spawn[0].id), 'nothing came');
+  assert.equal(s.counts.bells_at, 0);
+  w.entities = [];
+  let last;
+  for (const n of BELL_ORDER) last = ring(n);
+  assert.ok(s.flags.has('bells_solved'));
+  assert.equal(last.chapter, 3);
+  assert.equal(s.chapter, 3);
+  assert.ok(!w.blocked(playerBox(17 * TILE + 4, 7 * TILE)), 'the stair did not open');
+  assert.ok(/done its work/.test(ring(2).lines[0]));
+});
+
+test('maze: Mara\'s page gives the way; a wrong arch puts you back at the start', () => {
+  const text = DOCS.page3.pages[0].map(l => (typeof l === 'string' ? l : l.s)).join(' ');
+  const dirs = text.match(/LEFT, then RIGHT, then RIGHT/)[0].match(/LEFT|RIGHT/g).map(d => d[0]);
+  assert.deepEqual(dirs, MAZE_PATH);
+  const s = newRunState();
+  const w = new World(s); w.enter('ossuary', 'arrive'); w.entities = [];
+  const go = id => { const r = use(w, id); w.enter(r.go.to, r.go.spawn); w.entities = []; return r; };
+  go('arch_l'); go('arch_c');
+  assert.equal(s.counts.maze_at, 0, 'a wrong arch should reset');
+  assert.ok(!w.props().some(p => p.id === 'bone_stair'));
+  go('arch_l'); go('arch_r'); go('arch_r');
+  assert.ok(s.flags.has('maze_solved'));
+  assert.ok(w.props().some(p => p.id === 'bone_stair'));
+  assert.ok(!w.props().some(p => p.id === 'arch_l'));
+  assert.equal(use(w, 'bone_stair').go.to, 'bell_chamber');
+});
+
+test('evidence: only the contradiction convinces Cal; two wrong answers and he locks the door', () => {
+  const good = newRunState(); good.notes.push('account_notebook', 'account_ruth');
+  const path = converse('cal_below', good, cs => Math.max(0, cs.findIndex(c => /October/.test(c.text))));
+  assert.ok(path.includes('truth'));
+  assert.ok(good.flags.has('cal_truth') && good.flags.has('cal_aside') && good.notes.includes('account_cal_truth'));
+  const bad = newRunState(); bad.notes.push('account_ruth', 'account_price');
+  converse('cal_below', bad, cs => Math.max(0, cs.findIndex(c => /Ruth|Price/.test(c.text))));
+  assert.ok(bad.flags.has('cal_blocks') && !bad.flags.has('cal_truth'));
+  // the door is shut for good, but the drain still goes round
+  const w = new World(bad); w.enter('records', 'from_stair');
+  assert.ok(!w.props().some(p => p.id === 'cal_below'));
+  assert.ok(!w.tryExit(w.exits().find(e => e.to === 'ossuary'))[0].after);
+  assert.match(w.tryExit(w.exits().find(e => e.to === 'ossuary'))[0].lines[0], /Cal took the key/);
+  assert.equal(use(w, 'grate').go.to, 'drain');
+  w.enter('drain', 'from_records');
+  assert.ok(reach(w).some(([x, y]) => overlaps(playerBox(x, y), w.exits().find(e => e.to === 'ossuary'))));
+  // with nothing to show him, you can walk away without a strike
+  const none = newRunState();
+  converse('cal_below', none);
+  assert.ok(!none.flags.has('cal_strike') && !none.flags.has('cal_blocks'));
+});
+
+test('ceremony floor: the plaques to avoid are the crossed-out lines of the prayer card', () => {
+  const card = DOCS.prayer_card.pages[0];
+  const struck = card.filter(l => typeof l !== 'string' && l.strike).map(l => l.s.toUpperCase());
+  const kept = card.filter(l => typeof l === 'string').map(l => l.toUpperCase());
+  const room = ROOMS.sanctum;
+  const plaques = room.props.filter(p => p.id.startsWith('plaque_'));
+  const wrongIds = room.triggers.map(t => t.id.replace('step_', ''));
+  for (const p of plaques) {
+    const text = p.script[0].say[0].replace('Cut into the stone: ', '');
+    const isWrong = wrongIds.includes(p.id.replace('plaque_', ''));
+    if (isWrong) assert.ok(struck.some(l => l.includes(text) || text.includes(l)), `${text} should be crossed out on the card`);
+    else assert.ok(kept.some(l => l.replace(/[,.]/g, '').includes(text.split(' ').slice(0, 3).join(' '))), `${text} should be on the card`);
+  }
+  assert.equal(wrongIds.length, 3);
+});
+
+test('ceremony floor: stepping on a wrong plaque hurts and sends you back; the right ones hold', () => {
+  const s = newRunState();
+  const w = new World(s); w.enter('sanctum', 'from_gallery');
+  const ev = walkTo(w, 14 * TILE, 21 * TILE); // onto row one, right side: wrong
+  const wrong = ev.find(e => e.id === 'step_1R');
+  assert.ok(wrong && wrong.go.to === 'sanctum' && wrong.go.spawn === 'floor_start');
+  assert.ok(ev.some(e => e.type === 'hurt'));
+  w.enter('sanctum', 'floor_start');
+  const ok = walkTo(w, 12 * TILE, 21 * TILE);
+  assert.ok(ok.some(e => e.id === 'holds_1L') && !ok.some(e => e.id && e.id.startsWith('step_')));
+});
+
+test('ritual: the altar says what is missing, then takes the three things and opens the saint', () => {
+  const s = newRunState();
+  const w = new World(s); w.enter('sanctum', 'floor_start');
+  w.player.x = 13 * TILE; w.player.y = 9.6 * TILE; w.player.facing = 'up'; w.cooldown = 0;
+  let r = w.update({ interact: true }).find(e => e.type === 'interact');
+  assert.match(r.lines[1], /do not know/);
+  s.flags.add('read:reading_order'); s.items.push('ribbon'); w.cooldown = 0;
+  r = w.update({ interact: true }).find(e => e.type === 'interact');
+  assert.ok(r.lines.some(l => /a light from where she slept/.test(l)) && !r.lines.some(l => /something she wore/.test(l)));
+  s.items.push('votive', 'holy_water'); w.cooldown = 0;
+  r = w.update({ interact: true }).find(e => e.type === 'interact');
+  assert.equal(r.talk, 'last_prayer');
+  assert.ok(s.flags.has('ritual_done'));
+  assert.ok(!s.items.includes('ribbon') && !s.items.includes('votive'));
+});
+
+test('ritual items: each is found where the letter says, in chapter one places', () => {
+  const s = newRunState();
+  const w = new World(s);
+  w.enter('shrine', 'from_path'); use(w, 'bowl'); use(w, 'bowl');
+  assert.ok(s.items.includes('ribbon'));
+  w.enter('station_hall', 'from_outside'); use(w, 'shelves'); use(w, 'shelves');
+  assert.ok(s.items.includes('votive'));
+  w.enter('chapel_nave', 'from_vestry'); use(w, 'stoup');
+  assert.ok(s.items.includes('holy_water'));
+});
+
+// ---- endings ------------------------------------------------------------------------------
+
+const truthState = () => {
+  const s = newRunState();
+  ['read:register', 'read:page2', 'cal_truth'].forEach(f => s.flags.add(f));
+  s.notes.push('clue_below');
+  return s;
+};
+const hiddenFlags = ['understood', 'found:ward_grave', 'found:names', 'found:haskell', 'found:watcher_prints', 'found:ruth_gone'];
+
+test('endings: what opens each one is what you did and found', () => {
+  assert.deepEqual(endingsAvailable(newRunState()), ['dawn', 'hollow']);
+  const t = truthState();
+  assert.deepEqual(endingsAvailable(t), ['dawn', 'hollow', 'names']);
+  hiddenFlags.forEach(f => t.flags.add(f));
+  assert.deepEqual(endingsAvailable(t), ENDING_IDS);
+  // each missing piece closes the hidden ending again
+  for (const f of hiddenFlags) { const u = truthState(); hiddenFlags.filter(x => x !== f).forEach(x => u.flags.add(x)); assert.ok(!endingsAvailable(u).includes('last_prayer'), f); }
+  // and the final conversation offers exactly those
+  for (const st of [newRunState(), truthState(), (() => { const x = truthState(); hiddenFlags.forEach(f => x.flags.add(f)); return x; })()]) {
+    const view = enterNode('last_prayer', 'open', st);
+    assert.equal(view.choices.length, endingsAvailable(st).length);
+  }
+  assert.equal(ENDING_IDS.length, 4);
+  for (const id of ENDING_IDS) assert.ok(ENDINGS[id].lines.length >= 3);
+});
+
+test('endings: each one is reachable by choosing it at the saint', () => {
+  const full = () => { const x = truthState(); hiddenFlags.forEach(f => x.flags.add(f)); return x; };
+  for (const [i, id] of ENDING_IDS.entries()) {
+    const s = full();
+    const view = enterNode('last_prayer', 'open', s);
+    const node = choose('last_prayer', 'open', view.choices[i].i, s);
+    assert.equal(enterNode('last_prayer', node, s).ending, id);
+  }
+  // the hidden understanding comes from Price's question, and wrong answers can be retried
+  const p = newRunState();
+  converse('confession', p, cs => 0);
+  assert.ok(!p.flags.has('understood'));
+  converse('confession', p, cs => cs.findIndex(c => /forget/.test(c.text)));
+  assert.ok(p.flags.has('understood') && p.notes.includes('understood'));
+});
+
+test('the last conversation remembers who you talked to', () => {
+  const s = newRunState();
+  assert.equal(enterNode('last_prayer', 'open', s).lines.filter(l => /Ruth|Cal/.test(l.text)).length, 0);
+  s.flags.add('asked_photo'); s.flags.add('cal_truth');
+  assert.equal(enterNode('last_prayer', 'open', s).lines.filter(l => /Ruth|Cal/.test(l.text)).length, 2);
+  const w = new World(s); w.enter('sanctum', 'from_gallery');
+  assert.ok(w.props().some(p => p.id === 'ruth_pew') && w.props().some(p => p.id === 'cal_back'));
+});
+
+// ---- chapters -----------------------------------------------------------------------------
+
+test('chapters: the crypt opens once the recorder is understood, and that is chapter two', () => {
+  const s = newRunState();
+  const w = new World(s); w.enter('chapel_nave', 'from_vestry');
+  let r = use(w, 'crypt');
+  assert.ok(!r.chapter && !s.flags.has('crypt_open'));
+  use(w, 'reel');
+  r = use(w, 'crypt');
+  assert.equal(r.chapter, 2);
+  assert.ok(s.flags.has('crypt_open') && s.flags.has('ch2') && s.chapter === 2);
+  assert.ok(w.exits().some(e => e.to === 'crypt_stair'));
+  assert.ok(!w.blocked(playerBox(12 * TILE, 2 * TILE)));
+  assert.ok(w.props().some(p => p.id === 'confessional'));
+});
+
+test('chapters: chapter select starts each chapter with what the earlier ones gave you', () => {
+  for (const n of [1, 2, 3]) {
+    const s = chapterState(n);
+    assert.equal(s.chapter, n);
+    assert.equal(s.room, CHAPTERS[n].start.room);
+    const w = new World(s); w.enter(s.room, s.spawn);
+    assert.ok(!w.blocked(playerBox(w.player.x, w.player.y)));
+  }
+  const two = chapterState(2);
+  for (const i of ['key_ring', 'vestry_key', 'cemetery_key', 'notebook']) assert.ok(two.items.includes(i));
+  assert.ok(two.flags.has('crypt_open'));
+  const three = chapterState(3);
+  for (const i of ['ribbon', 'votive', 'holy_water']) assert.ok(three.items.includes(i));
+  assert.ok(three.flags.has('bells_solved') && three.flags.has('read:reading_order'));
+});
+
+test('meta: chapters reached and endings seen outlive any one run', () => {
+  const store = new ST.Store(ST.memoryStorage());
+  assert.deepEqual(readMeta(store), { chapters: [1], endings: [] });
+  reachChapter(store, 2); reachChapter(store, 2); recordEnding(store, 'dawn'); recordEnding(store, 'nonsense');
+  store.saveGame({ room: 'shrine', x: 1, y: 1 });
+  store.clearGame();
+  assert.deepEqual(readMeta(store), { chapters: [1, 2], endings: ['dawn'] });
+  store.storage.setItem(ST.KEYS.meta, '{oops');
+  assert.deepEqual(readMeta(store), { chapters: [1], endings: [] });
+});
+
+test('story: chapters two and three play through to an ending', () => {
+  const s = chapterState(2);
+  s.items = s.items.filter(i => !['ribbon', 'votive', 'holy_water'].includes(i));
+  s.notes.push('account_ruth');
+  const w = new World(s);
+  w.enter('crypt_stair', 'from_nave');
+  w.enter('records', 'from_stair');
+  assert.equal(use(w, 'register').doc, 'register'); s.flags.add('read:register');
+  assert.ok(s.items.includes('reading_letter'));
+  use(w, 'ledgers'); assert.ok(s.items.includes('page3'));
+  use(w, 'cabinet');
+  assert.equal(use(w, 'cal_below').talk, 'cal_below');
+  converse('cal_below', s, cs => Math.max(0, cs.findIndex(c => /October/.test(c.text))));
+  assert.ok(s.flags.has('cal_aside'));
+  assert.equal(w.tryExit(w.exits().find(e => e.to === 'ossuary'))[0].type, 'exit');
+  w.enter('ossuary', 'from_records'); w.entities = [];
+  for (const d of MAZE_PATH) { const id = { L: 'arch_l', R: 'arch_r', C: 'arch_c' }[d]; const r = use(w, id); w.enter(r.go.to, r.go.spawn); w.entities = []; }
+  w.enter('bell_chamber', 'from_ossuary');
+  for (const n of BELL_ORDER) use(w, 'bell_' + n);
+  assert.equal(s.chapter, 3);
+  w.enter('gallery', 'from_bells');
+  w.enter('sanctum', 'from_gallery');
+  // the three things, fetched from chapter one places
+  s.flags.add('read:reading_order');
+  for (const i of ['ribbon', 'votive', 'holy_water']) s.items.push(i);
+  // cross the floor on the right plaques
+  for (const [x, y] of [[12, 21], [12, 19], [14, 16], [14, 14], [12, 11], [12, 8.6]]) {
+    const ev = walkTo(w, x * TILE, y * TILE);
+    assert.ok(!ev.some(e => e.id && e.id.startsWith('step_')), `stepped wrong near ${x},${y}`);
+  }
+  w.player.facing = 'up'; w.cooldown = 0;
+  const r = w.update({ interact: true }).find(e => e.type === 'interact');
+  assert.equal(r.talk, 'last_prayer');
+  const view = enterNode('last_prayer', 'open', s);
+  assert.ok(view.choices.length >= 2);
+  const node = choose('last_prayer', 'open', view.choices[0].i, s);
+  assert.equal(enterNode('last_prayer', node, s).ending, 'dawn');
+});
+
+test('flow: an ending plays, the run save is cleared, and chapter select opens', () => {
+  const h = harness();
+  h.run(30); h.tap('Space', 90);
+  const title = h.app.top;
+  assert.ok(!title.menu.enabled(title.menu.items[2]), 'chapters open before any were reached');
+  title.startChapter(3);
+  h.run(90);
+  assert.equal(h.stack(), 'PlayScene>ChapterScene');
+  h.run(60); h.tap('KeyE', 90);
+  assert.equal(h.stack(), 'PlayScene');
+  const play = h.app.top;
+  h.dismiss();
+  play.world.enter('sanctum', 'floor_start');
+  play.talk('last_prayer');
+  for (let i = 0; i < 20 && !play.text.choosing; i++) h.tap('KeyE', 3);
+  h.tap('Enter', 3);                         // "Run."
+  for (let i = 0; i < 10 && play.text.active; i++) h.tap('KeyE', 3);
+  h.run(90);
+  assert.equal(h.stack(), 'EndingScene');
+  assert.ok(!h.app.store.hasGame());
+  assert.deepEqual(readMeta(h.app.store).endings, ['dawn']);
+  h.run(60 * 12);
+  h.tap('Enter', 90);
+  assert.equal(h.stack(), 'TitleScene');
+  const t2 = h.app.top;
+  assert.ok(t2.menu.enabled(t2.menu.items[2]), 'chapter select still locked after reaching chapter three');
+  assert.equal(h.app.settings.calibrated, false, 'chapter select should not have touched settings');
 });

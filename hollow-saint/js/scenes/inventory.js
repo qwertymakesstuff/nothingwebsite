@@ -28,12 +28,15 @@ export function itemAction(state, id) {
 }
 
 // the journal map: rooms you have been in, joined where you have walked between them
-export function mapLayout(state) {
+// two layers: Bellwether above, and the house beneath St. Oran's
+export const layerOf = id => (ROOMS[id]?.deep ? 'deep' : 'above');
+
+export function mapLayout(state, layer = layerOf(state.room)) {
   const boxes = [];
   for (const [id, r] of Object.entries(ROOMS)) {
-    if (!state.visited.has(id) || !r.mapPos) continue;
+    if (!state.visited.has(id) || !r.mapPos || layerOf(id) !== layer) continue;
     const [c, row] = r.mapPos;
-    boxes.push({ id, x: 18 + c * 38, y: 28 + row * 28, w: 34, h: 16, under: !!r.under, name: r.name });
+    boxes.push({ id, x: 18 + c * 38, y: 38 + row * 26, w: 34, h: 16, under: !!r.under, name: r.name });
   }
   const at = Object.fromEntries(boxes.map(b => [b.id, b]));
   const links = [];
@@ -55,6 +58,8 @@ export const LABELS = {
   forest_path: 'Road', shrine: 'Shrn', station_hall: 'Stn', store_room: 'Store', woods: 'Woods',
   mill_row: 'Row', ruth_house: 'Ruth', oran_lane: 'Oran', chapel_nave: 'Chapl', cemetery: 'Yard',
   caretaker_house: 'Pike', caretaker_cellar: 'Cellr', passages: 'Below',
+  crypt_stair: 'Stair', records: 'Recrd', drain: 'Drain', ossuary: 'Bones', bell_chamber: 'Bells',
+  gallery: 'Galry', sanctum: 'Saint',
 };
 
 export class InventoryScene {
@@ -64,6 +69,7 @@ export class InventoryScene {
     this.state = play.state;
     this.tab = tab;
     this.index = [0, 0];
+    this.layer = layerOf(this.state.room);
     this.opaque = true;
     this.t = 0;
   }
@@ -98,6 +104,11 @@ export class InventoryScene {
     const m = input.mouse;
     if (m.clicked && m.y < 22) {
       TABS.forEach((t, i) => { const x = 20 + i * 76; if (m.x >= x - 4 && m.x < x + 70) { this.tab = i; this.app.sfx('page'); } });
+      return;
+    }
+    if (this.tab === 2) {
+      const deepSeen = [...this.state.visited].some(r => layerOf(r) === 'deep');
+      if (deepSeen && (input.pressed('menuUp') || input.pressed('menuDown'))) { this.layer = this.layer === 'deep' ? 'above' : 'deep'; this.app.sfx('page'); }
       return;
     }
     const list = this.list();
@@ -184,7 +195,10 @@ export class InventoryScene {
   }
 
   renderMap(fb) {
-    const { boxes, links } = mapLayout(this.state);
+    const { boxes, links } = mapLayout(this.state, this.layer);
+    const deepSeen = [...this.state.visited].some(r => layerOf(r) === 'deep');
+    fb.text(this.layer === 'deep' ? "Beneath St. Oran's" : 'Bellwether', 14, 26, C.ASH);
+    if (deepSeen) fb.text('▲▼ level', W - 64, 26, C.INK);
     const cx = b => b.x + b.w / 2, cy = b => b.y + b.h / 2;
     for (const [a, b] of links) {
       const dashed = a.under || b.under;

@@ -2,7 +2,8 @@
 //
 // A room: { name, ambience, ambient (0..1 base light), light (lantern radius), map (rows of
 // tile characters, see tiles.js), mapPos: [col, row] on the journal map (under: true for
-// rooms below ground), spawns, exits, triggers, props, entities, overrides, onEnter,
+// rooms below ground; deep: true for the second map, beneath St. Oran's), events (horror
+// events, see world.js), chapter (the chapter the room belongs to), spawns, exits, triggers, props, entities, overrides, onEnter,
 // noRelic (text shown if the relic is raised here), ringing (a flag that makes a phone ring) }.
 // Positions are in tiles (fractions allowed); spawns give the player's feet.
 //
@@ -15,6 +16,7 @@ import { ROAD } from './road.js';
 import { TOWN } from './town.js';
 import { ORAN } from './oran.js';
 import { BELOW } from './below.js';
+import { HOUSE } from './house.js';
 
-export const ROOMS = { ...ROAD, ...TOWN, ...ORAN, ...BELOW };
+export const ROOMS = { ...ROAD, ...TOWN, ...ORAN, ...BELOW, ...HOUSE };
 export const START = { room: 'forest_path', spawn: 'start' };

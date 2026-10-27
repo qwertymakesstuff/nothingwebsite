@@ -295,6 +295,38 @@ Object.assign(AMBIENCE, {
   },
 });
 
+// a voice somewhere off in the dark: speech-shaped, never words
+function murmur(a, out, level = 0.02) {
+  const t = a.ctx.currentTime, dur = 0.8 + Math.random() * 1.5;
+  const f = a.filter('bandpass', 500 + Math.random() * 300, 4, out), g = a.gain(0.0001, f);
+  const o = a.osc('triangle', 110 + Math.random() * 60, g, t);
+  let tt = t;
+  while (tt < t + dur) {
+    const syl = 0.1 + Math.random() * 0.15;
+    g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(level, tt + syl * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, tt + syl);
+    tt += syl + Math.random() * 0.08;
+  }
+  o.stop(t + dur + 0.1);
+}
+
+Object.assign(AMBIENCE, {
+  crypt(a, out, nodes, amb) {
+    drone(a, out, nodes, 30.9, 0.08, 'sawtooth', 100);
+    drone(a, out, nodes, 46.2, 0.03, 'sine', 200);
+    a.every(amb, 2, 6, () => drip(a, out, 0.025));
+    a.every(amb, 10, 24, () => murmur(a, out, 0.015));
+  },
+  sanctum(a, out, nodes, amb) {
+    drone(a, out, nodes, 27.5, 0.1, 'sawtooth', 90);
+    // the congregation, holding one note under everything
+    const g = a.gain(0.012, out);
+    for (const fr of [220, 220.8, 261.6, 330, 331.5]) nodes.push(a.osc('triangle', fr, g));
+    nodes.push(g);
+    a.lfo(g.gain, 0.08, 0.006, nodes);
+    a.every(amb, 6, 14, () => murmur(a, out, 0.02));
+  },
+});
+
 const LOOPS = {
   hiss(a, out, nodes) {
     const f = a.filter('highpass', 2500, 0.5, out); const g = a.gain(0.025, f);
@@ -483,6 +515,56 @@ const SFX = {
       tt += syl + Math.random() * 0.05;
     }
     o.stop(t + dur + 0.2);
+  },
+  bell(a, t, { n = 4 } = {}) {
+    toll(a, a.sfxBus, [0, 196, 220, 246.9, 261.6, 293.7, 329.6, 349.2, 392][n] || 220, 0.07);
+  },
+  bell_wrong(a, t) {
+    toll(a, a.sfxBus, 207.7, 0.07); toll(a, a.sfxBus, 220, 0.07); toll(a, a.sfxBus, 311.1, 0.05);
+  },
+  knock(a, t) {
+    for (let i = 0; i < 3; i++) {
+      const tt = t + i * 0.32, g = a.gain(0.0001, a.sfxBus), o = a.osc('sine', 110, g, tt);
+      o.frequency.exponentialRampToValueAtTime(70, tt + 0.08);
+      a.env(g, tt, 0.002, 0.15, 0.1); o.stop(tt + 0.15);
+    }
+  },
+  whisper(a, t) {
+    const f = a.filter('bandpass', 2800, 2, a.sfxBus), g = a.gain(0.0001, f), s = a.noise(g, t, false);
+    for (let k = 0; k < 4; k++) { const tt = t + k * 0.18; g.gain.setValueAtTime(0.0001, tt); g.gain.exponentialRampToValueAtTime(0.05, tt + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.16); }
+    s.stop(t + 0.9);
+  },
+  creak(a, t) { creak(a, a.sfxBus, 0.05); },
+  mimic_shriek(a, t) {
+    const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sawtooth', 900, g, t); const o2 = a.osc('sawtooth', 1270, g, t);
+    o.frequency.exponentialRampToValueAtTime(1800, t + 0.4); o2.frequency.exponentialRampToValueAtTime(600, t + 0.4);
+    a.env(g, t, 0.01, 0.05, 0.5); o.stop(t + 0.55); o2.stop(t + 0.55);
+  },
+  choir(a, t) {
+    for (const fr of [196, 207.7, 261.6, 277.2]) {
+      const g = a.gain(0.0001, a.sfxBus); const o = a.osc('triangle', fr, g, t);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.03, t + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.5);
+      o.stop(t + 2.6);
+    }
+  },
+  collapse(a, t) {
+    const f = a.filter('lowpass', 400, 0.7, a.sfxBus), g = a.gain(0.0001, f), s = a.noise(g, t, false);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.5);
+    s.stop(t + 2.6);
+    for (let i = 0; i < 6; i++) { const tt = t + 0.1 + Math.random() * 1.2; const g2 = a.gain(0.0001, a.sfxBus); const o = a.osc('sine', 60 + Math.random() * 40, g2, tt); a.env(g2, tt, 0.003, 0.1, 0.15); o.stop(tt + 0.2); }
+  },
+  // a few notes, used sparingly: chapter cards and endings
+  chapter(a, t) {
+    [[146.8, 0], [174.6, 0.5], [164.8, 1.0], [130.8, 1.6]].forEach(([fr, d]) => {
+      const g = a.gain(0.0001, a.music); const o = a.osc('triangle', fr, g, t + d); const o2 = a.osc('sine', fr / 2, g, t + d);
+      a.env(g, t + d, 0.05, 0.06, 1.6); o.stop(t + d + 1.8); o2.stop(t + d + 1.8);
+    });
+  },
+  ending(a, t) {
+    [[220, 0], [261.6, 0.8], [246.9, 1.6], [196, 2.4], [220, 3.4]].forEach(([fr, d]) => {
+      const g = a.gain(0.0001, a.music); const o = a.osc('triangle', fr, g, t + d);
+      a.env(g, t + d, 0.08, 0.05, 2.2); o.stop(t + d + 2.4);
+    });
   },
   bump(a, t) {
     const g = a.gain(0.0001, a.sfxBus); const o = a.osc('sine', 70, g, t);

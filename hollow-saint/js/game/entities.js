@@ -7,6 +7,10 @@
 //             it, and through walls. The relic stuns it; nothing kills it.
 //   penitent  kneels, blocks the way. Iron and prayer do nothing. It listens: play it something.
 //   watcher   stands far off. Gone when you get close. Leaves something behind.
+//   mimic     wears the shape of someone you know, standing too still. Up close it shows
+//             what it is and rushes you; the relic sends it off for good.
+//   edge      only ever at the edge of your sight. Look straight at it and it isn't there.
+//   choir     a crowd that will not stop. Slower than you. Run.
 
 import { overlaps } from '../engine/collision.js';
 import { hash } from './config.js';
@@ -18,6 +22,9 @@ export const TYPES = {
   shade: { speed: 0.34, aggro: 170, damage: 1, relic: 'stun', ghost: true },
   penitent: { relic: 'none', solid: true, listens: true },
   watcher: { relic: 'none', vanish: 84 },
+  mimic: { relic: 'unmask', damage: 1, reveal: 44, rush: 0.92 },
+  edge: { relic: 'none', vanish: 40 },
+  choir: { relic: 'none', speed: 0.7, damage: 1 },
 };
 
 export const entityBox = e => ({ x: e.x - 3, y: e.y - 3, w: 6, h: 3 });
@@ -44,7 +51,7 @@ export function spawnEntity(spec) {
     id: spec.id, type: spec.type,
     x: spec.x, y: spec.y, homeX: spec.x, homeY: spec.y,
     hp: t.hp || 1, state: 'idle', t: 0, stun: 0, hurtT: 0, side: 1, cueT: 0, anim: 0,
-    alive: true,
+    alive: true, looks: spec.looks || null,
   };
 }
 
@@ -119,8 +126,29 @@ export function updateEntity(e, ctx) {
       if (e.state === 'rising') { if (--e.t <= 0) { e.alive = false; ctx.events.push({ type: 'released', entity: e }); } }
       return;
     }
-    case 'watcher': {
+    case 'watcher':
+    case 'edge': {
       if (d < T.vanish) { e.alive = false; ctx.events.push({ type: 'vanished', entity: e }); }
+      return;
+    }
+    case 'mimic': {
+      if (e.state === 'idle') {
+        if (d < T.reveal) { e.state = 'reveal'; e.t = 36; ctx.events.push({ type: 'cue', sfx: 'mimic_shriek', entity: e }); }
+        return;
+      }
+      if (e.state === 'reveal') { if (--e.t <= 0) { e.state = 'rush'; e.t = 150; } return; }
+      if (e.state === 'rush') {
+        toward(e, p.x, p.y, T.rush, ctx);
+        if (overlaps(hitBox(e), ctx.playerHit)) { ctx.events.push({ type: 'touch', entity: e, damage: T.damage }); e.state = 'gone'; }
+        else if (--e.t <= 0) e.state = 'gone';
+      }
+      if (e.state === 'gone') { e.alive = false; ctx.events.push({ type: 'vanished', entity: e }); }
+      return;
+    }
+    case 'choir': {
+      toward(e, p.x, p.y, T.speed, ctx);
+      if (e.cueT === 0) { ctx.events.push({ type: 'cue', sfx: 'choir', entity: e }); e.cueT = 160; }
+      if (overlaps({ x: e.x - 10, y: e.y - 14, w: 20, h: 14 }, ctx.playerHit)) ctx.events.push({ type: 'touch', entity: e, damage: T.damage });
       return;
     }
   }
@@ -138,8 +166,12 @@ export function relicHits(e) {
     case 'stun':
       e.stun = 150; e.hurtT = 12;
       return { type: 'hit', effect: 'stunned', entity: e, sfx: 'shade_stun' };
+    case 'unmask':
+      if (e.state === 'gone') return null;
+      e.state = 'gone'; e.alive = false;
+      return { type: 'hit', effect: 'unmasked', entity: e, sfx: 'mimic_shriek' };
     case 'none':
-      return e.type === 'penitent' ? { type: 'hit', effect: 'ignored', entity: e } : null;
+      return e.type === 'penitent' || e.type === 'choir' ? { type: 'hit', effect: 'ignored', entity: e } : null;
   }
   return null;
 }

@@ -10,7 +10,7 @@ import { World, INVULNERABLE } from '../game/world.js';
 import { ROOMS } from '../game/rooms/index.js';
 import { bakeRoom } from '../game/tiles.js';
 import { PLAYER, SPRITES, ICONS, spriteFrame } from '../game/art.js';
-import { applyLighting } from '../game/lighting.js';
+import { applyLighting, lightTuning } from '../game/lighting.js';
 import { RELIC } from '../game/entities.js';
 import { ITEMS } from '../game/items.js';
 import { addNote, MAX_HP, newRunState, stateFromSave, saveFromState } from '../game/state.js';
@@ -22,18 +22,29 @@ import { DocumentScene } from './document.js';
 import { TapeScene } from './tape.js';
 import { InventoryScene } from './inventory.js';
 import { GameOverScene } from './gameover.js';
+import { ChapterScene, EndingScene } from './story.js';
+import { TitleScene } from './title.js';
+import { reachChapter, recordEnding } from '../game/chapters.js';
+import { hash } from '../game/config.js';
 
 const FLASH = { red: C.RED, white: C.BONE, blood: C.BLOOD };
 const AIM_IDLE = 240;   // ticks after the mouse last moved before aiming falls back to facing
 
 export class PlayScene {
-  constructor(app, save = null) {
+  // save: a run save to resume. opts.state: a ready-made run state (Chapter Select);
+  // opts.chapterCard: show that chapter's title card first
+  constructor(app, save = null, opts = {}) {
     this.app = app;
     this.opaque = true;
     this.cursor = false;
     // a save from a newer or broken build that names a room we don't have starts afresh
     if (save && !ROOMS[save.room]) save = null;
-    this.state = save ? stateFromSave(save) : newRunState();
+    this.state = save ? stateFromSave(save) : opts.state || newRunState();
+    this.pendingCard = opts.chapterCard || null;
+    this.glitchT = 0;
+    this.lightFx = null;      // { mode, t, total }
+    this.figures = [];        // brief apparitions: { sprite, x, y, t }
+    this.motes = [];          // drifting leaves or dust, in room coordinates
     this.world = new World(this.state);
     this.text = new TextBox(app);
     this.baked = new Map();
@@ -48,9 +59,13 @@ export class PlayScene {
       : this.world.enter(this.state.room, this.state.spawn);
     this.handle(ev);
     if (!save) this.checkpoint(false);
+    reachChapter(app.store, this.state.chapter || 1);
   }
 
-  enter() { this.app.ambience(this.world.room.ambience); }
+  enter() {
+    this.app.ambience(this.world.room.ambience);
+    if (this.pendingCard) { const n = this.pendingCard; this.pendingCard = null; this.app.push(new ChapterScene(this.app, n)); }
+  }
   resume() { this.app.ambience(this.world.room.ambience); }
 
   onBlur() { if (!this.app.busy && this.app.top === this && !this.deathT) this.app.push(new PauseScene(this.app, this)); }
@@ -93,7 +108,7 @@ export class PlayScene {
     const view = enterNode(id, nodeId, this.state);
     if (view.sfx) this.app.sfx(view.sfx);
     if (view.flash) this.app.doFlash(FLASH[view.flash] ?? C.BONE);
-    const finish = () => (view.next ? this.showNode(id, view.next, then) : then?.());
+    const finish = () => (view.ending ? this.finishGame(view.ending) : view.next ? this.showNode(id, view.next, then) : then?.());
     if (view.choices.length) {
       this.text.open(view.lines, null, {
         choices: view.choices,
@@ -106,14 +121,39 @@ export class PlayScene {
     if (!this.text.active) finish();
   }
 
+  // ---- chapters and endings -----------------------------------------------------------------
+
+  showChapter(n, then) {
+    reachChapter(this.app.store, n);
+    this.checkpoint(false);
+    this.app.push(new ChapterScene(this.app, n, then));
+  }
+
+  finishGame(id) {
+    const app = this.app;
+    recordEnding(app.store, id);
+    app.store.clearGame();       // the run is over; settings and endings stay
+    app.transition(() => app.replace(new EndingScene(app, id, () => app.transition(() => app.replace(new TitleScene(app)), { speed: 3 }))), { speed: 2 });
+  }
+
   // ---- events from the world ---------------------------------------------------------------
+
+  // the screen-level parts of an event: tearing, failing lights, something seen for a moment
+  present(e) {
+    const fx = this.app.settings.reduceFlashing;
+    if (e.glitch && !fx) this.glitchT = Math.max(this.glitchT, e.glitch);
+    if (e.lights) this.lightFx = { mode: e.lights.mode, t: e.lights.t || 60, total: e.lights.t || 60 };
+    if (e.figure) this.figures.push({ ...e.figure, x: e.figure.x * 8, y: e.figure.y * 8, t: e.figure.t || 40 });
+    if (e.bell) this.app.sfx('bell', { n: e.bell });
+  }
 
   say(lines, then) { if (lines && lines.length) this.text.open(lines, then); else then?.(); }
 
   // what happens after a script's lines: a document, a tape, a conversation, a doorway
   followUp(e) {
     return () => {
-      if (e.doc) this.showDoc(e.doc, e.tape || e.talk || e.go ? this.followUp({ ...e, doc: null }) : null);
+      if (e.chapter) this.showChapter(e.chapter, this.followUp({ ...e, chapter: null }));
+      else if (e.doc) this.showDoc(e.doc, e.tape || e.talk || e.go ? this.followUp({ ...e, doc: null }) : null);
       else if (e.talk) this.talk(e.talk);
       else if (e.tape) this.playTape(e.tape);
       else if (e.go) this.go(e.go);
@@ -141,7 +181,9 @@ export class PlayScene {
           break;
         case 'say':
         case 'interact':
-          this.app.sfx(e.sfx || (e.type === 'interact' ? 'interact' : null));
+        case 'horror':
+          this.present(e);
+          if (e.sfx !== 'bell') this.app.sfx(e.sfx || (e.type === 'interact' ? 'interact' : null));
           if (e.flash) this.app.doFlash(FLASH[e.flash] ?? C.BONE);
           if (e.shake) this.app.doShake(12);
           if (e.save) this.checkpoint();
@@ -155,7 +197,7 @@ export class PlayScene {
           break;
         case 'hit':
           if (e.sfx) this.app.sfx(e.sfx);
-          if (e.effect === 'unmade') { this.app.doFlash(C.BONE, 6); this.app.doShake(10); }
+          if (e.effect === 'unmade' || e.effect === 'unmasked') { this.app.doFlash(C.BONE, 6); this.app.doShake(10); }
           if (e.effect === 'ignored' && !this.text.active) this.say(['It does not look up. The cross is just tin to it.']);
           break;
         case 'cue':
@@ -176,7 +218,7 @@ export class PlayScene {
           this.say(['The kneeling figure lifts its head, as if it had been waiting to hear that.', 'It stands. It is much taller standing. Then it is not there.']);
           break;
         case 'vanished':
-          this.app.sfx('shade_stun');
+          if (e.entity.type !== 'edge') this.app.sfx('shade_stun');
           break;
       }
     }
@@ -196,6 +238,10 @@ export class PlayScene {
     if (this.savedT > 0) this.savedT--;
     if (this.hurtT > 0) this.hurtT--;
     if (input.mouse.moved) this.mouseT = 0; else if (this.mouseT < AIM_IDLE) this.mouseT++;
+    if (this.glitchT > 0) this.glitchT--;
+    if (this.lightFx && --this.lightFx.t <= 0) this.lightFx = null;
+    this.figures = this.figures.filter(f => --f.t > 0);
+    this.drift();
 
     if (this.deathT) {
       if (++this.deathT > 80) this.app.replace(new GameOverScene(this.app, this.deathBy));
@@ -255,9 +301,66 @@ export class PlayScene {
         case 'watcher':
           glow.push(() => fb.blit(SPRITES.watcher, x - 3, y - 22));
           break;
+        case 'edge': {
+          // only ever at the edge of the picture
+          const near = x < 26 || x > W - 26 || y - 11 < 26 || y > H - 30;
+          if (near) glow.push(() => fb.blit(SPRITES.watcher, x - 3, y - 22));
+          break;
+        }
+        case 'mimic': {
+          const look = e.looks === 'mara' ? 'mara' : 'ruth';
+          if (e.state === 'idle') out.push({ y: e.y, fn: () => fb.blit(SPRITES[look + '_stand'], x - 4, y - 16) });
+          else if (e.state === 'reveal') out.push({ y: e.y, fn: () => fb.blit(SPRITES[e.t % 6 < 3 ? look + '_wrong' : 'mimic_true'], x - 5, y - 19) });
+          else out.push({ y: e.y, fn: () => fb.blit(SPRITES.mimic_true, x - 5, y - 20, { flip: f === 1 }) });
+          break;
+        }
+        case 'choir':
+          out.push({ y: e.y, fn: () => fb.blit(SPRITES.choir[f], x - 12, y - 18) });
+          break;
       }
     }
     return { out, glow };
+  }
+
+  // a little life in the air: leaves outdoors, dust everywhere else. Drawn before the
+  // darkness, so you only ever see them near a light.
+  drift() {
+    const amb = this.world.room.ambience;
+    const outdoors = ['forest', 'shrine', 'cemetery', 'town', 'chapel_out'].includes(amb);
+    const [cx, cy] = this.camera();
+    if (this.t % (outdoors ? 9 : 14) === 0 && this.motes.length < 40) {
+      const r = k => hash(this.t, k, 61);
+      this.motes.push(outdoors
+        ? { x: cx + r(1) * W, y: cy - 2, vx: 0.15 + r(2) * 0.25, vy: 0.25 + r(3) * 0.2, c: r(4) < 0.5 ? C.MOSS : C.DIRT, life: 900 }
+        : { x: cx + r(1) * W, y: cy + r(2) * H, vx: (r(3) - 0.5) * 0.08, vy: -0.03 - r(4) * 0.04, c: C.STONE, life: 300 });
+    }
+    for (const m of this.motes) {
+      m.x += m.vx + (outdoors ? Math.sin((this.t + m.life) / 30) * 0.15 : 0);
+      m.y += m.vy; m.life--;
+    }
+    this.motes = this.motes.filter(m => m.life > 0 && m.y < cy + H + 4);
+  }
+
+  // the lantern under a horror event: flickering in hard steps, or nearly out
+  lightMul() {
+    const L = this.lightFx;
+    if (!L) return 1;
+    if (L.mode === 'out') return 0.3;
+    const step = Math.floor(L.t / 5);
+    return hash(step, L.total, 77) < 0.45 ? 0.35 : 1;
+  }
+
+  // a few rows of the picture slip sideways, like a tape losing its place
+  drawGlitch(fb) {
+    if (!this.glitchT) return;
+    for (let k = 0; k < 3; k++) {
+      const y0 = Math.floor(hash(this.t, k, 5) * (H - 8)), hgt = 2 + Math.floor(hash(this.t, k, 6) * 6);
+      const dx = Math.floor(hash(this.t, k, 7) * 13) - 6;
+      for (let j = y0; j < Math.min(H, y0 + hgt); j++) {
+        const row = fb.px.slice(j * W, (j + 1) * W);
+        for (let i = 0; i < W; i++) fb.px[j * W + i] = row[(i - dx + W) % W];
+      }
+    }
   }
 
   drawRelicCone(fb, cx, cy) {
@@ -281,7 +384,7 @@ export class PlayScene {
   drawHud(fb) {
     const s = this.state, p = this.world.player;
     // wounds: shown while hurt, and whenever something hostile is near
-    const threat = this.world.entities.some(e => (e.type === 'hollow' || e.type === 'shade') && Math.hypot(e.x - p.x, e.y - p.y) < 120);
+    const threat = this.world.entities.some(e => ['hollow', 'shade', 'mimic', 'choir'].includes(e.type) && Math.hypot(e.x - p.x, e.y - p.y) < 120);
     if (this.hurtT > 0 || s.hp < MAX_HP || threat) {
       for (let i = 0; i < MAX_HP; i++) {
         const on = i < s.hp;
@@ -320,11 +423,17 @@ export class PlayScene {
     if (!blink && !p.dead) draw.push({ y: p.y + 0.5, fn: () => fb.blit(PLAYER[dir][frame], Math.round(p.x) - 4 - cx, Math.round(p.y) - 15 - cy, { flip: p.facing === 'left' }) });
     if (p.dead) draw.push({ y: p.y, fn: () => fb.blit(SPRITES.hollow_dead, Math.round(p.x) - 6 - cx, Math.round(p.y) - 5 - cy, { color: C.ASH }) });
     draw.sort((a, b) => a.y - b.y).forEach(d => d.fn());
+    for (const m of this.motes) fb.pset(Math.round(m.x) - cx, Math.round(m.y) - cy, m.c);
 
-    applyLighting(fb, w.lights().map(L => ({ ...L, x: L.x - cx, y: L.y - cy })), room.ambient || 0);
+    const tune = lightTuning(this.app.settings.brightness);
+    const dim = this.lightMul();
+    applyLighting(fb, w.lights().map((L, i) => ({ ...L, x: L.x - cx, y: L.y - cy, r: L.r * tune.radius * (i === 0 ? dim : 1) })), (room.ambient || 0) + tune.ambient);
 
     for (const pr of props) if (pr.glow && pr.sprite) fb.blit(spriteFrame(pr.sprite, w.tick, pr.anim || 12), pr.px - cx, pr.py - cy);
     ents.glow.forEach(fn => fn());
+    for (const f of this.figures) if (f.t % 6 < 4) fb.blit(SPRITES[f.sprite], Math.round(f.x) - cx - 3, Math.round(f.y) - cy - 22);
+    // small carved labels (bell numbers, arch marks), readable in the dark
+    for (const pr of props) if (pr.label) fb.text(pr.label, pr.px - cx + Math.round(pr.w / 2) - pr.label.length * 3, pr.py - cy - 9, C.STONE);
     this.drawRelicCone(fb, cx, cy);
 
     // what you can interact with: a small key cap over it
@@ -356,6 +465,7 @@ export class PlayScene {
       fb.text('saved', W - 36, H - 12, C.ASH);
     }
 
+    this.drawGlitch(fb);
     this.drawHud(fb);
     if (this.deathT) fb.dither(0, 0, W, H, C.BLACK, Math.min(16, Math.floor(this.deathT / 4)));
     this.drawReticle(fb, this.app.input);

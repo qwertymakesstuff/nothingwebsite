@@ -222,5 +222,12 @@
     "url": "https://missing.website/silicon-dreams/",
     "description": "PC building, repair and computer shop sim: diagnose broken machines, build custom PCs part by part, run benchmarks and grow your repair business.",
     "group": "sims"
+  },
+  {
+    "name": "The Hollow Saint",
+    "image": "/banners/hollow-saint.svg",
+    "url": "https://missing.website/hollow-saint/",
+    "description": "Low-resolution survival horror. Bellwether, 1987: a missing sister, a tape that changes every time you play it, and something under the town. Three chapters, four endings.",
+    "group": "horror"
   }
 ]

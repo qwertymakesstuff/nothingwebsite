@@ -63,7 +63,9 @@ export const TOWN = {
     entities: [
       { id: 'woods_hollow', type: 'hollow', x: 18.5, y: 23 },
       { id: 'woods_watcher', type: 'watcher', x: 6, y: 5.6 },
+      { id: 'woods_edge', type: 'edge', x: 26, y: 30 },
     ],
+    events: [{ id: 'woods_return', on: 'enter', delay: 80, when: { all: ['dead:woods_watcher'] }, glitch: 14, sfx: 'knock', figure: { sprite: 'watcher', x: 6, y: 5.6, t: 50 } }],
     props: [
       {
         id: 'stand', sprite: 'stand', x: 8, y: 14.1, solid: [2, 17, 12, 7],
@@ -134,7 +136,8 @@ export const TOWN = {
       { x: 9, y: 8, w: 1, h: 1, to: 'ruth_house', spawn: 'from_row', sfx: 'door' },
       { x: 18, y: 0, w: 4, h: 1, to: 'oran_lane', spawn: 'from_row' },
     ],
-    entities: [{ id: 'row_hollow', type: 'hollow', x: 11, y: 22.5, when: { all: ['nave_seen'] } }],
+    // after the chapel, something waits by the phone booth wearing Ruth's shape
+    entities: [{ id: 'row_mimic', type: 'mimic', looks: 'ruth', x: 15.5, y: 14.6, when: { all: ['nave_seen'] } }],
     props: [
       {
         id: 'gate_north', sprite: 'chain', x: 18, y: 25, zone: [0, -12, 32, 20],

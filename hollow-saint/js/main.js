@@ -2,7 +2,7 @@
 
 import { App } from './app.js';
 import { Audio } from './engine/audio.js';
-import { palette32 } from './engine/palette.js';
+import { palette32, gammaFor, PALETTE } from './engine/palette.js';
 import { W, H, TICK_HZ } from './game/config.js';
 import { BootScene } from './scenes/boot.js';
 
@@ -13,7 +13,7 @@ canvas.width = W; canvas.height = H;
 ctx.imageSmoothingEnabled = false;
 const img = ctx.createImageData(W, H);
 const out32 = new Uint32Array(img.data.buffer);
-const pal = palette32();
+let pal = palette32();
 
 let display = { scaling: 'integer' };
 
@@ -36,6 +36,7 @@ const app = new App({
     isFullscreen: () => !!document.fullscreenElement,
     applyDisplay(s) {
       display = s;
+      pal = palette32(PALETTE, gammaFor(s.brightness ?? 0.5));
       wrap.classList.toggle('scanlines', !!s.scanlines);
       resize();
     },

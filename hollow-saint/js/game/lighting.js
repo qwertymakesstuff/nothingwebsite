@@ -45,3 +45,9 @@ export function lightAt(lights, x, y, ambient = 0) {
   }
   return best;
 }
+
+// how the brightness setting nudges the darkness: a little more ambient light and a wider lantern
+export function lightTuning(brightness = 0.5) {
+  const b = Math.min(1, Math.max(0, brightness));
+  return { ambient: Math.max(0, (b - 0.5) * 0.12), radius: 0.88 + b * 0.24 };
+}

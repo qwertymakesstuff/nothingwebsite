@@ -15,6 +15,8 @@ export const DEFAULT_SETTINGS = {
   screenShake: true,
   scanlines: true,
   scaling: 'integer',       // integer | fit
+  brightness: 0.5,          // 0..1, set on the calibration screen
+  calibrated: false,
   bindings: DEFAULT_BINDINGS,
 };
 
@@ -35,9 +37,9 @@ const clamp01 = v => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, 
 export function sanitizeSettings(raw) {
   const s = structuredClone(DEFAULT_SETTINGS);
   if (!raw || typeof raw !== 'object') return s;
-  for (const k of ['master', 'music', 'sfx']) { const v = clamp01(raw[k]); if (v !== null) s[k] = Math.round(v * 10) / 10; }
+  for (const k of ['master', 'music', 'sfx', 'brightness']) { const v = clamp01(raw[k]); if (v !== null) s[k] = Math.round(v * 10) / 10; }
   if (TEXT_SPEEDS.includes(raw.textSpeed)) s.textSpeed = raw.textSpeed;
-  for (const k of ['reduceFlashing', 'screenShake', 'scanlines']) if (typeof raw[k] === 'boolean') s[k] = raw[k];
+  for (const k of ['reduceFlashing', 'screenShake', 'scanlines', 'calibrated']) if (typeof raw[k] === 'boolean') s[k] = raw[k];
   if (raw.scaling === 'integer' || raw.scaling === 'fit') s.scaling = raw.scaling;
   if (raw.bindings && typeof raw.bindings === 'object') {
     for (const a of ACTIONS) {

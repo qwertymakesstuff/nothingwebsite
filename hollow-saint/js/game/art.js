@@ -3,9 +3,12 @@
 import { sprite, canvasSprite, withRows } from '../engine/sprite.js';
 import { C } from '../engine/palette.js';
 import { WORLD_SPRITES } from './art-world.js';
-import { CAST_SPRITES } from './art-cast.js';
+import { CAST_SPRITES, PORTRAITS, ICONS } from './art-cast.js';
+import { DEEP_SPRITES, DEEP_ICONS, MARA_PORTRAIT } from './art-deep.js';
 
-export { PORTRAITS, ICONS } from './art-cast.js';
+Object.assign(ICONS, DEEP_ICONS);
+PORTRAITS.Mara = MARA_PORTRAIT;
+export { PORTRAITS, ICONS };
 
 // ---- Elias -------------------------------------------------------------------------------
 
@@ -265,6 +268,7 @@ export const SPRITES = {
   tape_light: tapeLight,
   ...WORLD_SPRITES,
   ...CAST_SPRITES,
+  ...DEEP_SPRITES,
 };
 
 // sprite lookup that accepts animated entries (arrays) and picks a frame

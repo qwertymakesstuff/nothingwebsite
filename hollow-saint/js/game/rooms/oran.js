@@ -42,6 +42,7 @@ export const ORAN = {
       'TTTTTTTTTTTTTTTTTT====TTTTTTTTTTTTTTTTTT',
       'TTTTTTTTTTTTTTTTTT====TTTTTTTTTTTTTTTTTT',
     ],
+    events: [{ id: 'chapel_dark', on: 'enter', delay: 30, when: { chapter: 2 }, lights: { mode: 'out', t: 90 }, sfx: 'bell', say: ['Every window in the chapel goes dark at once.', 'Then, one at a time, they light again.'] }],
     spawns: {
       from_row: [20, 26.6, 'up'],
       vestry_door: [28.5, 12.8, 'down'],
@@ -123,10 +124,13 @@ export const ORAN = {
       '#++++++++++cc++++++++++#',
       '########################',
     ],
-    spawns: { from_vestry: [21.8, 13, 'left'], from_undercroft: [1.8, 13, 'right'] },
+    spawns: { from_vestry: [21.8, 13, 'left'], from_undercroft: [1.8, 13, 'right'], from_crypt: [12, 3.7, 'down'] },
+    overrides: [{ when: { all: ['crypt_open'] }, x: 10, y: 1, w: 4, h: 2, ch: 'Z' }],
+    events: [{ id: 'nave_ch2', on: 'enter', delay: 20, when: { chapter: 2, none: ['met_confession'] }, set: 'met_confession', sfx: 'creak', say: ['Somebody has set up a confessional booth by the hymn board. A shape sits behind the grille.'] }],
     onEnter: [{ id: 'nave_first', once: true, set: 'nave_seen', sfx: 'sting' }],
     exits: [
       { x: 23, y: 12, w: 1, h: 2, to: 'oran_lane', spawn: 'vestry_door', sfx: 'door' },
+      { x: 10, y: 1, w: 4, h: 1, to: 'crypt_stair', spawn: 'from_nave' },
       {
         x: 0, y: 12, w: 1, h: 2, to: 'passages', spawn: 'from_undercroft',
         lock: { flag: 'undercroft_open', locked: [{ say: ['A low door in the west wall, bolted from this side.', '[ Look at the bolt to draw it. ]'] }] },
@@ -150,8 +154,14 @@ export const ORAN = {
       {
         id: 'crypt', x: 10, y: 1, w: 4, h: 2, zone: [-4, 0, 40, 26],
         script: [
+          { when: { all: ['crypt_open'] }, say: ['The crypt stair, open now. Warm air comes up it, and singing.'] },
+          {
+            when: { noted: ['clue_below'] },
+            say: ['You put both hands on the warm bricks, where the recorder\'s cable would come out if it came this way.', 'Something on the other side pushes back.', 'The wall comes down inward, all at once, and the dust goes on falling long after the bricks have stopped.'],
+            set: ['crypt_open', 'saw_crypt'], chapter: 2, shake: true, sfx: 'collapse', save: true,
+          },
           { when: { times: 0 }, say: ['Where the crypt stair should be, the arch has been bricked up.', 'The mortar is new. The bricks are warm to the touch.'], set: 'saw_crypt' },
-          { say: ['Warm. Like a wall with a chimney behind it.'] },
+          { say: ['Warm. Like a wall with a chimney behind it. Whatever the recorder is listening to is down there.'] },
         ],
       },
       {
@@ -166,6 +176,17 @@ export const ORAN = {
         script: [
           { when: { times: 0 }, say: ['Folding chairs, set in a circle facing inward. Eleven of them.', 'A twelfth stands in the middle, facing nothing. There are candles under every chair, burned low.'] },
           { say: ['Eleven. And one.'] },
+        ],
+      },
+      {
+        id: 'confessional', sprite: 'confessional', x: 19.6, y: 3.2, solid: [0, 14, 16, 8], when: { chapter: 2 },
+        script: [{ talk: 'confession' }],
+      },
+      {
+        id: 'stoup', sprite: 'stoup', x: 21.6, y: 9.2, solid: [0, 6, 8, 4],
+        script: [
+          { when: { lacks: ['holy_water'], none: ['got_water'] }, say: ['A stone stoup by the door. The water in it is old and perfectly still.', 'A small medicine bottle sits on the rim, as if somebody left it for you. You fill it.'], give: 'holy_water', set: 'got_water' },
+          { say: ['The water does not ripple, even when you touch it.'] },
         ],
       },
       { id: 'candle_a', sprite: 'candle_stand', x: 13.4, y: 7.4, light: { r: 44, dx: 2, dy: 1, flicker: true }, anim: 8 },
@@ -233,7 +254,8 @@ export const ORAN = {
     ],
     spawns: { from_lane: [2, 13.4, 'right'] },
     exits: [{ x: 0, y: 12, w: 1, h: 2, to: 'oran_lane', spawn: 'from_cemetery' }],
-    entities: [{ id: 'cem_shade', type: 'shade', x: 22, y: 22 }],
+    entities: [{ id: 'cem_shade', type: 'shade', x: 22, y: 22 }, { id: 'cem_edge', type: 'edge', x: 32, y: 4 }],
+    events: [{ id: 'grave_whisper', on: 'zone', zone: { x: 2, y: 18, w: 7, h: 5 }, sfx: 'whisper', glitch: 6 }],
     props: [
       {
         id: 'mausoleum', sprite: 'mausoleum', x: 27.5, y: 2.4, solid: [0, 14, 40, 18],
@@ -351,6 +373,7 @@ export const ORAN = {
       '############',
     ],
     spawns: { from_house: [9.5, 6.2, 'down'], from_passages: [1.8, 7.6, 'right'] },
+    events: [{ id: 'chair_turned', on: 'enter', delay: 10, when: { chapter: 2 }, glitch: 10, sfx: 'creak' }],
     exits: [
       { x: 8, y: 3, w: 3, h: 1, to: 'caretaker_house', spawn: 'from_cellar' },
       { x: 0, y: 6, w: 1, h: 2, to: 'passages', spawn: 'from_cellar' },
@@ -362,7 +385,9 @@ export const ORAN = {
       },
       {
         id: 'chair_wall', sprite: 'chair_back', x: 4.5, y: 2.8, solid: [0, 8, 8, 4],
+        alt: [{ when: { chapter: 2 }, sprite: 'chair_front' }],
         script: [
+          { when: { chapter: 2 }, say: ['The chair is facing the room now. Facing the stairs. Facing you.'] },
           { when: { times: 0 }, say: ['A kitchen chair, facing the bare wall.', 'The brick in front of it is worn smooth, at the height of a seated head.'] },
           { say: ["You don't sit in it."] },
         ],
