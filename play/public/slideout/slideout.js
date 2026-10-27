@@ -1,4 +1,4 @@
-import { Game, dirOf, clamp, roundRect, text } from '/assets/gamekit.js';
+import { Game, dirOf, clamp, roundRect, text } from '../assets/gamekit.js';
 import { PUZZLES } from './puzzles.js';
 
 const N = 6, CELL = 72, PAD = 22, W = N * CELL + PAD * 2, H = N * CELL + PAD * 2 + 44;

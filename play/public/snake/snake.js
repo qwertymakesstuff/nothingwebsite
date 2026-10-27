@@ -1,4 +1,4 @@
-import { Game, dirOf, randInt, roundRect } from '/assets/gamekit.js';
+import { Game, dirOf, randInt, roundRect } from '../assets/gamekit.js';
 
 const N = 20, C = 24;
 

@@ -1,4 +1,4 @@
-import { Game, rand, clamp, roundRect, text } from '/assets/gamekit.js';
+import { Game, rand, clamp, roundRect, text } from '../assets/gamekit.js';
 
 const W = 360, H = 540, GROUND = 70, GAP = 140, PIPE_W = 58, SPACING = 200, SPEED = 130;
 

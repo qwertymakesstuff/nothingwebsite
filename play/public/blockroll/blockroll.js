@@ -1,4 +1,4 @@
-import { Game, dirOf, clamp, roundRect, text } from '/assets/gamekit.js';
+import { Game, dirOf, clamp, roundRect, text } from '../assets/gamekit.js';
 import { LEVELS } from './levels.js';
 import { parseLevel, cellsOf, step, solve } from './solver.js';
 

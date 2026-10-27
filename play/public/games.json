@@ -1,231 +1,231 @@
 [
   {
     "name": "Snake",
-    "image": "/banners/snake.svg",
-    "url": "/snake/",
+    "image": "banners/snake.svg",
+    "url": "snake/",
     "description": "Steer a growing snake, eat apples, don't crash.",
     "group": "classics"
   },
   {
     "name": "Blockfall",
-    "image": "/banners/blockfall.svg",
-    "url": "/blockfall/",
+    "image": "banners/blockfall.svg",
+    "url": "blockfall/",
     "description": "Drop and rotate falling blocks to clear rows.",
     "group": "classics"
   },
   {
     "name": "Flutter",
-    "image": "/banners/flutter.svg",
-    "url": "/flutter/",
+    "image": "banners/flutter.svg",
+    "url": "flutter/",
     "description": "Tap to flap through the gaps.",
     "group": "classics"
   },
   {
     "name": "Merge Tiles",
-    "image": "/banners/merge.svg",
-    "url": "/merge/",
+    "image": "banners/merge.svg",
+    "url": "merge/",
     "description": "Slide and merge numbers up to 2048.",
     "group": "classics"
   },
   {
     "name": "Paddle Duel",
-    "image": "/banners/paddle.svg",
-    "url": "/paddle/",
+    "image": "banners/paddle.svg",
+    "url": "paddle/",
     "description": "Classic paddle-and-ball duel against the computer.",
     "group": "classics"
   },
   {
     "name": "Brick Breaker",
-    "image": "/banners/bricks.svg",
-    "url": "/bricks/",
+    "image": "banners/bricks.svg",
+    "url": "bricks/",
     "description": "Bounce the ball and smash every brick.",
     "group": "classics"
   },
   {
     "name": "Sweeper",
-    "image": "/banners/sweeper.svg",
-    "url": "/sweeper/",
+    "image": "banners/sweeper.svg",
+    "url": "sweeper/",
     "description": "Clear the minefield using the numbers.",
     "group": "classics"
   },
   {
     "name": "Five Letters",
-    "image": "/banners/five.svg",
-    "url": "/five/",
+    "image": "banners/five.svg",
+    "url": "five/",
     "description": "Guess the secret word in six tries.",
     "group": "classics"
   },
   {
     "name": "Void Raiders",
-    "image": "/banners/raiders.svg",
-    "url": "/raiders/",
+    "image": "banners/raiders.svg",
+    "url": "raiders/",
     "description": "Defend the ground from descending raiders.",
     "group": "classics"
   },
   {
     "name": "Chomper",
-    "image": "/banners/chomper.svg",
-    "url": "/chomper/",
+    "image": "banners/chomper.svg",
+    "url": "chomper/",
     "description": "Eat every dot, outsmart three ghosts.",
     "group": "classics"
   },
   {
     "name": "Wheelie Hills",
-    "image": "/banners/wheeliehills.svg",
-    "url": "/wheeliehills/",
+    "image": "banners/wheeliehills.svg",
+    "url": "wheeliehills/",
     "description": "A physics bike ride: wheelies, flips and crashes.",
     "group": "flash"
   },
   {
     "name": "Block Roll",
-    "image": "/banners/blockroll.svg",
-    "url": "/blockroll/",
+    "image": "banners/blockroll.svg",
+    "url": "blockroll/",
     "description": "Roll a long block into the hole without falling off.",
     "group": "flash"
   },
   {
     "name": "Rooftop Run",
-    "image": "/banners/rooftop.svg",
-    "url": "/rooftop/",
+    "image": "banners/rooftop.svg",
+    "url": "rooftop/",
     "description": "Jump the gaps between rooftops; you can't stop running.",
     "group": "flash"
   },
   {
     "name": "Dot Defense",
-    "image": "/banners/dotdefense.svg",
-    "url": "/dotdefense/",
+    "image": "banners/dotdefense.svg",
+    "url": "dotdefense/",
     "description": "Build towers to stop waves of dots.",
     "group": "flash"
   },
   {
     "name": "Bubble Pop",
-    "image": "/banners/bubblepop.svg",
-    "url": "/bubblepop/",
+    "image": "banners/bubblepop.svg",
+    "url": "bubblepop/",
     "description": "Aim, match three colours, pop the lot.",
     "group": "flash"
   },
   {
     "name": "Snow Launch",
-    "image": "/banners/snowlaunch.svg",
-    "url": "/snowlaunch/",
+    "image": "banners/snowlaunch.svg",
+    "url": "snowlaunch/",
     "description": "Launch a penguin, upgrade, launch it further.",
     "group": "flash"
   },
   {
     "name": "Claw Digger",
-    "image": "/banners/claw.svg",
-    "url": "/claw/",
+    "image": "banners/claw.svg",
+    "url": "claw/",
     "description": "Swing the claw and haul in gold before time runs out.",
     "group": "flash"
   },
   {
     "name": "Big Fish",
-    "image": "/banners/bigfish.svg",
-    "url": "/bigfish/",
+    "image": "banners/bigfish.svg",
+    "url": "bigfish/",
     "description": "Eat smaller fish, avoid bigger ones, grow.",
     "group": "flash"
   },
   {
     "name": "Archer Duel",
-    "image": "/banners/archer.svg",
-    "url": "/archer/",
+    "image": "banners/archer.svg",
+    "url": "archer/",
     "description": "Pull back, aim for the head, mind the wind.",
     "group": "flash"
   },
   {
     "name": "Sky Hop",
-    "image": "/banners/skyhop.svg",
-    "url": "/skyhop/",
+    "image": "banners/skyhop.svg",
+    "url": "skyhop/",
     "description": "Hop from platform to platform, up and up.",
     "group": "flash"
   },
   {
     "name": "Slide Out",
-    "image": "/banners/slideout.svg",
-    "url": "/slideout/",
+    "image": "banners/slideout.svg",
+    "url": "slideout/",
     "description": "Slide the cars out of the way and free the red one.",
     "group": "flash"
   },
   {
     "name": "Lane Wars",
-    "image": "/banners/lanewars.svg",
-    "url": "/lanewars/",
+    "image": "banners/lanewars.svg",
+    "url": "lanewars/",
     "description": "Train an army and destroy the enemy base.",
     "group": "flash"
   },
   {
     "name": "Granny",
-    "image": "/banners/granny.svg",
+    "image": "banners/granny.svg",
     "url": "https://missing.website/granny/",
     "description": "Escape her three-storey house. Keys, bottles, hiding spots.",
     "group": "big"
   },
   {
     "name": "Harbor City",
-    "image": "/banners/gta.svg",
+    "image": "banners/gta.svg",
     "url": "https://missing.website/gta/",
     "description": "Open-world crime sandbox: steal cars, take jobs, evade the police.",
     "group": "big"
   },
   {
     "name": "Fortune Street",
-    "image": "/banners/fortune-street.svg",
-    "url": "/fortune-street/",
+    "image": "banners/fortune-street.svg",
+    "url": "fortune-street/",
     "description": "Buy up Meridian Bay: property, rent, auctions and trades against AI rivals or friends on one device. Includes a tutorial.",
     "group": "board"
   },
   {
     "name": "SkinSpin",
-    "image": "/banners/skinspin.svg",
+    "image": "banners/skinspin.svg",
     "url": "https://missing.website/skinspin/",
     "description": "Case-opening simulator with fictional skins and play money: open cases, upgrade, trade up, battle NPCs and use the marketplace.",
     "group": "sims"
   },
   {
     "name": "Idle Empire",
-    "image": "/banners/idle-empire.svg",
+    "image": "banners/idle-empire.svg",
     "url": "https://missing.website/idle-empire/",
     "description": "Incremental idle game: strike crowns at the Mint and grow a market stall into an industrial empire.",
     "group": "sims"
   },
   {
     "name": "Last Call",
-    "image": "/banners/last-call.svg",
+    "image": "banners/last-call.svg",
     "url": "https://missing.website/last-call/",
     "description": "Nightclub bouncer simulator: check IDs, tickets and dress codes against changing rules, manage the line and keep your job across twelve shifts.",
     "group": "sims"
   },
   {
     "name": "Rentfall",
-    "image": "/banners/rentfall.svg",
+    "image": "banners/rentfall.svg",
     "url": "https://missing.website/rentfall/",
     "description": "Slot-machine roguelike: collect quirky symbols, chain their synergies and earn enough to survive twelve rent deadlines. Fictional money only.",
     "group": "rogue"
   },
   {
     "name": "Elemental",
-    "image": "/banners/elemental.svg",
+    "image": "banners/elemental.svg",
     "url": "https://missing.website/elemental/",
     "description": "Element-combining discovery puzzle: start with air, water, earth and fire and combine your way to over 1,300 discoveries, with hints and an encyclopedia.",
     "group": "puzzles"
   },
   {
     "name": "Little Acre",
-    "image": "/banners/little-acre.svg",
+    "image": "banners/little-acre.svg",
     "url": "https://missing.website/little-acre/",
     "description": "Farming and life sim: restore an overgrown farm, grow crops through four seasons, befriend the villagers of Bramblewick, fish, craft and decorate.",
     "group": "sims"
   },
   {
     "name": "Silicon Dreams",
-    "image": "/banners/silicon-dreams.svg",
+    "image": "banners/silicon-dreams.svg",
     "url": "https://missing.website/silicon-dreams/",
     "description": "PC building, repair and computer shop sim: diagnose broken machines, build custom PCs part by part, run benchmarks and grow your repair business.",
     "group": "sims"
   },
   {
     "name": "The Hollow Saint",
-    "image": "/banners/hollow-saint.svg",
+    "image": "banners/hollow-saint.svg",
     "url": "https://missing.website/hollow-saint/",
     "description": "Low-resolution survival horror. Bellwether, 1987: a missing sister, a tape that changes every time you play it, and something under the town. Three chapters, four endings.",
     "group": "horror"

@@ -1,4 +1,4 @@
-import { Game, rand, clamp, text } from '/assets/gamekit.js';
+import { Game, rand, clamp, text } from '../assets/gamekit.js';
 
 const W = 720, H = 440;
 

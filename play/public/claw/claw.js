@@ -1,4 +1,4 @@
-import { Game, rand, randInt, clamp, roundRect, text } from '/assets/gamekit.js';
+import { Game, rand, randInt, clamp, roundRect, text } from '../assets/gamekit.js';
 
 const W = 640, H = 440, OX = 320, OY = 62, LEVEL_TIME = 60;
 const KINDS = {

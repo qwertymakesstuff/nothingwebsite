@@ -1,4 +1,4 @@
-import { Game, clamp, rand, roundRect, text } from '/assets/gamekit.js';
+import { Game, clamp, rand, roundRect, text } from '../assets/gamekit.js';
 
 const W = 360, H = 560, G = 1500, BOUNCE = 740, SPRING = 1150, PW = 62, PH = 14;
 

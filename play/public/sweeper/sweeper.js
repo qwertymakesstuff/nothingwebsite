@@ -1,4 +1,4 @@
-import { Game, shuffle, roundRect, text } from '/assets/gamekit.js';
+import { Game, shuffle, roundRect, text } from '../assets/gamekit.js';
 
 const LEVELS = { easy: { n: 9, mines: 10 }, medium: { n: 13, mines: 28 }, hard: { n: 16, mines: 46 } };
 const W = 480, HEAD = 44, H = W + HEAD;

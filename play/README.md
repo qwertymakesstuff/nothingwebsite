@@ -70,6 +70,14 @@ on-screen controls on phones. A game is one class with `reset()`, `update(dt)`, 
 1. Copy a folder (for example `snake/`), rename it and write the game class in `<name>.js`.
 2. Make a 1260 x 320 banner in `banners/` and add an entry to `games.json`.
 
+## Paths
+
+Every link, stylesheet, script and `games.json` entry in `public/` is **relative** (`../assets/gamekit.js`,
+`snake/`), never root-absolute (`/assets/...`). That lets the same files work at `play.missing.website/`,
+at `missing.website/play/public/` (for networks that block the subdomain; `missing.website/play/` redirects
+there) and in the offline downloads. `tests/music/offline.test.mjs` checks this. `404.html` is the exception:
+only play.missing.website serves it.
+
 ## Deploying
 
 In Cloudflare: Workers & Pages -> create a Worker named **nothingplay**, connect this repository, and set

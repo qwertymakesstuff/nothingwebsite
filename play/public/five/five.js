@@ -1,4 +1,4 @@
-import { Game, choice, roundRect, text } from '/assets/gamekit.js';
+import { Game, choice, roundRect, text } from '../assets/gamekit.js';
 import { WORDS } from './words.js';
 
 const W = 420, H = 610, T = 58, G = 8, TOP = 18, LEFT = (W - (5 * T + 4 * G)) / 2;

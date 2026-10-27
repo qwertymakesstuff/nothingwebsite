@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#090909" />
   <meta name="description" content="A small arcade of classic-style games that run in your browser." />
   <title>play — missing.website</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&family=Nosifer&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/site.css" />
+  <link rel="stylesheet" href="assets/site.css" />
 </head>
 <body><div class="noise" aria-hidden="true"></div>
-<header class="topbar"><a class="wordmark" href="/">play</a><nav aria-label="Primary navigation"><a href="/">all games</a><a href="https://missing.website">missing.website</a></nav></header>
+<header class="topbar"><a class="wordmark" href="./">play</a><nav aria-label="Primary navigation"><a href="./">all games</a><a href="https://missing.website">missing.website</a></nav></header>
 <main class="programs-shell">
   <div class="programs-head"><p class="eyebrow">arcade</p><h1>play</h1><p class="lede">classic-style and early-flash-style games that run right in your browser. pick one.</p></div>
   <div class="programs-list" id="list"><p class="programs-empty">loading…</p></div>
@@ -20,7 +20,7 @@
 <footer class="site-footer"><span>games run in your browser; scores stay on your device.</span><span>keyboard, mouse or touch</span></footer>
 <script>
 const GROUPS = { classics: 'the classics', flash: 'flash-era favourites', big: 'bigger 3D games', board: 'board games', sims: 'simulators', rogue: 'roguelikes', puzzles: 'puzzle games', horror: 'horror' };
-fetch('/games.json').then(r => r.json()).then(items => {
+fetch('games.json').then(r => r.json()).then(items => {
   const list = document.getElementById('list');
   list.innerHTML = '';
   items = items.filter(p => !p.hidden);
@@ -36,7 +36,9 @@ fetch('/games.json').then(r => r.json()).then(items => {
     }
     const a = document.createElement('a');
     a.className = 'program';
-    a.href = p.url;
+    // the bigger games live on the main site: link there absolutely from play.missing.website, and
+    // same-site everywhere else (missing.website/play/public/ and the offline download)
+    a.href = location.hostname === 'play.missing.website' ? p.url : p.url.replace(/^https:\/\/missing\.website\//, '/');
     a.setAttribute('aria-label', p.name + (p.description ? ': ' + p.description : ''));
     const img = document.createElement('div');
     img.className = 'program-img';

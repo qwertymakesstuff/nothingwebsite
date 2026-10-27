@@ -1,4 +1,4 @@
-import { Game, clamp, rand, roundRect, text } from '/assets/gamekit.js';
+import { Game, clamp, rand, roundRect, text } from '../assets/gamekit.js';
 
 const W = 480, H = 560, COLS = 10, ROWS = 7, BW = 44, BH = 20, GX = 4, TOP = 70;
 const OFFX = (W - (COLS * BW + (COLS - 1) * GX)) / 2;

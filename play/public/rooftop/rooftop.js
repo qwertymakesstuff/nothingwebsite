@@ -1,4 +1,4 @@
-import { Game, rand, randInt, clamp, text } from '/assets/gamekit.js';
+import { Game, rand, randInt, clamp, text } from '../assets/gamekit.js';
 
 const W = 640, H = 360, RX = 130, RW = 22, RH = 42, GRAV = 1900, JUMP = 640;
 const SKY = ['#ff9a5a', '#7a4fa8'];

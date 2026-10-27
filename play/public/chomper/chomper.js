@@ -1,4 +1,4 @@
-import { Game, dirOf, rand, text } from '/assets/gamekit.js';
+import { Game, dirOf, rand, text } from '../assets/gamekit.js';
 
 const MAZE = [
   '###################', '#........#........#', '#o##.###.#.###.##o#', '#.................#', '#.##.#.#####.#.##.#', '#....#...#...#....#', '####.###.#.###.####',

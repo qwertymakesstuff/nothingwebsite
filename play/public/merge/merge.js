@@ -1,4 +1,4 @@
-import { Game, randInt, roundRect, text, dirOf } from '/assets/gamekit.js';
+import { Game, randInt, roundRect, text, dirOf } from '../assets/gamekit.js';
 
 const N = 4, TILE = 92, GAP = 12, PAD = 14;
 const SIZE = PAD * 2 + N * TILE + (N - 1) * GAP;

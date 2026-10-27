@@ -1,4 +1,4 @@
-import { Game, rand, randInt, clamp, text } from '/assets/gamekit.js';
+import { Game, rand, randInt, clamp, text } from '../assets/gamekit.js';
 
 const R = 20, COLS = 10, W = COLS * 2 * R + R, H = 600, RH = R * Math.sqrt(3), SX = W / 2, SY = H - 44, LINE = H - 96;
 const COLORS = ['#ff5d6c', '#ffb23c', '#f5e04a', '#5be37d', '#4dd9f0', '#b36bff'];

@@ -1,0 +1,41 @@
+# Builds the offline downloads linked from missing.website/pages.html and attaches them to the
+# "offline" release, so https://github.com/<repo>/releases/latest/download/<file>.zip always
+# serves the newest copy of the site.
+name: offline downloads
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: offline-downloads
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the offline file list is current
+        run: |
+          node tools/offline/build-manifest.mjs
+          git diff --exit-code offline-files.json || echo "::warning::offline-files.json is out of date; run node tools/offline/build-manifest.mjs"
+      - name: Build zips
+        run: node tools/offline/build-zips.mjs
+      - name: Publish to the "offline" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view offline >/dev/null 2>&1; then
+            gh release upload offline dist/*.zip --clobber
+            gh release edit offline --latest --notes "Offline copy of missing.website, built from ${GITHUB_SHA::7}. See missing.website/pages.html for how to use it."
+          else
+            gh release create offline dist/*.zip --latest --title "Offline downloads" --notes "Offline copy of missing.website, built from ${GITHUB_SHA::7}. See missing.website/pages.html for how to use it."
+          fi

@@ -750,7 +750,7 @@ test('play site lists Little Acre with a banner', () => {
   const g = games.find(x => x.name === 'Little Acre');
   assert.ok(g, 'listed on the arcade homepage');
   assert.equal(g.url, 'https://missing.website/little-acre/');
-  assert.ok(fs.existsSync(new URL('../../play/public' + g.image, import.meta.url)));
+  assert.ok(fs.existsSync(new URL('../../play/public/' + g.image.replace(/^\//, ''), import.meta.url)));
   assert.ok(fs.existsSync(new URL('../../little-acre/index.html', import.meta.url)));
 });
 

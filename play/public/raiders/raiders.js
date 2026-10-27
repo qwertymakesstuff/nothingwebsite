@@ -1,4 +1,4 @@
-import { Game, clamp, rand, roundRect, text } from '/assets/gamekit.js';
+import { Game, clamp, rand, roundRect, text } from '../assets/gamekit.js';
 
 const W = 480, H = 580, COLS = 9, ROWS = 5, CELL_W = 40, CELL_H = 34;
 // three little alien designs (original), 9 x 7 pixels each, two frames

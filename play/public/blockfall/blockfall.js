@@ -1,4 +1,4 @@
-import { Game, shuffle, roundRect, text } from '/assets/gamekit.js';
+import { Game, shuffle, roundRect, text } from '../assets/gamekit.js';
 
 const COLS = 10, ROWS = 20, C = 28, SIDE = 130;
 const W = COLS * C + SIDE, H = ROWS * C;

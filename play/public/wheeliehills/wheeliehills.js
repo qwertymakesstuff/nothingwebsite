@@ -1,4 +1,4 @@
-import { Game, rand, clamp, text } from '/assets/gamekit.js';
+import { Game, rand, clamp, text } from '../assets/gamekit.js';
 
 const W = 720, H = 420;
 // bike physics (px, seconds). One rigid body with two spring-loaded wheels.

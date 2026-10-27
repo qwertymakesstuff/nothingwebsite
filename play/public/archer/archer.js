@@ -1,4 +1,4 @@
-import { Game, rand, clamp, text } from '/assets/gamekit.js';
+import { Game, rand, clamp, text } from '../assets/gamekit.js';
 
 const W = 720, H = 420, GROUND = 340, GRAV = 620, MAX_SPEED = 820;
 const PX = 100, EX = 620; // archers' feet x

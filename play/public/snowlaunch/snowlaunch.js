@@ -1,4 +1,4 @@
-import { Game, clamp, rand, roundRect, text, saved } from '/assets/gamekit.js';
+import { Game, clamp, rand, roundRect, text, saved } from '../assets/gamekit.js';
 
 const W = 720, H = 420, GROUND = 340, FLIGHTS = 8;
 const UPGRADES = [

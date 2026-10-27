@@ -1,4 +1,4 @@
-import { Game, clamp, rand, roundRect, text } from '/assets/gamekit.js';
+import { Game, clamp, rand, roundRect, text } from '../assets/gamekit.js';
 
 const T = 48, COLS = 15, ROWS = 9, GW = COLS * T, GH = ROWS * T, PANEL = 60, W = GW, H = GH + PANEL;
 const WAYPOINTS = [[-1, 1], [3, 1], [3, 6], [7, 6], [7, 2], [11, 2], [11, 7], [15, 7]];
