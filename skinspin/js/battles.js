@@ -24,6 +24,7 @@ export function checkSetup({ cases, players }, cfg = BATTLE) {
   if (!Array.isArray(cases) || !cases.length) return fail('no-cases', 'Add at least one case.');
   if (cases.length > cfg.maxRounds) return fail('too-many', `A battle has at most ${cfg.maxRounds} rounds.`);
   if (!cases.every(id => CASES_BY_ID[id])) return fail('unknown-case', 'One of those cases does not exist.');
+  if (cases.some(id => CASES_BY_ID[id].free)) return fail('free-case', 'Free cases can only be opened on their own, not in battles.');
   if (!Number.isInteger(players) || players < cfg.minPlayers || players > cfg.maxPlayers) return fail('players', `Battles have ${cfg.minPlayers} to ${cfg.maxPlayers} players.`);
   return { ok: true, cost: battleCost(cases) };
 }

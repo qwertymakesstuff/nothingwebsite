@@ -19,7 +19,7 @@ export const wearName = w => (w && WEAR_BY_ID[w] ? WEAR_BY_ID[w].name : 'No wear
 
 export function itemTitle(itemId) {
   const it = ITEMS_BY_ID[itemId];
-  return { weapon: `${it.type === 'knife' || it.type === 'gloves' ? '★ ' : ''}${it.weaponName}`, finish: it.hasWear ? it.finish : 'Vanilla' };
+  return { weapon: `${it.type === 'knife' || it.type === 'gloves' ? '★ ' : ''}${it.weaponName}`, finish: it.finish };
 }
 
 // Options: value, chance, note, classes, attrs (raw), inner (raw), hideValue
@@ -49,13 +49,13 @@ export function itemDescription(itemId) {
 
 export function caseCard(c, { coinsAvailable = Infinity } = {}) {
   const examples = [...c.pool].sort((a, b) => ITEMS_BY_ID[b].value - ITEMS_BY_ID[a].value).slice(0, 3);
-  const affordable = coinsAvailable >= c.price;
+  const affordable = c.free || coinsAvailable >= c.price;
   return `<a class="case-card" href="#/case/${c.id}" style="--case-a:${c.theme.from};--case-b:${c.theme.to}">
   <span class="cc-top"><span class="cc-cat">${esc(CASE_CATEGORY_BY_ID[c.category].name)}</span>${c.featured ? `<span class="cc-featured" title="Featured">${ICONS.star}</span>` : ''}</span>
   <img class="cc-art" src="${caseArt(c.id)}" alt="">
   <span class="cc-name">${esc(c.name)}</span>
   <span class="cc-examples" title="Top rewards">${examples.map(id => `<img src="${itemArt(id)}" alt="${esc(ITEMS_BY_ID[id].name)}" style="--rc:${RARITY_BY_ID[ITEMS_BY_ID[id].rarity].color}">`).join('')}</span>
-  <span class="cc-price ${affordable ? '' : 'cc-short'}">${coins(c.price)}</span>
+  <span class="cc-price ${affordable ? '' : 'cc-short'}">${c.free ? '<b class="cc-free">Free</b>' : coins(c.price)}</span>
 </a>`;
 }
 

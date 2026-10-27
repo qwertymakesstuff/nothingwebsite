@@ -56,6 +56,7 @@ export function createPlayer(now = Date.now()) {
     contracts: [],           // newest first: trade-up results
     battles: [],             // newest first: settled battles, kept for replays and history
     market: emptyMarket(),
+    freeReadyAt: {},         // free case id -> time it can next be opened
   };
 }
 

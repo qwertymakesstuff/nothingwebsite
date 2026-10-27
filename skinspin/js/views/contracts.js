@@ -58,7 +58,7 @@ ${sel.length && !full ? `<p class="muted small">The odds below are for the items
 
   $('#outcomes', root).innerHTML = outcomes.length
     ? `<div class="item-grid item-grid-compact">${outcomes.map(o => itemCard(o.itemId, o.wear, { value: o.value, chance: o.chance })).join('')}</div>
-       <p class="muted small">Each input gives an equal ${fmtPct(1 / CONTRACT.size)} share, split evenly over the next-rarity items of its own collection. Covert inputs turn into knives or gloves from cases that carry their collection. The output's float is the average of the inputs' floats (${outcomes[0].float != null ? outcomes[0].float.toFixed(4) : '—'}).</p>`
+       <p class="muted small">Each input gives an equal ${fmtPct(1 / CONTRACT.size)} share, split evenly over the next-rarity items of its own collection. Covert inputs turn into Extraordinary items: their collection's own, or knives and gloves from the cases that carry it. The output's float is the average of the inputs' floats (${outcomes[0].float != null ? outcomes[0].float.toFixed(4) : '—'}).</p>`
     : '<p class="muted">Add items to see what the contract can produce.</p>';
 
   // picker

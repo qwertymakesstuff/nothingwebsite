@@ -15,8 +15,8 @@ The $ balance is play money only: there is no way to buy it, deposit into it or 
 | `js/config.js` | tuning knobs: save key and version, starting coins, roulette timings |
 | `js/rarities.js` | the seven rarity tiers and their colours |
 | `js/wear.js` | wear tiers, float ranges, their chances and value multipliers |
-| `js/items.js` | the item database (114 skins over 26 weapons and 8 types) and `itemValue()` |
-| `js/cases.js` | the 15 cases: price, category, theme, collections, rarity weights, pools |
+| `js/items.js` | the item database (147 items over 38 weapons and 11 types, incl. the 33-item Mill Street line) and `itemValue()` |
+| `js/cases.js` | the 7 archive cases (incl. the Daily Free Case on a 20-minute timer): price, collections, rarity weights, pools; old case ids |
 | `js/rewards.js` | `caseOdds()` (what the UI shows) and `rollCase()` (what is drawn), from the same data |
 | `js/rng.js` | secure randomness for real rolls, seeded randomness for tests |
 | `js/playerState.js` | the one player-state shape, levels and XP |
@@ -29,7 +29,8 @@ The $ balance is play money only: there is no way to buy it, deposit into it or 
 | `js/collections.js` | collection progress (items ever obtained) and one-time completion rewards |
 | `js/battles.js` | case battles against NPCs: setup checks, settlement, winner rule |
 | `js/market.js` | bounded price model, price history, NPC sellers and buyers, buy / list / cancel |
-| `js/art.js` | original SVG artwork for every item and case, cached as data URIs |
+| `js/art.js` | artwork URLs: painted images from `assets/` where they exist, otherwise drawn SVG cached as data URIs |
+| `assets/cases/`, `assets/items/` | painted case and item art from the asset archive (Archive.zip), trimmed and converted to WebP |
 | `js/main.js` | entry point: shell, hash router, top bar |
 | `js/ui/*` | DOM helpers, icons, shared components, modal, toasts, synthesised sound |
 | `js/ui/spinner.js` | reusable strip spinner (battle columns), built on `roulette.js` |
@@ -54,7 +55,12 @@ The $ balance is play money only: there is no way to buy it, deposit into it or 
 - Battle reward rule: winner takes all; ties go to the best single item, then a random draw. NPCs
   draw with `rollCase()` from the same random stream as the player.
 - Market prices are SkinSpin's own simulation, held within ±15% of item value; not real prices.
+- The cases and the Mill Street items come from the asset archive: names, rarities, values and each
+  case's item list follow its CaseForge catalogue (values divided by 10, rarities shifted onto
+  SkinSpin's tiers: Common = Industrial ... Mythic = Extraordinary). Each case also carries themed
+  collections from the original catalogue so all 147 items stay obtainable.
 - The save is one JSON object with a `version`. Anything unreadable is copied to a backup key
   first; damaged fields are repaired one by one; saves from a newer version are backed up before loading.
+  Version 3 rewrote the original 15 case ids to the archive cases that replaced them.
 
 Tests: `node --test tests/music/skinspin.test.mjs tests/music/skinspin-phase2.test.mjs`.

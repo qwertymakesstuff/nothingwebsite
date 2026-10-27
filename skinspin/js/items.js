@@ -13,6 +13,9 @@ export const WEAPON_TYPES = [
   { id: 'mg', name: 'Machine Guns' },
   { id: 'knife', name: 'Knives' },
   { id: 'gloves', name: 'Gloves' },
+  { id: 'charm', name: 'Charms' },
+  { id: 'sticker', name: 'Stickers' },
+  { id: 'collectible', name: 'Collectibles' },
 ];
 export const WEAPON_TYPE_BY_ID = Object.freeze(Object.fromEntries(WEAPON_TYPES.map(t => [t.id, t])));
 
@@ -43,7 +46,23 @@ export const WEAPONS = {
   wraps: { name: 'Hand Wraps', type: 'gloves' },
   driver: { name: 'Driver Gloves', type: 'gloves' },
   tactical: { name: 'Tactical Gloves', type: 'gloves' },
+  // The Mill Street line (painted artwork from the asset archive).
+  ar7: { name: 'AR-7', type: 'rifle' },
+  vex: { name: 'Vex SMG', type: 'smg' },
+  p9: { name: 'P9', type: 'pistol' },
+  magnum: { name: 'Magnum-50', type: 'pistol' },
+  longshot: { name: 'Longshot', type: 'sniper' },
+  karambit: { name: 'Karambit', type: 'knife' },
+  butterfly: { name: 'Butterfly', type: 'knife' },
+  boxcutter: { name: 'Box Cutter', type: 'knife' },
+  gloves: { name: 'Gloves', type: 'gloves' },
+  charm: { name: 'Charm', type: 'charm' },
+  sticker: { name: 'Sticker', type: 'sticker' },
+  collectible: { name: 'Collectible', type: 'collectible' },
 };
+
+// Item types that never have a wear condition.
+const NO_WEAR_TYPES = new Set(['charm', 'sticker', 'collectible']);
 
 export const COLLECTIONS = [
   { id: 'scrap', name: 'Scrapyard Collection' },
@@ -59,6 +78,7 @@ export const COLLECTIONS = [
   { id: 'eclipse', name: 'Eclipse Collection' },
   { id: 'blades', name: 'Blade Reserve' },
   { id: 'handwear', name: 'Handwear Reserve' },
+  { id: 'mill', name: 'Mill Street Collection' },
 ];
 export const COLLECTION_BY_ID = Object.freeze(Object.fromEntries(COLLECTIONS.map(c => [c.id, c])));
 
@@ -208,12 +228,51 @@ const ROWS = {
   ],
 };
 
+// The Mill Street line: [weapon, finish, rarity, value, hue, image file in assets/items/ (or null)].
+const MILL = [
+  ['p9', 'Bubble Wrap', I, 10, 198, 'p9_wrap'],
+  ['p9', 'Static', I, 7, 223, 'p9_static'],
+  ['vex', 'Cardboard', I, 9, 29, 'smg_cardboard'],
+  ['sticker', 'Tape Roll', I, 5, 36, 'sticker_tape'],
+  ['sticker', 'FRAGILE', I, 6, 0, 'sticker_fragile'],
+  ['ar7', 'Sandstorm', I, 14, 40, 'rifle_sand'],
+  ['charm', 'Loose Bolt', I, 4, 216, null],
+  ['p9', 'Harbor Fog', M, 24, 198, 'p9_harbor'],
+  ['vex', 'Forklift Yellow', M, 34, 50, 'smg_forklift'],
+  ['ar7', 'Pallet Wood', M, 38, 25, 'rifle_pallet'],
+  ['longshot', 'Morning Mist', M, 44, 180, 'sniper_mist'],
+  ['sticker', 'Angry Seagull', M, 22, 209, 'sticker_seagull'],
+  ['charm', 'Rubber Duck', M, 28, 54, 'charm_duck'],
+  ['ar7', 'Neon Night', R, 104, 306, 'rifle_neon'],
+  ['vex', 'Circuit', R, 84, 130, 'smg_circuit'],
+  ['p9', 'Ember', R, 72, 11, 'p9_ember'],
+  ['longshot', 'Glacier', R, 136, 187, 'sniper_glacier'],
+  ['gloves', 'Warehouse Grip', R, 120, 43, 'gloves_worker'],
+  ['collectible', 'Golden Mug', R, 96, 47, null],
+  ['ar7', 'Aurora', K, 312, 162, 'rifle_aurora'],
+  ['longshot', 'Viper', K, 460, 108, 'sniper_viper'],
+  ['gloves', 'Neon Weave', K, 384, 288, 'gloves_neon'],
+  ['boxcutter', 'Standard Issue', K, 256, 50, 'knife_box'],
+  ['charm', 'Tiny Crown', K, 208, 47, 'charm_crown'],
+  ['karambit', 'Ember Fade', V, 1680, 14, 'knife_ember'],
+  ['butterfly', 'Tidewater', V, 1440, 187, 'knife_tide'],
+  ['ar7', 'Gold Leaf', V, 960, 47, 'rifle_gold'],
+  ['gloves', 'Royal Velvet', V, 1160, 270, 'gloves_royal'],
+  ['collectible', 'Mill St Forklift', V, 1320, 50, 'collectible_forklift'],
+  ['karambit', 'Void Crystal', X, 7400, 281, 'knife_void'],
+  ['butterfly', 'Solar Flare', X, 4800, 29, 'knife_mythic'],
+  ['ar7', 'Harbor Dragon', X, 6000, 353, 'rifle_dragon'],
+  ['magnum', 'Jimmy', X, 8500, 22, 'magnum_jimmy'],
+];
+
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 function buildItems() {
   const items = [];
-  for (const [collection, rows] of Object.entries(ROWS)) {
-    for (const [weapon, finish, rarity, value, hue, pattern, sat = 65] of rows) {
+  const rows = Object.entries(ROWS).flatMap(([collection, list]) => list.map(r => [collection, ...r, null]));
+  for (const [weapon, finish, rarity, value, hue, image] of MILL) rows.push(['mill', weapon, finish, rarity, value, hue, 'image', 65, image]);
+  {
+    for (const [collection, weapon, finish, rarity, value, hue, pattern, sat = 65, image] of rows) {
       const w = WEAPONS[weapon];
       const special = w.type === 'knife' || w.type === 'gloves';
       const vanilla = finish === 'Vanilla';
@@ -227,8 +286,9 @@ function buildItems() {
         rarity,
         value,
         collection,
-        hasWear: !vanilla,
+        hasWear: !vanilla && !NO_WEAR_TYPES.has(w.type),
         art: Object.freeze({ hue, pattern, sat }),
+        image: image || null,   // painted artwork in assets/items/<image>.webp, else drawn in art.js
       }));
     }
   }

@@ -4,7 +4,7 @@
 
 import { SAVE_KEY, SAVE_BACKUP_PREFIX, SAVE_VERSION, STARTING_COINS, ACTIVITY_LIMIT, RECENT_DROPS_LIMIT, MAX_COINS } from './config.js';
 import { ITEMS_BY_ID, COLLECTION_BY_ID } from './items.js';
-import { CASES_BY_ID } from './cases.js';
+import { CASES_BY_ID, LEGACY_CASE_IDS } from './cases.js';
 import { RARITIES } from './rarities.js';
 import { WEAR_BY_ID, wearForFloat } from './wear.js';
 import { createPlayer, defaultSettings, emptyStats, emptyMarket } from './playerState.js';
@@ -31,6 +31,30 @@ const MIGRATIONS = {
     for (const a of Array.isArray(data.activity) ? data.activity : []) if (a?.type === 'open') add(a.itemId);
     add(data.stats?.bestDrop?.itemId);
     return { ...data, collectionLog: seen, version: 2 };
+  },
+  // Version 3 replaces the original 15 cases with the 7 archive cases: old case ids are rewritten
+  // to the case that replaced them everywhere a case id is stored.
+  2: data => {
+    const map = id => (typeof id === 'string' && LEGACY_CASE_IDS[id]) || id;
+    const d = { ...data, version: 3 };
+    if (Array.isArray(d.inventory)) d.inventory = d.inventory.map(i => (i && typeof i === 'object' ? { ...i, source: map(i.source) } : i));
+    if (Array.isArray(d.recentDrops)) d.recentDrops = d.recentDrops.map(x => (x && typeof x === 'object' ? { ...x, caseId: map(x.caseId) } : x));
+    if (Array.isArray(d.activity)) d.activity = d.activity.map(a => (a && typeof a === 'object' && a.caseId ? { ...a, caseId: map(a.caseId) } : a));
+    if (Array.isArray(d.battles)) d.battles = d.battles.map(b => (b && typeof b === 'object' && Array.isArray(b.cases) ? { ...b, cases: b.cases.map(map) } : b));
+    if (d.market && typeof d.market === 'object' && Array.isArray(d.market.mine)) {
+      d.market = { ...d.market, mine: d.market.mine.map(l => (l && l.item ? { ...l, item: { ...l.item, source: map(l.item.source) } } : l)) };
+    }
+    if (d.stats && typeof d.stats === 'object') {
+      const s = { ...d.stats };
+      if (s.casesById && typeof s.casesById === 'object') {
+        const merged = {};
+        for (const [id, n] of Object.entries(s.casesById)) merged[map(id)] = (merged[map(id)] || 0) + (Number.isFinite(n) ? n : 0);
+        s.casesById = merged;
+      }
+      if (s.bestDrop && typeof s.bestDrop === 'object') s.bestDrop = { ...s.bestDrop, caseId: map(s.bestDrop.caseId) };
+      d.stats = s;
+    }
+    return d;
   },
 };
 
@@ -196,6 +220,10 @@ export function sanitizePlayer(data, now = Date.now()) {
     m.lastTick = Number.isFinite(data.market.lastTick) && data.market.lastTick > 0 ? data.market.lastTick : 0;
     m.lastListing = Number.isFinite(data.market.lastListing) && data.market.lastListing > 0 ? data.market.lastListing : 0;
     p.market = m;
+  }
+
+  if (isObj(data.freeReadyAt)) {
+    for (const [id, at] of Object.entries(data.freeReadyAt)) if (CASES_BY_ID[id]?.free && Number.isFinite(at) && at > 0) p.freeReadyAt[id] = at;
   }
 
   // Everything held counts as collected.

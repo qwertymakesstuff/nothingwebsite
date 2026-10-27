@@ -40,7 +40,7 @@ export default {
   <div class="section-head"><h2>Recently obtained</h2>${drops.length ? '<a class="link" href="#/inventory">Inventory →</a>' : ''}</div>
   ${drops.length
     ? `<div class="item-grid item-grid-compact">${drops.map(d => itemCard(d.itemId, d.wear, { note: `${esc(sourceName(d.caseId))} · ${timeAgo(d.at)}` })).join('')}</div>`
-    : emptyState({ icon: 'cases', title: 'Nothing unboxed yet', text: 'Your drops will show up here. The Rookie Crate is a cheap place to start.', action: '<a class="btn btn-primary" href="#/case/rookie">Open a Rookie Crate</a>' })}
+    : emptyState({ icon: 'cases', title: 'Nothing unboxed yet', text: 'Your drops will show up here. The Daily Free Case costs nothing to open.', action: '<a class="btn btn-primary" href="#/case/daily">Open the free case</a>' })}
 </section>
 
 <section class="section">

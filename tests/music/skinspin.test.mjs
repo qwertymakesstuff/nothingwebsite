@@ -9,7 +9,7 @@ const load = f => import(new URL(f, dir));
 const { ITEMS, ITEMS_BY_ID, WEAPON_TYPES, itemValue } = await load('items.js');
 const { RARITIES } = await load('rarities.js');
 const { WEARS, WEAR_BY_ID } = await load('wear.js');
-const { CASES, CASES_BY_ID, CASE_CATEGORIES, validateCase, CHEAPEST_CASE_PRICE } = await load('cases.js');
+const { CASES, CASES_BY_ID, CASE_CATEGORIES, validateCase, CHEAPEST_CASE_PRICE, FREE_CASE_COOLDOWN } = await load('cases.js');
 const { caseOdds, rollCase, expectedValue } = await load('rewards.js');
 const { seededRandom } = await load('rng.js');
 const { createPlayer, levelInfo, xpToNext } = await load('playerState.js');
@@ -23,7 +23,7 @@ const { filterCases } = await load('views/cases.js');
 
 const clone = o => JSON.parse(JSON.stringify(o));
 const give = (player, itemId, wear = 'FT', extra = {}) => {
-  const inst = { uid: `i${player.nextId++}`, itemId, wear: ITEMS_BY_ID[itemId].hasWear ? wear : null, float: ITEMS_BY_ID[itemId].hasWear ? WEAR_BY_ID[wear].min : null, acquiredAt: 1000 + player.nextId, source: 'rookie', locked: false, favorite: false, ...extra };
+  const inst = { uid: `i${player.nextId++}`, itemId, wear: ITEMS_BY_ID[itemId].hasWear ? wear : null, float: ITEMS_BY_ID[itemId].hasWear ? WEAR_BY_ID[wear].min : null, acquiredAt: 1000 + player.nextId, source: 'starter', locked: false, favorite: false, ...extra };
   player.inventory.push(inst);
   return inst;
 };
@@ -77,14 +77,25 @@ test('item values: wear scales value, vanilla items ignore wear, never below 1',
 
 // ---- cases ----
 
-test('case catalogue: 15 sound cases across every category', () => {
-  assert.equal(CASES.length, 15);
-  assert.equal(new Set(CASES.map(c => c.id)).size, 15);
+test('case catalogue: the 7 archive cases, sound, across every category', () => {
+  assert.deepEqual(CASES.map(c => c.id).sort(), ['daily', 'golden', 'harbor', 'neon', 'starter', 'street', 'void']);
   for (const c of CASES) assert.deepEqual(validateCase(c), [], c.id);
   for (const cat of CASE_CATEGORIES) assert.ok(CASES.some(c => c.category === cat.id), cat.id);
   assert.ok(CASES.some(c => c.featured));
-  assert.ok(new Set(CASES.map(c => c.price)).size >= 8, 'varied prices');
-  assert.equal(CHEAPEST_CASE_PRICE, Math.min(...CASES.map(c => c.price)));
+  assert.ok(new Set(CASES.map(c => c.price)).size >= 5, 'varied prices');
+  assert.deepEqual(CASES.filter(c => c.free).map(c => c.id), ['daily']);
+  assert.equal(CASES_BY_ID.daily.price, 0);
+  assert.equal(CHEAPEST_CASE_PRICE, Math.min(...CASES.filter(c => !c.free).map(c => c.price)));
+});
+
+test('every case and every archive item has its painted image on disk', () => {
+  const assets = new URL('../../skinspin/assets/', import.meta.url);
+  for (const c of CASES) assert.ok(fs.existsSync(new URL(`cases/${c.id}.webp`, assets)), `case ${c.id}`);
+  const painted = ITEMS.filter(i => i.image);
+  assert.equal(painted.length, 31);
+  for (const i of painted) assert.ok(fs.existsSync(new URL(`items/${i.image}.webp`, assets)), i.id);
+  // the two archive items without a picture are drawn instead
+  assert.deepEqual(ITEMS.filter(i => i.collection === 'mill' && !i.image).map(i => i.id).sort(), ['charm-loose-bolt', 'collectible-golden-mug']);
 });
 
 test('case weights total exactly 100% and odds split evenly within a rarity', () => {
@@ -113,8 +124,8 @@ test('case pools only hold items from the case collections or its extras', () =>
   }
 });
 
-test('expected return is 80-100% of the price for every case', () => {
-  for (const c of CASES) {
+test('expected return is 80-100% of the price for every paid case', () => {
+  for (const c of CASES.filter(x => !x.free)) {
     const ratio = expectedValue(c) / c.price;
     assert.ok(ratio > 0.8 && ratio < 1, `${c.id}: ${ratio.toFixed(3)}`);
   }
@@ -147,7 +158,7 @@ test('actual draws follow the displayed odds (60k rolls per case)', () => {
 
 test('wear: floats fall inside their tier, tiers follow their weights, vanilla has none', () => {
   const rng = seededRandom(42);
-  const c = CASES_BY_ID.edge;
+  const c = CASES_BY_ID.void;
   const counts = {};
   let n = 0;
   for (let i = 0; i < 40000; i++) {
@@ -168,27 +179,27 @@ test('opening: charges once, awards exactly one item, updates stats and activity
   const p = createPlayer(1);
   const r = economy.openCase(p, 'neon', { rng: seededRandom(1), now: 5 });
   assert.ok(r.ok);
-  assert.equal(p.coins, STARTING_COINS - 115);
+  assert.equal(p.coins, STARTING_COINS - 105);
   assert.equal(p.inventory.length, 1);
   assert.equal(p.inventory[0].uid, r.item.uid);
   assert.equal(r.value, itemValue(r.item.itemId, r.item.wear));
   assert.equal(p.stats.casesOpened, 1);
-  assert.equal(p.stats.coinsSpent, 115);
+  assert.equal(p.stats.coinsSpent, 105);
   assert.equal(p.stats.casesById.neon, 1);
   assert.equal(p.recentDrops[0].itemId, r.item.itemId);
   assert.equal(p.activity[0].type, 'open');
-  assert.equal(p.activity[0].delta, -115);
+  assert.equal(p.activity[0].delta, -105);
   assert.ok(p.xp > 0);
   assert.ok(CASES_BY_ID.neon.pool.includes(r.item.itemId));
 });
 
-test('every one of the 15 cases opens and drops from its own pool', () => {
+test('every one of the 7 cases opens and drops from its own pool', () => {
   for (const c of CASES) {
     const p = createPlayer(1);
     p.coins = c.price;
     for (let i = 0; i < 20; i++) {
       p.coins = c.price;
-      const r = economy.openCase(p, c.id, { rng: seededRandom(i + c.price) });
+      const r = economy.openCase(p, c.id, { rng: seededRandom(i + c.price), now: 1 + i * FREE_CASE_COOLDOWN });
       assert.ok(r.ok, c.id);
       assert.equal(p.coins, 0);
       assert.ok(c.pool.includes(r.item.itemId));
@@ -199,7 +210,7 @@ test('every one of the 15 cases opens and drops from its own pool', () => {
 
 test('insufficient funds and unknown cases change nothing', () => {
   const p = createPlayer(1);
-  p.coins = 114;
+  p.coins = 104;
   const before = clone(p);
   const r = economy.openCase(p, 'neon');
   assert.equal(r.ok, false);
@@ -213,10 +224,10 @@ test('balance never goes negative however many openings are attempted', () => {
   const p = createPlayer(1);
   const rng = seededRandom(9);
   let opened = 0;
-  for (let i = 0; i < 1000; i++) if (economy.openCase(p, 'cutthroat', { rng }).ok) opened++;
-  assert.equal(opened, Math.floor(STARTING_COINS / 1500));
+  for (let i = 0; i < 1000; i++) if (economy.openCase(p, 'void', { rng }).ok) opened++;
+  assert.equal(opened, Math.floor(STARTING_COINS / 575));
   assert.ok(p.coins >= 0);
-  assert.equal(p.coins, STARTING_COINS - opened * 1500);
+  assert.equal(p.coins, STARTING_COINS - opened * 575);
 });
 
 test('selling credits the exact item value and removes only that item', () => {
@@ -312,10 +323,10 @@ test('store saves after every successful transaction, and not after failures', (
   const storage = memoryStorage();
   const store = createStore({ storage, rng: seededRandom(3), clock: () => 10 });
   assert.equal(store.loadStatus, 'new');
-  const r = store.openCase('rookie');
+  const r = store.openCase('starter');
   assert.ok(r.ok);
   const saved = JSON.parse(storage.getItem(SAVE_KEY));
-  assert.equal(saved.coins, STARTING_COINS - 23);
+  assert.equal(saved.coins, STARTING_COINS - 32);
   assert.equal(saved.inventory.length, 1);
   assert.equal(saved.version, SAVE_VERSION);
   const raw = storage.getItem(SAVE_KEY);
@@ -330,18 +341,18 @@ test('store saves after every successful transaction, and not after failures', (
 test('opener refuses a second opening until the first finishes', () => {
   const store = createStore({ storage: memoryStorage(), rng: seededRandom(5) });
   const opener = createOpener(store);
-  assert.ok(opener.start('rookie').ok);
-  const second = opener.start('rookie');
+  assert.ok(opener.start('starter').ok);
+  const second = opener.start('starter');
   assert.equal(second.error, 'busy');
   assert.equal(store.player.inventory.length, 1);
-  assert.equal(store.player.coins, STARTING_COINS - 23);
+  assert.equal(store.player.coins, STARTING_COINS - 32);
   opener.finish();
-  assert.ok(opener.start('rookie').ok);
+  assert.ok(opener.start('starter').ok);
   assert.equal(store.player.inventory.length, 2);
   // a failed start does not lock the opener
   opener.finish();
   store.player.coins = 0;
-  assert.equal(opener.start('rookie').error, 'insufficient-funds');
+  assert.equal(opener.start('starter').error, 'insufficient-funds');
   assert.equal(opener.busy, false);
 });
 
@@ -380,7 +391,7 @@ test('damaged saves are repaired field by field', () => {
 
 test('a clean save loads unchanged and saves from a newer version are backed up', () => {
   const store = createStore({ storage: memoryStorage(), rng: seededRandom(8) });
-  for (let i = 0; i < 5; i++) store.openCase('arcade');
+  for (let i = 0; i < 5; i++) store.openCase('harbor');
   store.setFlag(store.player.inventory[0].uid, 'locked', true);
   store.sell([store.player.inventory[1].uid]);
   const data = clone(store.player);
@@ -410,7 +421,7 @@ test('unavailable storage still runs the game without saving', () => {
   const store = createStore({ storage: broken });
   assert.equal(store.loadStatus, 'unavailable');
   assert.equal(store.saveOk, false);
-  assert.ok(store.openCase('rookie').ok);
+  assert.ok(store.openCase('starter').ok);
   assert.equal(savePlayer(broken, store.player), false);
 });
 
@@ -429,7 +440,7 @@ test('import replaces the player through the same validation', () => {
 // ---- roulette ----
 
 test('roulette strip holds the predetermined winner at the winning index', () => {
-  const c = CASES_BY_ID.edge;
+  const c = CASES_BY_ID.void;
   const winner = { itemId: 'moth-prism', wear: 'FN', float: 0.01 };
   const strip = roulette.buildStrip(c, winner, { rng: seededRandom(1) });
   assert.equal(strip.length, ROULETTE.length);
@@ -505,14 +516,15 @@ test('inventory filters and sorts', () => {
 });
 
 test('case catalogue search, category filter and price sort', () => {
-  assert.equal(filterCases().length, 15);
+  assert.equal(filterCases().length, 7);
   const asc = filterCases({ sort: 'price-asc' }).map(c => c.price);
   assert.deepEqual(asc, [...asc].sort((x, y) => x - y));
   const desc = filterCases({ sort: 'price-desc' }).map(c => c.price);
   assert.deepEqual(desc, [...asc].reverse());
   assert.ok(filterCases({ category: 'starter' }).every(c => c.category === 'starter'));
   assert.ok(filterCases({ category: 'featured' }).every(c => c.featured));
-  assert.deepEqual(filterCases({ q: 'frostbite' }).map(c => c.id), ['frostbite']);
+  assert.deepEqual(filterCases({ q: 'harbor case' }).map(c => c.id), ['harbor']);
   assert.ok(filterCases({ q: 'neon lights' }).some(c => c.id === 'neon'), 'search matches items inside cases');
+  assert.deepEqual(filterCases({ q: 'jimmy' }).map(c => c.id), ['void'], 'Magnum-50 | Jimmy only drops from the Void Case');
   assert.equal(filterCases({ q: 'zzzz' }).length, 0);
 });

@@ -21,7 +21,7 @@ const { SAVE_KEY, SAVE_VERSION, STARTING_COINS, UPGRADE, CONTRACT, MARKET, BATTL
 const clone = o => JSON.parse(JSON.stringify(o));
 const give = (player, itemId, wear = 'FT', extra = {}) => {
   const it = ITEMS_BY_ID[itemId];
-  const inst = { uid: `i${player.nextId++}`, itemId, wear: it.hasWear ? wear : null, float: it.hasWear ? +(WEAR_BY_ID[wear].min + 0.01).toFixed(4) : null, acquiredAt: 1, source: 'rookie', locked: false, favorite: false, ...extra };
+  const inst = { uid: `i${player.nextId++}`, itemId, wear: it.hasWear ? wear : null, float: it.hasWear ? +(WEAR_BY_ID[wear].min + 0.01).toFixed(4) : null, acquiredAt: 1, source: 'starter', locked: false, favorite: false, ...extra };
   player.inventory.push(inst);
   if (!player.collectionLog.includes(itemId)) player.collectionLog.push(itemId);
   return inst;
@@ -220,9 +220,9 @@ test('collection reward is paid once and only when complete', () => {
 
 test('battle charges the entry once, rolls every participant from the case pools, settles once', () => {
   const p = createPlayer(1);
-  const setup = { cases: ['rookie', 'neon', 'rookie'], players: 3 };
+  const setup = { cases: ['starter', 'neon', 'starter'], players: 3 };
   const cost = battles.battleCost(setup.cases);
-  assert.equal(cost, 23 + 115 + 23);
+  assert.equal(cost, 32 + 105 + 32);
   const r = battles.runBattle(p, setup, { rng: seededRandom(4), now: 3 });
   assert.ok(r.ok);
   assert.equal(p.coins, STARTING_COINS - cost);
@@ -262,9 +262,10 @@ test('battle validation: unaffordable, bad setup, nothing changes', () => {
   const before = clone(p);
   assert.equal(battles.runBattle(p, { cases: ['neon'], players: 2 }).error, 'insufficient-funds');
   assert.equal(battles.runBattle(p, { cases: [], players: 2 }).error, 'no-cases');
-  assert.equal(battles.runBattle(p, { cases: ['rookie'], players: 5 }).error, 'players');
-  assert.equal(battles.runBattle(p, { cases: ['rookie'], players: 1 }).error, 'players');
-  assert.equal(battles.runBattle(p, { cases: Array(BATTLE.maxRounds + 1).fill('rookie'), players: 2 }).error, 'too-many');
+  assert.equal(battles.runBattle(p, { cases: ['starter'], players: 5 }).error, 'players');
+  assert.equal(battles.runBattle(p, { cases: ['starter'], players: 1 }).error, 'players');
+  assert.equal(battles.runBattle(p, { cases: Array(BATTLE.maxRounds + 1).fill('starter'), players: 2 }).error, 'too-many');
+  assert.equal(battles.runBattle(p, { cases: ['daily'], players: 2 }).error, 'free-case');
   assert.equal(battles.runBattle(p, { cases: ['ghost'], players: 2 }).error, 'unknown-case');
   assert.deepEqual(p, before);
 });
@@ -277,7 +278,7 @@ test('NPCs and the player draw from the same distribution (no rigging)', () => {
   let wins = 0;
   for (let i = 0; i < N; i++) {
     const p = createPlayer(1);
-    const r = battles.runBattle(p, { cases: ['arcade'], players: 4 }, { rng });
+    const r = battles.runBattle(p, { cases: ['harbor'], players: 4 }, { rng });
     r.battle.participants.forEach((x, k) => { totals[k] += x.total; });
     if (r.won) wins++;
   }
@@ -402,7 +403,7 @@ test('every mode works on the same inventory and balance through one store, and 
   let t = 1.8e12;
   const store = createStore({ storage, rng: seededRandom(31), clock: () => t });
   store.tickMarket();
-  for (let i = 0; i < 12; i++) store.openCase('rookie');
+  for (let i = 0; i < 12; i++) store.openCase('starter');
   const p = store.player;
   assert.equal(p.inventory.length, 12);
   const byRarity = {};
@@ -419,7 +420,7 @@ test('every mode works on the same inventory and balance through one store, and 
   const cheapest = [...p.market.npc].sort((a, b) => a.price - b.price)[0];
   assert.ok(store.buyListing(cheapest.id).ok);
   // battle
-  const br = store.battle({ cases: ['rookie'], players: 2 });
+  const br = store.battle({ cases: ['starter'], players: 2 });
   assert.ok(br.ok);
   t += 60000;
   store.tickMarket();
@@ -460,9 +461,14 @@ test('a Phase 1 (version 1) save migrates: progress kept, collection log seeded'
   assert.deepEqual([...p.collectionLog].sort(), ['claw-vanilla', 'kodiak-salvage-king', 'warden-rust-patch']);
   assert.deepEqual(p.market.npc, []);
   assert.equal(p.nextId, 9);
+  // old case ids were rewritten to the archive cases that replaced them
+  assert.deepEqual(p.inventory.map(i => i.source), ['starter', 'void']);
+  assert.equal(p.recentDrops[0].caseId, 'starter');
+  assert.equal(p.activity[0].caseId, 'starter');
+  assert.deepEqual(p.stats.casesById, { starter: 3 });
   // and it keeps working
   const store = createStore({ storage, rng: seededRandom(2) });
-  assert.ok(store.openCase('rookie').ok);
+  assert.ok(store.openCase('starter').ok);
   assert.equal(store.player.inventory.at(-1).uid, 'i9');
 });
 
@@ -481,4 +487,66 @@ test('a broken market listing returns its item to the inventory instead of losin
   dup.market.mine = [{ id: 'l4', price: 100, listedAt: 1, item: { uid: 'i2', itemId: 'moth-prism', wear: 'FN', float: 0.01, acquiredAt: 1 } }];
   const fixed = sanitizePlayer(dup).player;
   assert.equal(fixed.inventory.length + fixed.market.mine.length, 1);
+});
+
+// ---- asset archive: free case and the case replacement ----
+
+test('the Daily Free Case costs nothing and can be opened once per cooldown', async () => {
+  const { FREE_CASE_COOLDOWN } = await load('cases.js');
+  const p = createPlayer(1);
+  p.coins = 0;
+  const t0 = 1.8e12;
+  const r = economy.openCase(p, 'daily', { rng: seededRandom(1), now: t0 });
+  assert.ok(r.ok);
+  assert.equal(p.coins, 0);
+  assert.equal(p.inventory.length, 1);
+  assert.ok(CASES_BY_ID.daily.pool.includes(r.item.itemId));
+  const before = clone(p);
+  assert.equal(economy.openCase(p, 'daily', { now: t0 + FREE_CASE_COOLDOWN - 1 }).error, 'cooldown');
+  assert.deepEqual(p, before, 'a refused free opening changes nothing');
+  assert.ok(economy.openCase(p, 'daily', { rng: seededRandom(2), now: t0 + FREE_CASE_COOLDOWN }).ok);
+  // the timer survives a save round trip
+  const reloaded = sanitizePlayer(clone(p)).player;
+  assert.equal(economy.openCase(reloaded, 'daily', { now: t0 + FREE_CASE_COOLDOWN + 1 }).error, 'cooldown');
+});
+
+test('a version 2 save keeps everything, with old case ids moved to the archive cases', () => {
+  const v2 = clone(createPlayer(1));
+  v2.version = 2;
+  v2.inventory = [{ uid: 'i2', itemId: 'moth-prism', wear: 'FN', float: 0.01, acquiredAt: 5, source: 'cutthroat', locked: false, favorite: false }];
+  v2.stats.casesById = { rookie: 2, scrapyard: 1, neon: 4, edge: 1 };
+  v2.stats.bestDrop = { itemId: 'moth-prism', wear: 'FN', float: 0.01, value: 15400, at: 5, caseId: 'cutthroat' };
+  v2.battles = [{ id: 'b3', at: 6, cases: ['rookie', 'oceanic'], cost: 83, tieBreak: false, winner: 0, awarded: [],
+    participants: [
+      { name: 'Player', isPlayer: true, total: 7, drops: [{ itemId: 'warden-rust-patch', wear: 'FT', float: 0.2, value: 4 }, { itemId: 'mauler-driftwood', wear: 'FT', float: 0.2, value: 3 }] },
+      { name: 'Mako', isPlayer: false, total: 6, drops: [{ itemId: 'warden-rust-patch', wear: 'FT', float: 0.2, value: 4 }, { itemId: 'mauler-driftwood', wear: 'BS', float: 0.6, value: 2 }] },
+    ] }];
+  v2.market.mine = [{ id: 'l4', price: 90, listedAt: 7, item: { uid: 'i1', itemId: 'kodiak-salvage-king', wear: 'FT', float: 0.2, acquiredAt: 3, source: 'gilded' } }];
+  v2.nextId = 5;
+  const r = loadSave(memoryStorage({ [SAVE_KEY]: JSON.stringify(v2) }));
+  assert.equal(r.status, 'loaded');
+  const p = r.player;
+  assert.equal(p.version, SAVE_VERSION);
+  assert.equal(p.inventory[0].source, 'void');
+  assert.deepEqual(p.stats.casesById, { starter: 3, neon: 4, void: 1 });
+  assert.equal(p.stats.bestDrop.caseId, 'void');
+  assert.equal(p.battles.length, 1, 'old battles are kept');
+  assert.deepEqual(p.battles[0].cases, ['starter', 'harbor']);
+  assert.equal(p.market.mine.length, 1);
+  assert.equal(p.market.mine[0].item.source, 'golden');
+});
+
+test('Mill Street items have the archive names, rarities and values', () => {
+  const mill = ITEMS.filter(i => i.collection === 'mill');
+  assert.equal(mill.length, 33);
+  const byName = Object.fromEntries(mill.map(i => [i.name, i]));
+  assert.equal(byName['Magnum-50 | Jimmy'].rarity, 'extraordinary');
+  assert.equal(byName['Magnum-50 | Jimmy'].value, 8500);
+  assert.equal(byName['★ Karambit | Ember Fade'].rarity, 'covert');
+  assert.equal(byName['Sticker | FRAGILE'].hasWear, false);
+  assert.equal(byName['P9 | Bubble Wrap'].rarity, 'industrial');
+  for (const t of ['charm', 'sticker', 'collectible']) assert.ok(mill.some(i => i.type === t), t);
+  // each archive case still contains exactly its archive list among its Mill Street items
+  assert.deepEqual(CASES_BY_ID.daily.pool.length, 10);
+  assert.ok(CASES_BY_ID.void.pool.includes('magnum-jimmy'));
 });

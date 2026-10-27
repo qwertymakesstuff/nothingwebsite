@@ -64,20 +64,29 @@ function updateButtons() {
   const { root, store } = s.ctx;
   const coinsNow = store.player.coins;
   const short = s.c.price - coinsNow;
+  const wait = freeWait();
   const spinning = s.phase === 'spinning';
   const openBtn = $('#openBtn', root);
-  openBtn.disabled = spinning || short > 0;
-  openBtn.innerHTML = spinning ? 'Opening…' : `Open for ${coins(s.c.price)}`;
+  openBtn.disabled = spinning || short > 0 || wait > 0;
+  openBtn.innerHTML = spinning ? 'Opening…' : wait > 0 ? `Free again in ${clock(wait)}` : s.c.free ? 'Open for free' : `Open for ${coins(s.c.price)}`;
   $('#affordMsg', root).innerHTML = short > 0 && !spinning
     ? `You need ${coins(short)} more. <a href="#/inventory">Sell items from your inventory</a> to top up.`
     : '';
   $('#skipBtn', root).hidden = !spinning || s.mode !== 'spin';
   const again = $('#againBtn', root);
   if (again) {
-    again.disabled = spinning || short > 0;
-    again.title = short > 0 ? `You need ${money(short)} more` : '';
+    again.disabled = spinning || short > 0 || wait > 0;
+    again.title = short > 0 ? `You need ${money(short)} more` : wait > 0 ? `Free again in ${clock(wait)}` : '';
   }
 }
+
+// Milliseconds until a free case can be opened again (0 for paid cases or when it's ready).
+function freeWait() {
+  if (!s.c.free) return 0;
+  return Math.max(0, (s.ctx.store.player.freeReadyAt[s.c.id] || 0) - Date.now());
+}
+
+const clock = ms => { const t = Math.ceil(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
 
 function open() {
   if (!s || s.phase === 'spinning') return;
@@ -174,7 +183,7 @@ function drawRevealActions() {
   if (!box) return;
   const { item, value } = s.result;
   const stillOwned = !!findItem(s.ctx.store.player, item.uid);
-  const again = `<button class="btn btn-primary" id="againBtn">Open again · ${coins(s.c.price)}</button>`;
+  const again = `<button class="btn btn-primary" id="againBtn">Open again · ${s.c.free ? 'Free' : coins(s.c.price)}</button>`;
   if (s.sold) box.innerHTML = `<span class="rv-done">${ICONS.check} Sold for ${coins(value)}</span><button class="btn btn-ghost" id="closeRevealBtn">Close</button>${again}`;
   else if (!stillOwned) box.innerHTML = `<span class="rv-done">This item is no longer in your inventory.</span><button class="btn btn-ghost" id="closeRevealBtn">Close</button>${again}`;
   else box.innerHTML = `<button class="btn btn-ghost" id="keepBtn">Keep</button><button class="btn btn-sell" id="sellBtn">Sell for ${coins(value)}</button>${again}`;
@@ -259,6 +268,7 @@ export default {
 
     drawIdle();
     updateButtons();
+    if (c.free) s.countdown = setInterval(() => { if (s && s.phase !== 'spinning') updateButtons(); }, 1000);
     root.addEventListener('click', e => {
       const id = e.target.closest('button')?.id;
       if (id === 'openBtn' || id === 'againBtn') open();
@@ -277,6 +287,7 @@ export default {
     else updateButtons();
   },
   destroy() {
+    clearInterval(s?.countdown);
     window.removeEventListener('resize', onResize);
     if (!s) return;
     cancelAnimationFrame(s.raf);

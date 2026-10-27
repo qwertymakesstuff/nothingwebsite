@@ -1,7 +1,8 @@
 // Trade-up contracts: CONTRACT.size items of one rarity become one item of the next rarity.
 // Each input contributes an equal share of the odds, split evenly over the next-rarity items of
-// its own collection. Covert inputs trade up into the knives and gloves that the cases carrying
-// their collection can drop. The output's float is the average of the input floats.
+// its own collection. Covert inputs trade up into their collection's own Extraordinary items, or
+// else the knives and gloves that the cases carrying their collection can drop (or, failing that,
+// the whole knife and glove reserve). The output's float is the average of the input floats.
 
 import { CONTRACT } from './config.js';
 import { ITEMS, ITEMS_BY_ID, COLLECTIONS, itemValue } from './items.js';
@@ -25,7 +26,11 @@ function buildOutputs() {
       if (!next) continue;
       let ids;
       if (next === 'extraordinary') {
-        ids = [...new Set(CASES.filter(c => c.collections.includes(col.id)).flatMap(c => c.rarityPools.extraordinary || []))];
+        // Covert -> Extraordinary: the collection's own Extraordinary items if it has any; otherwise
+        // the ones dropped by cases that carry this collection; otherwise the whole knife and glove reserve.
+        ids = ITEMS.filter(i => i.collection === col.id && i.rarity === next).map(i => i.id);
+        if (!ids.length) ids = [...new Set(CASES.filter(c => c.pool.some(id => ITEMS_BY_ID[id].collection === col.id)).flatMap(c => c.rarityPools.extraordinary || []))];
+        if (!ids.length) ids = ITEMS.filter(i => (i.collection === 'blades' || i.collection === 'handwear')).map(i => i.id);
       } else {
         ids = ITEMS.filter(i => i.collection === col.id && i.rarity === next).map(i => i.id);
       }

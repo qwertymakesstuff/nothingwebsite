@@ -2,7 +2,7 @@
 
 export const SAVE_KEY = 'skinspin.save';
 export const SAVE_BACKUP_PREFIX = 'skinspin.save.backup.';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export const STARTING_COINS = 5000;
 export const MAX_COINS = 1e12;

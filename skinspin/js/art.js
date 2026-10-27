@@ -1,5 +1,6 @@
-// Original artwork, drawn as SVG: a silhouette per weapon painted with the finish's pattern, and
-// a crate per case. Results are cached data URIs so cards can use plain <img> tags.
+// Item and case artwork. Cases and the Mill Street items use the painted images in assets/
+// (from the asset archive). Every other item is drawn as SVG: a silhouette per weapon painted with
+// the finish's pattern, cached as a data URI. Either way callers get a URL for a plain <img>.
 
 import { ITEMS_BY_ID } from './items.js';
 import { CASES_BY_ID } from './cases.js';
@@ -97,6 +98,18 @@ const SHAPES = {
   },
 };
 
+// Drawn shapes for the Mill Street items that have no painted image.
+SHAPES.charm = { // a loose hex bolt on a key ring
+  skin: ['M96 44 L120 30 L144 44 V72 L120 86 L96 72 Z'],
+  dark: ['M116 86 H124 V118 H116 Z', 'M110 92 H130 V96 H110 Z M110 100 H130 V104 H110 Z M110 108 H130 V112 H110 Z', 'M108 18 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0 Z M113 18 a7 7 0 1 0 14 0 a7 7 0 1 0 -14 0 Z'],
+};
+SHAPES.collectible = { // a mug
+  skin: ['M86 26 H158 V100 Q158 112 146 112 H98 Q86 112 86 100 Z'],
+  dark: ['M158 42 Q184 42 184 66 Q184 90 158 90 V80 Q174 80 174 66 Q174 52 158 52 Z', 'M80 112 H164 V118 H80 Z'],
+};
+// Mill Street weapons fall back to the closest drawn silhouette if their image is missing.
+const STAND_IN = { ar7: 'kodiak', vex: 'wasp', p9: 'warden', magnum: 'deckard', longshot: 'longbow', karambit: 'claw', butterfly: 'moth', boxcutter: 'switch', sticker: 'charm' };
+
 const GLOVE_HAND = [
   'M10 50 Q10 40 20 40 H62 Q72 40 72 50 V84 H10 Z',
   'M12 46 V18 Q12 12 18 12 Q24 12 24 18 V46 Z',
@@ -159,56 +172,14 @@ function itemSvg(item) {
   let body;
   if (item.type === 'gloves') {
     const hand = paths(GLOVE_HAND, 'url(#p)') + paths(GLOVE_HAND, 'url(#sh)');
-    const cuff = `<path d="${GLOVE_CUFF[item.weapon]}" fill="${item.weapon === 'wraps' ? 'url(#p)' : METAL}" ${OUTLINE}/>`;
+    const cuff = `<path d="${GLOVE_CUFF[item.weapon] || GLOVE_CUFF.tactical}" fill="${item.weapon === 'wraps' ? 'url(#p)' : METAL}" ${OUTLINE}/>`;
     const one = `${hand}${cuff}`;
     body = `<g transform="translate(34 8) scale(.98)">${one}</g><g transform="translate(222 8) scale(-.98 .98)">${one}</g>`;
   } else {
-    const s = SHAPES[item.weapon];
+    const s = SHAPES[item.weapon] || SHAPES[STAND_IN[item.weapon]];
     body = paths(s.dark, METAL, 'evenodd') + paths(s.skin, 'url(#p)') + paths(s.skin, 'url(#sh)');
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 128"><defs>${defs}</defs>${body}</svg>`;
-}
-
-const GLYPHS = {
-  star: { d: 'M12 2 L14.9 8.6 L22 9.3 L16.6 14 L18.2 21 L12 17.3 L5.8 21 L7.4 14 L2 9.3 L9.1 8.6 Z' },
-  gear: { d: 'M12 1 a11 11 0 1 0 0.01 0 Z M12 7 a5 5 0 1 1 -0.01 0 Z', rule: 'evenodd' },
-  spray: { d: 'M7 8 H17 V22 H7 Z M9 4 H15 V8 H9 Z M17 4 H20 V6 H17 Z' },
-  bolt: { d: 'M13 2 L4 14 H11 L9 22 L20 9 H13 L15 2 Z' },
-  snow: { d: 'M12 2 V22 M3.3 7 L20.7 17 M3.3 17 L20.7 7', stroke: true },
-  flame: { d: 'M12 2 C14 7 19 9 19 15 A7 7 0 0 1 5 15 C5 11 8 9 9 6 C10 9 11 10 12 10 C12 7 11 5 12 2 Z' },
-  drop: { d: 'M12 2 C16 9 19 12 19 15 A7 7 0 0 1 5 15 C5 12 8 9 12 2 Z' },
-  crown: { d: 'M3 18 L5 7 L10 12 L12 5 L14 12 L19 7 L21 18 Z M3 20 H21 V22 H3 Z' },
-  claw: { d: 'M6 3 Q3 12 8 21 M12 3 Q9 12 14 21 M18 3 Q15 12 20 21', stroke: true },
-  moon: { d: 'M15 3 A9 9 0 1 0 21 15 A7 7 0 1 1 15 3 Z' },
-  blade: { d: 'M3 21 L5 17 L17 3 L21 3 L21 7 L7 19 Z M3 21 L7 19 L5 17 Z' },
-  glove: { d: 'M6 22 V11 L4 7 Q4 5 6 6 L8 9 V3 Q8 2 9 2 Q10 2 10 3 V9 H11 V2 Q11 1 12 1 Q13 1 13 2 V9 H14 V3 Q14 2 15 2 Q16 2 16 3 V10 H17 V5 Q17 4 18 4 Q19 4 19 5 V15 Q19 19 16 22 Z' },
-  wave: { d: 'M2 9 Q7 4 12 9 T22 9 M2 15 Q7 10 12 15 T22 15', stroke: true },
-  gamepad: { d: 'M6 7 H18 A5 5 0 0 1 18 17 L16 17 L14 15 H10 L8 17 L6 17 A5 5 0 0 1 6 7 Z' },
-};
-
-function caseSvg(c) {
-  const { from, to, glyph } = c.theme;
-  const g = GLYPHS[glyph] || GLYPHS.star;
-  const glyphEl = g.stroke
-    ? `<path d="${g.d}" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>`
-    : `<path d="${g.d}" fill="#fff" fill-rule="${g.rule || 'nonzero'}"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 170">
-<defs>
-<radialGradient id="glow" cx=".5" cy=".6" r=".5"><stop offset="0" stop-color="${from}" stop-opacity=".55"/><stop offset="1" stop-color="${from}" stop-opacity="0"/></radialGradient>
-<linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient>
-<linearGradient id="lid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="${from}"/></linearGradient>
-</defs>
-<ellipse cx="110" cy="100" rx="110" ry="70" fill="url(#glow)"/>
-<ellipse cx="110" cy="156" rx="84" ry="8" fill="#000" opacity=".45"/>
-<path d="M30 70 H190 V150 Q190 154 186 154 H34 Q30 154 30 150 Z" fill="url(#body)" stroke="rgba(0,0,0,.6)" stroke-width="2"/>
-<path d="M30 102 H190 V112 H30 Z" fill="#000" opacity=".28"/>
-<path d="M22 52 Q22 48 26 48 H194 Q198 48 198 52 V74 H22 Z" fill="url(#lid)" stroke="rgba(0,0,0,.6)" stroke-width="2"/>
-<path d="M22 74 H198" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
-<path d="M30 70 h14 v84 h-10 q-4 0 -4 -4 Z M190 70 h-14 v84 h10 q4 0 4 -4 Z" fill="#11151c" opacity=".55"/>
-<rect x="98" y="66" width="24" height="14" rx="3" fill="#11151c" stroke="${from}" stroke-width="1.5"/>
-<circle cx="110" cy="116" r="25" fill="rgba(0,0,0,.4)" stroke="${from}" stroke-width="2.5"/>
-<g transform="translate(95 101) scale(1.25)">${glyphEl}</g>
-</svg>`;
 }
 
 const cache = new Map();
@@ -218,18 +189,13 @@ export function itemArt(itemId) {
   const key = `i:${itemId}`;
   if (!cache.has(key)) {
     const item = ITEMS_BY_ID[itemId];
-    cache.set(key, item ? toUri(itemSvg(item)) : '');
+    cache.set(key, !item ? '' : item.image ? `assets/items/${item.image}.webp` : toUri(itemSvg(item)));
   }
   return cache.get(key);
 }
 
 export function caseArt(caseId) {
-  const key = `c:${caseId}`;
-  if (!cache.has(key)) {
-    const c = CASES_BY_ID[caseId];
-    cache.set(key, c ? toUri(caseSvg(c)) : '');
-  }
-  return cache.get(key);
+  return CASES_BY_ID[caseId] ? `assets/cases/${caseId}.webp` : '';
 }
 
-export { itemSvg, caseSvg, SHAPES };
+export { itemSvg, SHAPES };

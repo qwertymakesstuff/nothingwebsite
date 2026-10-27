@@ -2,7 +2,7 @@
 // failed transaction returns { ok: false, error, message } and leaves the state untouched.
 
 import { ACTIVITY_LIMIT, RECENT_DROPS_LIMIT, REFILL_AMOUNT, MAX_COINS, NAME_MAX } from './config.js';
-import { CASES_BY_ID, CHEAPEST_CASE_PRICE } from './cases.js';
+import { CASES_BY_ID, CHEAPEST_CASE_PRICE, FREE_CASE_COOLDOWN } from './cases.js';
 import { ITEMS_BY_ID, itemValue } from './items.js';
 import { rollCase } from './rewards.js';
 import { secureRandom } from './rng.js';
@@ -85,6 +85,10 @@ export function canAfford(player, price) {
 export function openCase(player, caseId, { rng = secureRandom, now = Date.now() } = {}) {
   const c = CASES_BY_ID[caseId];
   if (!c) return fail('unknown-case', 'That case does not exist.');
+  if (c.free && now < (player.freeReadyAt[c.id] || 0)) {
+    const mins = Math.ceil((player.freeReadyAt[c.id] - now) / 60000);
+    return fail('cooldown', `${c.name} is free again in ${mins} minute${mins === 1 ? '' : 's'}.`);
+  }
   if (!canAfford(player, c.price)) {
     return fail('insufficient-funds', `You need $${(c.price - Math.max(0, player.coins | 0)).toLocaleString('en-US')} more to open ${c.name}.`);
   }
@@ -99,13 +103,14 @@ export function openCase(player, caseId, { rng = secureRandom, now = Date.now() 
   // --- validated: apply everything ---
   player.coins -= c.price;
   player.xp += xpGained;
+  if (c.free) player.freeReadyAt[c.id] = now + FREE_CASE_COOLDOWN;
   const inst = acquireItem(player, drop, c.id, now);
   const s = player.stats;
   s.casesOpened += 1;
   s.coinsSpent += c.price;
   s.rarityCounts[item.rarity] = (s.rarityCounts[item.rarity] || 0) + 1;
   s.casesById[c.id] = (s.casesById[c.id] || 0) + 1;
-  log(player, { type: 'open', at: now, delta: -c.price, caseId: c.id, itemId: inst.itemId, wear: inst.wear, value });
+  log(player, { type: 'open', at: now, delta: c.price ? -c.price : 0, caseId: c.id, itemId: inst.itemId, wear: inst.wear, value });
 
   const levelAfter = levelInfo(player.xp).level;
   return { ok: true, item: inst, value, price: c.price, xpGained, levelUp: levelAfter > levelBefore ? levelAfter : null };

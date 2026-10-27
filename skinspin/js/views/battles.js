@@ -16,7 +16,7 @@ import { toast } from '../ui/toast.js';
 import { sound } from '../ui/sound.js';
 
 const STRIP = 28, WIN_AT = 22, ROUND_MS = 2600, PAUSE_MS = 650;
-const setup = { entries: [{ caseId: 'rookie', count: 3 }], players: 2 };
+const setup = { entries: [{ caseId: 'starter', count: 3 }], players: 2 };
 let animateId = null;   // the battle that was just started and should play out
 let s = null;
 
@@ -79,7 +79,7 @@ function renderSetup(ctx) {
 </section>
 <section class="section">
   <div class="section-head"><h2>Add cases</h2></div>
-  <div class="case-pick">${CASES.map(c => `<button class="case-mini" data-addcase="${c.id}" style="--case-a:${c.theme.from}"><img src="${caseArt(c.id)}" alt=""><span>${esc(c.name)}</span>${coins(c.price)}</button>`).join('')}</div>
+  <div class="case-pick">${CASES.filter(c => !c.free).map(c => `<button class="case-mini" data-addcase="${c.id}" style="--case-a:${c.theme.from}"><img src="${caseArt(c.id)}" alt=""><span>${esc(c.name)}</span>${coins(c.price)}</button>`).join('')}</div>
 </section>
 <section class="section"><div class="section-head"><h2>Battle history</h2></div>${historyHtml(store.player)}</section>`;
   root.addEventListener('click', e => {

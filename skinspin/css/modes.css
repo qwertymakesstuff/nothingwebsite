@@ -179,3 +179,9 @@
   .history li { grid-template-columns: 1fr; }
   .h-meta { text-align: left; }
 }
+
+/* ---------- painted artwork (asset archive) ---------- */
+.cc-art, .ch-art, .case-mini img, .entries img, .battle-cases img { object-fit: contain; }
+.cc-art { filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .45)); }
+.cc-free { color: var(--good); letter-spacing: .04em; text-transform: uppercase; }
+.ic-art img, .rl-card img, .rv-art, .inspect-art img, .result-reveal img { image-rendering: auto; }
