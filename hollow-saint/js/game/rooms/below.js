@@ -35,6 +35,7 @@ export const BELOW = {
     entities: [
       { id: 'pass_hollow', type: 'hollow', x: 29, y: 6.5 },
       { id: 'kneeler', type: 'penitent', x: 36, y: 9.3 },
+      { id: 'pass_edge', type: 'edge', x: 44, y: 5 },
     ],
     props: [
       {

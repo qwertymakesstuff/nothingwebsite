@@ -54,6 +54,8 @@ export class World {
     this.cooldown = 0;
     this.entities = [];
     this.deniedT = 0;
+    this.pending = [];        // horror events waiting on a delay: { at, ev }
+    this.inZones = new Set();
   }
 
   get room() { return this.rooms[this.state.room]; }
@@ -91,8 +93,45 @@ export class World {
     const box = playerBox(p.x, p.y);
     this.exitArmed = !this.exitAt(box);
     this.inTriggers = new Set(this.triggers().filter(t => overlaps(box, t)).map(t => t.id));
+    this.pending = [];
+    this.inZones = new Set(this.zoneEvents().filter(z => overlaps(box, z)).map(z => z.id));
+    for (const ev of this.room.events || []) {
+      if (ev.on !== 'enter' || !this.eventReady(ev)) continue;
+      if (ev.delay) this.pending.push({ at: this.tick + ev.delay, ev });
+      else this.fireEvent(ev, events);
+    }
     this.cooldown = INTERACT_COOLDOWN;
     return events;
+  }
+
+  // ---- horror events -----------------------------------------------------------------------
+  // Room events are script variants with a trigger: on 'enter' (optionally after a delay) or
+  // on walking into a 'zone'. They fire once unless `repeat` is set, and only while `when`
+  // holds, so they follow the story rather than chance.
+
+  eventReady(ev) {
+    if (!ev.repeat && this.state.flags.has('ev:' + ev.id)) return false;
+    return conditionHolds(ev.when, this.state, null);
+  }
+
+  zoneEvents() { return (this.room.events || []).filter(e => e.on === 'zone').map(e => tileRect({ ...e.zone, id: e.id, ev: e }, this.state.room)); }
+
+  fireEvent(ev, events) {
+    if (!this.eventReady(ev)) return;
+    if (!ev.repeat) this.state.flags.add('ev:' + ev.id);
+    const res = runVariant(ev, this.state, null);
+    this.applyResult(res, events);
+    events.push({ type: 'horror', id: ev.id, ...res });
+  }
+
+  // the parts of a script result that change the world itself
+  applyResult(res, events) {
+    if (!res) return;
+    for (const spec of res.spawn || []) {
+      if (this.state.flags.has('dead:' + spec.id) || this.entities.some(e => e.id === spec.id)) continue;
+      this.entities.push(spawnEntity({ ...spec, x: spec.x * TILE, y: spec.y * TILE }));
+    }
+    if (res.hurt) this.hurt(res.hurt, { x: this.player.x, y: this.player.y + 4, type: 'floor' }, events);
   }
 
   // ---- room geometry ---------------------------------------------------------------------
@@ -292,6 +331,7 @@ export class World {
         R.hit.add(e);
         const ev = relicHits(e);
         if (ev) events.push(ev);
+        if (ev && ev.effect === 'unmasked') s.flags.add('dead:' + e.id);
         if (ev && ev.effect === 'unmade') {
           s.flags.add('dead:' + e.id);
           s.remains[e.id] = { room: s.room, x: Math.round(e.x), y: Math.round(e.y) };
@@ -318,6 +358,17 @@ export class World {
 
     const box = playerBox(p.x, p.y);
 
+    // delayed and zone events
+    const due = this.pending.filter(q => q.at <= this.tick);
+    this.pending = this.pending.filter(q => q.at > this.tick);
+    for (const q of due) this.fireEvent(q.ev, events);
+    for (const z of this.zoneEvents()) {
+      const inside = overlaps(box, z);
+      if (inside && !this.inZones.has(z.id)) { this.inZones.add(z.id); this.fireEvent(z.ev, events); }
+      else if (!inside) this.inZones.delete(z.id);
+    }
+    if (p.dead) return events;
+
     // exits fire on walking into them; you have to leave one before it can fire again
     const ex = this.exitAt(box);
     if (!ex) this.exitArmed = true;
@@ -334,7 +385,7 @@ export class World {
         if (!conditionHolds(t.when, s, t.id)) continue;
         s.flags.add('fired:' + t.id);
         const res = runScript(t.script, s, t.id);
-        if (res) events.push({ type: 'say', id: t.id, ...res });
+        if (res) { this.applyResult(res, events); events.push({ type: 'say', id: t.id, ...res }); }
       } else if (!inside) this.inTriggers.delete(t.id);
     }
 
@@ -343,6 +394,7 @@ export class World {
       if (tg) {
         const res = runScript(tg.script, s, tg.id);
         if (res) {
+          this.applyResult(res, events);
           events.push({ type: 'interact', id: tg.id, ...res });
           this.cooldown = INTERACT_COOLDOWN;
         }

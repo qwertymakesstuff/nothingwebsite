@@ -42,6 +42,26 @@ export const ITEMS = {
     name: 'Second notebook page', icon: 'i_page', doc: 'page2',
     desc: "Another page of Mara's. Damp. Found where nobody should have been able to leave it.",
   },
+  ribbon: {
+    name: 'Blue hair ribbon', icon: 'i_ribbon',
+    desc: 'From the shrine bowl. Something she wore.',
+  },
+  votive: {
+    name: 'Votive candle', icon: 'i_candle',
+    desc: "From the box on Halvorsen's shelf, where she slept. A light from the place she slept.",
+  },
+  holy_water: {
+    name: 'Stoup water', icon: 'i_bottle',
+    desc: "A medicine bottle of water from the chapel stoup. Blessed once, and left to stand a long time.",
+  },
+  page3: {
+    name: 'Third notebook page', icon: 'i_page', doc: 'page3',
+    desc: 'The last page. Folded small and pushed between two ledgers.',
+  },
+  reading_letter: {
+    name: "Price's letter", icon: 'i_page', doc: 'reading_order',
+    desc: 'Folded into the Register. Addressed to nobody.',
+  },
 };
 
 export const itemName = id => ITEMS[id]?.name || id;

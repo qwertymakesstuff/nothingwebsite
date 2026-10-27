@@ -45,7 +45,7 @@ export class PauseScene {
     heading(fb, 'PAUSED', 56);
     const st = this.play.state;
     centerText(fb, this.play.world.room.name, 72, C.STONE);
-    centerText(fb, formatTime(st.playtime), 81, C.SLATE);
+    centerText(fb, `Chapter ${['', 'I', 'II', 'III'][st.chapter || 1]}  -  ${formatTime(st.playtime)}`, 81, C.SLATE);
     this.menu.render(fb, this.t);
   }
 }

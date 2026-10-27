@@ -36,6 +36,8 @@ export const TILES = {
   '~': { name: 'puddle', surface: 'water' },
   'c': { name: 'runner', surface: 'cloth' },
   'Z': { name: 'stairs', surface: 'wood' },
+  'O': { name: 'bone wall', solid: true },
+  'A': { name: 'bone arch', solid: true },
 };
 
 export const isSolidChar = ch => !TILES[ch] || !!TILES[ch].solid;
@@ -227,6 +229,20 @@ Object.assign(PAINT, {
     for (let j = 0; j < TILE; j += 2) f.hline(px, px + 7, py + j, at(tx, ty - 1) === 'Z' ? C.ASH : C.SLATE);
     if (at(tx - 1, ty) !== 'Z') f.vline(px, py, py + 7, C.NEAR);
     if (at(tx + 1, ty) !== 'Z') f.vline(px + 7, py, py + 7, C.NEAR);
+  },
+  'O'(f, px, py, tx, ty, at) {
+    f.rect(px, py, TILE, TILE, C.NEAR);
+    // skulls and long bones, stacked
+    const k = Math.floor(hash(tx, ty, 21) * 3);
+    if (k === 0) { f.rect(px + 1, py + 1, 5, 4, C.STONE); f.pset(px + 2, py + 3, C.BLACK); f.pset(px + 4, py + 3, C.BLACK); f.rect(px + 2, py + 5, 3, 1, C.ASH); }
+    else { f.hline(px, px + 7, py + 2, C.ASH); f.hline(px, px + 7, py + 5, C.STONE); f.pset(px, py + 1, C.STONE); f.pset(px + 7, py + 4, C.ASH); }
+    if (at(tx, ty + 1) !== 'O' && at(tx, ty + 1) !== 'A') f.hline(px, px + 7, py + 7, C.BLACK);
+  },
+  'A'(f, px, py, tx, ty, at) {
+    f.rect(px, py, TILE, TILE, C.BLACK);
+    if (at(tx, ty - 1) !== 'A') { f.hline(px, px + 7, py, C.STONE); f.pset(px + (at(tx - 1, ty) === 'A' ? 7 : 0), py + 1, C.STONE); }
+    if (at(tx - 1, ty) !== 'A') f.vline(px, py, py + 7, C.ASH);
+    if (at(tx + 1, ty) !== 'A') f.vline(px + 7, py, py + 7, C.ASH);
   },
 });
 

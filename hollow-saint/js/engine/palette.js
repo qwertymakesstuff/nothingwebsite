@@ -30,11 +30,16 @@ export const SHADE = [0, 0, 1, 2, 3, 4, 5, 6, 0, 8, 9, 1, 11, 2, 13, 2];
 
 export const TRANSPARENT = 255;
 
-// palette as 32-bit RGBA words in the byte order ImageData expects on little-endian machines
-export function palette32(pal = PALETTE) {
+// display gamma for a brightness setting in 0..1 (0.5 is the palette as drawn)
+export const gammaFor = brightness => 2 ** ((brightness - 0.5) * 1.6);
+
+// palette as 32-bit RGBA words in the byte order ImageData expects on little-endian machines.
+// Gamma lifts the dark colours without touching black, so the picture stays sixteen colours.
+export function palette32(pal = PALETTE, gamma = 1) {
+  const curve = v => Math.round(255 * (v / 255) ** (1 / gamma));
   return Uint32Array.from(pal, hex => {
     const n = parseInt(hex.slice(1), 16);
-    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    const r = curve((n >> 16) & 255), g = curve((n >> 8) & 255), b = curve(n & 255);
     return (255 << 24 | b << 16 | g << 8 | r) >>> 0;
   });
 }

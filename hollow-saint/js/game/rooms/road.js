@@ -201,8 +201,8 @@ export const ROAD = {
         id: 'bowl', sprite: 'bowl', x: 11, y: 9.4,
         script: [
           { when: { times: 0 }, say: ['An offering bowl. Pennies, a church key, a blue hair ribbon.', 'Under the pennies, a prayer card.'], give: 'prayer_card', doc: 'prayer_card' },
-          { when: { none: ['found:ribbon'] }, say: ['The ribbon is newer than anything else in the bowl.', 'Mara wore her hair tied back in blue. Everybody does.'], set: 'found:ribbon' },
-          { say: ['Pennies. A church key. The ribbon.'] },
+          { when: { none: ['found:ribbon'] }, say: ['The ribbon is newer than anything else in the bowl.', 'Mara wore her hair tied back in blue. You take it.'], set: 'found:ribbon', give: 'ribbon' },
+          { say: ['Pennies. A church key.'] },
         ],
       },
       {
@@ -238,6 +238,7 @@ export const ROAD = {
     // once Mara's page has been read, the dead payphone rings
     onEnter: [{ id: 'phone_rings', when: { all: ['read:notebook'], none: ['phone_answered', 'phone_ringing'] }, set: 'phone_ringing' }],
     ringing: 'phone_ringing',
+    events: [{ id: 'station_slam', on: 'enter', delay: 50, when: { all: ['nave_seen'] }, say: ['Behind you, the station door bangs shut. Nobody is there.'], sfx: 'door', lights: { mode: 'flicker', t: 120 } }],
     exits: [
       { x: 8, y: 10, w: 1, h: 1, to: 'forest_path', spawn: 'house_door', sfx: 'door' },
       { x: 19, y: 6, w: 1, h: 2, to: 'store_room', spawn: 'from_hall' },
@@ -271,7 +272,8 @@ export const ROAD = {
         id: 'shelves', sprite: 'shelves', x: 11, y: 1.5, solid: [0, 12, 48, 8],
         script: [
           { when: { times: 0 }, say: ['Motor oil. Canned peaches. A box of votive candles.', 'Everything is under a skin of dust, except the candles.'] },
-          { say: ['Some of the votives are missing.'] },
+          { when: { none: ['got_votive'] }, say: ['Some of the votives are missing. Mara slept back there. You take one.'], give: 'votive', set: 'got_votive' },
+          { say: ['The box of votives, one fewer.'] },
         ],
       },
       {
@@ -285,7 +287,14 @@ export const ROAD = {
           { say: ['They only go in.'] },
         ],
       },
-      { id: 'cans', sprite: 'cans', x: 9.2, y: 8.2 },
+      {
+        id: 'cans', sprite: 'cans', x: 9.2, y: 8.2,
+        alt: [{ when: { all: ['nave_seen'] }, x: 3.4, y: 3.9, sortOffset: 20 }],
+        script: [
+          { when: { all: ['nave_seen'] }, say: ['The cans are up on the counter now, labels turned out, in a neat row.', 'They were on the floor.'], set: 'found:cans_moved' },
+          { say: ['Cans, rolled off the shelf a long time ago.'] },
+        ],
+      },
     ],
   },
 

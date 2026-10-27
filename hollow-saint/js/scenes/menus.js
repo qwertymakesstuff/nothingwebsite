@@ -6,6 +6,7 @@ import { Menu, bar } from '../ui/menu.js';
 import { panel, centerText, heading } from '../ui/panel.js';
 import { TEXT_SPEEDS } from '../engine/storage.js';
 import { ACTIONS, ACTION_LABELS, DEFAULT_BINDINGS, keyName } from '../engine/input.js';
+import { CalibrateScene } from './calibrate.js';
 
 const cap = s => s[0].toUpperCase() + s.slice(1);
 const onOff = v => (v ? 'On' : 'Off');
@@ -28,6 +29,7 @@ export class SettingsScene {
     const scaling = change(x => { x.scaling = x.scaling === 'integer' ? 'fit' : 'integer'; });
     this.menu = new Menu(app, [
       vol('master'), vol('music'), vol('sfx'),
+      { label: 'Brightness...', value: () => bar(s().brightness), onSelect: () => app.push(new CalibrateScene(app, () => app.pop(), { fromSettings: true })) },
       { label: 'Text speed', value: () => cap(s().textSpeed), onLeft: cycle(-1), onRight: cycle(1) },
       toggle('Reduce flashing', 'reduceFlashing'),
       toggle('Screen shake', 'screenShake'),
@@ -36,7 +38,7 @@ export class SettingsScene {
       { label: 'Fullscreen', value: () => onOff(app.platform.isFullscreen()), onSelect: () => app.platform.toggleFullscreen(), onRight: () => app.platform.toggleFullscreen(), onLeft: () => app.platform.toggleFullscreen() },
       { label: 'Controls...', onSelect: () => app.push(new ControlsScene(app)) },
       { label: 'Back', onSelect: () => app.pop() },
-    ], { x: 44, y: 34, w: 168, lineH: 12 });
+    ], { x: 44, y: 32, w: 168, lineH: 11 });
   }
 
   update(input) {

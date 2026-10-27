@@ -4,9 +4,12 @@ import { Frame } from '../engine/frame.js';
 import { C } from '../engine/palette.js';
 import { W, H, hash } from '../game/config.js';
 import { Menu } from '../ui/menu.js';
-import { centerText } from '../ui/panel.js';
+import { centerText, panel } from '../ui/panel.js';
 import { SettingsScene, CreditsScene, ConfirmScene } from './menus.js';
 import { IntroScene } from './intro.js';
+import { CalibrateScene } from './calibrate.js';
+import { CHAPTERS, chapterState, readMeta } from '../game/chapters.js';
+import { ENDINGS, ENDING_IDS } from '../game/endings.js';
 import { PlayScene } from './play.js';
 
 let backdrop = null;
@@ -65,9 +68,10 @@ export class TitleScene {
     this.menu = new Menu(app, [
       { label: 'New Game', onSelect: () => this.newGame() },
       { label: 'Continue', enabled: () => store.hasGame(), onSelect: () => this.continueGame() },
+      { label: 'Chapters', enabled: () => readMeta(store).chapters.length > 1, onSelect: () => app.push(new ChapterSelectScene(app, this)) },
       { label: 'Settings', onSelect: () => app.push(new SettingsScene(app)) },
       { label: 'Credits', onSelect: () => app.push(new CreditsScene(app)) },
-    ], { x: 88, y: 140, w: 80, lineH: 12, center: true });
+    ], { x: 88, y: 132, w: 80, lineH: 11, center: true });
     if (store.hasGame()) this.menu.index = 1;
   }
 
@@ -78,11 +82,24 @@ export class TitleScene {
     const app = this.app;
     const begin = () => app.transition(() => {
       app.store.clearGame();
-      app.replace(new IntroScene(app, () => app.transition(() => app.replace(new PlayScene(app, null)), { speed: 4 })));
+      // calibrate the dark first, every new game, then the opening card
+      app.replace(new CalibrateScene(app, () => app.transition(() =>
+        app.replace(new IntroScene(app, () => app.transition(() => app.replace(new PlayScene(app, null)), { speed: 4 }))), { speed: 3 })));
     }, { speed: 3 });
     if (app.store.hasGame()) {
       app.push(new ConfirmScene(app, ['Begin again?', 'Your saved progress will be erased.', 'Settings are kept.'], () => { app.pop(); begin(); }, () => app.pop()));
     } else begin();
+  }
+
+  startChapter(n) {
+    const app = this.app;
+    const begin = () => app.transition(() => {
+      app.store.clearGame();
+      app.replace(new PlayScene(app, null, { state: chapterState(n), chapterCard: n }));
+    }, { speed: 3 });
+    if (app.store.hasGame()) {
+      app.push(new ConfirmScene(app, [`Start Chapter ${CHAPTERS[n].roman}?`, 'Your saved progress will be erased.', 'Settings and endings are kept.'], () => { app.pop(); app.pop(); begin(); }, () => app.pop()));
+    } else { app.pop(); begin(); }
   }
 
   continueGame() {
@@ -93,7 +110,7 @@ export class TitleScene {
 
   update(input) {
     this.t++;
-    if (!this.glitch && hash(this.t, 9, 1) < 0.004) this.glitch = { t: 6, y: 28 + Math.floor(hash(this.t, 3) * 12), dx: hash(this.t, 4) < 0.5 ? -3 : 4 };
+    if (!this.glitch && !this.app.settings.reduceFlashing && hash(this.t, 9, 1) < 0.004) this.glitch = { t: 6, y: 28 + Math.floor(hash(this.t, 3) * 12), dx: hash(this.t, 4) < 0.5 ? -3 : 4 };
     if (this.glitch && --this.glitch.t <= 0) this.glitch = null;
     this.menu.update(input);
   }
@@ -117,6 +134,41 @@ export class TitleScene {
     }
     centerText(fb, 'B E L L W E T H E R ,   1 9 8 7', 52, C.ASH);
     this.menu.render(fb, this.t);
-    fb.text('v0.5', W - 28, H - 10, C.INK);
+    fb.text('v1.0', W - 28, H - 10, C.INK);
+    const seen = readMeta(this.app.store).endings;
+    if (seen.length) fb.text(`Endings ${seen.length}/${ENDING_IDS.length}`, 4, H - 10, C.INK);
+  }
+}
+
+export class ChapterSelectScene {
+  constructor(app, title) {
+    this.app = app;
+    this.opaque = false;
+    this.t = 0;
+    const meta = readMeta(app.store);
+    this.menu = new Menu(app, [
+      ...[1, 2, 3].map(n => ({
+        label: meta.chapters.includes(n) ? `${CHAPTERS[n].roman}. ${CHAPTERS[n].title}` : `${CHAPTERS[n].roman}. ...`,
+        enabled: () => meta.chapters.includes(n),
+        onSelect: () => title.startChapter(n),
+      })),
+      { label: 'Back', onSelect: () => app.pop() },
+    ], { x: 60, y: 76, w: 136, lineH: 12 });
+    this.endings = meta.endings;
+  }
+
+  update(input) {
+    this.t++;
+    if (input.pressed('cancel')) { this.app.sfx('ui_back'); this.app.pop(); return; }
+    this.menu.update(input);
+  }
+
+  render(fb) {
+    fb.shade(0, 0, W, H, 2);
+    panel(fb, 40, 50, W - 80, 104);
+    centerText(fb, 'CHAPTERS', 58, C.PALE);
+    this.menu.render(fb, this.t);
+    const names = ENDING_IDS.map(id => (this.endings.includes(id) ? ENDINGS[id].title : '?')).join(' / ');
+    centerText(fb, names, 140, C.SLATE);
   }
 }
