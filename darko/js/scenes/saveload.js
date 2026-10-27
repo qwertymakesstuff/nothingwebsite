@@ -7,7 +7,7 @@ import { Menu } from '../ui/menu.js';
 import { dim, panel } from '../ui/panel.js';
 import { MANUAL_SLOTS, SLOTS } from '../engine/storage.js';
 import { formatDate, formatTime } from '../game/calendar.js';
-import { ROOMS } from '../game/rooms.js';
+import { ROOMS } from '../game/rooms/index.js';
 
 const clock = s => `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}`;
 

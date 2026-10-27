@@ -1,8 +1,8 @@
-// The story calendar. Every date in the game is a day of October 1988, kept as a day number;
-// times are minutes after midnight. The 28-day timeline itself is built on top of this in Stage 2.
+// Dates and times. Every date in the game is a day of October 1988, kept as a day number; times
+// are minutes after midnight. The story's beats and the countdown live in timeline.js.
 
 export const YEAR = 1988, MONTH = 9; // October (zero-based, as Date expects)
-export const START_DAY = 2, START_TIME = 17 * 60 + 40;
+export const START_DAY = 1, START_TIME = 17 * 60 + 40;
 
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const DOW_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

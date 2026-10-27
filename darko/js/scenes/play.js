@@ -6,6 +6,7 @@ import { C } from '../game/palette.js';
 import { World, WALK_SPEED, RUN_SPEED } from '../game/world.js';
 import { Runner } from '../game/script.js';
 import { cond, START } from '../game/state.js';
+import { beatById, nextBeat, countdown, formatCountdown } from '../game/timeline.js';
 import { Lighting, ambientFor, activeLights } from '../game/lighting.js';
 import { formatDate, formatTime, parseTime, phase } from '../game/calendar.js';
 import { ITEMS } from '../game/items.js';
@@ -20,6 +21,8 @@ import { Card, EndScene } from './end.js';
 
 const approach = (v, target, step) => (v < target ? Math.min(target, v + step) : Math.max(target, v - step));
 const FADE_SPEED = 4;
+// while the player explores, one in-game minute passes every three seconds
+const CLOCK_RATE = 1 / 3;
 
 export class PlayScene {
   constructor(app, state, { intro = false } = {}) {
@@ -41,10 +44,28 @@ export class PlayScene {
     this.stepAcc = 0;
     this.safe = { x: this.world.player.x, y: this.world.player.y };
     this.cam = { x: 0, y: 0 };
+    this.fx = { wobble: 0, wobbleT: 0, flash: 0, dust: 0, particles: [] };
     this.snapCamera();
-    if (intro) this.start('intro');
-    else this.checkOnEnter();
+    if (intro) this.start(beatById(state.beat).start);
+    else if (!this.checkBeat()) this.checkOnEnter();
   }
+
+  get beat() { return beatById(this.state.beat); }
+
+  // move on to the next beat once this one's done flag is set; true if a new beat started
+  checkBeat() {
+    const b = this.beat;
+    if (b.last || !this.state.has(b.done)) return false;
+    const nb = nextBeat(b.id);
+    if (!nb) return false;
+    Object.assign(this.state, { beat: nb.id, day: nb.day, time: parseTime(nb.time), objective: '' });
+    this.state.unset('flashlight');
+    this.world.refresh();
+    this.start(nb.start);
+    return true;
+  }
+
+
 
   get busy() { return !!this.runner || !!this.trans; }
 
@@ -108,7 +129,12 @@ export class PlayScene {
       case 'save': this.autosave(); return null;
       case 'call': args[0](s, this); w.refresh(); return null;
       case 'amb': a.ambience(args[0]); return null;
-      case 'end': this.app.replace(new EndScene(this.app)); return { update: () => false };
+      case 'end': this.app.replace(new EndScene(this.app, args[0])); return { update: () => false };
+      case 'sleep': s.set(this.beat.done); return null;
+      case 'wobble': this.fx.wobble = args[0]; this.fx.wobbleT = args[1] ?? 1e9; return null;
+      case 'flash': if (!this.app.settings.reduceFlashing) this.fx.flash = 1; return null;
+      case 'dust': this.fx.dust = args[0]; return null;
+      case 'follow': { const e = w.entity(args[0]); if (e) e.follow = args[1] !== false; return null; }
       default:
         console.warn(`unknown script step: ${op}`);
         return null;
@@ -176,6 +202,7 @@ export class PlayScene {
     w.update(dt);
     this.shakeT -= dt;
     this.roomLabelT -= dt;
+    this.tickEffects(dt);
     if (this.toasts.length) { this.toasts[0].t += dt; if (this.toasts[0].t > 2.6) this.toasts.shift(); }
     this.updateCamera(dt);
 
@@ -192,9 +219,17 @@ export class PlayScene {
         w.refresh();
         this.updateAmbience();
         this.safe = { x: p.x, y: p.y };
-        this.checkOnEnter();
+        if (!this.checkBeat()) this.checkOnEnter();
       }
       return;
+    }
+
+    // the clock creeps on while you explore, but never past the current beat
+    const until = this.beat.until ? parseTime(this.beat.until) : null;
+    if (until !== null && s.time < until) {
+      const before = phase(s.time);
+      s.time = Math.min(until, s.time + dt * CLOCK_RATE);
+      if (phase(s.time) !== before) { this.updateAmbience(); w.refresh(); }
     }
 
     if (input.pressed('journal')) { this.app.audio.sfx('select'); input.consume(); this.app.push(new JournalScene(this.app, this)); return; }
@@ -226,6 +261,13 @@ export class PlayScene {
 
     // exits
     const e = w.exitAt();
+    if (e && e.trigger) {
+      s.set(e.once);
+      this.goal = null;
+      p.moving = false;
+      this.start(e.script);
+      return;
+    }
     if (e) {
       const blocked = !e.to || (e.blockWhen !== undefined && cond(s, e.blockWhen));
       if (blocked) {
@@ -287,7 +329,14 @@ export class PlayScene {
     const cx = Math.round(this.cam.x) + sx, cy = Math.round(this.cam.y) + sy;
     const v = this.view();
     g.translate(-cx, -cy, () => w.draw(g, v));
-    this.lighting.draw(g, ambientFor(w.room, this.state), activeLights(w.room, this.state, w.t, st.reduceFlashing), cx, cy);
+    const lights = activeLights(w.room, this.state, w.t, st.reduceFlashing);
+    if (this.state.has('flashlight')) {
+      // a flashlight beam: a pool of light a little ahead of Donnie
+      const p = w.player, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[p.facing];
+      lights.push({ x: p.x + d[0] * 28, y: p.y - 6 + d[1] * 28, r: 42, i: 0.9 }, { x: p.x, y: p.y - 6, r: 20, i: 0.4 });
+    }
+    this.lighting.draw(g, ambientFor(w.room, this.state), lights, cx, cy);
+    this.drawEffects(g);
 
     if (!this.busy) {
       // what you'd use: a small marker above it, and a hint at the bottom
@@ -307,16 +356,51 @@ export class PlayScene {
     this.drawToast(g);
   }
 
+  tickEffects(dt) {
+    const fx = this.fx;
+    fx.flash = Math.max(0, fx.flash - dt * 2.5);
+    fx.wobbleT -= dt;
+    if (fx.wobbleT <= 0) fx.wobble = 0;
+    if (fx.dust > 0) {
+      fx.dust -= dt;
+      for (let i = 0; i < 3; i++) fx.particles.push({ x: Math.random() * W, y: -2, vy: 40 + Math.random() * 60, c: Math.random() < 0.7 ? C.bone : C.cream });
+    }
+    for (const q of fx.particles) q.y += q.vy * dt;
+    fx.particles = fx.particles.filter(q => q.y < H);
+  }
+
+  drawEffects(g) {
+    const fx = this.fx, st = this.app.settings;
+    for (const q of fx.particles) g.rect(q.x, q.y, 1, 2, q.c);
+    if (fx.wobble > 0) {
+      // the picture bends: each band of rows slides sideways a little
+      const amt = fx.wobble * (st.reduceFlashing ? 0.4 : 1), t = this.world.t;
+      const src = g.ctx.canvas;
+      for (let y = 0; y < H; y += 3) {
+        const dx = Math.round(Math.sin(y * 0.09 + t * 4) * amt);
+        if (dx) g.ctx.drawImage(src, 0, y, W, 3, dx, y, W, 3);
+      }
+    }
+    if (fx.flash > 0) g.alpha(fx.flash, () => g.rect(0, 0, W, H, C.white));
+  }
+
   drawHud(g) {
     const s = this.state;
     const label = `${formatDate(s.day)}  ${formatTime(s.time)}`;
     g.alpha(0.7, () => g.rect(2, 2, g.textWidth(label) + 8, 12, C.black));
     g.text(label, 6, 4, C.mist);
+    if (s.has('countdown')) {
+      // the numbers on his arm, counting down
+      const c = countdown(s.day, s.time), txt = formatCountdown(c);
+      const urgent = c.d < 3;
+      g.alpha(0.7, () => g.rect(2, 15, g.textWidth(txt) + 8, 11, C.black));
+      g.text(txt, 6, 16, urgent && Math.floor(this.world.t * 2) % 2 ? C.white : C.red);
+    }
     if (this.roomLabelT > 0) {
       const a = Math.min(1, this.roomLabelT);
       g.alpha(a, () => g.text(this.world.room.name.toUpperCase(), W - 6, 4, C.fog, { align: 'right', shadow: C.black }));
     }
-    if (s.playtime < 25 && !this.busy) g.text('J journal   Esc pause', W - 6, H - 12, C.grey, { align: 'right' });
+    if (s.playtime < 25 && !this.busy && !this.focus && !this.hover) g.text('J journal   Esc pause', W - 6, H - 12, C.grey, { align: 'right' });
   }
 
   drawToast(g) {

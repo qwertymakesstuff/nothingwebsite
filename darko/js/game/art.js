@@ -62,9 +62,39 @@ export function drawPerson(g, x, y, L, facing = 'down', frame = 0, pose = 'stand
   drawHair(g, hx, top, headW, headH, L, facing, dir);
   if (facing === 'down') {
     g.px(hx + 1, top + 3, C.ink); g.px(hx + headW - 2, top + 3, C.ink);
+    if (L.glasses) g.rect(hx, top + 3, headW, 1, C.ink);
   } else if (side) {
     g.px(dir > 0 ? hx + headW - 2 : hx + 1, top + 3, C.ink);
+    if (L.glasses) g.rect(dir > 0 ? hx + headW - 3 : hx, top + 3, 3, 1, C.ink);
   }
+  if (L.cap) { g.rect(hx - 1, top - 1, headW + 2, 3, L.cap); if (facing === 'down') g.rect(hx - 1, top + 2, headW + 2, 1, L.cap); }
+  if (L.earmuffs && facing !== 'up') { g.rect(hx - 2, top + 2, 2, 3, L.earmuffs); g.rect(hx + headW, top + 2, 2, 3, L.earmuffs); g.rect(hx, top - 1, headW, 1, L.earmuffs); }
+}
+
+// Frank: a six-foot rabbit, a head taller than anyone, drawn as a pale silhouette with a fixed
+// grin. He never walks on screen; he is simply there, swaying slightly.
+export function drawFrank(g, x, y, facing = 'down', t = 0, steady = false) {
+  x = Math.round(x); y = Math.round(y);
+  const suit = '#b4b0bc', shade = '#7c7888', dark = '#2a2830';
+  const sway = steady ? 0 : Math.round(Math.sin(t * 1.3));
+  const top = y - 25;
+  g.alpha(0.5, () => g.rect(x - 6, y - 1, 12, 2, C.black));
+  // legs and body
+  g.rect(x - 4, y - 7, 3, 7, shade); g.rect(x + 1, y - 7, 3, 7, shade);
+  g.rect(x - 5 + sway, top + 9, 10, 10, suit);
+  g.rect(x - 5 + sway, top + 16, 10, 3, shade);
+  g.rect(x - 7 + sway, top + 10, 2, 8, shade); g.rect(x + 5 + sway, top + 10, 2, 8, shade);
+  // head and ears
+  const hx = x - 4 + sway;
+  g.rect(hx - 1, top + 1, 10, 8, suit);
+  g.rect(hx, top - 9, 2, 10, suit); g.rect(hx + 6, top - 10, 2, 11, suit);
+  g.px(hx, top - 9, shade); g.px(hx + 7, top - 10, shade);
+  if (facing === 'up') { g.rect(hx - 1, top + 7, 10, 2, shade); return; }
+  // the eye holes, one larger than the other, and the teeth
+  g.rect(hx, top + 3, 3, 2, dark); g.rect(hx + 5, top + 2, 3, 3, dark);
+  g.px(hx + 6, top + 3, steady || Math.sin(t * 2) > -0.6 ? '#5a5864' : dark);
+  g.rect(hx + 1, top + 6, 6, 2, C.white);
+  for (let i = 0; i < 3; i++) g.px(hx + 2 + i * 2, top + 7, dark);
 }
 
 function drawHair(g, hx, top, w, h, L, facing, dir) {
@@ -264,10 +294,16 @@ export const PROPS = {
     g.rect(p.x + 1, p.y + 5, p.w - 2, 1, C.wood);
     const sx = p.x + 4, sy = p.y + 7, sw = p.w - 14, sh = p.h - 12;
     g.rect(sx - 1, sy - 1, sw + 2, sh + 2, C.ink);
-    const k = v.flash ? 0 : Math.floor(v.t * 3) % 4;
-    const cols = [C.tv, '#a7c0d4', '#7d98b8', C.tvD];
-    g.rect(sx, sy, sw, sh, cols[k]);
-    g.rect(sx, sy + ((v.t * 18) % sh | 0), sw, 1, '#c8dbe8');
+    if (v.state.beat === 'frank' || v.state.beat === 'flood') {
+      // signed off: static
+      g.rect(sx, sy, sw, sh, v.state.beat === 'flood' ? C.ink : C.grey);
+      if (v.state.beat === 'frank') for (let i = 0; i < 24; i++) g.px(sx + ((i * 7 + Math.floor(v.t * 30) * 3) % sw), sy + ((i * 5 + Math.floor(v.t * 20)) % sh), i % 2 ? C.white : C.ink);
+    } else {
+      const k = v.flash ? 0 : Math.floor(v.t * 3) % 4;
+      const cols = [C.tv, '#a7c0d4', '#7d98b8', C.tvD];
+      g.rect(sx, sy, sw, sh, cols[k]);
+      g.rect(sx, sy + ((v.t * 18) % sh | 0), sw, 1, '#c8dbe8');
+    }
     g.rect(p.x + p.w - 8, p.y + 8, 4, 2, C.ink); g.rect(p.x + p.w - 8, p.y + 12, 4, 2, C.ink);
     // rabbit ears
     g.rect(p.x + 9, p.y, 1, 4, C.fog); g.rect(p.x + 15, p.y - 1, 1, 5, C.fog);
@@ -424,6 +460,18 @@ export const PROPS = {
     g.rect(p.x + 3, p.y, 5, 1, C.red); g.rect(p.x + p.w - 8, p.y, 5, 1, C.red);
   },
 
+  carh(g, p) {
+    // the Taurus, side-on to the camera, nose to the right
+    const b = p.col || '#4a3a34', d = '#2e2420';
+    g.alpha(0.45, () => g.rect(p.x + 3, p.y + 3, p.w, p.h, C.black));
+    g.rect(p.x, p.y + 2, p.w, p.h - 4, b);
+    g.rect(p.x + 6, p.y, p.w - 12, p.h, b);
+    g.rect(p.x + 9, p.y + 3, 8, p.h - 6, C.slate); g.rect(p.x + p.w - 20, p.y + 3, 8, p.h - 6, C.slate);
+    g.rect(p.x + 18, p.y + 4, p.w - 39, p.h - 8, d);
+    g.rect(p.x + p.w - 2, p.y + 3, 2, 4, C.glow); g.rect(p.x + p.w - 2, p.y + p.h - 7, 2, 4, C.glow);
+    g.rect(p.x, p.y + 3, 1, 4, C.red); g.rect(p.x, p.y + p.h - 7, 1, 4, C.red);
+  },
+
   bike(g, p) {
     g.rect(p.x + 1, p.y + 2, 7, 7, C.ink); g.rect(p.x + 2, p.y + 3, 5, 5, C.green);
     g.rect(p.x + 14, p.y + 2, 7, 7, C.ink); g.rect(p.x + 15, p.y + 3, 5, 5, C.green);
@@ -487,6 +535,232 @@ export const PROPS = {
     g.rect(p.x, p.y + 8, p.w, 1, C.woodD);
     for (let x = p.x; x < p.x + p.w; x += 4) g.rect(x, p.y, 2, p.h, C.wood);
   },
+
+
+  // ---- school ----------------------------------------------------------------------------
+
+  lockers(g, p) {
+    for (let x = p.x; x < p.x + p.w - 1; x += 8) {
+      g.rect(x, p.y, 7, p.h, '#3a4c6a');
+      g.rect(x, p.y, 7, 1, '#4c6082');
+      for (let i = 0; i < 3; i++) g.rect(x + 2, p.y + 3 + i * 2, 3, 1, '#26324a');
+      g.px(x + 5, p.y + Math.floor(p.h / 2), C.mist);
+    }
+    if (p.mine) g.rect(p.x + 8 * p.mine + 2, p.y + p.h - 6, 3, 2, C.lamp);
+  },
+  schooldesk(g, p) {
+    g.rect(p.x + 1, p.y + p.h - 3, 1, 3, C.ink); g.rect(p.x + p.w - 2, p.y + p.h - 3, 1, 3, C.ink);
+    g.rect(p.x, p.y, p.w, p.h - 3, '#7a6448');
+    g.rect(p.x, p.y + p.h - 4, p.w, 1, '#56442e');
+    g.rect(p.x + 2, p.y + p.h, p.w - 4, 3, C.slate);
+  },
+  teacherdesk(g, p) {
+    g.rect(p.x, p.y, p.w, p.h, C.woodD);
+    g.rect(p.x, p.y, p.w, p.h - 4, C.wood);
+    g.rect(p.x + 4, p.y + 2, 8, 6, C.bone); g.rect(p.x + p.w - 10, p.y + 3, 5, 4, C.red);
+  },
+  chalkboard(g, p, v) {
+    g.rect(p.x - 1, p.y - 1, p.w + 2, p.h + 3, C.woodL);
+    g.rect(p.x, p.y, p.w, p.h, '#22382c');
+    const lines = typeof p.text === 'function' ? p.text(v.state) : p.text || [];
+    lines.forEach((l, i) => { if (l) g.alpha(0.85, () => g.text(l, p.x + 4, p.y + 3 + i * 9, '#c8d0c0')); });
+    g.rect(p.x + p.w - 14, p.y + p.h, 6, 1, C.white);
+  },
+  tvcart(g, p, v) {
+    g.rect(p.x + 1, p.y + p.h - 3, 1, 3, C.ink); g.rect(p.x + p.w - 2, p.y + p.h - 3, 1, 3, C.ink);
+    g.rect(p.x, p.y + p.h - 8, p.w, 5, C.grey);
+    g.rect(p.x + 1, p.y, p.w - 2, p.h - 8, C.ink);
+    const on = v.state.has('tape_on');
+    g.rect(p.x + 3, p.y + 2, p.w - 6, p.h - 13, on ? (Math.floor(v.t * 4) % 2 && !v.flash ? '#9ab8a0' : '#8aa8c0') : '#1e2830');
+  },
+  statue(g, p) {
+    // the bronze Middlesex mongrel on its plinth, built up from the bottom
+    const base = p.y + p.h - 8;
+    g.rect(p.x, base, p.w, 8, C.concrete);
+    g.rect(p.x, base, p.w, 1, '#5a5862');
+    const b = '#6a4e2a', bl = '#8a6a3a';
+    for (const lx of [6, 9, p.w - 13, p.w - 10]) g.rect(p.x + lx, base - 6, 2, 6, b);
+    g.rect(p.x + 5, base - 13, p.w - 12, 7, b);
+    g.rect(p.x + 5, base - 13, p.w - 12, 1, bl);
+    g.rect(p.x + p.w - 10, base - 18, 7, 7, b);
+    g.rect(p.x + p.w - 5, base - 15, 4, 3, b);
+    g.rect(p.x + p.w - 9, base - 20, 2, 3, bl);
+    g.px(p.x + p.w - 5, base - 16, C.ink);
+    g.rect(p.x + 2, base - 14, 3, 2, b);
+  },
+  trophies(g, p) {
+    g.rect(p.x, p.y, p.w, p.h, C.woodD);
+    g.rect(p.x + 1, p.y + 1, p.w - 2, p.h - 2, '#1a1e24');
+    for (let i = 0; i < 4; i++) { g.rect(p.x + 3 + i * 7, p.y + 4, 4, 5, C.amber); g.rect(p.x + 4 + i * 7, p.y + 9, 2, 3, C.amber); }
+    g.rect(p.x + 1, p.y + p.h / 2, p.w - 2, 1, C.fog);
+  },
+  banner(g, p) {
+    g.rect(p.x, p.y, p.w, p.h, '#2a3a6a');
+    g.box(p.x, p.y, p.w, p.h, C.lamp);
+    g.text(p.text || '', p.x + p.w / 2, p.y + 2, C.lamp, { align: 'center' });
+  },
+  pipes(g, p, v) {
+    g.rect(p.x, p.y + 3, p.w, 4, C.grey); g.rect(p.x, p.y + 3, p.w, 1, C.fog);
+    for (let x = p.x + 6; x < p.x + p.w; x += 20) g.rect(x, p.y + 1, 3, 8, C.dusk);
+    if (v.state.has('pipe_broken')) {
+      for (let i = 0; i < 10; i++) g.px(p.x + p.w / 2 + Math.sin(i * 3 + v.t * 9) * 5, p.y + 8 + ((v.t * 40 + i * 4) % 14), C.tv);
+    }
+  },
+  valve(g, p, v) {
+    g.rect(p.x, p.y, p.w, p.h, '#3a4250');
+    g.rect(p.x + 2, p.y + 2, p.w - 4, p.h - 4, C.grey);
+    g.rect(p.x + p.w / 2 - 1, p.y - 3, 2, 3, C.red);
+    if (v.state.has('pipe_broken')) { g.rect(p.x + 3, p.y + 3, p.w - 6, 2, C.ink); g.rect(p.x + p.w / 2, p.y + p.h, 1, 4, C.tv); }
+  },
+  water(g, p, v) {
+    for (let i = 0; i < 18; i++) g.alpha(0.6, () => g.rect(p.x + (i * 23) % p.w, p.y + (i * 11 + Math.floor(v.t * 6)) % p.h, 6, 1, '#4a6a8a'));
+  },
+
+  // ---- the golf course, the engine, the morning after -------------------------------------
+
+  green(g, p) {
+    g.rect(p.x + 4, p.y, p.w - 8, p.h, '#3c5434');
+    g.rect(p.x, p.y + 4, p.w, p.h - 8, '#3c5434');
+    g.dither(p.x + 2, p.y + 2, p.w - 4, p.h - 4, '#4a6440', 0.25);
+  },
+  pin(g, p, v) {
+    g.rect(p.x + 1, p.y, 1, p.h, C.bone);
+    const wave = Math.round(Math.sin(v.t * 3));
+    g.rect(p.x + 2, p.y, 6 + wave, 4, C.red);
+    g.rect(p.x, p.y + p.h - 1, 3, 2, C.ink);
+    g.text('7', p.x + 3, p.y - 1, C.white);
+  },
+  bunker(g, p) {
+    g.rect(p.x + 3, p.y, p.w - 6, p.h, '#8a7a5a');
+    g.rect(p.x, p.y + 3, p.w, p.h - 6, '#8a7a5a');
+    g.dither(p.x + 2, p.y + 2, p.w - 4, p.h - 4, '#a8966c', 0.3);
+  },
+  golfcart(g, p) {
+    g.alpha(0.45, () => g.rect(p.x + 2, p.y + 3, p.w, p.h, C.black));
+    g.rect(p.x, p.y, p.w, p.h, C.bone);
+    g.rect(p.x + 2, p.y + 2, p.w - 4, 6, C.white);
+    g.rect(p.x + 3, p.y + 9, p.w - 6, p.h - 13, '#2a3a2a');
+    g.rect(p.x - 1, p.y + 4, 2, 5, C.ink); g.rect(p.x + p.w - 1, p.y + 4, 2, 5, C.ink);
+    g.rect(p.x - 1, p.y + p.h - 7, 2, 5, C.ink); g.rect(p.x + p.w - 1, p.y + p.h - 7, 2, 5, C.ink);
+  },
+  ball(g, p) { g.rect(p.x, p.y, 2, 2, C.white); },
+  engine(g, p, v) {
+    // a jet engine, seen from above, lying where a bed used to be
+    g.alpha(0.5, () => g.rect(p.x + 3, p.y + 4, p.w, p.h, C.black));
+    g.rect(p.x + 4, p.y, p.w - 8, p.h, '#56545e');
+    g.rect(p.x, p.y + 4, p.w, p.h - 8, '#56545e');
+    g.rect(p.x + 3, p.y + 3, p.w - 6, p.h - 6, '#3a3842');
+    g.rect(p.x + 6, p.y + 6, p.w - 12, p.h - 12, '#1c1b22');
+    const cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * Math.PI * 2 + (v.state.has('engine_spin') ? v.t * 2 : 0.3);
+      for (let r = 3; r < Math.min(p.w, p.h) / 2 - 7; r++) g.px(cx + Math.cos(a) * r, cy + Math.sin(a) * r, '#7c7a86');
+    }
+    g.rect(cx - 2, cy - 2, 4, 4, '#9a98a4');
+    g.rect(p.x + 4, p.y + 1, p.w - 8, 1, '#7c7a86');
+  },
+  debris(g, p) {
+    const cols = [C.bone, C.cream, C.woodD, '#56545e', C.creamD];
+    for (let i = 0; i < 40; i++) g.rect(p.x + (i * 37) % p.w, p.y + (i * 23) % p.h, 1 + (i % 3), 1 + ((i >> 1) % 2), cols[i % 5]);
+  },
+  tarp(g, p, v) {
+    g.rect(p.x, p.y, p.w, p.h, '#2e4a7a');
+    for (let x = p.x + 3; x < p.x + p.w; x += 9) g.rect(x, p.y, 1, p.h, '#24406a');
+    const ripple = Math.floor(v.t * 2) % 2;
+    g.rect(p.x, p.y + 3 + ripple, p.w, 1, '#3e5a8a');
+  },
+  firetruck(g, p) {
+    g.alpha(0.45, () => g.rect(p.x + 2, p.y + 4, p.w, p.h, C.black));
+    g.rect(p.x, p.y, p.w, p.h, '#8a1e1e');
+    g.rect(p.x + 4, p.y + 3, p.w - 26, p.h - 6, '#6a1616');
+    g.rect(p.x + 6, p.y + p.h / 2 - 1, p.w - 30, 2, C.mist);
+    g.rect(p.x + p.w - 18, p.y + 2, 14, p.h - 4, C.slate);
+    g.rect(p.x + p.w - 20, p.y + 1, 2, 3, C.red); g.rect(p.x + p.w - 20, p.y + p.h - 4, 2, 3, '#4a6aaa');
+  },
+  policecar(g, p, v) {
+    g.alpha(0.45, () => g.rect(p.x + 2, p.y + 3, p.w, p.h, C.black));
+    g.rect(p.x, p.y + 2, p.w, p.h - 4, C.bone);
+    g.rect(p.x + 2, p.y, p.w - 4, p.h, C.bone);
+    g.rect(p.x + 8, p.y + 2, p.w - 16, p.h - 4, C.ink);
+    g.rect(p.x + 11, p.y + 3, p.w - 22, p.h - 6, C.bone);
+    const k = v.flash ? 0 : Math.floor(v.t * 4) % 2;
+    g.rect(p.x + p.w / 2 - 3, p.y + 3, 3, 3, k ? C.red : '#4a2020');
+    g.rect(p.x + p.w / 2, p.y + 3, 3, 3, k ? '#3a3a7a' : '#5a6aca');
+  },
+  newsvan(g, p) {
+    g.alpha(0.45, () => g.rect(p.x + 2, p.y + 3, p.w, p.h, C.black));
+    g.rect(p.x, p.y, p.w, p.h, C.mist);
+    g.rect(p.x + p.w - 10, p.y + 2, 8, p.h - 4, C.slate);
+    g.rect(p.x + 8, p.y - 4, 2, 6, C.fog); g.rect(p.x + 5, p.y - 7, 8, 3, C.bone);
+    g.text('12', p.x + 4, p.y + 2, C.red);
+  },
+  barricade(g, p) {
+    g.rect(p.x, p.y + 2, p.w, 3, C.bone);
+    for (let x = p.x; x < p.x + p.w; x += 8) g.rect(x, p.y + 2, 4, 3, C.red);
+    g.rect(p.x + 2, p.y + 5, 1, p.h - 5, C.woodD); g.rect(p.x + p.w - 3, p.y + 5, 1, p.h - 5, C.woodD);
+  },
+  crane(g, p) {
+    // a caterpillar crane: tracks, cab, and a boom reaching up over the roof
+    g.rect(p.x, p.y + p.h - 10, p.w, 10, C.ink);
+    for (let x = p.x + 1; x < p.x + p.w; x += 4) g.rect(x, p.y + p.h - 10, 2, 10, '#2a2a30');
+    g.rect(p.x + 4, p.y + p.h - 22, p.w - 8, 12, '#b89a2a');
+    g.rect(p.x + 6, p.y + p.h - 20, 8, 6, C.slate);
+    for (let i = 0; i < p.h - 24; i++) g.rect(p.x + p.w / 2 + Math.floor(i * 0.6), p.y + p.h - 22 - i, 3, 1, '#a88a24');
+  },
+  flatbed(g, p, v) {
+    g.alpha(0.45, () => g.rect(p.x + 2, p.y + 4, p.w, p.h, C.black));
+    g.rect(p.x, p.y, p.w, p.h, '#3a3a44');
+    g.rect(p.x + p.w - 20, p.y, 20, p.h, '#5a2a24');
+    g.rect(p.x + p.w - 16, p.y + 2, 10, p.h - 4, C.slate);
+    if (p.cargo) PROPS.engine(g, { x: p.x + 6, y: p.y - 4, w: 40, h: p.h + 8 }, v);
+  },
+  bus(g, p) {
+    g.alpha(0.45, () => g.rect(p.x + 2, p.y + 4, p.w, p.h, C.black));
+    g.rect(p.x, p.y, p.w, p.h, '#c89a1e');
+    g.rect(p.x, p.y + p.h - 4, p.w, 4, C.ink);
+    for (let x = p.x + 8; x < p.x + p.w - 14; x += 12) g.rect(x, p.y + 3, 9, 7, C.slate);
+    g.rect(p.x + p.w - 10, p.y + 3, 8, p.h - 8, C.slate);
+    g.text('SCHOOL BUS', p.x + p.w / 2 - 6, p.y + 12, C.ink, { align: 'center' });
+  },
+
+  // ---- hotel, Dr. Thurman's office, Old Gun Road -----------------------------------------
+
+  hotelbed(g, p) {
+    g.rect(p.x, p.y, p.w, p.h, C.woodD);
+    g.rect(p.x + 1, p.y + 1, p.w - 2, p.h - 3, C.white);
+    g.rect(p.x + 3, p.y + 2, p.w - 6, 6, C.bone);
+    g.rect(p.x + 1, p.y + 10, p.w - 2, p.h - 13, '#6a4a5a');
+    g.rect(p.x + 1, p.y + 10, p.w - 2, 2, '#54384a');
+  },
+  painting(g, p) {
+    g.rect(p.x, p.y, p.w, p.h, C.amber);
+    g.rect(p.x + 1, p.y + 1, p.w - 2, p.h - 2, '#4a6a8a');
+    g.rect(p.x + 1, p.y + p.h - 5, p.w - 2, 4, '#3a5a3a');
+    g.rect(p.x + p.w - 8, p.y + 3, 3, 3, C.lamp);
+  },
+  armchair(g, p) {
+    g.rect(p.x, p.y, p.w, p.h, p.col || '#5a3a4a');
+    g.rect(p.x + 3, p.y + 3, p.w - 6, p.h - 7, '#74505e');
+    g.rect(p.x, p.y + p.h - 4, p.w, 4, '#3a2430');
+  },
+  sparrowhouse(g, p, v) {
+    // a small brick house up the hill, one lamp on
+    g.rect(p.x, p.y + 10, p.w, p.h - 10, C.brick);
+    for (let y = p.y + 13; y < p.y + p.h; y += 3) g.rect(p.x, y, p.w, 1, '#3a201c');
+    for (let i = 0; i < 12; i++) g.rect(p.x - 4 + i, p.y + 10 - i, p.w + 8 - i * 2, 1, '#2a2228');
+    windowPane(g, p.x + 6, p.y + 16, 8, 7, v, true);
+    windowPane(g, p.x + p.w - 14, p.y + 16, 8, 7, v, false);
+    g.rect(p.x + p.w / 2 - 3, p.y + p.h - 11, 6, 11, C.woodD);
+  },
+  graffiti(g, p) {
+    g.alpha(0.9, () => g.text('THEY MADE ME DO IT', p.x + p.w / 2, p.y + 1, C.red, { align: 'center' }));
+  },
+  axe(g, p) {
+    g.rect(p.x + 4, p.y, 2, p.h, C.woodL);
+    g.rect(p.x, p.y + p.h - 4, 6, 4, C.mist);
+    g.rect(p.x, p.y + p.h - 4, 1, 4, C.white);
+  },
+  field(g, p) { g.dither(p.x, p.y, p.w, p.h, '#4a5a34', 0.3); },
 
   // things with nothing to draw (talk zones, invisible blockers)
   none() {},

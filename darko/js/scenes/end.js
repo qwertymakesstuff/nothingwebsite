@@ -21,7 +21,10 @@ export class Card {
 }
 
 export class EndScene {
-  constructor(app) { this.app = app; this.opaque = true; this.t = 0; }
+  constructor(app, lines) {
+    this.app = app; this.opaque = true; this.t = 0;
+    this.lines = lines || ['The story continues in the next stage of the build.'];
+  }
 
   enter() { this.app.audio.ambience('night'); this.app.audio.sfx('sting'); }
 
@@ -35,10 +38,9 @@ export class EndScene {
     const a = Math.min(1, this.t / 1.5);
     g.alpha(a, () => {
       g.text('DONNIE DARKO', W / 2, 50, C.bone, { scale: 2, align: 'center', spacing: 1 });
-      g.text('END OF THE STAGE 1 BUILD', W / 2, 80, C.red, { align: 'center' });
-      g.text('The night of October 2 continues in Stage 2,', W / 2, 100, C.fog, { align: 'center' });
-      g.text('when the countdown begins.', W / 2, 110, C.fog, { align: 'center' });
-      g.text('Your progress was autosaved.', W / 2, 130, C.grey, { align: 'center' });
+      g.text('END OF THE CURRENT BUILD', W / 2, 80, C.red, { align: 'center' });
+      this.lines.forEach((l, i) => g.text(l, W / 2, 100 + i * 10, C.fog, { align: 'center' }));
+      g.text('Your progress was autosaved.', W / 2, 140, C.grey, { align: 'center' });
     });
     if (this.t > 2 && Math.floor(this.t * 2) % 2) g.text('press any key', W / 2, H - 16, C.grey, { align: 'center' });
   }

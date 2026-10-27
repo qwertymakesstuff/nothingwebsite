@@ -2,12 +2,12 @@
 // and solid things, what the player is facing, which exit they are standing in, and scripted
 // walking. Positions are in pixels; a person's (x, y) is the middle of their feet.
 
-import { ROOMS } from './rooms.js';
+import { ROOMS } from './rooms/index.js';
 import { TILE, isSolidChar, bakeRoom } from './tiles.js';
 import { cond } from './state.js';
 import { CAST } from './cast.js';
 import { overlaps, moveBox } from '../engine/collision.js';
-import { drawPerson, drawDog, drawProp } from './art.js';
+import { drawPerson, drawDog, drawFrank, drawProp } from './art.js';
 import { C } from './palette.js';
 
 export const PW = 8, PH = 5;
@@ -18,7 +18,8 @@ const T = v => v * TILE;
 const tileRect = a => ({ x: T(a[0]), y: T(a[1]), w: T(a[2]), h: T(a[3]) });
 
 const npcBox = n => (n.who === 'callie' ? { x: n.x - 7, y: n.y - 4, w: 14, h: 4 } : { x: n.x - 5, y: n.y - 4, w: 10, h: 4 });
-const npcBody = n => (n.who === 'callie' ? { x: n.x - 8, y: n.y - 12, w: 16, h: 13 } : { x: n.x - 6, y: n.y - (CAST[n.who]?.look?.h || 18) - 1, w: 12, h: (CAST[n.who]?.look?.h || 18) + 2 });
+const bodyH = n => (n.who === 'frank' ? 36 : CAST[n.who]?.look?.h || 18);
+const npcBody = n => (n.who === 'callie' ? { x: n.x - 8, y: n.y - 12, w: 16, h: 13 } : { x: n.x - 6, y: n.y - bodyH(n) - 1, w: 12, h: bodyH(n) + 2 });
 
 export class World {
   constructor(state) {
@@ -93,7 +94,7 @@ export class World {
     const y0 = Math.floor(box.y / TILE), y1 = Math.floor((box.y + box.h - 0.001) / TILE);
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) if (isSolidChar(this.tileAt(tx, ty))) return true;
     for (const p of this.props) if (p.solidRect && overlaps(box, p.solidRect)) return true;
-    if (!ignoreNpcs) for (const n of this.npcs) if (!n.walk && overlaps(box, npcBox(n))) return true;
+    if (!ignoreNpcs) for (const n of this.npcs) if (!n.walk && !n.follow && overlaps(box, npcBox(n))) return true;
     return false;
   }
 
@@ -188,7 +189,11 @@ export class World {
 
   exitAt() {
     const box = feetBox(this.player.x, this.player.y);
-    for (const e of this.room.exits) if (overlaps(box, tileRect([e.x, e.y, e.w, e.h]))) return e;
+    for (const e of this.room.exits) {
+      if (e.when !== undefined && !cond(this.state, e.when)) continue;
+      if (e.trigger && this.state.has(e.once)) continue;
+      if (overlaps(box, tileRect([e.x, e.y, e.w, e.h]))) return e;
+    }
     return null;
   }
 
@@ -204,6 +209,18 @@ export class World {
 
   update(dt) {
     this.t += dt;
+    // followers keep a step behind the player
+    for (const n of this.npcs) {
+      if (!n.follow || n.walk) continue;
+      const dx = this.player.x - n.x, dy = this.player.y - n.y, d = Math.hypot(dx, dy);
+      if (d > 18) {
+        const step = Math.min(d - 18, 62 * dt);
+        n.x += dx / d * step; n.y += dy / d * step;
+        n.walkT = (n.walkT || 0) + step;
+        n.moving = true;
+        n.facing = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+      } else n.moving = false;
+    }
     for (const e of [this.player, ...this.npcs]) {
       if (!e.walk) continue;
       const dx = e.walk.x - e.x, dy = e.walk.y - e.y, d = Math.hypot(dx, dy);
@@ -227,20 +244,20 @@ export class World {
     for (const p of this.props) if (!p.layer) list.push([p.sortY, () => drawProp(g, p, view)]);
     for (const n of this.npcs) list.push([n.sy !== undefined ? T(n.sy) : n.y, () => this.drawNpc(g, n, view)]);
     const pl = this.player;
-    list.push([pl.y, () => drawPerson(g, pl.x, pl.y, CAST.donnie.look, pl.facing, walkFrame(pl))]);
+    if (!this.state.has('hide_player')) list.push([pl.y, () => drawPerson(g, pl.x, pl.y, CAST.donnie.look, pl.facing, walkFrame(pl))]);
     list.sort((a, b) => a[0] - b[0]);
     for (const [, fn] of list) fn();
   }
 
   drawNpc(g, n, view) {
+    if (n.who === 'frank') { drawFrank(g, n.x, n.y, n.facing, this.t, view.flash); return; }
     if (n.who === 'callie') {
       const asleep = view.phase === 'night' && this.state.has('rose_talk');
       drawDog(g, n.x, n.y, n.facing, Math.floor(this.t * 2) % 2, asleep, this.t);
       return;
     }
     const look = CAST[n.who].look;
-    const moving = !!n.walk;
-    drawPerson(g, n.x, n.y, look, n.facing, moving ? walkFrame(n) : 0, n.pose === 'sit' ? 'sit' : 'stand');
+    drawPerson(g, n.x, n.y, look, n.facing, walkFrame(n), n.pose === 'sit' ? 'sit' : 'stand');
     if (n.pose === 'blower') {
       // the leaf blower, running, and what it does to the leaves
       const dir = n.facing === 'left' ? -1 : 1;

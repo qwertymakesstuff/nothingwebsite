@@ -1,7 +1,7 @@
 // Persistence. Settings and each save slot live under their own localStorage key, so a corrupt
 // save can never take the settings with it (and starting a new game never touches them).
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const KEYS = {
   settings: 'darko.settings.v1',
   slot: n => `darko.save.${n}.v1`,
@@ -60,7 +60,7 @@ export function sanitizeSave(raw) {
     facing: FACINGS.includes(raw.facing) ? raw.facing : 'down',
     day: raw.day,
     time: Math.max(0, Math.min(24 * 60 - 1, Math.round(raw.time))),
-    chapter: Number.isInteger(raw.chapter) ? raw.chapter : 1,
+    beat: typeof raw.beat === 'string' ? raw.beat : 'oct1',
     flags: strings(raw.flags),
     items: strings(raw.items),
     notes: (Array.isArray(raw.notes) ? raw.notes : [])

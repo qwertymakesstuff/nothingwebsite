@@ -2,6 +2,7 @@
 // It converts to and from the plain object the storage layer saves.
 
 import { START_DAY, START_TIME } from './calendar.js';
+import { BEATS, BEAT_INDEX } from './timeline.js';
 import { SAVE_VERSION } from '../engine/storage.js';
 
 export const START = { room: 'donnie_room', spawn: 'start' };
@@ -12,7 +13,7 @@ export class GameState {
     this.x = 0; this.y = 0; this.facing = 'down';
     this.day = START_DAY;
     this.time = START_TIME;
-    this.chapter = 1;
+    this.beat = BEATS[0].id;
     this.flags = new Set();
     this.items = ['house_key'];
     this.notes = [];
@@ -41,7 +42,7 @@ export class GameState {
     return {
       v: SAVE_VERSION,
       room: this.room, x: this.x, y: this.y, facing: this.facing,
-      day: this.day, time: this.time, chapter: this.chapter,
+      day: this.day, time: this.time, beat: this.beat,
       flags: [...this.flags], items: this.items.slice(), notes: this.notes.map(n => ({ ...n })),
       visited: [...this.visited], objective: this.objective, playtime: this.playtime,
     };
@@ -50,7 +51,7 @@ export class GameState {
   static fromSave(d) {
     const s = new GameState();
     Object.assign(s, {
-      room: d.room, x: d.x, y: d.y, facing: d.facing, day: d.day, time: d.time, chapter: d.chapter,
+      room: d.room, x: d.x, y: d.y, facing: d.facing, day: d.day, time: d.time, beat: d.beat,
       flags: new Set(d.flags), items: d.items.slice(), notes: d.notes.map(n => ({ ...n })),
       visited: new Set(d.visited), objective: d.objective, playtime: d.playtime, fresh: false,
     });
@@ -58,11 +59,17 @@ export class GameState {
   }
 }
 
-// story conditions: a flag name, '!flag', an array (all must hold) or a function of the state
+// story conditions: a flag name, '!flag', an array (all must hold) or a function of the state.
+// 'beat:a|b' holds during any of those beats; 'from:a' from that beat onward; 'before:a' until it.
 export function cond(state, c) {
   if (c === undefined || c === null) return true;
   if (typeof c === 'function') return !!c(state);
   if (Array.isArray(c)) return c.every(x => cond(state, x));
-  if (typeof c === 'string') return c.startsWith('!') ? !state.has(c.slice(1)) : state.has(c);
-  return !!c;
+  if (typeof c !== 'string') return !!c;
+  if (c.startsWith('!')) return !cond(state, c.slice(1));
+  const at = BEAT_INDEX[state.beat] ?? 0;
+  if (c.startsWith('beat:')) return c.slice(5).split('|').includes(state.beat);
+  if (c.startsWith('from:')) return at >= BEAT_INDEX[c.slice(5)];
+  if (c.startsWith('before:')) return at < BEAT_INDEX[c.slice(7)];
+  return state.has(c);
 }

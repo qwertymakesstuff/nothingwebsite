@@ -7,9 +7,10 @@ import { dim, panel } from '../ui/panel.js';
 import { wrap } from '../engine/font.js';
 import { NOTES } from '../game/journal.js';
 import { ITEMS } from '../game/items.js';
-import { formatDate, formatTime } from '../game/calendar.js';
+import { formatDate, formatTime, weekday } from '../game/calendar.js';
+import { countdown, formatCountdown, CALENDAR_MARKS, beatById } from '../game/timeline.js';
 
-const TABS = ['JOURNAL', 'POCKETS'];
+const TABS = ['JOURNAL', 'POCKETS', 'CALENDAR'];
 const LIST = { x: 14, y: 46, w: 112, rowH: 11 };
 
 export class JournalScene {
@@ -23,6 +24,7 @@ export class JournalScene {
 
   entries() {
     const s = this.play.state;
+    if (this.tab === 2) return [];
     if (this.tab === 0) return s.notes.slice().reverse().map(n => ({ title: NOTES[n.id]?.title || n.id, text: NOTES[n.id]?.text || '', stamp: `${formatDate(n.day)}, ${formatTime(n.time)}` }));
     return s.items.map(id => ({ title: ITEMS[id]?.name || id, text: ITEMS[id]?.text || '' }));
   }
@@ -30,7 +32,8 @@ export class JournalScene {
   update(dt, input) {
     const a = this.app.audio;
     if (input.pressed('cancel') || input.pressed('journal')) { a.sfx('back'); input.consume(); this.app.pop(); return; }
-    if (input.pressed('menuLeft') || input.pressed('menuRight')) { this.tab = 1 - this.tab; this.sel = 0; a.sfx('move'); }
+    if (input.pressed('menuLeft')) { this.tab = (this.tab + TABS.length - 1) % TABS.length; this.sel = 0; a.sfx('move'); }
+    if (input.pressed('menuRight')) { this.tab = (this.tab + 1) % TABS.length; this.sel = 0; a.sfx('move'); }
     const list = this.entries();
     if (input.pressed('menuUp') && list.length) { this.sel = (this.sel - 1 + list.length) % list.length; a.sfx('move'); }
     if (input.pressed('menuDown') && list.length) { this.sel = (this.sel + 1) % list.length; a.sfx('move'); }
@@ -57,6 +60,7 @@ export class JournalScene {
       if (i === this.tab) g.rect(x, 40, g.textWidth(t), 1, C.red);
     });
     g.rect(14, 43, W - 28, 1, C.slate);
+    if (this.tab === 2) { this.drawCalendar(g); return; }
     const list = this.entries();
     if (!list.length) g.text(this.tab === 0 ? 'Nothing written yet.' : 'Empty pockets.', LIST.x, LIST.y, C.grey);
     list.forEach((e, i) => {
@@ -76,5 +80,37 @@ export class JournalScene {
     }
     g.rect(14, H - 26, W - 28, 1, C.slate);
     g.text(s.objective ? `NOW: ${s.objective}` : '', 14, H - 20, C.lamp);
+  }
+
+  // October 1988, with the days lived through crossed off and, once he knows it, the 30th
+  drawCalendar(g) {
+    const s = this.play.state;
+    const x0 = 18, y0 = 58, cw = 20, ch = 15;
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach((d, i) => g.text(d, x0 + i * cw + 6, 48, C.grey));
+    const first = weekday(1);
+    for (let day = 1; day <= 31; day++) {
+      const cell = first + day - 1, x = x0 + (cell % 7) * cw, y = y0 + Math.floor(cell / 7) * ch;
+      const today = day === s.day, past = day < s.day;
+      if (today) g.rect(x, y - 2, cw - 2, ch - 2, C.dusk);
+      g.text(String(day), x + 3, y, past ? C.grey : today ? C.white : C.fog);
+      if (past) { g.rect(x + 1, y + 3, cw - 5, 1, C.redD); }
+      if (day === 30 && s.has('countdown')) g.box(x - 1, y - 3, cw, ch, C.red);
+    }
+    const dx = 168;
+    g.rect(dx - 6, 46, 1, H - 70, C.slate);
+    const b = beatById(s.beat);
+    g.text(b.chapter.toUpperCase(), dx, 48, C.grey);
+    g.text(b.title, dx, 58, C.bone);
+    let y = 74;
+    for (const [d, text] of Object.entries(CALENDAR_MARKS)) {
+      if (Number(d) >= s.day) break;
+      g.text(`OCT ${d}`, dx, y, C.grey);
+      wrap(text, 16).forEach((l, i) => g.text(l, dx + 42, y + i * 9, C.mist));
+      y += 9 * wrap(text, 16).length + 2;
+    }
+    if (s.has('countdown')) {
+      const c = countdown(s.day, s.time);
+      g.text(formatCountdown(c), W - 16, H - 36, C.red, { align: 'right' });
+    }
   }
 }

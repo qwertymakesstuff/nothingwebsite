@@ -63,6 +63,11 @@ const FLOORS = {
     FLOORS.grass(x, px, py, r);
     fr(x, px + 1, py + 1, 6, 6, '#56545e'); fr(x, px + 9, py + 5, 6, 5, '#56545e'); fr(x, px + 2, py + 10, 6, 5, '#56545e');
   },
+  concrete(x, px, py, r, th) {
+    fr(x, px, py, TILE, TILE, th.floor);
+    for (let i = 0; i < 6; i++) fr(x, px + ((r() * TILE) | 0), py + ((r() * TILE) | 0), 1, 1, th.floorAlt);
+    if (r() < 0.25) fr(x, px + 3, py + ((r() * 12) | 0), 6, 1, th.floorAlt);
+  },
   stairs(x, px, py, r, th) {
     for (let i = 0; i < 4; i++) {
       fr(x, px, py + i * 4, TILE, 3, th.stair || C.woodL);

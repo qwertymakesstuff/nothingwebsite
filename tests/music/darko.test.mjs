@@ -6,16 +6,17 @@ import { spawnSync } from 'node:child_process';
 
 const dir = new URL('../../darko/js/', import.meta.url);
 const load = f => import(new URL(f, dir));
-const { ROOMS } = await load('game/rooms.js');
-const { SCRIPTS } = await load('game/scripts.js');
+const { ROOMS } = await load('game/rooms/index.js');
+const { SCRIPTS } = await load('game/scripts/index.js');
 const { CAST } = await load('game/cast.js');
 const { NOTES } = await load('game/journal.js');
 const { ITEMS } = await load('game/items.js');
-const { TILE, isSolidChar } = await load('game/tiles.js');
+const { TILE } = await load('game/tiles.js');
 const { World, feetBox } = await load('game/world.js');
 const { GameState, START, cond } = await load('game/state.js');
 const { Runner } = await load('game/script.js');
-const { formatDate, formatTime, phase, weekday } = await load('game/calendar.js');
+const { formatDate, formatTime, phase, weekday, parseTime } = await load('game/calendar.js');
+const TL = await load('game/timeline.js');
 const ST = await load('engine/storage.js');
 const { App } = await load('app.js');
 const { PlayScene } = await load('scenes/play.js');
@@ -28,29 +29,32 @@ const jsFiles = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.i
 const silentAudio = { setVolumes() {}, sfx() {}, ambience() {}, unlock() {} };
 const newApp = () => new App({ audio: silentAudio, store: new ST.Store(ST.memoryStorage()) });
 
-const freshWorld = (room, spawn) => {
-  const w = new World(new GameState());
+const stateAt = (beat, flags = []) => {
+  const s = new GameState();
+  const b = TL.beatById(beat);
+  Object.assign(s, { beat, day: b.day, time: parseTime(b.time) });
+  flags.forEach(f => s.set(f));
+  return s;
+};
+
+const freshWorld = (room, spawn, state = new GameState()) => {
+  const w = new World(state);
   w.enter(room, spawn);
   return w;
 };
 
-// every step list a script can produce, for any state we can reasonably be in
-const STATES = (() => {
-  const flags = ['rose_asked', 'told_dad', 'told_liz', 'dinner_ready', 'dinner_done', 'rose_talk', 'took_pills', 'stage1_end', 'lamp_off', 'seen:samantha'];
-  const out = [];
-  for (let i = 0; i <= flags.length; i++) {
-    const s = new GameState();
-    flags.slice(0, i).forEach(f => s.set(f));
-    for (const t of [17 * 60 + 40, 21 * 60]) { const c = GameState.fromSave({ ...s.toSave(), time: t }); out.push(c); }
-  }
-  return out;
-})();
+// every flag the story sets, for exercising scripts in many states
+const FLAGS = ['rose_asked', 'told_dad', 'told_liz', 'dinner_ready', 'dinner_done', 'rose_talk', 'took_pills', 'lamp_off', 'woke_oct2',
+  'took_marker', 'frank_seen', 'countdown', 'engine_fell', 'golf_done', 'officer_ok', 'engine_seen', 'hotel_talk', 'bus_gone',
+  'gretchen_sat', 'oct3_class', 'sparrow_led', 'sparrow_done', 'thurman1_done', 'flood_go', 'pipe_broken', 'cancelled',
+  'walking_gretchen', 'gretchen_home', 'thurman2_done', 'oct7_english', 'tape_on'];
 
-function* allSteps(steps, state) {
-  for (const st of steps) {
+function* allSteps(steps, state, seen = new Set()) {
+  for (const st of steps || []) {
     yield st;
-    if (st[0] === 'if') { yield* allSteps(st[2] || [], state); yield* allSteps(st[3] || [], state); }
-    if (st[0] === 'choice') for (const [, s] of st[1]) yield* allSteps(typeof s === 'string' ? resolveAll(s, state) : s, state);
+    if (st[0] === 'if') { yield* allSteps(st[2], state, seen); yield* allSteps(st[3], state, seen); }
+    if (st[0] === 'choice') for (const [, s] of st[1]) yield* allSteps(typeof s === 'string' ? resolveAll(s, state) : s, state, seen);
+    if (st[0] === 'run' && !seen.has(st[1])) { seen.add(st[1]); yield* allSteps(resolveAll(st[1], state), state, seen); }
   }
 }
 const resolveAll = (id, state) => { const s = SCRIPTS[id]; return typeof s === 'function' ? s(state) : s; };
@@ -70,8 +74,9 @@ test('page: /darko/ has a canvas at 320x180 and loads the module entry point', (
   assert.match(fs.readFileSync(path.join(root, 'css/style.css'), 'utf8'), /image-rendering: pixelated/);
 });
 
-test('calendar: October 2, 1988 was a Sunday; times format in 12-hour clock', () => {
-  assert.equal(weekday(2), 0);
+test('calendar: October 1, 1988 was a Saturday; times format in 12-hour clock', () => {
+  assert.equal(weekday(1), 6);
+  assert.equal(formatDate(1), 'SAT OCT 1 1988');
   assert.equal(formatDate(2), 'SUN OCT 2 1988');
   assert.equal(formatDate(30), 'SUN OCT 30 1988');
   assert.equal(formatTime(17 * 60 + 40), '5:40 PM');
@@ -81,13 +86,43 @@ test('calendar: October 2, 1988 was a Sunday; times format in 12-hour clock', ()
   assert.equal(phase(22 * 60), 'night');
 });
 
+test('timeline: the countdown reads 28:06:42:12 on the seventh hole and runs out on October 30', () => {
+  assert.equal(TL.formatCountdown(TL.countdown(2, 90)), '28:06:42:12');
+  const end = TL.countdown(30, 8 * 60 + 13);
+  assert.equal(end.total, 0);
+  assert.ok(TL.countdown(30, 8 * 60 + 12).total > 0);
+  assert.equal(TL.countdown(29, 8 * 60 + 12).d, 1);
+});
+
+test('timeline: beats run forward in time, start with real scripts, and only the last has no successor', () => {
+  let prev = -1;
+  for (const b of TL.BEATS) {
+    const at = TL.abs(b.day, parseTime(b.time));
+    assert.ok(at > prev, `${b.id} starts before the beat before it`);
+    prev = at;
+    assert.ok(SCRIPTS[b.start], `${b.id}: missing start script ${b.start}`);
+    if (b.until) assert.ok(parseTime(b.until) > parseTime(b.time), `${b.id}: until is before start`);
+    if (b.sleep) assert.ok(ROOMS[b.sleep], `${b.id}: sleeps in missing room`);
+    assert.equal(!!b.last, b === TL.BEATS[TL.BEATS.length - 1]);
+  }
+  assert.ok(TL.BEATS.every(b => b.day >= 1 && b.day <= 30));
+});
+
+test('state: conditions read flags, negations, lists, beats and functions', () => {
+  const s = stateAt('oct4', ['a']);
+  assert.ok(cond(s, 'a')); assert.ok(cond(s, '!b')); assert.ok(cond(s, ['a', '!b'])); assert.ok(!cond(s, ['a', 'b']));
+  assert.ok(cond(s, st => st.has('a'))); assert.ok(cond(s, undefined));
+  assert.ok(cond(s, 'beat:oct4')); assert.ok(cond(s, 'beat:oct3|oct4')); assert.ok(!cond(s, 'beat:oct3'));
+  assert.ok(cond(s, 'from:flood')); assert.ok(!cond(s, 'from:oct5')); assert.ok(cond(s, 'before:oct5')); assert.ok(cond(s, '!beat:frank|flood'));
+});
+
 test('rooms: exits lead to real spawns, and there is always a way back', () => {
   for (const [id, r] of Object.entries(ROOMS)) {
     for (const ex of r.exits) {
-      if (!ex.to) { assert.ok(SCRIPTS[ex.script], `${id}: blocking exit with no script`); continue; }
+      if (!ex.to) { assert.ok(SCRIPTS[ex.script], `${id}: exit with no script`); continue; }
       assert.ok(ROOMS[ex.to], `${id}: exit to missing room ${ex.to}`);
       assert.ok(ROOMS[ex.to].spawns[ex.spawn], `${id}: exit to missing spawn ${ex.to}.${ex.spawn}`);
-      const back = ROOMS[ex.to].exits.some(b => b.to === id) || ROOMS[ex.to].props.some(p => (SCRIPTS[p.script] || []).some?.(s => s[0] === 'go' && s[1] === id));
+      const back = ROOMS[ex.to].exits.some(b => b.to === id) || ROOMS[ex.to].props.some(p => p.script && TL.BEATS.some(b => (resolveAll(p.script, stateAt(b.id, ['oct7_english'])) || []).some(s => s[0] === 'go' && s[1] === id)));
       assert.ok(back, `${ex.to} has no way back to ${id}`);
     }
   }
@@ -96,66 +131,72 @@ test('rooms: exits lead to real spawns, and there is always a way back', () => {
 
 test('rooms: spawns stand on open ground, outside every exit', () => {
   for (const [id, r] of Object.entries(ROOMS)) for (const sp of Object.keys(r.spawns)) {
-    const w = freshWorld(id, sp);
+    const w = freshWorld(id, sp, stateAt('oct1', ['woke_oct2']));
     assert.ok(!w.blocked(feetBox(w.player.x, w.player.y), true), `${id}.${sp} is inside something solid`);
-    assert.ok(!w.exitAt(), `${id}.${sp} is inside an exit`);
+    const e = w.exitAt();
+    assert.ok(!e || e.trigger, `${id}.${sp} is inside an exit`);
   }
 });
 
-test('rooms: every script, speaker, note and item a room or scene names exists', () => {
+test('rooms: every script, speaker, note and item named anywhere exists', () => {
   for (const [id, r] of Object.entries(ROOMS)) {
     for (const p of r.props) {
       if (p.script) assert.ok(SCRIPTS[p.script], `${id}.${p.id}: missing script ${p.script}`);
       if (p.again) assert.ok(SCRIPTS[p.again], `${id}.${p.id}: missing script ${p.again}`);
     }
-    for (const n of r.npcs) { assert.ok(CAST[n.who], `${id}: unknown person ${n.who}`); assert.ok(SCRIPTS[n.script], `${id}.${n.id}: missing script`); }
-    for (const e of r.onEnter) assert.ok(SCRIPTS[e.script]);
+    for (const n of r.npcs) { assert.ok(CAST[n.who], `${id}: unknown person ${n.who}`); if (n.script) assert.ok(SCRIPTS[n.script], `${id}.${n.id}: missing script ${n.script}`); }
+    for (const e of r.onEnter) assert.ok(SCRIPTS[e.script], `${id}: missing onEnter ${e.script}`);
+    for (const e of r.exits) if (e.script) assert.ok(SCRIPTS[e.script], `${id}: missing exit script ${e.script}`);
   }
-  for (const id of Object.keys(SCRIPTS)) {
-    for (const state of STATES) {
-      for (const st of allSteps(resolveAll(id, state), state)) {
-        if (st[0] === 'say' && st[1]) assert.ok(CAST[st[1]], `${id}: unknown speaker ${st[1]}`);
-        if (st[0] === 'note') assert.ok(NOTES[st[1]], `${id}: unknown note ${st[1]}`);
-        if (st[0] === 'give') assert.ok(ITEMS[st[1]], `${id}: unknown item ${st[1]}`);
-        if (st[0] === 'run') assert.ok(SCRIPTS[st[1]], `${id}: runs missing ${st[1]}`);
-        if (st[0] === 'go') assert.ok(ROOMS[st[1]]?.spawns[st[2]], `${id}: goes to missing ${st[1]}.${st[2]}`);
-        if (st[0] === 'say') assert.ok(String(st[2]).length > 0);
-      }
+  const states = [];
+  for (const b of TL.BEATS) for (let i = 0; i <= FLAGS.length; i += 4) states.push(stateAt(b.id, FLAGS.slice(0, i)));
+  for (const id of Object.keys(SCRIPTS)) for (const state of states) {
+    for (const st of allSteps(resolveAll(id, state), state)) {
+      if (st[0] === 'say' && st[1]) assert.ok(CAST[st[1]], `${id}: unknown speaker ${st[1]}`);
+      if (st[0] === 'note') assert.ok(NOTES[st[1]], `${id}: unknown note ${st[1]}`);
+      if (st[0] === 'give' || st[0] === 'take') assert.ok(ITEMS[st[1]], `${id}: unknown item ${st[1]}`);
+      if (st[0] === 'run') assert.ok(SCRIPTS[st[1]], `${id}: runs missing ${st[1]}`);
+      if (st[0] === 'go') assert.ok(ROOMS[st[1]]?.spawns[st[2]], `${id}: goes to missing ${st[1]}.${st[2]}`);
+      if (st[0] === 'say') assert.ok(String(st[2]).length > 0, `${id}: empty line`);
+      if (st[0] === 'time') assert.match(st[1], /^\d\d:\d\d$/);
     }
   }
 });
 
-// flood-fill where the player's feet can go (ignoring people), then check every exit and every
-// usable thing can be touched from somewhere in it
-test('rooms: every exit and every usable thing can be reached on foot', () => {
-  for (const [id, r] of Object.entries(ROOMS)) {
-    const firstSpawn = Object.keys(r.spawns)[0];
-    const w = freshWorld(id, firstSpawn);
-    const s = new GameState();
-    ['rose_asked', 'rose_visit'].forEach(f => s.set(f)); // make the conditional people present
-    const step = 2, seen = new Set(), q = [[Math.round(w.player.x), Math.round(w.player.y)]];
-    const key = (x, y) => `${x},${y}`;
-    seen.add(key(...q[0]));
-    const spots = [];
-    while (q.length) {
-      const [x, y] = q.pop();
-      spots.push([x, y]);
-      for (const [dx, dy] of [[step, 0], [-step, 0], [0, step], [0, -step]]) {
-        const nx = x + dx, ny = y + dy, k = key(nx, ny);
-        if (seen.has(k) || w.blocked(feetBox(nx, ny), true)) continue;
-        seen.add(k); q.push([nx, ny]);
+// flood-fill where the player's feet can go (ignoring people), then check every live exit and
+// every usable thing can be touched from somewhere in it, in every beat of the story
+test('rooms: every exit and every usable thing can be reached on foot, in every beat', () => {
+  const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  for (const b of TL.BEATS) {
+    for (const [id, r] of Object.entries(ROOMS)) {
+      const s = stateAt(b.id, ['rose_asked', 'rose_visit', 'woke_oct2', 'frank_seen', 'golf_woken', 'engine_seen', 'cancelled', 'sparrow_led']);
+      const w = freshWorld(id, Object.keys(r.spawns)[0], s);
+      const step = 2, seen = new Set(), q = [[Math.round(w.player.x), Math.round(w.player.y)]];
+      const key = (x, y) => `${x},${y}`;
+      seen.add(key(...q[0]));
+      const spots = [];
+      while (q.length) {
+        const [x, y] = q.pop();
+        spots.push([x, y]);
+        for (const [dx, dy] of [[step, 0], [-step, 0], [0, step], [0, -step]]) {
+          const nx = x + dx, ny = y + dy, k = key(nx, ny);
+          if (seen.has(k) || w.blocked(feetBox(nx, ny), true)) continue;
+          seen.add(k); q.push([nx, ny]);
+        }
       }
-    }
-    const exitRect = e => ({ x: e.x * TILE, y: e.y * TILE, w: e.w * TILE, h: e.h * TILE });
-    const hits = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-    for (const e of r.exits) assert.ok(spots.some(([x, y]) => hits(feetBox(x, y), exitRect(e))), `${id}: exit to ${e.to || e.script} unreachable`);
-    for (const t of w.interactables()) {
-      const rr = w.reachRect(t);
-      const ok = spots.some(([x, y]) => ['up', 'down', 'left', 'right'].some(f => {
-        Object.assign(w.player, { x, y, facing: f });
-        return hits(w.probeBox(), rr);
-      }));
-      assert.ok(ok, `${id}: ${t.label} can't be reached`);
+      const rect = e => ({ x: e.x * TILE, y: e.y * TILE, w: e.w * TILE, h: e.h * TILE });
+      for (const e of r.exits) {
+        if (e.when !== undefined && !cond(s, e.when)) continue;
+        assert.ok(spots.some(([x, y]) => hits(feetBox(x, y), rect(e))), `${b.id}/${id}: exit to ${e.to || e.script} unreachable`);
+      }
+      for (const t of w.interactables()) {
+        const rr = w.reachRect(t);
+        const ok = spots.some(([x, y]) => ['up', 'down', 'left', 'right'].some(f => {
+          Object.assign(w.player, { x, y, facing: f });
+          return hits(w.probeBox(), rr);
+        }));
+        assert.ok(ok, `${b.id}/${id}: ${t.label} can't be reached`);
+      }
     }
   }
 });
@@ -169,19 +210,14 @@ test('storage: settings and saves are sanitised, and Continue finds the newest s
   store.storage.setItem(ST.KEYS.slot('1'), '{not json');
   assert.equal(store.load('1'), null);
   assert.equal(store.latest(), null);
-  const g = new GameState(); g.set('rose_asked'); g.addNote('fridge'); g.give('greene');
+  const g = stateAt('oct4', ['rose_asked']); g.addNote('fridge'); g.give('greene');
   assert.ok(store.save('2', g.toSave()));
   const back = GameState.fromSave(store.load('2'));
   assert.ok(back.has('rose_asked') && back.hasNote('fridge') && back.hasItem('greene'));
-  assert.equal(back.day, 2);
+  assert.equal(back.beat, 'oct4');
+  assert.equal(back.day, 4);
   assert.equal(store.latest().slot, '2');
-  assert.equal(ST.sanitizeSave({ v: 99, room: 'x', x: 1, y: 1, day: 2, time: 0 }), null);
-});
-
-test('state: conditions read flags, negations, lists and functions', () => {
-  const s = new GameState(); s.set('a');
-  assert.ok(cond(s, 'a')); assert.ok(cond(s, '!b')); assert.ok(cond(s, ['a', '!b'])); assert.ok(!cond(s, ['a', 'b']));
-  assert.ok(cond(s, st => st.has('a'))); assert.ok(cond(s, undefined));
+  assert.equal(ST.sanitizeSave({ v: 1, room: 'x', x: 1, y: 1, day: 2, time: 0 }), null, 'Stage 1 saves are retired');
 });
 
 test('runner: if, run and choice steps steer the scene', () => {
@@ -197,16 +233,22 @@ test('runner: if, run and choice steps steer the scene', () => {
   assert.ok(r.done && s.has('yes') && !s.has('no') && s.has('B') && !s.has('A'));
 });
 
-test('world: walls and furniture block; the player slides along them', () => {
+test('world: walls and furniture block; the player slides along them; followers follow', () => {
   const w = freshWorld('donnie_room', 'start');
   const before = w.player.y;
   for (let i = 0; i < 200; i++) w.move(0, -2);
   assert.ok(w.player.y > 3 * TILE && w.player.y < before, 'stopped at the wall face');
   for (let i = 0; i < 200; i++) w.move(-2, -1);
   assert.ok(w.player.x > 3 * TILE - 1, 'the bed is solid');
+  const s = stateAt('oct4', ['walking_gretchen']);
+  const ws = freshWorld('street', 'bus_stop', s);
+  const g = ws.npcs.find(n => n.id === 'gretchen_f');
+  ws.player.x -= 100;
+  for (let i = 0; i < 300; i++) ws.update(1 / 60);
+  assert.ok(Math.hypot(g.x - ws.player.x, g.y - ws.player.y) < 20, 'Gretchen keeps up');
 });
 
-// ---- a whole playthrough, driven like a player would: walk up to things and press Enter ----
+// ---- the whole story so far, driven like a player would: walk up to things and press Enter ----
 
 let tick = 0;
 function pump(app, frames = 1) {
@@ -216,96 +258,191 @@ function pump(app, frames = 1) {
   }
 }
 
-function finishScene(app, limit = 20000) {
-  const play = () => app.scenes.find(s => s instanceof PlayScene);
+const playOf = app => app.scenes.find(s => s instanceof PlayScene);
+
+function finishScene(app, limit = 40000) {
   for (let i = 0; i < limit; i++) {
-    const p = play();
+    const p = playOf(app);
     if (!p || (!p.busy && p.fade <= 0)) return;
     pump(app, 1);
   }
-  throw new Error('scene never finished');
+  throw new Error(`scene never finished (beat ${playOf(app)?.state.beat}, block ${playOf(app)?.runner?.block?.constructor.name})`);
+}
+
+function goTo(app, room) {
+  const play = playOf(app), w = play.world;
+  if (w.room.id !== room) { w.enter(room, Object.keys(ROOMS[room].spawns)[0]); play.checkOnEnter(); finishScene(app); }
 }
 
 function use(app, room, targetId) {
-  const play = app.top;
-  const w = play.world;
-  if (w.room.id !== room) { w.enter(room, Object.keys(ROOMS[room].spawns)[0]); play.checkOnEnter(); finishScene(app); }
-  const t = w.interactables().find(x => x.ref.id === targetId);
-  assert.ok(t, `${room}: nothing called ${targetId} (flags: ${[...play.state.flags].join(' ')})`);
+  goTo(app, room);
+  const play = playOf(app);
+  const t = play.world.interactables().find(x => x.ref.id === targetId);
+  assert.ok(t, `${room}: nothing called ${targetId} (beat ${play.state.beat}; flags: ${[...play.state.flags].join(' ')})`);
   play.interact(t);
   finishScene(app);
 }
 
-test('playthrough: the evening of October 2 runs in order and ends the stage', () => {
+// stand at a tile position and let a frame run, so exits and triggers fire
+function stand(app, room, tx, ty) {
+  goTo(app, room);
+  const play = playOf(app);
+  Object.assign(play.world.player, { x: tx * TILE, y: ty * TILE });
+  app.update(1 / 60);
+  finishScene(app);
+}
+
+function walkInto(app, room, tx, ty, key) {
+  goTo(app, room);
+  const play = playOf(app);
+  Object.assign(play.world.player, { x: tx * TILE, y: ty * TILE });
+  for (let i = 0; i < 40; i++) { app.input.keyDown(key); app.update(1 / 60); }
+  app.input.keyUp(key);
+  finishScene(app);
+}
+
+test('playthrough: October 1 through the "Controlling Fear" tape, in order', () => {
   const app = newApp();
   app.newGame();
   const play = app.top;
-  assert.ok(play instanceof PlayScene);
   finishScene(app);
   const s = play.state;
-  assert.equal(s.room, 'donnie_room');
+  assert.equal(s.beat, 'oct1');
+  assert.equal(formatDate(s.day), 'SAT OCT 1 1988');
   assert.ok(s.hasNote('ridge'));
-  assert.equal(s.objective, 'Head downstairs.');
   assert.ok(app.store.load('auto'), 'the intro autosaves');
 
-  // the table does nothing until everyone has been called
+  // ---- prologue
   use(app, 'kitchen', 'table');
-  assert.ok(!s.has('dinner_done'));
-  // knocking on Elizabeth's door before Mom asks doesn't count
+  assert.ok(!s.has('dinner_done'), 'no dinner before everyone is called');
   use(app, 'hall', 'door_liz');
-  assert.ok(!s.has('told_liz'));
-
+  assert.ok(!s.has('told_liz'), "Elizabeth's door does nothing before Mom asks");
   use(app, 'kitchen', 'fridge');
-  assert.ok(s.hasNote('fridge'));
   use(app, 'kitchen', 'rose');
-  assert.ok(s.has('rose_asked'));
   use(app, 'yard', 'eddie');
-  assert.ok(s.has('told_dad') && !s.has('dinner_ready'));
-  assert.ok(!play.world.npcs.some(n => n.id === 'eddie'), 'Dad has gone inside');
   use(app, 'hall', 'door_liz');
-  assert.ok(s.has('told_liz') && s.has('dinner_ready'));
-
+  assert.ok(s.has('dinner_ready'));
   use(app, 'kitchen', 'table');
   assert.ok(s.has('dinner_done') && s.hasNote('dinner'));
-  assert.equal(formatTime(s.time), '7:20 PM');
-
-  // the front door is shut for the night now
-  play.world.enter('living', 'from_kitchen');
-  Object.assign(play.world.player, { x: 10 * TILE, y: 10.3 * TILE, facing: 'down' });
-  for (let i = 0; i < 30; i++) { app.input.keyDown('ArrowDown'); app.update(1 / 60); }
-  app.input.keyUp('ArrowDown');
-  finishScene(app);
-  assert.equal(play.world.room.id, 'living', 'could not leave after dinner');
-
-  // going up to his room triggers Mom's visit
-  play.world.enter('donnie_room', 'from_hall');
-  play.checkOnEnter();
-  finishScene(app);
-  assert.ok(s.has('rose_talk') && s.hasNote('mom') && s.has('lamp_off'));
-  assert.equal(formatTime(s.time), '9:05 PM');
-
+  walkInto(app, 'living', 10, 10.3, 'ArrowDown');
+  assert.equal(play.world.room.id, 'living', 'the front door is shut after dinner');
+  play.world.enter('donnie_room', 'from_hall'); play.checkOnEnter(); finishScene(app);
+  assert.ok(s.has('rose_talk'));
   use(app, 'donnie_room', 'bed');
-  assert.ok(!s.has('stage1_end'), 'no sleeping before the pills');
+  assert.equal(s.beat, 'oct1', 'no sleeping before the pills');
   use(app, 'hall', 'door_bath');
-  assert.ok(s.has('took_pills'));
+  use(app, 'donnie_room', 'bed');
 
-  play.world.enter('donnie_room', 'from_hall');
-  const bed = play.world.interactables().find(x => x.ref.id === 'bed');
-  play.interact(bed);
-  for (let i = 0; i < 20000 && !(app.top instanceof EndScene); i++) pump(app, 1);
-  assert.ok(app.top instanceof EndScene, 'the stage ends after sleeping');
+  // ---- October 2: Frank
+  assert.equal(s.beat, 'frank');
+  assert.equal(formatTime(s.time), '12:50 AM');
+  assert.ok(s.has('woke_oct2'));
+  walkInto(app, 'living', 10, 10.3, 'ArrowDown');
+  assert.equal(play.world.room.id, 'living', "can't leave without the marker");
+  use(app, 'kitchen', 'fridge');
+  assert.ok(s.hasItem('marker'));
+  stand(app, 'street', 42.8, 6);
+  assert.equal(play.world.room.id, 'golf', 'the east end of the street leads to the golf course tonight');
+  stand(app, 'golf', 14.3, 6);
+  assert.ok(s.has('frank_seen') && s.hasNote('frank'));
+  use(app, 'golf', 'frank');
+  assert.ok(s.has('countdown'));
+
+  // ---- the morning after
+  assert.equal(s.beat, 'engine');
+  assert.equal(play.world.room.id, 'golf');
+  assert.ok(s.hasNote('arm'));
+  assert.equal(TL.formatCountdown(TL.countdown(s.day, s.time)).slice(0, 5), '27:22', 'counting down from the seventh hole');
+  stand(app, 'street', 17.9, 4.3);
+  assert.equal(play.world.room.id, 'street', 'the officer stops him');
+  use(app, 'street', 'officer');
+  stand(app, 'street', 17.9, 4.3);
+  assert.equal(play.world.room.id, 'yard');
+  assert.ok(s.has('engine_seen') && s.hasNote('engine'));
+  use(app, 'yard', 'eddie_e');
+  assert.equal(play.world.room.id, 'hotel');
+  use(app, 'hotel', 'samantha');
+  use(app, 'hotel', 'bed1');
+
+  // ---- October 3
+  assert.equal(s.beat, 'oct3');
+  assert.equal(play.world.room.id, 'school_front');
+  use(app, 'school_front', 'doors');
+  use(app, 'school_hall', 'door_english');
+  use(app, 'english', 'my_desk');
+  assert.ok(s.has('gretchen_sat') && s.hasNote('gretchen'));
+  assert.equal(s.beat, 'oct3_eve');
+  assert.equal(play.world.room.id, 'oldgun');
+  use(app, 'oldgun', 'taurus');
+  assert.ok(!s.has('thurman1_done'), "Dad won't drive on until she's safe");
+  use(app, 'oldgun', 'sparrow');
+  use(app, 'oldgun', 'sparrow_mail');
+  assert.ok(s.hasNote('dies_alone'));
+  use(app, 'oldgun', 'taurus');
+  assert.ok(s.has('thurman1_done') && s.hasNote('thurman_frank'));
+  use(app, 'living', 'couch');
+
+  // ---- the flood
+  assert.equal(s.beat, 'flood');
+  assert.equal(formatTime(s.time), '2:00 AM');
+  use(app, 'living', 'frank');
+  assert.equal(play.world.room.id, 'school_hall');
+  assert.ok(s.has('flashlight') && s.hasItem('axe'));
+  use(app, 'school_hall', 'frank');
+  stand(app, 'school_hall', 29.9, 6.7);
+  assert.equal(play.world.room.id, 'basement');
+  use(app, 'basement', 'valve');
+
+  // ---- October 4
+  assert.equal(s.beat, 'oct4');
+  assert.ok(!s.has('flashlight') && !s.hasItem('axe'));
+  assert.ok(s.hasNote('mongrel'));
+  assert.equal(play.world.room.id, 'street');
+  use(app, 'living', 'couch');
+  assert.equal(s.beat, 'oct4', "can't sleep the day away before walking Gretchen home");
+  use(app, 'street', 'gretchen');
+  assert.ok(s.has('walking_gretchen'));
+  stand(app, 'street', 32.2, 6); stand(app, 'street', 22.2, 6); stand(app, 'street', 12.2, 6); stand(app, 'street', 3.2, 6);
+  assert.ok(s.has('gretchen_home') && s.hasNote('going_together') && s.hasNote('superhero'));
+  use(app, 'living', 'couch');
+
+  // ---- October 5 and 6
+  assert.equal(s.beat, 'oct5');
+  use(app, 'living', 'tv');
+  assert.ok(s.hasNote('debate'));
+  use(app, 'living', 'couch');
+  assert.equal(s.beat, 'oct6');
+  use(app, 'living', 'couch');
+  assert.equal(s.beat, 'oct6', 'Dr. Thurman first');
+  use(app, 'yard', 'car');
+  assert.ok(s.has('thurman2_done') && s.hasNote('hypnosis'));
+  use(app, 'living', 'couch');
+
+  // ---- October 7
+  assert.equal(s.beat, 'oct7');
+  use(app, 'school_hall', 'door_health');
+  assert.equal(play.world.room.id, 'school_hall', 'English first');
+  use(app, 'school_hall', 'door_english');
+  use(app, 'english', 'my_desk');
+  assert.ok(s.hasNote('handwriting'));
+  use(app, 'school_hall', 'door_health');
+  assert.equal(play.world.room.id, 'health');
+  const ends = () => app.top instanceof EndScene;
+  const t = play.world.interactables().find(x => x.ref.id === 'my_desk');
+  play.interact(t);
+  for (let i = 0; i < 40000 && !ends(); i++) pump(app, 1);
+  assert.ok(ends(), 'the build ends after the tape');
+  assert.ok(s.hasNote('controlling_fear'));
   const saved = app.store.load('auto');
-  assert.ok(saved.flags.includes('stage1_end'));
+  assert.equal(saved.beat, 'build_end');
 
-  // Continue puts you back in the bedroom with everything intact
-  for (let i = 0; i < 200 && !(app.top instanceof TitleScene); i++) pump(app, 1);
-  assert.ok(app.top instanceof TitleScene);
+  // Continue comes back to the end of the build without breaking
+  for (let i = 0; i < 300 && !(app.top instanceof TitleScene); i++) pump(app, 1);
   app.continueGame();
-  assert.equal(app.top.state.room, 'donnie_room');
-  assert.ok(app.top.state.has('took_pills'));
+  assert.equal(app.top.state.beat, 'build_end');
 });
 
-test('playthrough: a save mid-evening restores position, time, flags and journal', () => {
+test('playthrough: a save mid-day restores beat, place, time, flags and journal', () => {
   const app = newApp();
   app.newGame();
   finishScene(app);
@@ -319,8 +456,23 @@ test('playthrough: a save mid-evening restores position, time, flags and journal
   app2.loadGame(app2.store.load('1'));
   const p2 = app2.top;
   assert.equal(p2.state.room, 'yard');
+  assert.equal(p2.state.beat, 'oct1');
   assert.ok(Math.abs(p2.world.player.x - x) < 0.2 && Math.abs(p2.world.player.y - y) < 0.2);
   assert.ok(p2.state.has('rose_asked'));
   assert.equal(p2.state.objective, 'Tell Dad and Elizabeth: dinner at six.');
   assert.ok(p2.world.npcs.some(n => n.id === 'eddie'));
+});
+
+test('clock: time creeps forward while exploring but stops at the beat\'s limit', () => {
+  const app = newApp();
+  app.newGame();
+  finishScene(app);
+  const s = app.top.state;
+  const t0 = s.time;
+  for (let i = 0; i < 60 * 30; i++) app.update(1 / 60);
+  assert.ok(s.time > t0 + 9 && s.time < t0 + 11, `30 seconds is ten minutes (${s.time - t0})`);
+  s.time = parseTime('23:29');
+  for (let i = 0; i < 60 * 60; i++) app.update(1 / 60);
+  assert.equal(s.time, parseTime('23:30'));
+  assert.equal(s.beat, 'oct1', 'the clock alone never ends a beat');
 });

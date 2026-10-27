@@ -1,11 +1,8 @@
-// Everything that is said and done in the Stage 1 evening of October 2, 1988. A script is a
-// list of steps (see script.js for the step types), or a function of the state that returns one.
-// The dialogue paraphrases the film's opening evening rather than reproducing it.
+// The prologue: Saturday, October 1, 1988, from late afternoon until Donnie goes to bed. These
+// are also the house's default lines; house.js overrides them on later days.
 
-import { formatTime, phase } from './calendar.js';
-
-const n = text => ['say', null, text];
-const say = (who, text) => ['say', who, text];
+import { formatTime, phase } from '../calendar.js';
+import { n, say } from './util.js';
 
 // after either errand: once both Dad and Elizabeth know, dinner can start
 const errandDone = [
@@ -18,11 +15,11 @@ const edgeLine = s => (phase(s.time) === 'night'
   ? "It's late. Mom will be watching the windows."
   : "Dinner's at six. Better not wander off tonight.");
 
-export const SCRIPTS = {
+export const PROLOGUE = {
   // ---- the opening ---------------------------------------------------------------------------
 
   intro: [
-    ['card', ['MIDDLESEX, VIRGINIA', 'OCTOBER 2, 1988'], 3.4],
+    ['card', ['MIDDLESEX, VIRGINIA', 'SATURDAY, OCTOBER 1, 1988'], 3.4],
     ['note', 'ridge'],
     n("He woke up this morning at the edge of Carpathian Ridge, curled up next to his bike. He still doesn't know how he got up there."),
     n("It's late afternoon now. Something is cooking downstairs."),
@@ -48,7 +45,6 @@ export const SCRIPTS = {
   dormer: [n('His bedroom window, upstairs. The lamp is still on.')],
 
   bed: s => {
-    if (s.has('stage1_end')) return [n('He lies down. The house is quiet. (The rest of this night arrives in the next stage of the game.)')];
     if (s.has('took_pills')) {
       return [
         n('The bed. The house is quiet except for the clock downstairs.'),
@@ -67,11 +63,9 @@ export const SCRIPTS = {
     ['place', 'player', 3.6, 5.2, 'left'],
     ['set', 'lamp_off'],
     ['time', '23:30'],
-    ['set', 'stage1_end'],
-    ['save'],
     ['wait', 0.8],
-    ['card', ['OCTOBER 2, 1988', '11:30 PM', '', 'The house goes quiet.'], 3.6],
-    ['end'],
+    ['card', ['The house goes quiet.', '', 'Downstairs, Dad falls asleep in the La-Z-Boy', 'in front of a replay of the debate.'], 3.6],
+    ['sleep'],
   ],
 
   rose_bedroom: [
@@ -158,7 +152,7 @@ export const SCRIPTS = {
     ? 'The news. A man in a suit talks about the election, and then the weather, in the same voice.'
     : "Who's the Boss? Samantha knows every word of the theme song and sings all of them.")],
   newspaper: [
-    n('The Sunday paper. Bush and Dukakis on the front page, five weeks out, both mid-sentence. The rest is under a coffee ring.'),
+    n('The Saturday paper. Bush and Dukakis on the front page, five weeks out, both mid-sentence. The rest is under a coffee ring.'),
     ['note', 'election'],
   ],
   recliner: [n("Dad's La-Z-Boy. Technically anyone can sit in it. Technically.")],
@@ -193,13 +187,12 @@ export const SCRIPTS = {
 
   // ---- kitchen -------------------------------------------------------------------------------
 
-  fridge: [
+  fridge: s => (s.hasNote('fridge') ? [n("WHERE IS DONNIE? Nobody's crossed it out.")] : [
     n('The fridge notepad. In magic marker, in Mom\'s handwriting:'),
     n('WHERE IS DONNIE?'),
     say('donnie', '...Good question.'),
     ['note', 'fridge'],
-  ],
-  fridge_again: [n("WHERE IS DONNIE? Nobody's crossed it out.")],
+  ]),
   sink: [n('Dishes soaking. The faucet drips about once a second, a little out of time with the clock.')],
   stove: s => [n(s.has('dinner_done') ? 'Leftovers under foil. The oven ticks as it cools.' : "Pot roast. It's been in since three.")],
   clock: s => [n(`The kitchen clock says ${formatTime(s.time)}.`)],
@@ -313,5 +306,5 @@ export const SCRIPTS = {
   house_d: [n('The last house before the road curves. A dog barks once behind the fence, then thinks better of it.')],
   street_tree: [n('The wind moves the top of the tree and nothing else.')],
   streetlamp: s => [n(phase(s.time) === 'day' ? "A streetlamp. It hasn't come on yet." : 'A streetlamp, buzzing. Moths, even this late in the year.')],
-  bus_stop: [n('The school bus stops here every weekday morning. Monday is tomorrow.')],
+  bus_stop: [n('The school bus stops here every weekday morning.')],
 };

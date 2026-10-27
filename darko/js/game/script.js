@@ -11,9 +11,12 @@
 //   ['set'|'unset', flag]   ['give'|'take', item]   ['note', journalId]   ['obj', text]
 //   ['go', room, spawn]     ['place', 'player', x, y, facing]   ['walk', who, x, y]   ['face', who, dir]
 //   ['time', 'HH:MM']       ['wait', seconds]   ['fadeOut']   ['fadeIn']   ['card', lines, seconds]
-//   ['sfx', name]           ['shake', amount, seconds]   ['save']   ['call', fn(state, host)]   ['end']
+//   ['sfx', name]           ['shake', amount, seconds]   ['save']   ['call', fn(state, host)]
+//   ['sleep']               finish the current beat (see timeline.js)
+//   ['wobble', amount, s]   ['flash']   ['dust', seconds]   screen effects
+//   ['follow', who, on]     ['end', lines]   end of the current build
 
-import { SCRIPTS } from './scripts.js';
+import { SCRIPTS } from './scripts/index.js';
 import { cond } from './state.js';
 
 export function resolve(script, state) {
