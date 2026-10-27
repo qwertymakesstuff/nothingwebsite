@@ -24,7 +24,16 @@ export function canvasSprite(w, h, paint) {
   const px = new Uint8Array(w * h).fill(TRANSPARENT);
   const set = (x, y, c) => { if (x >= 0 && y >= 0 && x < w && y < h) px[(y | 0) * w + (x | 0)] = c; };
   const rect = (x, y, rw, rh, c) => { for (let j = 0; j < rh; j++) for (let i = 0; i < rw; i++) set(x + i, y + j, c); };
-  paint({ set, rect, w, h });
+  const line = (x0, y0, x1, y1, c) => {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+    for (let k = 0; k <= n; k++) set(Math.round(x0 + (x1 - x0) * k / n), Math.round(y0 + (y1 - y0) * k / n), c);
+  };
+  const disc = (cx, cy, rx, ry, c) => {
+    for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) if ((x * x) / (rx * rx || 1) + (y * y) / (ry * ry || 1) <= 1.05) set(cx + x, cy + y, c);
+  };
+  // ordered dither: every other pixel in a checker
+  const dith = (x, y, rw, rh, c, odd = 0) => { for (let j = 0; j < rh; j++) for (let i = 0; i < rw; i++) if ((x + i + y + j + odd) % 2 === 0) set(x + i, y + j, c); };
+  paint({ set, rect, line, disc, dith, w, h });
   return { w, h, px };
 }
 
