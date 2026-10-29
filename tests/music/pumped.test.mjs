@@ -253,3 +253,129 @@ test('pumped: the page wires up its scripts and ids', () => {
   const made = new Set([...main.matchAll(/id: '([A-Za-z]+)'/g)].map(m => m[1]));  // created by the script
   for (const id of new Set([...main.matchAll(/\$\('#([A-Za-z]+)'\)/g)].map(m => m[1]))) if (!made.has(id)) assert.match(html, new RegExp(`id="${id}"`), `#${id} missing from index.html`);
 });
+
+// ── Phase 2: regimes, progression ────────────────────────────────────────────
+const PG = await load('progression.js');
+const { REGIMES } = await load('regimes.js');
+
+test('pumped: every regime starts, changes the market and ends', () => {
+  for (const id of Object.keys(REGIMES)) {
+    const m = M.createMarket({ seed: 'REG' + id });
+    const notes = M.forceRegime(m, id);
+    assert.ok(notes.some(n => n.type === 'regime_start' && n.id === id));
+    assert.equal(m.news[0].regime, id);
+    let ended = false;
+    for (let i = 0; i < 200 && !ended; i++) ended = M.stepMarket(m).some(n => n.type === 'regime_end');
+    assert.ok(ended, id);
+  }
+  // flash crash knocks most of the market down at once; safe assets don't crash
+  const m = M.createMarket({ seed: 'FLASH', tuning: { events: 0 } });
+  M.forceRegime(m, 'flash');
+  const crashing = m.order.filter(t => m.assets[t].crash);
+  assert.ok(crashing.length > m.order.length / 2);
+  assert.ok(crashing.every(t => ASSET_BY_T[t].cat !== 'safe'));
+});
+
+test('pumped: bull runs lift and bear markets sink the market on average', () => {
+  const avg = id => {
+    let sum = 0, n = 0;
+    for (let s = 0; s < 12; s++) {
+      const m = M.createMarket({ seed: id + s, tuning: { regimes: 0 } });
+      if (id !== 'none') M.forceRegime(m, id);
+      m.regime && (m.regime.left = 60);
+      for (let i = 0; i < 60; i++) M.stepMarket(m);
+      for (const t of m.order) if (ASSET_BY_T[t].cat !== 'safe') { sum += Math.log(m.assets[t].p / m.assets[t].open); n++; }
+    }
+    return sum / n;
+  };
+  const bull = avg('bull'), bear = avg('bear'), none = avg('none');
+  assert.ok(bull > none && none > bear, `bull ${bull} none ${none} bear ${bear}`);
+});
+
+test('pumped: hype drives pumps, overheating raises crash risk', () => {
+  const count = (hype, kind) => {
+    let n = 0;
+    for (let s = 0; s < 6; s++) {
+      const m = M.createMarket({ seed: 'HYPE' + s, tuning: { events: 0, regimes: 0 } });
+      for (let i = 0; i < 400; i++) {
+        for (const t of ['GOB', 'PUP', 'FIRE', 'HFROG']) if (!m.assets[t].pump && !m.assets[t].crash) m.assets[t].hype = hype;
+        n += M.stepMarket(m).filter(x => x.type === kind && ['GOB', 'PUP', 'FIRE', 'HFROG'].includes(x.t)).length;
+      }
+    }
+    return n;
+  };
+  assert.ok(count(95, 'pump_start') > count(0, 'pump_start') * 1.5);
+  assert.ok(count(100, 'crash_start') > count(40, 'crash_start') * 2);
+});
+
+test('pumped: upgrades cost clout, cap out and change the rules', () => {
+  const meta = SV.defaultMeta();
+  assert.equal(PG.buyUpgrade(meta, 'start').ok, false);
+  meta.clout = 1000;
+  assert.equal(PG.startCash(meta), 1000);
+  for (let i = 0; i < 3; i++) assert.ok(PG.buyUpgrade(meta, 'start').ok);
+  assert.equal(PG.buyUpgrade(meta, 'start').ok, false);
+  assert.equal(PG.startCash(meta), 2000);
+  assert.equal(meta.clout, 1000 - 25 - 60 - 150);
+  assert.deepEqual(PG.leverageOptions(meta), [1, 2, 5]);
+  PG.buyUpgrade(meta, 'margin'); PG.buyUpgrade(meta, 'margin');
+  assert.deepEqual(PG.leverageOptions(meta), [1, 2, 5, 10, 25, 50]);
+  assert.equal(PG.scannerDelay(meta), null);
+  PG.buyUpgrade(meta, 'scanner');
+  assert.equal(PG.scannerDelay(meta), 6);
+  PG.buyUpgrade(meta, 'orbit');
+  assert.deepEqual(PG.markets(meta), ['main', 'orbit']);
+  const run = G.createRun({ seed: 'O', markets: PG.markets(meta) });
+  assert.ok(run.market.assets.MDRT && !run.market.assets.LAMBO);
+  assert.ok(PG.buyTheme(meta, 'synthwave').ok);
+  assert.equal(PG.buyTheme(meta, 'synthwave').ok, false);
+  const back = SV.sanitizeMeta(JSON.parse(JSON.stringify(meta)));
+  assert.deepEqual(back.upgrades, meta.upgrades);
+  assert.ok(back.themes.includes('synthwave'));
+});
+
+test('pumped: achievements unlock once and pay clout', () => {
+  const meta = SV.defaultMeta();
+  const run = G.createRun({ seed: 'ACH', mode: 'sprint', tuning: { events: 0 } });
+  assert.deepEqual(PG.checkAchievements(meta, { run, worth: 1000 }).map(a => a.id), []);
+  const r = G.trade(run, { side: 'buy', t: 'MBYT', amount: 500 });
+  run.market.assets.MBYT.p *= 3;
+  const s = G.trade(run, { side: 'sell', t: 'MBYT', fraction: 1 });
+  const got = PG.checkAchievements(meta, { run, worth: G.worthOf(run), tx: s.tx }).map(a => a.id);
+  assert.ok(r.ok && got.includes('first_trade') && got.includes('first_profit') && got.includes('double'), got.join());
+  const clout = meta.clout;
+  assert.equal(PG.checkAchievements(meta, { run, worth: G.worthOf(run), tx: s.tx }).length, 0);
+  assert.equal(meta.clout, clout);
+  assert.ok(PG.checkAchievements(meta, { run, worth: 1.2e6 }).some(a => a.id === 'millionaire'));
+  // comeback: fell below 20% then recovered
+  run.stats.low = 150;
+  assert.ok(PG.checkAchievements(meta, { run, worth: 1200 }).some(a => a.id === 'comeback'));
+});
+
+test('pumped: clout rewards bigger runs; bankrupt runs pay less', () => {
+  const mk = (worth, peak, reason, duration = 300) => ({ end: { worth, reason }, stats: { peak }, duration });
+  assert.ok(PG.cloutFor(mk(100000, 100000, 'time')) > PG.cloutFor(mk(5000, 5000, 'time')));
+  assert.ok(PG.cloutFor(mk(0, 5000, 'bankrupt')) < PG.cloutFor(mk(5000, 5000, 'time')));
+  assert.ok(PG.cloutFor(mk(0, 0, 'bankrupt')) >= 1);
+});
+
+test('pumped: surviving a market-wide crash is tracked', () => {
+  const run = G.createRun({ seed: 'SURV', tuning: { events: 0, regimes: 0 } });
+  G.trade(run, { side: 'buy', t: 'BORE', amount: 900 });
+  M.forceRegime(run.market, 'flash');
+  run.market.regime.left = 30;
+  // the forced regime's notes were consumed, so replay the trigger through a tick with a fake note
+  run.stats.crashWatch = { w: G.worthOf(run), until: run.market.tick + 25 };
+  for (let i = 0; i < 30; i++) G.stepRun(run);
+  assert.equal(run.stats.crashesSurvived, 1);
+});
+
+test('pumped: parsing typed amounts', () => {
+  assert.equal(F.parseAmount('1,000'), 1000);
+  assert.equal(F.parseAmount('$250.50'), 250.5);
+  assert.equal(F.parseAmount('2k'), 2000);
+  assert.equal(F.parseAmount('1.5m'), 1.5e6);
+  assert.ok(Number.isNaN(F.parseAmount('abc')));
+  assert.ok(Number.isNaN(F.parseAmount('')));
+  assert.ok(Number.isNaN(F.parseAmount('-5')));
+});

@@ -2,6 +2,8 @@
 
 import { createMarket, stepMarket } from './market.js';
 import * as P from './portfolio.js';
+import { ASSET_BY_T } from './assets.js';
+import './regimes.js';
 
 export const MODES = {
   sprint:  { label: 'Sprint',  ticks: 180, blurb: '3 minutes. Make as much as you can.' },
@@ -46,6 +48,18 @@ export function stepRun(run) {
   if (w < s.low) s.low = w;
   if (tick % WORTH_EVERY === 0) { s.worth.push(w); if (s.worth.length > WORTH_LEN) s.worth.shift(); }
 
+  // market-wide crashes: did the player ride one out?
+  for (const n of notes) {
+    const flash = n.type === 'regime_start' && n.id === 'flash';
+    if (!flash && !(n.type === 'headline' && n.headline.kind === 'panic')) continue;
+    if (flash && run.pf.cash >= 0.9 * w) s.cashKing = true;
+    if (!s.crashWatch && w - run.pf.cash > 0.25 * w) s.crashWatch = { w, until: tick + 25 };
+  }
+  if (s.crashWatch && tick >= s.crashWatch.until) {
+    if (w >= 0.9 * s.crashWatch.w) s.crashesSurvived++;
+    s.crashWatch = null;
+  }
+
   if (run.duration && tick >= run.duration) { endRun(run, 'time'); notes.push({ type: 'run_end', reason: 'time' }); }
   else if (P.isBankrupt(run.pf, priceFn(run))) { endRun(run, 'bankrupt'); notes.push({ type: 'run_end', reason: 'bankrupt' }); }
   return notes;
@@ -70,6 +84,7 @@ export function trade(run, order) {
     if (tx.pct > s.bestPct) s.bestPct = tx.pct;
     if (tx.pnl < s.worstTrade) s.worstTrade = tx.pnl;
     if (tx.pnl > 0) s.winners++; else if (tx.pnl < 0) s.losers++;
+    if (tx.pnl > 0 && ['meme', 'degen'].includes(ASSET_BY_T[tx.t].cat)) s.memeWins++;
   }
   s.maxPositions = Math.max(s.maxPositions, Object.keys(run.pf.positions).length);
   const w = worthOf(run);

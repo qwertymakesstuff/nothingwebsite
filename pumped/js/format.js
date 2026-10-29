@@ -48,3 +48,11 @@ export function clock(ticks) {
 }
 
 export const tone = x => (x > 0 ? 'up' : x < 0 ? 'down' : 'flat');
+
+// "1,000", "$250.50", "2k", "1.5m" → number (NaN if it isn't one)
+export function parseAmount(s) {
+  s = String(s || '').trim().toLowerCase().replace(/[$,\s]/g, '');
+  const m = s.match(/^(\d*\.?\d*)([km]?)$/);
+  if (!m || !m[1] || m[1] === '.') return NaN;
+  return Number(m[1]) * (m[2] === 'k' ? 1e3 : m[2] === 'm' ? 1e6 : 1);
+}

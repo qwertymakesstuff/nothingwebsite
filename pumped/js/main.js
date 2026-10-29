@@ -4,16 +4,21 @@ import { CATS, CAT_ORDER, ASSET_BY_T, MARKETS } from './assets.js';
 import { NEWS_LEN, changePct, series, forceEvent, forcePump, forceCrash, forceRegime } from './market.js';
 import { FEE, liqPrice, equityOf, unrealized } from './portfolio.js';
 import { createRun, stepRun, trade, worthOf, priceFn, cashOut, timeLeft, MODES } from './game.js';
-import { Store } from './save.js';
+import { Store, addScore } from './save.js';
+import * as PG from './progression.js';
+import { REGIMES } from './regimes.js';
+import { Fx } from './fx.js';
 import { Sfx } from './audio.js';
-import { Chart, sparkPath } from './chart.js';
+import { Chart, CHART_THEMES, sparkPath } from './chart.js';
 import { randomSeed } from './rng.js';
 import { h, $, $$, setText, setTone } from './dom.js';
 import * as F from './format.js';
+import { parseAmount } from './format.js';
 
 const store = new Store();
 let meta = store.loadMeta();
 const sfx = new Sfx();
+const fx = new Fx(document.getElementById('fx'));
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 
@@ -23,7 +28,7 @@ let loop = null;
 const ui = {
   side: 'buy', range: 300, cat: 'all', search: '', ltab: 'all', htab: 'holdings', pct: null,
   paused: false, modal: null, rows: {}, newsEls: new Map(), lastNews: 0, lastPrice: null,
-  holdKey: '', txKey: '',
+  holdKey: '', txKey: '', scans: [],
 };
 
 const S = () => meta.settings;
@@ -33,6 +38,8 @@ const price = t => run.market.assets[t].p;
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 function boot() {
+  // first visit: follow the system's reduced-motion preference
+  if (store.isFresh() && globalThis.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { meta.settings.reducedMotion = true; saveMeta(); }
   chart = new Chart($('#chart'));
   bindUI();
   applySettings();
@@ -45,11 +52,19 @@ function boot() {
 
 function newRun(opts = {}) {
   const seed = (opts.seed || params.get('seed') || randomSeed()).toString().toUpperCase().slice(0, 24);
-  run = createRun({ seed, mode: opts.mode || 'endless', startCash: 1000, markets: ['main'] });
+  const mode = MODES[opts.mode] ? opts.mode : (ui.mode || 'session');
+  ui.mode = mode;
+  const cash = PG.startCash(meta);
+  run = createRun({ seed, mode, startCash: cash, markets: PG.markets(meta) });
+  run.lev = 1;
+  ui.scans = [];
   mountRun();
   saveRun();
-  closeModal();
-  toast(`New run started. Seed ${seed}. You have $1,000. Don't lose it.`, 'good');
+  ui.modal = null;
+  $('#modal').hidden = true;
+  meta.lifetime.runs++;
+  saveMeta();
+  toast(`${MODES[mode].label} started · seed ${seed}. You have ${F.money(cash)}. Don't lose it.`, 'good');
 }
 
 function mountRun() {
@@ -60,6 +75,8 @@ function mountRun() {
   buildChips();
   buildList();
   renderNews(true);
+  renderScanner();
+  ui.shownWorth = null;
   selectAsset(run.selected, true);
   setSide('buy');
   render();
@@ -77,9 +94,85 @@ function gameTick() {
   if (!running()) return;
   const notes = stepRun(run);
   handleNotes(notes);
+  scan();
+  progress();
   render();
   if (run.market.tick % 5 === 0) saveRun();
   if (run.over) finishRun();
+}
+
+// achievements + milestones, checked after every tick and trade
+function progress(tx = null) {
+  const w = worthOf(run);
+  const got = PG.checkAchievements(meta, { run, worth: w, tx, end: run.end });
+  for (const a of got) {
+    sfx.play('achievement');
+    toast(`🏆 Achievement: ${a.icon} ${a.name} (+${a.clout} Clout)`, 'gold', 5000);
+  }
+  const s = run.stats;
+  s.milestone = s.milestone || 0;
+  while (s.milestone < PG.MILESTONES.length && w >= PG.MILESTONES[s.milestone] && PG.MILESTONES[s.milestone] > s.start) {
+    const v = PG.MILESTONES[s.milestone];
+    s.milestone++;
+    if (PG.MILESTONES[s.milestone] && w >= PG.MILESTONES[s.milestone]) continue;  // skipped past it: only celebrate the biggest
+    sfx.play('milestone');
+    fx.banner(`${F.money(v, { compact: true }).replace('.00', '')}!`, v >= 1e6 ? 'MILLIONAIRE STATUS' : 'NEW NET WORTH MILESTONE', 'gold');
+    fx.rain(12, 'up', ['+$', '💸', '📈', '+%']);
+  }
+  if (got.length) saveMeta();
+}
+
+// Alerts on observable moves: a pump is flagged once it has run for a few seconds, a crash after its
+// first drop. Owned and selected assets are always watched; the Market Scanner watches everything
+// and flags sooner.
+function scan() {
+  const delay = PG.scannerDelay(meta);
+  const m = run.market;
+  for (const t of m.order) {
+    const a = m.assets[t];
+    const mine = !!run.pf.positions[t] || t === run.selected;
+    if (a.pump) {
+      const d = mine ? Math.min(5, delay ?? 5) : delay;
+      if (d != null && a.pump.ticks === d) alertMove(t, 'pump', mine);
+    }
+    if (a.crash) {
+      const d = mine ? 1 : delay != null ? Math.max(1, delay - 1) : null;
+      if (d != null && a.crash.ticks === d) alertMove(t, a.crash.cause === 'rug' ? 'rug' : 'crash', mine);
+    }
+  }
+}
+
+function alertMove(t, kind, mine) {
+  const held = run.pf.positions[t];
+  const pump = kind === 'pump';
+  if (PG.scannerDelay(meta) != null) {
+    ui.scans.unshift({ t, kind, tick: run.market.tick });
+    ui.scans.length = Math.min(ui.scans.length, 6);
+    renderScanner();
+  }
+  if (!mine) return;
+  if (t === run.selected) chartAlert(pump ? '🚀 PUMPING' : kind === 'rug' ? '🧶 RUG PULL' : '⚠ CRASHING', pump ? 'pump' : 'crash');
+  if (!held) return;
+  const share = equityOf(held, price(t)) / Math.max(1, worthOf(run));
+  if (pump) {
+    sfx.play('pump');
+    toast(`🚀 ${t} is pumping! You own ${F.money(equityOf(held, price(t)))} of it.`, 'good');
+    if (share > 0.15) fx.rain(8, 'up', [`${t} 🚀`, '+$', '📈']);
+  } else {
+    sfx.play(kind === 'rug' ? 'rug' : 'crash');
+    toast(`⚠ ${t} is ${kind === 'rug' ? 'getting RUG PULLED' : 'crashing'}! Sell now or hold on?`, 'bad', 4500);
+    if (share > 0.15) { fx.flash('down'); fx.banner(kind === 'rug' ? '🧶 RUG PULL' : '⚠ CRASH ALERT', `${t} is collapsing`, 'bad'); }
+  }
+}
+
+function renderScanner() {
+  const box = $('#scanner');
+  box.hidden = PG.scannerDelay(meta) == null;
+  if (box.hidden) return;
+  box.replaceChildren(h('h3', {}, h('span', { text: '📡 Scanner' }), h('span', { text: ui.scans.length ? '' : 'watching…' })),
+    ...ui.scans.map(x => h('div', { class: `scan ${x.kind === 'pump' ? 'pump' : 'crash'}`, onclick: () => selectAsset(x.t) },
+      h('span', {}, h('b', { text: x.t }), x.kind === 'pump' ? ' pump detected' : x.kind === 'rug' ? ' rug pull!' : ' crash detected'),
+      h('span', { class: 'muted', text: 'T+' + F.clock(x.tick) }))));
 }
 
 // ── Notes from the market ────────────────────────────────────────────────────
@@ -87,24 +180,52 @@ function handleNotes(notes) {
   const held = t => !!run.pf.positions[t];
   for (const n of notes) {
     switch (n.type) {
-      case 'pump_start':
-        if (n.t === run.selected && n.tier !== 'mini') chartAlert('🚀 PUMPING', 'pump');
-        if (held(n.t) && n.tier !== 'mini') { sfx.play('pump'); toast(`🚀 ${n.t} is pumping!`, 'good'); }
-        break;
-      case 'crash_start':
-      case 'rug':
-        if (n.t === run.selected) chartAlert(n.type === 'rug' ? '🧶 RUG PULL' : '⚠ CRASHING', 'crash');
-        if (held(n.t)) { sfx.play(n.type === 'rug' ? 'rug' : 'crash'); toast(`⚠ ${n.t} is ${n.type === 'rug' ? 'getting rugged' : 'crashing'}!`, 'bad'); }
-        break;
       case 'liquidation':
         sfx.play('liquidated');
+        fx.flash('down');
+        fx.banner('💀 LIQUIDATED', `${n.tx.lev}× ${n.tx.t} · lost ${F.money(-n.tx.pnl)}`, 'bad');
         toast(`💀 LIQUIDATED: your ${n.tx.lev}× ${n.tx.t} position was force-closed. Lost ${F.money(-n.tx.pnl)}.`, 'bad', 6000);
         break;
       case 'headline':
+        analyse(n.headline);
         if (n.headline.tickers.some(held) || n.headline.tickers.includes(run.selected)) sfx.play('news');
+        break;
+      case 'regime_start': {
+        const r = REGIMES[n.id];
+        const bad = r.tone < 0;
+        fx.banner(r.name, r.headline.split(':')[0] === r.name.replace(/^\S+ /, '') ? '' : 'Market event', bad ? 'bad' : r.tone > 0 ? 'good' : 'gold');
+        if (n.id === 'flash') { sfx.play('crash'); fx.flash('down'); } else sfx.play(bad ? 'sellLoss' : 'milestone');
+        break;
+      }
+      case 'regime_end':
+        toast(`${REGIMES[n.id].name} is over.`, '');
         break;
     }
   }
+}
+
+// News Analysis upgrade: tags each headline. It reads the hidden truth but is only right with the
+// given accuracy, using its own random stream so the market itself stays deterministic.
+function analyse(n) {
+  const L = PG.lvl(meta, 'news');
+  if (!L || n.analysis) return;
+  const rnd = mulberry(n.id * 7919 + n.tick * 31 + run.seed.length);
+  const a = { tone: n.tone };
+  const acc = PG.newsAccuracy(meta);
+  if (acc && n.pending) {
+    const p = run.market.pending.find(x => x.parent === n.id);
+    if (p) a.real = rnd() < acc ? p.truth : !p.truth;
+  }
+  if (L >= 3 && n.tickers.length === 1 && n.tone > 0) {
+    const pump = run.market.assets[n.tickers[0]].pump;
+    if (pump) a.rug = rnd() < acc ? pump.fate === 'rug' : pump.fate !== 'rug';
+  }
+  n.analysis = a;
+}
+
+function mulberry(seed) {
+  let t = seed >>> 0;
+  return () => { t = (t + 0x6d2b79f5) >>> 0; let r = Math.imul(t ^ (t >>> 15), t | 1); r ^= r + Math.imul(r ^ (r >>> 7), r | 61); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
 }
 
 function chartAlert(text, kind) {
@@ -132,7 +253,9 @@ function render() {
 
 function renderTop() {
   const w = worthOf(run);
-  setText($('#worth'), F.money(w));
+  if (Math.abs((ui.shownWorth ?? w) - w) > 0.005) fx.countTo($('#worth'), w, v => F.money(v));
+  else if (ui.shownWorth == null) setText($('#worth'), F.money(w));
+  ui.shownWorth = w;
   const chg = (w / run.stats.start - 1) * 100;
   setText($('#worthChg'), F.pct(chg));
   setTone($('#worthChg'), chg);
@@ -147,6 +270,13 @@ function renderTop() {
   const s = run.market.sentiment;
   $('#sentimentNeedle').style.left = `calc(${s.toFixed(1)}% - 1px)`;
   setText($('#sentimentText'), `${sentimentLabel(s)} · ${Math.round(s)}`);
+  const rg = $('#regime');
+  const reg = run.market.regime && REGIMES[run.market.regime.id];
+  rg.hidden = !reg;
+  if (reg) {
+    if (rg.dataset.id !== reg.id) { rg.dataset.id = reg.id; rg.style.color = reg.color; rg.replaceChildren(document.createTextNode(reg.name), h('span', { class: 'rleft' })); rg.title = reg.headline; }
+    setText(rg.lastChild, `${run.market.regime.left}s`);
+  } else rg.dataset.id = '';
   $('#pauseBtn').classList.toggle('on', ui.paused);
   $('#pauseBtn').textContent = ui.paused ? '▶' : '❚❚';
   document.body.classList.toggle('paused', ui.paused);
@@ -259,9 +389,8 @@ function toggleWatch(t) {
   renderChartHead();
 }
 
-const watchSlots = () => 6;
+const watchSlots = () => PG.watchSlots(meta);
 
-// chart
 function selectAsset(t, quiet = false) {
   if (!run.market.assets[t]) return;
   run.selected = t;
@@ -336,14 +465,47 @@ function setSide(side) {
   renderTrade();
 }
 
-export function parseAmount(s) {
-  s = String(s || '').trim().toLowerCase().replace(/[$,\s]/g, '');
-  const m = s.match(/^(\d*\.?\d*)([km]?)$/);
-  if (!m || !m[1] || m[1] === '.') return NaN;
-  return Number(m[1]) * (m[2] === 'k' ? 1e3 : m[2] === 'm' ? 1e6 : 1);
+function currentLev() {
+  const opts = PG.leverageOptions(meta);
+  if (!opts.includes(run.lev)) run.lev = 1;
+  return run.lev;
 }
 
-function currentLev() { return 1; }
+function renderLev() {
+  const box = $('#levOpts');
+  const opts = PG.leverageOptions(meta);
+  const key = opts.join() + ':' + run.lev + ':' + S().leverageAccepted;
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
+  box.replaceChildren(...opts.map(l => h('button', { type: 'button', class: `${run.lev === l ? 'on' : ''}${l >= 10 ? ' danger' : ''}`, text: `${l}×`,
+    title: l === 1 ? 'No leverage' : `${l}× leverage: gains and losses are multiplied by ${l}`, onclick: () => setLev(l) })),
+  PG.lvl(meta, 'margin') < 2 ? h('span', { class: 'lev-lock', text: '🔒 more in upgrades' }) : null);
+}
+
+function setLev(l) {
+  if (l > 1 && !S().leverageAccepted) { leverageWarning(l); return; }
+  run.lev = l;
+  sfx.play('click');
+  renderTrade();
+}
+
+function leverageWarning(l) {
+  const box = h('input', { type: 'checkbox', id: 'levAgree' });
+  const go = h('button', { type: 'button', class: 'btn danger', text: 'Enable leverage', disabled: true, onclick: () => { S().leverageAccepted = true; saveMeta(); ui.modal = null; $('#modal').hidden = true; setLev(l); } });
+  box.addEventListener('change', () => { go.disabled = !box.checked; });
+  showModal([
+    h('h2', { text: '⚠ Leverage: read this first' }),
+    h('div', { class: 'warn-box' },
+      h('b', { text: 'Leverage lets you trade with borrowed money. It multiplies everything, including losses.' }),
+      h('ul', {},
+        h('li', { text: 'At 5×, a 10% price rise makes you +50%. A 10% drop costs you 50%.' }),
+        h('li', { text: 'If the price falls far enough (about 90% ÷ leverage: 18% at 5×, 9% at 10×, under 2% at 50×) your position is LIQUIDATED: force-sold and your stake is gone.' }),
+        h('li', { text: 'Fees are charged on the full leveraged size.' }),
+        h('li', { text: 'The liquidation price is shown on the chart and in your holdings. Watch it.' }))),
+    h('label', { class: 'check', for: 'levAgree' }, box, ' I understand I can lose my whole stake on a leveraged trade.'),
+    h('div', { class: 'btn-row end' }, h('button', { type: 'button', class: 'btn', text: 'No thanks', onclick: () => { ui.modal = null; $('#modal').hidden = true; } }), go),
+  ], 'leverage');
+}
 
 function renderTrade() {
   if (!run) return;
@@ -355,7 +517,7 @@ function renderTrade() {
   $$('#pcts button').forEach(b => b.classList.toggle('on', Number(b.dataset.pct) === ui.pct));
   setText($('#amountLabel'), buy ? 'Spend (USD)' : 'Sell value (USD)');
   setText($('#amountHint'), buy ? `Cash available: ${F.money(run.pf.cash)}` : pos ? `Position worth: ${F.money(equityOf(pos, p))}` : `You don't own any ${t}`);
-  $('#levBox').hidden = true;
+  renderLev();
 
   // preview
   const amt = parseAmount($('#amount').value);
@@ -368,7 +530,13 @@ function renderTrade() {
       const margin = amt / (1 + lev * FEE), qty = margin * lev / p;
       line('You get ≈', `${F.qty(qty)} ${t}`);
       line('Price', F.price(p));
-      line('Fee (0.1%)', F.money(amt - margin));
+      line(`Fee (0.1%${lev > 1 ? ' × ' + lev : ''})`, F.money(amt - margin));
+      if (lev > 1) {
+        line('Position size', F.money(margin * lev));
+        const liq = (margin * (lev - 1) + 0.1 * margin) / qty;
+        line('Liquidated below', F.price(liq), 'down');
+      }
+      if (pos && pos.lev !== lev) rows.push(h('span', { class: 'err', text: `You hold ${t} at ${pos.lev}×. Switch leverage to ${pos.lev}× or sell first.` }));
       if (amt > run.pf.cash + 1e-9) rows.push(h('span', { class: 'err', text: `Not enough cash (${F.money(run.pf.cash)}).` }));
       else if (amt < 1) rows.push(h('span', { class: 'err', text: 'Minimum order is $1.' }));
     } else {
@@ -412,7 +580,7 @@ function renderTrade() {
     kids.push(h('div', { class: 'quick' },
       h('button', { type: 'button', text: 'Sell half', onclick: () => quickSell(t, 0.5) }),
       h('button', { type: 'button', text: 'Sell all', onclick: () => quickSell(t, 1) })));
-    card.replaceChildren(...kids);
+    card.replaceChildren(...kids.filter(k => k != null && k !== false));
   }
 }
 
@@ -464,21 +632,32 @@ function afterTrade(res) {
     return;
   }
   const x = res.tx;
+  meta.lifetime.trades++;
   if (x.side === 'buy') {
-    toast(`✅ Bought ${F.qty(x.qty)} ${x.t} at ${F.price(x.price)} for ${F.money(x.amount)}${x.lev > 1 ? ` (${x.lev}×)` : ''}`, 'good');
+    toast(`✅ Bought ${F.qty(x.qty)} ${x.t} at ${F.price(x.price)} for ${F.money(x.amount)}${x.lev > 1 ? ` (${x.lev}× leverage)` : ''}`, 'good');
     sfx.play('buy');
+    fx.flyFrom($('#goBtn'), `-${F.money(x.amount)}`, 'down');
   } else {
     toast(`💰 Sold ${F.qty(x.qty)} ${x.t} at ${F.price(x.price)} for ${F.money(x.amount)}. P/L ${F.money(x.pnl, { sign: true })} (${F.pct(x.pct)})`, x.pnl >= 0 ? 'good' : 'bad');
     sfx.play(x.pnl >= 0 ? 'sellWin' : 'sellLoss');
+    const big = x.pnl > 0 && (x.pnl >= 5000 || x.pct >= 100 || x.pnl >= 0.25 * worthOf(run));
+    fx.flyFrom($('#goBtn'), F.money(x.pnl, { sign: true }), x.pnl >= 0 ? 'up' : 'down', big);
+    if (big) {
+      const r = $('#worth').getBoundingClientRect();
+      fx.coins(r.left + r.width / 2, r.top + r.height, 18);
+      fx.flash('up');
+      fx.banner('💰 BIG WIN', `${F.money(x.pnl, { sign: true })} on ${x.t}`, 'good');
+    }
   }
   ui.pct = null;
   $('#amount').value = '';
+  progress(x);
   saveRun();
+  saveMeta();
   render();
   if (run.over) finishRun();
 }
 
-// news
 function renderNews(rebuild = false) {
   const m = run.market, box = $('#news');
   const fresh = m.news.filter(n => n.id > ui.lastNews).reverse();
@@ -512,12 +691,19 @@ function updateNewsTags(n, el = ui.newsEls.get(n.id)) {
   if (!el) return;
   const tags = el.querySelector('.tags');
   const out = [];
+  const a = n.analysis;
+  if (a && !n.regime) {
+    if (a.tone > 0) out.push(h('span', { class: 'tag bull', text: 'BULLISH' }));
+    else if (a.tone < 0) out.push(h('span', { class: 'tag bear', text: 'BEARISH' }));
+    else if (!n.followUp) out.push(h('span', { class: 'tag unk', text: 'NOISE?' }));
+    if (a.real !== undefined && !n.resolved) out.push(h('span', { class: `tag ${a.real ? 'bull' : 'bear'}`, text: a.real ? '🧠 LIKELY TRUE' : '🧠 LIKELY FAKE' }));
+    if (a.rug !== undefined) out.push(h('span', { class: `tag ${a.rug ? 'bear' : 'bull'}`, text: a.rug ? '🧠 RUG RISK: HIGH' : '🧠 RUG RISK: LOW' }));
+  }
   if (n.pending && !n.resolved) out.push(h('span', { class: 'tag dev', text: '⏳ DEVELOPING' }));
   if (n.resolved) { out.push(h('span', { class: `tag res-${n.resolved}`, text: n.resolved === 'yes' ? '✔ PANNED OUT' : '✖ FIZZLED' })); el.dataset.done = '1'; }
   tags.replaceChildren(...out);
 }
 
-// bottom panel
 function renderBottom() {
   setText($('#holdCount'), String(Object.keys(run.pf.positions).length || ''));
   $('#sellAllBtn').disabled = !Object.keys(run.pf.positions).length || run.over;
@@ -605,18 +791,52 @@ function finishRun() {
   if (!run || !run.end || run.endShown) return;
   run.endShown = true;
   store.clearRun();
-  render();
-  sfx.play('end');
+  progress();
   const w = run.end.worth, s = run.stats;
-  const body = [
-    h('h2', { text: run.end.reason === 'bankrupt' ? '💀 BANKRUPT' : '🏁 RUN OVER' }),
+  const clout = PG.cloutFor(run);
+  meta.clout += clout;
+  meta.lifetime.cloutEarned += clout;
+  meta.lifetime.bestWorth = Math.max(meta.lifetime.bestWorth, s.peak);
+  const rank = addScore(meta, run.mode, { worth: Math.round(w * 100) / 100, peak: Math.round(s.peak * 100) / 100, date: Date.now(), seed: run.seed, reason: run.end.reason });
+  saveMeta();
+  render();
+  sfx.play(run.end.reason === 'bankrupt' ? 'liquidated' : 'end');
+  if (w > s.start * 2) { fx.rain(16, 'up', ['+$', '💸', '📈']); }
+  const title = { bankrupt: '💀 BANKRUPT', time: '🔔 TIME\'S UP', cashout: '🏦 CASHED OUT' }[run.end.reason] || '🏁 RUN OVER';
+  const msg = run.end.reason === 'bankrupt' ? 'You ran out of money. The market thanks you for your liquidity.'
+    : w >= s.start * 10 ? 'Absolutely pumped. Frame this one.' : w > s.start ? 'Green is green. Nicely done.' : 'Not every run is a winner. The market will be here tomorrow.';
+  const done = s.winners + s.losers;
+  const canvas = h('canvas', { class: 'worth-chart', width: '640', height: '120' });
+  showModal([
+    h('h2', { text: title }),
     h('div', { class: `result-big ${F.tone(w - s.start)}`, text: F.money(w) }),
-    h('p', { text: run.end.reason === 'bankrupt' ? 'You ran out of money. The market thanks you for your liquidity.' : `You turned ${F.money(s.start)} into ${F.money(w)}.` }),
-    h('div', { class: 'result-grid' },
-      [['Peak', F.money(s.peak)], ['Trades', s.trades], ['Best trade', F.money(s.bestTrade, { sign: true })], ['Seed', run.seed]].map(([k, v]) => h('div', {}, h('span', { text: k }), h('b', { text: String(v) })))),
-    h('div', { class: 'btn-row' }, h('button', { type: 'button', class: 'btn primary', text: 'Play again', onclick: () => newRun({ mode: run.mode }) }), h('button', { type: 'button', class: 'btn', text: 'Menu', onclick: openMenu })),
-  ];
-  showModal(body, 'results');
+    h('p', { text: `${msg} ${F.money(s.start)} → ${F.money(w)} (${F.pct((w / s.start - 1) * 100)}).` }),
+    canvas,
+    h('div', { class: 'result-grid' }, [
+      ['Mode', MODES[run.mode].label], ['Peak net worth', F.money(s.peak)], ['Lowest', F.money(s.low)], ['Trades', String(s.trades)],
+      ['Win rate', done ? `${Math.round(s.winners / done * 100)}%` : '—'], ['Best trade', s.bestTrade > 0 ? `${F.money(s.bestTrade, { sign: true })} ${s.bestTradeT}` : '—'],
+      ['Liquidations', String(s.liquidations)], ['Seed', run.seed],
+      ['High score', rank >= 0 ? `#${rank + 1} in ${MODES[run.mode].label}` : 'not this time'], ['Clout earned', `+${clout} ⚡`],
+    ].map(([k, v]) => h('div', {}, h('span', { text: k }), h('b', { text: v })))),
+    h('div', { class: 'btn-row' },
+      h('button', { type: 'button', class: 'btn primary', text: '▶ Play again', onclick: () => { ui.modal = null; newRun({ mode: run.mode }); } }),
+      h('button', { type: 'button', class: 'btn', text: '⚡ Upgrades', onclick: () => { ui.modal = null; openUpgrades(); } }),
+      h('button', { type: 'button', class: 'btn', text: 'Menu', onclick: () => { ui.modal = null; openMenu(); } })),
+  ], 'results');
+  drawWorth(canvas, s.worth, s.start);
+}
+
+function drawWorth(c, pts, start) {
+  const g = c.getContext('2d'), W = c.width, H = c.height;
+  if (pts.length < 2) return;
+  const lo = Math.min(...pts, start), hi = Math.max(...pts, start), r = hi - lo || 1;
+  const y = v => H - 8 - ((v - lo) / r) * (H - 16);
+  g.strokeStyle = 'rgba(255,255,255,0.25)'; g.setLineDash([4, 4]);
+  g.beginPath(); g.moveTo(0, y(start)); g.lineTo(W, y(start)); g.stroke(); g.setLineDash([]);
+  g.strokeStyle = pts[pts.length - 1] >= start ? '#2bff88' : '#ff3b5c'; g.lineWidth = 2;
+  g.beginPath();
+  pts.forEach((v, i) => { const x = (i / (pts.length - 1)) * W; i ? g.lineTo(x, y(v)) : g.moveTo(x, y(v)); });
+  g.stroke();
 }
 
 // ── Modals ───────────────────────────────────────────────────────────────────
@@ -624,7 +844,7 @@ function showModal(kids, name, wide = false) {
   ui.modal = name;
   const card = $('#modalCard');
   card.className = `modal-card${wide ? ' wide' : ''}`;
-  card.replaceChildren(...kids);
+  card.replaceChildren(...kids.filter(k => k != null && k !== false));
   $('#modal').hidden = false;
   card.scrollTop = 0;
   const f = card.querySelector('button.primary, button');
@@ -639,30 +859,135 @@ function closeModal() {
 
 function openMenu() {
   const live = run && !run.over;
+  ui.mode = ui.mode || (live ? run.mode : 'session');
+  const best = m => meta.scores[m] && meta.scores[m][0] ? `Best: ${F.money(meta.scores[m][0].worth, { compact: true })}` : 'No score yet';
+  const modes = h('div', { class: 'modes' }, Object.entries(MODES).map(([id, m]) => h('button', { type: 'button', class: `mode ${ui.mode === id ? 'on' : ''}`, dataset: { mode: id },
+    onclick: e => { ui.mode = id; $$('.mode').forEach(b => b.classList.toggle('on', b === e.currentTarget)); } },
+    h('b', { text: m.label }), h('small', { text: m.blurb }), h('span', { class: 'best', text: best(id) }))));
+  const start = () => {
+    sfx.unlock();
+    if (live && !confirm('Abandon the current run and start a new one? It won\'t count for high scores.')) return;
+    newRun({ seed: $('#seedIn').value.trim(), mode: ui.mode });
+  };
   const kids = [
-    h('div', { class: 'menu-top' }, h('div', {}, h('h1', { class: 'menu-logo', html: 'PUMP<span>ED</span>' }), h('p', { class: 'tagline', text: 'Buy high. Sell higher. Panic sell lowest.' }))),
-    h('p', { text: 'You get $1,000 of play money and a market full of rocket stocks, meme coins and outright dumpster fires. Ride the pumps, dodge the crashes, get rich before you go broke.' }),
-    live ? h('div', { class: 'continue' }, h('span', {}, h('b', { text: 'Run in progress: ' }), `${F.money(worthOf(run))} · T+${F.clock(run.market.tick)}`),
-      h('button', { type: 'button', class: 'btn primary', text: '▶ Continue', onclick: () => { ui.modal = null; $('#modal').hidden = true; sfx.unlock(); } })) : null,
-    h('div', { class: 'btn-row' }, h('button', { type: 'button', class: `btn ${live ? '' : 'primary'}`, text: live ? 'Start a new run' : '▶ Start trading', onclick: () => { sfx.unlock(); if (!live || confirm('Abandon the current run and start a new one?')) newRun({ seed: $('#seedIn').value.trim() }); } })),
+    h('div', { class: 'menu-top' }, h('div', {}, h('h1', { class: 'menu-logo', html: 'PUMP<span>ED</span>' }), h('p', { class: 'tagline', text: 'Buy high. Sell higher. Panic sell lowest.' })),
+      h('span', { class: 'clout', title: 'Clout: earned at the end of every run and from achievements. Spend it on upgrades.', text: `⚡ ${meta.clout} Clout` })),
+    h('p', { text: `You get ${F.money(PG.startCash(meta))} of play money and a market full of rocket stocks, meme coins and outright dumpster fires. Ride the pumps, dodge the crashes, get rich before you go broke.` }),
+    live ? h('div', { class: 'continue' }, h('span', {}, h('b', { text: `${MODES[run.mode].label} in progress: ` }), `${F.money(worthOf(run))} · ${Number.isFinite(timeLeft(run)) ? F.clock(timeLeft(run)) + ' left' : 'T+' + F.clock(run.market.tick)}`),
+      h('span', { class: 'btn-row', style: { margin: 0 } },
+        run.mode === 'endless' ? h('button', { type: 'button', class: 'btn', text: '🏦 Cash out', title: 'Sell everything and end the run, banking your score and Clout', onclick: () => { if (confirm('Sell everything and end this run?')) { ui.modal = null; cashOut(run); finishRun(); } } }) : null,
+        h('button', { type: 'button', class: 'btn primary', text: '▶ Continue', onclick: () => { ui.modal = null; $('#modal').hidden = true; sfx.unlock(); } }))) : null,
+    h('h3', { text: 'New run' }),
+    modes,
+    h('div', { class: 'btn-row' }, h('button', { type: 'button', class: `btn ${live ? '' : 'primary'}`, text: live ? 'Start new run' : '▶ Start trading', onclick: start })),
     h('div', { class: 'seed-row' }, h('label', { for: 'seedIn', text: 'Market seed (optional):' }), h('input', { id: 'seedIn', type: 'text', maxlength: '24', placeholder: 'random', value: params.get('seed') || '' }), h('small', { text: 'Same seed, same market.' })),
-    h('div', { class: 'menu-links' }, h('button', { type: 'button', class: 'btn', text: '⚙ Settings', onclick: openSettings }), h('a', { class: 'btn', href: '/pages.html', text: '← missing.website' })),
+    h('div', { class: 'menu-links' },
+      h('button', { type: 'button', class: 'btn', text: '⚡ Upgrades', onclick: openUpgrades }),
+      h('button', { type: 'button', class: 'btn', text: `🏆 Achievements ${Object.keys(meta.achievements).length}/${PG.ACHIEVEMENTS.length}`, onclick: openAchievements }),
+      h('button', { type: 'button', class: 'btn', text: '📋 High scores', onclick: openScores }),
+      h('button', { type: 'button', class: 'btn', text: '❓ How to play', onclick: openHelp }),
+      h('button', { type: 'button', class: 'btn', text: '⚙ Settings', onclick: openSettings }),
+      h('a', { class: 'btn', href: '/pages.html', text: '← missing.website' })),
     h('p', { class: 'disclaimer', text: 'A game. Every company, coin, person and headline is made up. No real money, no real trading, not financial advice.' }),
   ];
   showModal(kids, 'menu');
+}
+
+const backBtn = () => h('button', { type: 'button', class: 'btn', text: '← Back', onclick: openMenu });
+
+function openUpgrades() {
+  const card = u => {
+    const l = PG.lvl(meta, u.id), cost = PG.upgradeCost(meta, u.id);
+    return h('div', { class: `card ${l ? 'got' : ''}` },
+      h('div', { class: 'ach-head' }, h('span', { class: 'ico', text: u.icon }), h('b', { text: u.name })),
+      h('div', { class: 'lvl' }, Array.from({ length: u.max }, (_, i) => h('i', { class: i < l ? 'on' : '' }))),
+      h('small', { text: u.desc[0] }),
+      h('small', { text: l ? `Now: ${u.desc[l]}` : '' }),
+      cost != null ? h('small', { text: `Next: ${u.desc[l + 1]}` }) : null,
+      h('button', { type: 'button', class: 'btn primary', disabled: cost == null || meta.clout < cost, text: cost == null ? 'MAXED' : `Buy · ⚡${cost}`,
+        onclick: () => { const r = PG.buyUpgrade(meta, u.id); if (r.ok) { sfx.play('achievement'); saveMeta(); toast(`${u.icon} ${u.name} upgraded!${['orbit', 'night', 'start'].includes(u.id) ? ' Applies from your next run.' : ''}`, 'gold'); renderScanner(); openUpgrades(); } else toast(r.error, 'bad'); } }));
+  };
+  const theme = ([id, th]) => {
+    const owned = meta.themes.includes(id), on = S().chartTheme === id;
+    return h('div', { class: `card ${on ? 'got' : ''}` },
+      h('div', { style: { height: '34px', borderRadius: '4px', background: `linear-gradient(135deg, ${th.bg} 40%, ${th.up} 40% 55%, ${th.bg} 55% 70%, ${th.down} 70% 80%, ${th.bg} 80%)`, border: '1px solid var(--line2)' } }),
+      h('b', { text: th.name }),
+      h('button', { type: 'button', class: `btn ${owned ? '' : 'primary'}`, disabled: on || (!owned && meta.clout < PG.THEME_COST), text: on ? 'In use' : owned ? 'Use' : `Unlock · ⚡${PG.THEME_COST}`,
+        onclick: () => { if (!owned) { const r = PG.buyTheme(meta, id); if (!r.ok) { toast(r.error, 'bad'); return; } sfx.play('achievement'); } S().chartTheme = id; saveMeta(); applySettings(); openUpgrades(); } }));
+  };
+  showModal([
+    h('div', { class: 'menu-top' }, h('h2', { text: '⚡ Upgrades' }), h('span', { class: 'clout', text: `⚡ ${meta.clout} Clout` })),
+    h('p', { text: 'Clout comes from finishing runs (more for richer runs) and from achievements. Upgrades show you more, they never trade for you: scanners don\'t know how a pump ends and analysts are sometimes wrong.' }),
+    h('div', { class: 'cards' }, PG.UPGRADES.map(card)),
+    h('h3', { text: '🎨 Chart themes' }),
+    h('div', { class: 'cards' }, Object.entries(CHART_THEMES).map(theme)),
+    h('div', { class: 'btn-row end' }, backBtn()),
+  ], 'upgrades', true);
+}
+
+function openAchievements() {
+  const got = Object.keys(meta.achievements).length;
+  showModal([
+    h('h2', { text: `🏆 Achievements · ${got}/${PG.ACHIEVEMENTS.length}` }),
+    h('div', { class: 'cards' }, PG.ACHIEVEMENTS.map(a => {
+      const on = !!meta.achievements[a.id];
+      return h('div', { class: `card ${on ? 'got' : 'locked'}` },
+        h('div', { class: 'ach-head' }, h('span', { class: 'ico', text: on || !a.secret ? a.icon : '❔' }), h('b', { text: on || !a.secret ? a.name : 'Secret' })),
+        h('small', { text: on || !a.secret ? a.desc : 'Keep playing to find out.' }),
+        h('small', { class: on ? 'up' : '', text: on ? `Unlocked · +${a.clout} ⚡` : `+${a.clout} ⚡` }));
+    })),
+    h('div', { class: 'btn-row end' }, backBtn()),
+  ], 'achievements', true);
+}
+
+function openScores() {
+  const table = mode => {
+    const list = meta.scores[mode];
+    if (!list.length) return h('p', { class: 'muted', text: 'No runs yet.' });
+    return h('table', { class: 'scores' }, h('thead', {}, h('tr', {}, ['#', 'Net worth', 'Peak', 'Ended', 'Seed', 'Date'].map(x => h('th', { text: x })))),
+      h('tbody', {}, list.map((x, i) => h('tr', {}, h('td', { text: String(i + 1) }), h('td', { class: F.tone(x.worth - 1000), text: F.money(x.worth) }), h('td', { text: F.money(x.peak) }),
+        h('td', { text: { time: 'time', bankrupt: 'bankrupt', cashout: 'cashed out' }[x.reason] || x.reason }), h('td', { text: x.seed }), h('td', { text: x.date ? new Date(x.date).toLocaleDateString() : '' })))));
+  };
+  showModal([
+    h('h2', { text: '📋 High scores' }),
+    h('p', { class: 'muted', text: `Runs played: ${meta.lifetime.runs} · Trades made: ${meta.lifetime.trades} · Best net worth ever: ${F.money(meta.lifetime.bestWorth)} · Clout earned: ${meta.lifetime.cloutEarned}` }),
+    ...Object.entries(MODES).flatMap(([id, m]) => [h('h3', { text: m.label }), table(id)]),
+    h('div', { class: 'btn-row end' }, backBtn()),
+  ], 'scores', true);
+}
+
+function openHelp() {
+  showModal([
+    h('h2', { text: '❓ How to play' }),
+    h('p', { text: 'Pick an asset on the left, choose an amount, hit BUY. Sell later for more (hopefully). Your net worth is your cash plus everything you own, valued at the current price.' }),
+    h('p', { text: '🚀 Pumps: assets sometimes surge. Some keep going, some fade, some collapse in seconds (a rug pull). 📉 Crashes: single assets or the whole market can drop. Some recover, some don\'t. Cash doesn\'t crash.' }),
+    h('p', { text: '📰 News explains moves but doesn\'t promise anything. Developing stories resolve a few seconds later, one way or the other. 🔥 Hype makes pumps bigger, but overheated assets (80+) crash and get rugged more often.' }),
+    h('p', { text: '🎲 Leverage multiplies gains and losses and can get you liquidated. ⚡ Clout from each run buys upgrades. Different assets behave very differently: safe funds crawl, degen coins go to the moon or to zero.' }),
+    h('p', { text: 'Keys: B / S buy or sell · 1–4 pick 10/25/50/100% · Enter trade · ↑ ↓ change asset · / search · Space pause · Esc close.' }),
+    h('div', { class: 'btn-row end' }, backBtn()),
+  ], 'help');
 }
 
 function openSettings() {
   const s = S();
   const sw = (key, label, note) => h('div', { class: 'set-row' }, h('div', {}, h('b', { text: label }), note ? h('small', { text: note }) : null),
     h('button', { type: 'button', class: `switch ${s[key] ? 'on' : ''}`, role: 'switch', 'aria-checked': String(!!s[key]), 'aria-label': label, onclick: e => { s[key] = !s[key]; e.currentTarget.classList.toggle('on', s[key]); e.currentTarget.setAttribute('aria-checked', String(s[key])); saveMeta(); applySettings(); } }));
-  const seg = (key, label, opts) => h('div', { class: 'set-row' }, h('b', { text: label }), h('div', { class: 'seg' }, opts.map(([v, l]) => h('button', { type: 'button', class: s[key] === v ? 'on' : '', text: l, onclick: e => { s[key] = v; [...e.currentTarget.parentNode.children].forEach(b => b.classList.toggle('on', b === e.currentTarget)); saveMeta(); applySettings(); } }))));
+  const seg = (key, label, opts, note) => h('div', { class: 'set-row' }, h('div', {}, h('b', { text: label }), note ? h('small', { text: note }) : null), h('div', { class: 'seg' }, opts.map(([v, l]) => h('button', { type: 'button', class: s[key] === v ? 'on' : '', text: l, onclick: e => { s[key] = v; [...e.currentTarget.parentNode.children].forEach(b => b.classList.toggle('on', b === e.currentTarget)); saveMeta(); applySettings(); } }))));
+  const live = run && !run.over;
   showModal([
     h('h2', { text: '⚙ Settings' }),
     sw('sound', 'Sound effects'),
     h('div', { class: 'set-row' }, h('b', { text: 'Volume' }), h('input', { type: 'range', min: '0', max: '1', step: '0.1', value: String(s.volume), 'aria-label': 'Volume', oninput: e => { s.volume = Number(e.target.value); saveMeta(); applySettings(); } })),
-    seg('speed', 'Market speed', [[0.5, 'Chill 0.5×'], [1, 'Normal'], [2, 'Turbo 2×']]),
-    h('div', { class: 'btn-row end' }, h('button', { type: 'button', class: 'btn danger', text: 'Reset everything…', onclick: resetAll }), h('button', { type: 'button', class: 'btn primary', text: 'Done', onclick: () => (run && !run.over ? closeModal() : openMenu()) })),
+    sw('effects', 'Screen effects', 'Flying numbers, coin bursts, banners and red flashes.'),
+    sw('reducedMotion', 'Reduced motion', 'No animations, scrolling ticker or chart easing. Effects become simple banners.'),
+    sw('tooltips', 'Explain terms', 'Hover or tap underlined words for a short explanation.'),
+    seg('speed', 'Market speed', [[0.5, 'Chill 0.5×'], [1, 'Normal'], [2, 'Turbo 2×']], 'How fast time passes. Timed runs still last the same number of market seconds.'),
+    seg('chartTheme', 'Chart theme', Object.entries(CHART_THEMES).filter(([id]) => meta.themes.includes(id)).map(([id, t]) => [id, t.name]), 'Unlock more in Upgrades.'),
+    h('h3', { text: 'Danger zone' }),
+    h('div', { class: 'btn-row' },
+      live ? h('button', { type: 'button', class: 'btn', text: 'Restart this run', onclick: () => { if (confirm('Throw away this run and start a fresh one in the same mode?')) newRun({ mode: run.mode }); } }) : null,
+      h('button', { type: 'button', class: 'btn danger', text: 'Reset everything…', onclick: resetAll })),
+    h('div', { class: 'btn-row end' }, h('button', { type: 'button', class: 'btn primary', text: 'Done', onclick: () => (live ? (ui.modal = null, $('#modal').hidden = true) : openMenu()) })),
   ], 'settings');
 }
 
@@ -680,7 +1005,13 @@ function applySettings() {
   const s = S();
   sfx.set(s.sound, s.volume);
   setText($('#soundBtn'), s.sound && s.volume > 0 ? '🔊' : '🔇');
-  if (run) restartLoop();
+  const reduced = s.reducedMotion;
+  fx.enabled = s.effects;
+  fx.reduced = reduced;
+  document.body.classList.toggle('reduce-motion', reduced);
+  document.body.classList.toggle('no-tips', !s.tooltips);
+  if (chart) { chart.reducedMotion = reduced; chart.setTheme(meta.themes.includes(s.chartTheme) ? s.chartTheme : 'terminal'); }
+  if (run) { restartLoop(); renderScanner(); }
 }
 
 // ── Toasts ───────────────────────────────────────────────────────────────────
@@ -768,14 +1099,15 @@ function moveSel(d) {
 function exposeDebug() {
   globalThis.pumped = {
     get run() { return run; }, get meta() { return meta; },
-    step(n = 1) { for (let i = 0; i < n && run && !run.over; i++) { handleNotes(stepRun(run)); } render(); if (run.over) finishRun(); },
+    step(n = 1) { for (let i = 0; i < n && run && !run.over; i++) { handleNotes(stepRun(run)); scan(); progress(); } render(); if (run.over) finishRun(); },
     event(id, t) { const r = forceEvent(run.market, id, t); handleNotes(r.notes); render(); return r.headline; },
     pump(t, opts) { handleNotes(forcePump(run.market, t, opts)); },
     crash(t, opts) { handleNotes(forceCrash(run.market, t, opts)); },
     regime(id) { handleNotes(forceRegime(run.market, id)); render(); },
     pause(v = true) { ui.paused = v; renderTop(); },
     trade(o) { const r = trade(run, o); afterTrade(r); return r; },
-    newRun, cashOut: () => { cashOut(run); finishRun(); }, save: saveRun,
+    newRun, cashOut: () => { cashOut(run); finishRun(); }, save: saveRun, scan, progress,
+    give(c) { meta.clout += c; saveMeta(); },
   };
 }
 

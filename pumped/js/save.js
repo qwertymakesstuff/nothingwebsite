@@ -117,6 +117,7 @@ export function validRun(r) {
 export class Store {
   constructor(storage = browserStorage()) { this.storage = storage; }
   loadMeta() { return sanitizeMeta(read(this.storage, KEYS.meta)); }
+  isFresh() { try { return this.storage.getItem(KEYS.meta) == null; } catch { return true; } }
   saveMeta(meta) { return write(this.storage, KEYS.meta, meta); }
   loadRun() { const r = read(this.storage, KEYS.run); return validRun(r) ? r : null; }
   saveRun(run) { return write(this.storage, KEYS.run, packRun(run)); }
