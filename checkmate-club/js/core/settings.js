@@ -17,7 +17,15 @@ export const SCHEMA = [
   { section: 'Audio', key: 'sound', type: 'toggle', label: 'Sound effects', default: true },
   { section: 'Audio', key: 'sfxVolume', type: 'range', label: 'Effects volume', default: 0.6, min: 0, max: 1, step: 0.1 },
 
-  { section: 'Gameplay', key: 'confirmLeave', type: 'toggle', label: 'Confirm before quitting or restarting a game',
+  { section: 'Chess', key: 'chessBoard', type: 'choice', label: 'Board', default: 'walnut',
+    options: [['walnut', 'Walnut & maple'], ['tournament', 'Tournament green'], ['slate', 'Slate blue'], ['contrast', 'High contrast (colour-blind friendly)']] },
+  { section: 'Chess', key: 'chessHints', type: 'toggle', label: 'Show legal moves', help: 'Dots mark where the selected piece can go.', default: true },
+  { section: 'Chess', key: 'chessCoordinates', type: 'toggle', label: 'Show board coordinates', default: true },
+
+  { section: 'Cards', key: 'cardBack', type: 'choice', label: 'Card back', default: 'oxblood',
+    options: [['oxblood', 'Oxblood damask'], ['midnight', 'Midnight art deco']] },
+
+  { section: 'Gameplay', key: 'confirmLeave', type: 'toggle', label: 'Confirm before resigning, quitting or restarting',
     help: 'Asks before you throw away a game in progress.', default: true },
 ];
 

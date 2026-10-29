@@ -15,7 +15,7 @@ export const GAMES = [
     players: '2 players or vs computer',
     glyph: '♞',
     accent: '#c9a45c',
-    status: 'in-development',
+    status: 'playable',
     stage: 3,
     rules: [
       { heading: 'Goal', items: ['Checkmate the opposing king: attack it so that it has no legal way to escape.'] },
@@ -33,6 +33,12 @@ export const GAMES = [
       { heading: 'Draws', items: [
         'Stalemate: the player to move has no legal move and is not in check.',
         'Insufficient material, threefold repetition, the fifty-move rule, or an agreed draw.',
+        'At this club, threefold repetition and the fifty-move rule end the game as a draw automatically.',
+      ] },
+      { heading: 'At the club', items: [
+        'Play the computer at four levels — Beginner, Casual, Club player and Club master — or a friend on the same device.',
+        'Undo takes back a move (against the computer, your move and its reply). Games against the computer count in your statistics.',
+        'Shortcuts: U to undo, F to flip the board, Esc or P to pause.',
       ] },
     ],
   },

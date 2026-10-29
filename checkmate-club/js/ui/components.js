@@ -12,7 +12,7 @@ export function button({ label, icon, variant = 'secondary', size, onClick, titl
   return h('button', {
     type, class: `btn btn-${variant}${size ? ` btn-${size}` : ''}`, title, disabled,
     onclick: onClick, ...attrs,
-  }, icon ? h('span', { class: 'btn-icon', 'aria-hidden': 'true' }, icon) : null, label ? h('span', {}, label) : null);
+  }, icon ? h('span', { class: 'btn-icon', 'aria-hidden': 'true' }, icon) : null, label ? h('span', { class: 'btn-label' }, label) : null);
 }
 
 export function badge(text, variant = 'neutral') {
@@ -21,13 +21,13 @@ export function badge(text, variant = 'neutral') {
 
 // ---- Game cards ------------------------------------------------------------------------------
 
-export function gameCard(game, { onOpen, onRules, record } = {}) {
+export function gameCard(game, { onOpen, onRules, record, art } = {}) {
   const playable = isPlayable(game);
   const open = h('button', {
     type: 'button', class: 'game-card-open', onclick: () => onOpen?.(game),
     'aria-label': `${game.name}. ${statusLabel(game)}. Open table.`,
   },
-  h('span', { class: 'game-card-art', 'aria-hidden': 'true' }, h('span', { class: 'game-card-glyph' }, game.glyph)),
+  h('span', { class: `game-card-art${art ? ' has-art' : ''}`, 'aria-hidden': 'true' }, art ? h('img', { class: 'game-card-img', src: art, alt: '' }) : h('span', { class: 'game-card-glyph' }, game.glyph)),
   h('span', { class: 'game-card-body' },
     h('span', { class: 'game-card-title' }, game.name),
     h('span', { class: 'game-card-tagline' }, game.tagline),

@@ -22,7 +22,7 @@ export function render(app) {
     }
     grid.setAttribute('aria-labelledby', `tab-${id}`);
     grid.replaceChildren(...gamesIn(id).map(g =>
-      gameCard(g, { record: app.stats.get(g.id), onOpen: () => app.go('game', g.id), onRules: () => app.go('rules', g.id) })));
+      gameCard(g, { art: app.assets.url(`icon.${g.id}`), record: app.stats.get(g.id), onOpen: () => app.go('game', g.id), onRules: () => app.go('rules', g.id) })));
   }
 
   const tablist = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Filter tables' }, tabs);
@@ -50,6 +50,7 @@ export function render(app) {
   const el = h('main', { class: 'library' },
     screenHeader({ title: 'Game Library', eyebrow: 'Choose a table', onBack: () => app.go('menu'), backLabel: 'Menu' }),
     tablist, grid,
-    h('p', { class: 'library-note' }, 'Tables marked “In development” are set up but not playable yet. Each one opens as soon as its game is finished.'));
+    h('p', { class: 'library-note' }, 'Tables marked “In development” are set up but not playable yet. Each one opens as soon as its game is finished. ',
+      h('a', { href: '#/workshop' }, 'Visit the workshop'), ' to try the test card table or browse the art.'));
   return { el, title: 'Library' };
 }
