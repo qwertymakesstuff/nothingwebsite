@@ -5,6 +5,21 @@ dodge crashes and rug pulls, and get as rich as you can before you go broke. Eve
 person and headline is fictional. No real money, no backend: plain HTML, CSS and ES modules, saved
 in `localStorage`.
 
+## Simple view
+
+Putting `simple.` in front of the game, i.e. `missing.website/simple.pumped/`, opens the same game
+and save with an easier-to-read screen: bigger text, plain-language labels, fewer panels, no
+leverage. `simple.pumped/index.html` is a copy of `index.html` pointing at these files (a test keeps
+them in sync). The page also switches to simple mode on any `simple.` subdomain or with `?simple`.
+
+## Squawker
+
+A Twitter-style social site you can flip to (top-left switch, or `T`) while the market keeps running.
+~30 satirical celebrities, officials, exchanges and news accounts, 350 named bots plus generated ones.
+Posts react to headlines, regimes and visible pumps/crashes (deliberately late and noisy). The player
+can post, reply, like, repost and follow; naming a coin (`$GOB`) adds a little hype to it, once every
+30 seconds per coin. The feed is saved with the run and never touches the market's random numbers.
+
 ## Layout
 
 ```
@@ -23,6 +38,9 @@ js/chart.js       canvas chart and themes
 js/fx.js          flying numbers, banners, coin bursts, net worth count-up
 js/audio.js       synthesised sound effects
 js/tips.js        glossary tooltips
+js/social-data.js Squawker accounts, bot handles and post lines
+js/social.js      Squawker feed engine (pure)
+js/social-ui.js   Squawker view
 js/main.js        controller: game loop, every panel, menus
 ```
 

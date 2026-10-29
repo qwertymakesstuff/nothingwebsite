@@ -242,6 +242,7 @@ test('pumped: number formatting', () => {
   assert.equal(F.price(41250.1), '41,250.10');
   assert.equal(F.price(0.0423), '0.0423');
   assert.equal(F.price(1e-7), '1.00e-7');
+  assert.equal(F.price(0.000083), '0.0000830');
   assert.equal(F.pct(-1.5), '−1.50%');
   assert.equal(F.clock(185), '3:05');
 });
@@ -378,4 +379,106 @@ test('pumped: parsing typed amounts', () => {
   assert.ok(Number.isNaN(F.parseAmount('abc')));
   assert.ok(Number.isNaN(F.parseAmount('')));
   assert.ok(Number.isNaN(F.parseAmount('-5')));
+});
+
+// ── Squawker, more crypto, simple view ──────────────────────────────────────
+const SQ = await load('social.js');
+const SD = await load('social-data.js');
+const { CAST } = await load('events.js');
+const seeded = (s = 1) => () => (s = (s * 16807) % 2147483647) / 2147483647;
+
+test('pumped: the crypto market is well populated', () => {
+  const main = ASSETS.filter(a => a.market === 'main');
+  assert.ok(main.filter(a => a.cat === 'crypto').length >= 14);
+  assert.ok(main.filter(a => a.cat === 'degen').length >= 12);
+  // stablecoins hold their peg without news
+  const m = M.createMarket({ seed: 'PEG', tuning: { events: 0, regimes: 0 } });
+  for (let i = 0; i < 600; i++) M.stepMarket(m);
+  for (const t of ['TSD', 'PSE']) assert.ok(Math.abs(m.assets[t].p / ASSET_BY_T[t].price - 1) < 0.05, `${t} ${m.assets[t].p}`);
+});
+
+test('squawker: lots of accounts, every named celebrity has one', () => {
+  assert.ok(SD.BOT_HANDLES.length >= 300);
+  assert.equal(new Set(SD.BOT_HANDLES).size, SD.BOT_HANDLES.length, 'bot handles are unique');
+  assert.ok(SD.CELEBS.length >= 30);
+  assert.equal(new Set(SD.CELEBS.map(c => c.handle)).size, SD.CELEBS.length);
+  for (const name of [...CAST.celeb, ...CAST.influencer]) assert.ok(SQ.castAccount(name), `no account for ${name}`);
+  const rnd = seeded(5);
+  const handles = new Set(Array.from({ length: 2000 }, () => SQ.botAuthor(rnd).b));
+  assert.ok(handles.size > 600, `only ${handles.size} distinct bots`);
+});
+
+test('squawker: the feed reacts to the market and stays bounded', () => {
+  const run = G.createRun({ seed: 'FEED', mode: 'endless' });
+  const feed = SQ.createFeed();
+  const rnd = seeded(9);
+  for (let i = 0; i < 1500; i++) SQ.stepFeed(feed, run, G.stepRun(run), rnd);
+  const top = feed.posts.filter(p => !p.parent);
+  assert.equal(top.length, SQ.FEED_LEN);
+  assert.ok(feed.posts.some(p => p.parent), 'replies exist');
+  assert.ok(top.some(p => p.a.c === 'wire'), 'news account posts headlines');
+  assert.ok(top.some(p => p.a.b) && top.some(p => p.a.c && p.a.c !== 'wire'), 'bots and celebrities post');
+  assert.ok(feed.posts.every(p => p.text.length <= SQ.MAX_LEN && !/\{\w+\}/.test(p.text)), 'templates fully filled');
+  assert.ok(feed.posts.every(p => !p.parent || feed.posts.some(q => q.id === p.parent)), 'no orphan replies');
+  assert.ok(SQ.trending(feed, run.market.tick).length === 8);
+  const back = JSON.parse(JSON.stringify(feed));
+  assert.ok(SQ.validFeed(back));
+});
+
+test('squawker: a celebrity in the news posts it themselves', () => {
+  const run = G.createRun({ seed: 'CELEB', tuning: { events: 0 } });
+  const feed = SQ.createFeed();
+  const { headline, notes } = M.forceEvent(run.market, 'celebrity', 'GOB');
+  SQ.stepFeed(feed, run, notes, seeded(3));
+  const acct = SQ.castAccount(headline.cast.celeb);
+  assert.ok(acct);
+  assert.ok(feed.posts.some(p => p.a.c === acct.id && p.tickers.includes('GOB')), `${acct.name} should squawk about $GOB`);
+});
+
+test('squawker: reading the feed never changes the market', () => {
+  const a = G.createRun({ seed: 'SAME2' }), b = G.createRun({ seed: 'SAME2' });
+  const feed = SQ.createFeed();
+  for (let i = 0; i < 300; i++) { SQ.stepFeed(feed, a, G.stepRun(a), Math.random); G.stepRun(b); }
+  assert.deepEqual(a.market, b.market);
+});
+
+test('squawker: player posts get replies and shill hype with a cooldown', () => {
+  const run = G.createRun({ seed: 'SHILL', tuning: { events: 0 } });
+  const feed = SQ.createFeed();
+  const rnd = seeded(4);
+  assert.equal(SQ.playerPost(feed, run, '   ').ok, false);
+  assert.equal(SQ.playerPost(feed, run, 'x'.repeat(281)).ok, false);
+  run.market.assets.GOB.hype = 10;
+  let r = SQ.playerPost(feed, run, 'buy $gob and $MBYT and $TSD', { rnd });
+  assert.ok(r.ok);
+  assert.deepEqual(r.post.tickers, ['GOB', 'MBYT', 'TSD']);
+  assert.deepEqual(r.hyped, ['GOB']);               // stocks and stablecoins can't be hyped
+  assert.equal(run.market.assets.GOB.hype, 10 + SQ.SHILL_HYPE);
+  r = SQ.playerPost(feed, run, '$GOB again', { rnd });
+  assert.deepEqual(r.hyped, []);                    // cooldown
+  for (let i = 0; i < 12; i++) SQ.stepFeed(feed, run, G.stepRun(run), rnd);
+  assert.ok(feed.posts.some(p => p.toMe) && feed.mentions > 0);
+  const reply = SQ.playerPost(feed, run, 'thanks', { parent: r.post.id, rnd });
+  assert.ok(reply.ok && reply.post.parent === r.post.id);
+  const p = SQ.toggleLike(feed, r.post.id);
+  assert.ok(p.liked);
+  SQ.toggleLike(feed, r.post.id);
+  assert.ok(!p.liked);
+});
+
+test('squawker: profile and follows are sanitised', () => {
+  const meta = SV.sanitizeMeta({ profile: { name: '  Ape  ', handle: 'ape <script>' }, follows: ['c:rex', 'c:rex', 'bad key', 'b:MoonBoi420'] });
+  assert.deepEqual(meta.profile, { name: 'Ape', handle: 'apescript' });
+  assert.deepEqual(meta.follows, ['c:rex', 'b:MoonBoi420']);
+  assert.deepEqual(SV.sanitizeMeta({ profile: { name: '', handle: '' } }).profile, SV.defaultMeta().profile);
+});
+
+test('pumped: simple.pumped is the same page in simple mode', () => {
+  const full = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const simple = fs.readFileSync(new URL('../../simple.pumped/index.html', import.meta.url), 'utf8');
+  const expect = full.replace('<html lang="en">', '<html lang="en" class="simple">')
+    .replace('href="css/style.css"', 'href="../pumped/css/style.css"').replace('src="js/main.js"', 'src="../pumped/js/main.js"')
+    .replace('<title>PUMPED</title>', '<title>PUMPED (simple view)</title>')
+    .replace('<!doctype html>', '<!doctype html>\n<!-- Simple view of /pumped/: generated copy of pumped/index.html (tests keep the two in sync). -->');
+  assert.equal(simple, expect, 'regenerate simple.pumped/index.html from pumped/index.html');
 });

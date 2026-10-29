@@ -19,7 +19,7 @@ import { EVENTS, EVENT_BY_ID, CAST, fillTemplate } from './events.js';
 export const HIST_LEN = 900;      // full-resolution ticks kept per asset (15 minutes)
 export const LONG_EVERY = 10;     // every 10th tick also goes into the long history
 export const LONG_LEN = 1500;     // long history points kept (~4 hours)
-export const MIN_PRICE = 1e-7;
+export const MIN_PRICE = 1e-9;
 export const MAX_PRICE = 1e12;
 export const NEWS_LEN = 60;
 const LOG_MIN = Math.log(MIN_PRICE);
@@ -38,7 +38,7 @@ export function createMarket({ seed = 'PUMPED', markets = ['main'], tuning = {} 
     const p = Math.exp(logP);
     assets[d.t] = {
       t: d.t, logP, p, open: p, high: p, low: p, base: logP,
-      logFair: d.stable ? 0 : logP + rng.gauss() * 0.03,
+      logFair: d.stable ? Math.log(d.price) : logP + rng.gauss() * 0.03,
       trend: 0, shock: 0, hype: CATS[d.cat].hypeable && !d.stable ? Math.round(rng.range(0, 25)) : 0,
       pump: null, crash: null, vol: null, drift: null,
       hist: [p], long: [p],
@@ -96,7 +96,7 @@ function stepAsset(m, a, rng, notes) {
   const sigma = c.sigma * d.volMul * R.vol * (a.vol ? a.vol.mul : 1) * m.tuning.vol;
 
   // fair value
-  if (d.stable) a.logFair = 0;
+  if (d.stable) a.logFair = Math.log(d.price);
   else {
     const base = a.base + (c.fairDrift + d.driftAdd) * m.tick;
     a.logFair += c.fairDrift + d.driftAdd + R.drift + (a.drift ? a.drift.add : 0) + ANCHOR * (base - a.logFair)
@@ -155,7 +155,7 @@ function stepAsset(m, a, rng, notes) {
   if (a.vol && --a.vol.ticks <= 0) a.vol = null;
   if (a.drift && --a.drift.ticks <= 0) a.drift = null;
 
-  const p = Math.exp(a.logP);
+  const p = Math.max(MIN_PRICE, Math.exp(a.logP));
   a.p = p;
   if (p > a.high) a.high = p;
   if (p < a.low) a.low = p;
@@ -235,6 +235,13 @@ function castVars(rng) {
   return v;
 }
 
+// the people a headline names (so Squawker can have them post about it)
+function castUsed(tmpl, vars) {
+  const out = {};
+  for (const k of Object.keys(CAST)) if (tmpl.includes(`{${k}}`)) out[k] = vars[k];
+  return out;
+}
+
 function pushNews(m, h, notes) {
   m.news.unshift(h);
   if (m.news.length > NEWS_LEN) m.news.length = NEWS_LEN;
@@ -255,7 +262,8 @@ export function fireEvent(m, ev, forcedT, rng, notes) {
     tickers = list;
     vars.t = vars.name = 'the market';
   }
-  const h = { id: ++m.newsId, tick: m.tick, text: fillTemplate(rng.pick(ev.text), vars), tickers: ev.target === 'asset' ? tickers : [], scope: ev.target, cats: ev.cats || null, tone: ev.tone, kind: ev.id };
+  const tmpl = rng.pick(ev.text);
+  const h = { id: ++m.newsId, tick: m.tick, text: fillTemplate(tmpl, vars), tickers: ev.target === 'asset' ? tickers : [], scope: ev.target, cats: ev.cats || null, tone: ev.tone, kind: ev.id, cast: castUsed(tmpl, vars) };
   for (const t of tickers) {
     const a = m.assets[t];
     if (ev.target === 'all' && ASSET_BY_T[t].cat === 'safe' && ev.safeBonus) { a.shock += rng.range(...ev.safeBonus); continue; }
@@ -274,7 +282,7 @@ function resolvePending(m, p, rng, notes) {
   const ev = EVENT_BY_ID[p.ev];
   if (!ev || !m.assets[p.t]) return;
   const branch = p.truth ? ev.pending.yes : ev.pending.no;
-  const h = { id: ++m.newsId, tick: m.tick, text: fillTemplate(branch.text, p.vars), tickers: [p.t], scope: 'asset', tone: branch.tone, kind: p.ev + (p.truth ? '_yes' : '_no'), followUp: p.parent };
+  const h = { id: ++m.newsId, tick: m.tick, text: fillTemplate(branch.text, p.vars), tickers: [p.t], scope: 'asset', tone: branch.tone, kind: p.ev + (p.truth ? '_yes' : '_no'), followUp: p.parent, cast: castUsed(branch.text, p.vars) };
   const parent = m.news.find(n => n.id === p.parent);
   if (parent) parent.resolved = p.truth ? 'yes' : 'no';
   applyEffect(m, m.assets[p.t], branch.effect, rng, notes, 1, h.kind);
