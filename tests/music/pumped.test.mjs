@@ -483,23 +483,26 @@ test('pumped: simple.pumped is the same page in simple mode', () => {
   assert.equal(simple, expect, 'regenerate simple.pumped/index.html from pumped/index.html');
 });
 
-test('simpleplay worker: game at the root, typed paths redirect, the rest is the asset store', async () => {
+test('simpleplay worker: / goes to /pumped/, which serves the game files', async () => {
   const { default: worker } = await import(new URL('../../simpleplay/worker.js', import.meta.url));
   const seen = [];
-  const env = { ASSETS: { fetch: req => { seen.push(new URL(req.url).pathname); return new Response('asset', { status: 404 }); } } };
-  for (const p of ['/pumped', '/pumped/', '/simple.pumped/', '/Pumped/js/main.js']) {
-    const r = await worker.fetch(new Request('https://simple.missing.website' + p + '?seed=X'), env);
+  const env = { ASSETS: { fetch: req => { seen.push(new URL(req.url).pathname); return new Response('asset'); } } };
+  const get = p => worker.fetch(new Request('https://simple.missing.website' + p), env);
+  for (const p of ['/', '/pumped', '/simple.pumped', '/simple.pumped/', '/Simple.Pumped/js/main.js', '/?seed=X']) {
+    const r = await get(p);
     assert.equal(r.status, 301, p);
-    assert.equal(r.headers.get('location'), 'https://simple.missing.website/?seed=X');
+    assert.equal(r.headers.get('location'), 'https://simple.missing.website/pumped/' + (p.includes('?') ? '?seed=X' : ''), p);
   }
-  const r = await worker.fetch(new Request('https://simple.missing.website/nope'), env);
-  assert.equal(r.status, 404);
-  assert.deepEqual(seen, ['/nope']);
+  for (const p of ['/pumped/', '/pumped/index.html', '/pumped/js/main.js', '/pumped/css/style.css?v=2']) assert.equal((await get(p)).status, 200, p);
+  assert.deepEqual(seen, ['/', '/', '/js/main.js', '/css/style.css']);
+  assert.equal((await get('/js/main.js')).status, 404);      // files only exist under /pumped/
+  assert.equal((await get('/pages.html')).status, 404);
   const cfg = fs.readFileSync(new URL('../../simpleplay/wrangler.jsonc', import.meta.url), 'utf8');
   assert.match(cfg, /"name": "simpleplay"/);
   assert.match(cfg, /"directory": "\.\.\/pumped"/);
+  assert.match(cfg, /"run_worker_first": true/);
   assert.match(cfg, /"pattern": "simple\.missing\.website"/);
-  // everything the page loads is relative, so it works from simple.missing.website/
+  // everything the page loads is relative, and simple.* turns on the simple HUD
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.doesNotMatch(html, /(href|src)="\/(?!\/)/);
   assert.match(html, /location\.hostname\.indexOf\('simple\.'\) === 0/);

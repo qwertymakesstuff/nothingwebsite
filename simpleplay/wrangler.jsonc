@@ -3,14 +3,17 @@
   // In Cloudflare (Workers & Pages > simpleplay > Settings > Build): Root directory = simpleplay
   // The Worker's name in Cloudflare must match the name below.
   //
-  // The static files are the game itself (../pumped), so there is nothing to copy or rebuild:
-  // the page switches to the simple view because the hostname starts with "simple.".
+  // The static files are the game itself (../pumped), served under /pumped/ by worker.js, so there is
+  // nothing to copy or rebuild. The page switches to the simple HUD because the hostname starts
+  // with "simple.". "/" redirects to /pumped/.
   "name": "simpleplay",
   "main": "./worker.js",
   "compatibility_date": "2026-09-23",
   "assets": {
     "directory": "../pumped",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // every request goes through worker.js, which maps /pumped/<file> to the files in ../pumped
+    "run_worker_first": true
   },
   "workers_dev": false,
   "preview_urls": false,

@@ -11,7 +11,7 @@ Putting `simple.` in front of the game, i.e. `missing.website/simple.pumped/`, o
 and save with an easier-to-read screen: bigger text, plain-language labels, fewer panels, no
 leverage. `simple.pumped/index.html` is a copy of `index.html` pointing at these files (a test keeps
 them in sync). The page also switches to simple mode on any `simple.` subdomain or with `?simple`:
-`simple.missing.website` is served by the `simpleplay` Worker straight from this folder (see
+`simple.missing.website/pumped/` is served by the `simpleplay` Worker straight from this folder (see
 `../simpleplay/`). `.assetsignore` keeps this README off that site.
 
 ## Squawker
