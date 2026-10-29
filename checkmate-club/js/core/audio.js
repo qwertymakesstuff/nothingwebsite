@@ -6,6 +6,14 @@ const TONES = {
   open: [[440, 0.05, 'sine'], [660, 0.07, 'sine']],
   close: [[520, 0.05, 'sine'], [390, 0.07, 'sine']],
   error: [[180, 0.12, 'square']],
+  move: [[300, 0.05, 'triangle'], [210, 0.06, 'sine']],
+  capture: [[240, 0.04, 'square'], [150, 0.09, 'triangle']],
+  check: [[660, 0.07, 'triangle'], [880, 0.1, 'triangle']],
+  win: [[523, 0.1, 'sine'], [659, 0.1, 'sine'], [784, 0.18, 'sine']],
+  lose: [[392, 0.12, 'sine'], [330, 0.12, 'sine'], [262, 0.2, 'sine']],
+  gameover: [[440, 0.12, 'sine'], [440, 0.16, 'sine']],
+  deal: [[1200, 0.025, 'triangle']],
+  flip: [[900, 0.03, 'triangle'], [700, 0.03, 'triangle']],
 };
 
 export class UiAudio {

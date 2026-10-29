@@ -6,6 +6,7 @@ import { Settings } from './core/settings.js';
 import { Stats } from './core/stats.js';
 import { Router } from './core/router.js';
 import { UiAudio } from './core/audio.js';
+import { Assets } from './core/assets.js';
 import { topDialog, closeAllDialogs, confirmPrompt, openDialog } from './ui/components.js';
 import * as menu from './screens/menu.js';
 import * as library from './screens/library.js';
@@ -13,13 +14,15 @@ import * as game from './screens/game.js';
 import * as stats from './screens/stats.js';
 import * as settings from './screens/settings.js';
 import * as rules from './screens/rules.js';
+import * as workshop from './screens/workshop.js';
 
-const SCREENS = { menu, library, game, stats, settings, rules };
+const SCREENS = { menu, library, game, stats, settings, rules, workshop };
 const DURATIONS = { slow: 380, normal: 220, fast: 120 };
 
 export class App {
-  constructor({ root, store = new Store(), router = new Router() }) {
+  constructor({ root, store = new Store(), router = new Router(), assets = new Assets() }) {
     this.root = root;
+    this.assets = assets;
     this.store = store;
     this.settings = new Settings(store);
     this.stats = new Stats(store);
@@ -41,6 +44,7 @@ export class App {
 
   go(screen, param) { this.router.go(screen, param); }
   confirm(opts) { return confirmPrompt({ ...opts, audio: this.audio }); }
+  dialogOpen() { return !!topDialog(); }
   dialog(opts) { return openDialog({ ...opts, audio: this.audio }); }
   get duration() { return this.settings.get('reduceMotion') ? 0 : DURATIONS[this.settings.get('animationSpeed')]; }
 
@@ -49,6 +53,10 @@ export class App {
     r.style.setProperty('--dur', `${this.duration}ms`);
     r.dataset.reduceMotion = String(this.settings.get('reduceMotion'));
     r.dataset.felt = this.settings.get('tableFelt');
+    const bg = this.assets.url('bg.library'), chessBg = this.assets.url('bg.chess'), divider = this.assets.url('ui.divider');
+    if (bg) { r.style.setProperty('--bg-image', `url("${bg}")`); r.dataset.bg = ''; }
+    if (chessBg) r.style.setProperty('--chess-bg', `url("${chessBg}")`);
+    if (divider) r.style.setProperty('--divider', `url("${divider}")`);
   }
 
   // ---- screens ----

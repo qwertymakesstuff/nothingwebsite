@@ -1,0 +1,892 @@
+{
+ "version": 1,
+ "style": {
+  "id": "5dc76942-d1b2-4ab1-9efc-97430eee5233",
+  "version": 1,
+  "name": "Checkmate Club \u2014 tabletop lounge"
+ },
+ "generated": "2026-10-29",
+ "note": "Every image here was generated with the ForgeGUI connector. Files are downloaded and processed by tools/checkmate-assets/fetch.py; until a file is downloaded the game uses its procedural fallback.",
+ "assets": [
+  {
+   "id": "chess.w.k",
+   "file": "chess/white-king.webp",
+   "use": "White king piece (ivory set)",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "c540aacc-7816-4806-950c-571247dd972b",
+    "artifact_ref": "mcp-artifact:c540aacc-7816-4806-950c-571247dd972b:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/c540aacc-7816-4806-950c-571247dd972b-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chess.w.q",
+   "file": "chess/white-queen.webp",
+   "use": "White queen piece",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "71b3dce6-183b-421d-9f88-80233e0e1e77",
+    "artifact_ref": "mcp-artifact:71b3dce6-183b-421d-9f88-80233e0e1e77:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/71b3dce6-183b-421d-9f88-80233e0e1e77-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chess.w.r",
+   "file": "chess/white-rook.webp",
+   "use": "White rook piece",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "e2667706-d3ec-4cae-8be0-e6ba16da49cd",
+    "artifact_ref": "mcp-artifact:e2667706-d3ec-4cae-8be0-e6ba16da49cd:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/e2667706-d3ec-4cae-8be0-e6ba16da49cd-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chess.w.b",
+   "file": "chess/white-bishop.webp",
+   "use": "White bishop piece",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "5665efcd-91f4-4eed-8f72-5189ced313ed",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/5665efcd-91f4-4eed-8f72-5189ced313ed-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown (worker interruption); not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The procedural fallback set is used."
+  },
+  {
+   "id": "chess.w.n",
+   "file": "chess/white-knight.webp",
+   "use": "White knight piece",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "ec9ffb56-9874-4a9a-9289-3fcf0fe8dd22",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/ec9ffb56-9874-4a9a-9289-3fcf0fe8dd22-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown (worker interruption); not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The procedural fallback set is used."
+  },
+  {
+   "id": "chess.w.p",
+   "file": "chess/white-pawn.webp",
+   "use": "White pawn piece",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "49c732f4-d6b6-44ab-a92a-f36cf25149de",
+    "artifact_ref": "mcp-artifact:49c732f4-d6b6-44ab-a92a-f36cf25149de:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/49c732f4-d6b6-44ab-a92a-f36cf25149de-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chess.b.k",
+   "file": "chess/black-king.webp",
+   "use": "Black king piece (ebony set)",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "f6578717-154b-43fd-82a3-f1588aa67894",
+    "artifact_ref": "mcp-artifact:f6578717-154b-43fd-82a3-f1588aa67894:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/f6578717-154b-43fd-82a3-f1588aa67894-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chess.b.q",
+   "file": "chess/black-queen.webp",
+   "use": "Black queen piece",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "caaca9fa-843d-47cc-b592-63db1c9380d7",
+    "artifact_ref": "mcp-artifact:caaca9fa-843d-47cc-b592-63db1c9380d7:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/caaca9fa-843d-47cc-b592-63db1c9380d7-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chess.b.r",
+   "file": "chess/black-rook.webp",
+   "use": "Black rook piece",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "75f327b8-2290-4c24-ab03-5b10a9e2e211",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/75f327b8-2290-4c24-ab03-5b10a9e2e211-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown (worker interruption); not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The procedural fallback set is used."
+  },
+  {
+   "id": "chess.b.b",
+   "file": "chess/black-bishop.webp",
+   "use": "Black bishop piece",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "f2a8e347-594a-4364-995c-a106bdd9729e",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/f2a8e347-594a-4364-995c-a106bdd9729e-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown (worker interruption); not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The procedural fallback set is used."
+  },
+  {
+   "id": "chess.b.n",
+   "file": "chess/black-knight.webp",
+   "use": "Black knight piece",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "e56229e6-09a1-4de3-9e30-2a8e38b075c8",
+    "artifact_ref": "mcp-artifact:e56229e6-09a1-4de3-9e30-2a8e38b075c8:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/e56229e6-09a1-4de3-9e30-2a8e38b075c8-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chess.b.p",
+   "file": "chess/black-pawn.webp",
+   "use": "Black pawn piece",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "5b32d491-5a34-485d-9ffb-a0a19d2eab74",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/5b32d491-5a34-485d-9ffb-a0a19d2eab74-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown (worker interruption); not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The procedural fallback set is used."
+  },
+  {
+   "id": "tex.walnut",
+   "file": "textures/walnut.webp",
+   "use": "Dark chessboard squares and wooden board frame",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "thumbnail",
+    "job_id": "ef2196a1-d314-4cda-9847-59bbc2391c11",
+    "artifact_ref": "mcp-artifact:ef2196a1-d314-4cda-9847-59bbc2391c11:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/ef2196a1-d314-4cda-9847-59bbc2391c11-0.png"
+   },
+   "process": {
+    "fit": 1024
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "tex.maple",
+   "file": "textures/maple.webp",
+   "use": "Light chessboard squares",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "thumbnail",
+    "job_id": "c5601f8a-15a9-4537-9f3f-cfc738329c4c",
+    "artifact_ref": "mcp-artifact:c5601f8a-15a9-4537-9f3f-cfc738329c4c:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/c5601f8a-15a9-4537-9f3f-cfc738329c4c-0.png"
+   },
+   "process": {
+    "fit": 1024
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "tex.felt",
+   "file": "textures/felt-green.webp",
+   "use": "Card table felt surface",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "thumbnail",
+    "job_id": "6e2fd888-c9d8-44e6-b482-eff787a9eaea",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/6e2fd888-c9d8-44e6-b482-eff787a9eaea-0.png"
+   },
+   "process": {
+    "fit": 1024
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown; not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The CSS felt gradient is used instead."
+  },
+  {
+   "id": "ui.corner",
+   "file": "ui/corner.webp",
+   "use": "Brass corner ornament for board and table frames",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "5d1455bf-1571-4042-8e0e-2eebd9c0eb6d",
+    "artifact_ref": "mcp-artifact:5d1455bf-1571-4042-8e0e-2eebd9c0eb6d:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/5d1455bf-1571-4042-8e0e-2eebd9c0eb6d-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.back.oxblood",
+   "file": "cards/back-oxblood.webp",
+   "use": "Card back: oxblood damask (default)",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "af2c90b1-ed86-4512-9119-2593e40d543e",
+    "artifact_ref": "mcp-artifact:af2c90b1-ed86-4512-9119-2593e40d543e:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/af2c90b1-ed86-4512-9119-2593e40d543e-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.back.midnight",
+   "file": "cards/back-midnight.webp",
+   "use": "Card back: midnight art-deco",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "157da9af-728b-45b7-97bf-9c410721f0f7",
+    "artifact_ref": "mcp-artifact:157da9af-728b-45b7-97bf-9c410721f0f7:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/157da9af-728b-45b7-97bf-9c410721f0f7-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.suit.s",
+   "file": "cards/suit-spade.webp",
+   "use": "Spade pip and corner index",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "21323de8-6097-4de5-b41d-3cb304a5d347",
+    "artifact_ref": "mcp-artifact:21323de8-6097-4de5-b41d-3cb304a5d347:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/21323de8-6097-4de5-b41d-3cb304a5d347-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 128
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.suit.h",
+   "file": "cards/suit-heart.webp",
+   "use": "Heart pip and corner index",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "824e5708-47e8-41ce-8edc-656adc9bcf29",
+    "artifact_ref": "mcp-artifact:824e5708-47e8-41ce-8edc-656adc9bcf29:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/824e5708-47e8-41ce-8edc-656adc9bcf29-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 128
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.suit.d",
+   "file": "cards/suit-diamond.webp",
+   "use": "Diamond pip and corner index",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "bc6dd450-7bad-4727-87c5-524a7023056e",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/bc6dd450-7bad-4727-87c5-524a7023056e-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 128
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown (worker interruption); not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The procedural fallback set is used."
+  },
+  {
+   "id": "cards.suit.c",
+   "file": "cards/suit-club.webp",
+   "use": "Club pip and corner index",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "544f4513-e4ae-47ab-bbce-7d17e718b280",
+    "artifact_ref": "mcp-artifact:544f4513-e4ae-47ab-bbce-7d17e718b280:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/544f4513-e4ae-47ab-bbce-7d17e718b280-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 128
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.court.k",
+   "file": "cards/court-king.webp",
+   "use": "Portrait panel on every king (all suits)",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "ef0e61f8-47f0-44a4-85d5-899db67cbdda",
+    "artifact_ref": "mcp-artifact:ef0e61f8-47f0-44a4-85d5-899db67cbdda:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/ef0e61f8-47f0-44a4-85d5-899db67cbdda-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.court.q",
+   "file": "cards/court-queen.webp",
+   "use": "Portrait panel on every queen",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "f65e4a83-db50-45b9-85f7-6747890c5caa",
+    "artifact_ref": "mcp-artifact:f65e4a83-db50-45b9-85f7-6747890c5caa:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/f65e4a83-db50-45b9-85f7-6747890c5caa-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "cards.court.j",
+   "file": "cards/court-jack.webp",
+   "use": "Portrait panel on every jack",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "9a341612-8896-4e72-9729-a2fe191f9e72",
+    "artifact_ref": "mcp-artifact:9a341612-8896-4e72-9729-a2fe191f9e72:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/9a341612-8896-4e72-9729-a2fe191f9e72-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chips.1",
+   "file": "chips/chip-ivory.webp",
+   "use": "Poker chip, denomination 1 (value drawn by code)",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "a647252d-3b9b-40bf-ac36-11a87d18fa3a",
+    "artifact_ref": "mcp-artifact:a647252d-3b9b-40bf-ac36-11a87d18fa3a:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/a647252d-3b9b-40bf-ac36-11a87d18fa3a-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 192
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chips.5",
+   "file": "chips/chip-red.webp",
+   "use": "Poker chip, denomination 5",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "c43706da-02b4-4f61-9fa6-62d498c7e321",
+    "artifact_ref": "mcp-artifact:c43706da-02b4-4f61-9fa6-62d498c7e321:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/c43706da-02b4-4f61-9fa6-62d498c7e321-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 192
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chips.10",
+   "file": "chips/chip-blue.webp",
+   "use": "Poker chip, denomination 10",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "11872f9b-fae0-4b8e-987c-4b5cffaf6fc2",
+    "artifact_ref": "mcp-artifact:11872f9b-fae0-4b8e-987c-4b5cffaf6fc2:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/11872f9b-fae0-4b8e-987c-4b5cffaf6fc2-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 192
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chips.25",
+   "file": "chips/chip-green.webp",
+   "use": "Poker chip, denomination 25",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "d8e7bca0-8d1c-4739-9bbf-112415cc7693",
+    "artifact_ref": "mcp-artifact:d8e7bca0-8d1c-4739-9bbf-112415cc7693:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/d8e7bca0-8d1c-4739-9bbf-112415cc7693-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 192
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "chips.100",
+   "file": "chips/chip-black.webp",
+   "use": "Poker chip, denomination 100",
+   "status": "outcome_unknown",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "eba6424a-c2a8-4449-877c-25c1ec46e24f",
+    "artifact_ref": null,
+    "url": null,
+    "probe_url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/eba6424a-c2a8-4449-877c-25c1ec46e24f-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 192
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false,
+   "note": "ForgeGUI reported outcome_unknown (worker interruption); not regenerated; the fetch script checks probe_url in case the image was produced per ForgeGUI guidance. The procedural fallback set is used."
+  },
+  {
+   "id": "ui.dealer",
+   "file": "ui/dealer-button.webp",
+   "use": "Poker dealer button",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "e4f71aa8-dc3b-42e2-b6d5-2c5ad85d95fc",
+    "artifact_ref": "mcp-artifact:e4f71aa8-dc3b-42e2-b6d5-2c5ad85d95fc:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/e4f71aa8-dc3b-42e2-b6d5-2c5ad85d95fc-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "bg.library",
+   "file": "backgrounds/library.webp",
+   "use": "Library and menu page background",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "thumbnail",
+    "job_id": "a1bd210c-05af-437d-a380-a90e8a0ceb61",
+    "artifact_ref": "mcp-artifact:a1bd210c-05af-437d-a380-a90e8a0ceb61:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/a1bd210c-05af-437d-a380-a90e8a0ceb61-0.png"
+   },
+   "process": {
+    "fit": 1600
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "bg.hero",
+   "file": "backgrounds/hero-lounge.webp",
+   "use": "Main menu illustration",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "thumbnail",
+    "job_id": "80378264-0c1b-4b2d-9fd3-343d12bc9b29",
+    "artifact_ref": "mcp-artifact:80378264-0c1b-4b2d-9fd3-343d12bc9b29:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/80378264-0c1b-4b2d-9fd3-343d12bc9b29-0.png"
+   },
+   "process": {
+    "fit": 1600
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "bg.chess",
+   "file": "backgrounds/chess-room.webp",
+   "use": "Chess table backdrop",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "thumbnail",
+    "job_id": "0e97a525-f66f-4dfb-a283-5a26c48b1f89",
+    "artifact_ref": "mcp-artifact:0e97a525-f66f-4dfb-a283-5a26c48b1f89:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/0e97a525-f66f-4dfb-a283-5a26c48b1f89-0.png"
+   },
+   "process": {
+    "fit": 1600
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "icon.chess",
+   "file": "icons/chess.webp",
+   "use": "Chess game tile",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "26cc8a68-2786-4ad2-8cc6-1f6a148e212c",
+    "artifact_ref": "mcp-artifact:26cc8a68-2786-4ad2-8cc6-1f6a148e212c:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/26cc8a68-2786-4ad2-8cc6-1f6a148e212c-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "icon.poker",
+   "file": "icons/poker.webp",
+   "use": "Texas Hold'em game tile",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "a7f1fbae-d7bb-4c43-a77e-1c8e7fc48588",
+    "artifact_ref": "mcp-artifact:a7f1fbae-d7bb-4c43-a77e-1c8e7fc48588:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/a7f1fbae-d7bb-4c43-a77e-1c8e7fc48588-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "icon.blackjack",
+   "file": "icons/blackjack.webp",
+   "use": "Blackjack game tile",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "996649bd-b077-44d6-9f72-743326808a44",
+    "artifact_ref": "mcp-artifact:996649bd-b077-44d6-9f72-743326808a44:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/996649bd-b077-44d6-9f72-743326808a44-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "icon.solitaire",
+   "file": "icons/solitaire.webp",
+   "use": "Solitaire game tile",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "icon_gfx",
+    "job_id": "e8da695c-ef7c-4574-b071-1e8269b131a2",
+    "artifact_ref": "mcp-artifact:e8da695c-ef7c-4574-b071-1e8269b131a2:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/e8da695c-ef7c-4574-b071-1e8269b131a2-0.png"
+   },
+   "process": {
+    "fit": 512
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "ui.divider",
+   "file": "ui/divider.webp",
+   "use": "Ornamental divider under headings",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "12a03521-ea73-4396-96bc-dfb65cc0843a",
+    "artifact_ref": "mcp-artifact:12a03521-ea73-4396-96bc-dfb65cc0843a:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/12a03521-ea73-4396-96bc-dfb65cc0843a-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 640
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  },
+  {
+   "id": "ui.medallion",
+   "file": "ui/medallion.webp",
+   "use": "Achievement badge frame (Stage 10)",
+   "status": "generated",
+   "source": {
+    "tool": "ForgeGUI generation_image",
+    "family": "mixed",
+    "job_id": "731e08a3-e165-4af8-a2b0-6d0a7f480a72",
+    "artifact_ref": "mcp-artifact:731e08a3-e165-4af8-a2b0-6d0a7f480a72:0",
+    "url": "https://azyjlkhpdgafuobyxoax.supabase.co/storage/v1/object/public/asset-images/4a8622d0-ef07-4e21-a868-8fd631e29ae5/mcp/731e08a3-e165-4af8-a2b0-6d0a7f480a72-0.png"
+   },
+   "process": {
+    "trim": true,
+    "fit": 256
+   },
+   "width": null,
+   "height": null,
+   "bytes": null,
+   "downloaded": false
+  }
+ ],
+ "sets": {
+  "chess.pieces": [
+   "chess.w.k",
+   "chess.w.q",
+   "chess.w.r",
+   "chess.w.b",
+   "chess.w.n",
+   "chess.w.p",
+   "chess.b.k",
+   "chess.b.q",
+   "chess.b.r",
+   "chess.b.b",
+   "chess.b.n",
+   "chess.b.p"
+  ],
+  "cards.suits": [
+   "cards.suit.s",
+   "cards.suit.h",
+   "cards.suit.d",
+   "cards.suit.c"
+  ],
+  "cards.courts": [
+   "cards.court.k",
+   "cards.court.q",
+   "cards.court.j"
+  ],
+  "chips": [
+   "chips.1",
+   "chips.5",
+   "chips.10",
+   "chips.25",
+   "chips.100"
+  ],
+  "board.textures": [
+   "tex.maple",
+   "tex.walnut"
+  ]
+ },
+ "setNote": "Members of a set are only used together: if any member is missing the whole set falls back, so generated and procedural art never mix in one game."
+}

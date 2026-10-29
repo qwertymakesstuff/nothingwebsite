@@ -8,7 +8,7 @@ export function render(app) {
   const name = app.settings.get('playerName');
   const totals = app.stats.totals();
   const el = h('main', { class: 'menu' },
-    h('section', { class: 'menu-hero' },
+    h('section', { class: 'menu-hero', style: app.assets.url('bg.hero') ? { '--hero': `url("${app.assets.url('bg.hero')}")` } : null },
       h('div', { class: 'menu-crest', 'aria-hidden': 'true' }, '♚'),
       h('p', { class: 'eyebrow' }, 'Members’ lounge · est. tonight'),
       h('h1', { class: 'menu-title' }, 'Checkmate Club'),
@@ -22,7 +22,7 @@ export function render(app) {
     h('section', { class: 'menu-tables', 'aria-labelledby': 'menu-tables-h' },
       h('h2', { id: 'menu-tables-h', class: 'section-title' }, 'The tables'),
       h('div', { class: 'game-grid' },
-        GAMES.map(g => gameCard(g, { record: app.stats.get(g.id), onOpen: () => app.go('game', g.id), onRules: () => app.go('rules', g.id) })),
+        GAMES.map(g => gameCard(g, { art: app.assets.url(`icon.${g.id}`), record: app.stats.get(g.id), onOpen: () => app.go('game', g.id), onRules: () => app.go('rules', g.id) })),
         h('div', { class: 'game-card game-card-more', 'aria-hidden': 'true' },
           h('span', { class: 'game-card-glyph' }, '♣'),
           h('span', {}, 'More tables are being set up')))),
