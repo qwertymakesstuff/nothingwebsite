@@ -1,9 +1,9 @@
 // Hash-based navigation: #/menu, #/library, #/game/<id>, #/stats, #/settings, #/rules,
 // #/rules/<id>. The hash keeps the browser back button and reloads working with no server.
 
-export const SCREENS = ['menu', 'library', 'game', 'stats', 'settings', 'rules'];
+export const SCREENS = ['menu', 'library', 'game', 'stats', 'settings', 'rules', 'workshop'];
 const NEEDS_PARAM = new Set(['game']);
-const ALLOWS_PARAM = new Set(['game', 'rules']);
+const ALLOWS_PARAM = new Set(['game', 'rules', 'workshop']);
 
 export function parseRoute(hash) {
   const parts = String(hash || '').replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);

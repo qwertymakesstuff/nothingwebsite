@@ -7,6 +7,7 @@ export class GameTimer {
   }
 
   reset() { this.base = 0; this.since = null; }
+  setElapsed(ms) { this.base = Math.max(0, ms); if (this.running) this.since = this.now(); }
   get running() { return this.since !== null; }
   start() { if (!this.running) this.since = this.now(); }
   pause() { if (this.running) { this.base += this.now() - this.since; this.since = null; } }

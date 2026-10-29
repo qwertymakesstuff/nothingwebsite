@@ -1,10 +1,12 @@
 // Browser bootstrap.
 
 import { App } from './app.js';
+import { Assets } from './core/assets.js';
 
 const root = document.getElementById('app');
 try {
-  window.checkmateClub = new App({ root });
+  const assets = await new Assets().load();
+  window.checkmateClub = new App({ root, assets });
   document.getElementById('boot')?.remove();
 } catch (err) {
   console.error(err);
