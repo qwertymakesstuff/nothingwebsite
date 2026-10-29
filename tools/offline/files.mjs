@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
 // Folders and files that are tooling, docs or server code rather than the site itself.
-const SKIP_DIRS = new Set(['.git', '.github', 'node_modules', 'tests', 'tools', 'worker', 'cloudflare-worker', 'dist', 'gta/tools', 'gta/voice/tools']);
+const SKIP_DIRS = new Set(['.git', '.github', 'node_modules', 'tests', 'tools', 'worker', 'cloudflare-worker', 'simpleplay', 'dist', 'gta/tools', 'gta/voice/tools']);
 const SKIP_FILES = /(^|\/)(CNAME|wrangler\.(jsonc|toml)|favicon-note\.txt|blog-admin\.(html|js)|offline-files\.json)$|\.(md|docx|mjs\.map)$/i;
 
 export function siteFiles(root = ROOT) {

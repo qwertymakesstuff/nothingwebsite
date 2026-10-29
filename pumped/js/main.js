@@ -26,6 +26,8 @@ const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
 // "simple." in front of the game (missing.website/simple.pumped/, or a simple. subdomain): easier to read UI
 const SIMPLE = document.documentElement.classList.contains('simple');
+// on simple.missing.website the rest of the site lives on the main domain
+const SITE = location.hostname.startsWith('simple.') ? 'https://missing.website' : '';
 
 let run = null;
 let chart = null;
@@ -910,8 +912,8 @@ function openMenu() {
       h('button', { type: 'button', class: 'btn', text: '📋 High scores', onclick: openScores }),
       h('button', { type: 'button', class: 'btn', text: '❓ How to play', onclick: openHelp }),
       h('button', { type: 'button', class: 'btn', text: '⚙ Settings', onclick: openSettings }),
-      SIMPLE ? h('a', { class: 'btn', href: '/pumped/', text: '🖥 Full view' }) : h('a', { class: 'btn', href: '/simple.pumped/', title: 'Bigger text, plain words, fewer panels. Same save.', text: '🔍 Simple view' }),
-      h('a', { class: 'btn', href: '/pages.html', text: '← missing.website' })),
+      SIMPLE ? h('a', { class: 'btn', href: `${SITE}/pumped/`, text: '🖥 Full view' }) : h('a', { class: 'btn', href: '/simple.pumped/', title: 'Bigger text, plain words, fewer panels. Same save.', text: '🔍 Simple view' }),
+      h('a', { class: 'btn', href: `${SITE}/pages.html`, text: '← missing.website' })),
     h('p', { class: 'disclaimer', text: 'A game. Every company, coin, person and headline is made up. No real money, no real trading, not financial advice.' }),
   ];
   showModal(kids, 'menu');

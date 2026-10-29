@@ -482,3 +482,25 @@ test('pumped: simple.pumped is the same page in simple mode', () => {
     .replace('<!doctype html>', '<!doctype html>\n<!-- Simple view of /pumped/: generated copy of pumped/index.html (tests keep the two in sync). -->');
   assert.equal(simple, expect, 'regenerate simple.pumped/index.html from pumped/index.html');
 });
+
+test('simpleplay worker: game at the root, typed paths redirect, the rest is the asset store', async () => {
+  const { default: worker } = await import(new URL('../../simpleplay/worker.js', import.meta.url));
+  const seen = [];
+  const env = { ASSETS: { fetch: req => { seen.push(new URL(req.url).pathname); return new Response('asset', { status: 404 }); } } };
+  for (const p of ['/pumped', '/pumped/', '/simple.pumped/', '/Pumped/js/main.js']) {
+    const r = await worker.fetch(new Request('https://simple.missing.website' + p + '?seed=X'), env);
+    assert.equal(r.status, 301, p);
+    assert.equal(r.headers.get('location'), 'https://simple.missing.website/?seed=X');
+  }
+  const r = await worker.fetch(new Request('https://simple.missing.website/nope'), env);
+  assert.equal(r.status, 404);
+  assert.deepEqual(seen, ['/nope']);
+  const cfg = fs.readFileSync(new URL('../../simpleplay/wrangler.jsonc', import.meta.url), 'utf8');
+  assert.match(cfg, /"name": "simpleplay"/);
+  assert.match(cfg, /"directory": "\.\.\/pumped"/);
+  assert.match(cfg, /"pattern": "simple\.missing\.website"/);
+  // everything the page loads is relative, so it works from simple.missing.website/
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /(href|src)="\/(?!\/)/);
+  assert.match(html, /location\.hostname\.indexOf\('simple\.'\) === 0/);
+});
