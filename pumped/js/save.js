@@ -30,14 +30,14 @@ function write(storage, key, value) {
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 export const DEFAULT_SETTINGS = {
-  sound: true, volume: 0.6, effects: true, reducedMotion: false, confirmBig: true,
+  sound: true, volume: 0.6, effects: true, reducedMotion: false,
   chartTheme: 'terminal', speed: 1, tooltips: true, leverageAccepted: false,
 };
 
 export function sanitizeSettings(s) {
   const out = { ...DEFAULT_SETTINGS };
   if (!s || typeof s !== 'object') return out;
-  for (const k of ['sound', 'effects', 'reducedMotion', 'confirmBig', 'tooltips', 'leverageAccepted']) if (typeof s[k] === 'boolean') out[k] = s[k];
+  for (const k of ['sound', 'effects', 'reducedMotion', 'tooltips', 'leverageAccepted']) if (typeof s[k] === 'boolean') out[k] = s[k];
   if (Number.isFinite(s.volume)) out.volume = Math.min(1, Math.max(0, Math.round(s.volume * 10) / 10));
   if ([0.5, 1, 2].includes(s.speed)) out.speed = s.speed;
   if (typeof s.chartTheme === 'string' && /^[a-z]{1,20}$/.test(s.chartTheme)) out.chartTheme = s.chartTheme;
@@ -52,6 +52,8 @@ export function defaultMeta() {
     lifetime: { runs: 0, bestWorth: 0, cloutEarned: 0, trades: 0 },
     settings: { ...DEFAULT_SETTINGS },
     watch: ['MBYT', 'CORN', 'GOB'],
+    profile: { name: 'You', handle: 'pumped_trader' },
+    follows: ['c:wire', 'c:rex'],
   };
 }
 
@@ -72,6 +74,11 @@ export function sanitizeMeta(m) {
   if (m.lifetime && typeof m.lifetime === 'object') for (const k of Object.keys(out.lifetime)) out.lifetime[k] = Math.max(0, finite(m.lifetime[k]));
   out.settings = sanitizeSettings(m.settings);
   if (Array.isArray(m.watch)) out.watch = [...new Set(m.watch.filter(t => ASSET_BY_T[t]))].slice(0, 40);
+  if (m.profile && typeof m.profile === 'object') {
+    const name = String(m.profile.name || '').trim().slice(0, 30), handle = String(m.profile.handle || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 20);
+    if (name && handle) out.profile = { name, handle };
+  }
+  if (Array.isArray(m.follows)) out.follows = [...new Set(m.follows.filter(k => typeof k === 'string' && /^[cb]:[A-Za-z0-9_]{1,30}$/.test(k)))].slice(0, 100);
   return out;
 }
 

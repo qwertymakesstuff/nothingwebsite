@@ -8,6 +8,9 @@ import { Store, addScore } from './save.js';
 import * as PG from './progression.js';
 import { REGIMES } from './regimes.js';
 import { Fx } from './fx.js';
+import { bindTips } from './tips.js';
+import { createFeed, stepFeed, validFeed } from './social.js';
+import { SocialView } from './social-ui.js';
 import { Sfx } from './audio.js';
 import { Chart, CHART_THEMES, sparkPath } from './chart.js';
 import { randomSeed } from './rng.js';
@@ -21,13 +24,18 @@ const sfx = new Sfx();
 const fx = new Fx(document.getElementById('fx'));
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
+// "simple." in front of the game (missing.website/simple.pumped/, or a simple. subdomain): easier to read UI
+const SIMPLE = document.documentElement.classList.contains('simple');
+// on simple.missing.website the rest of the site lives on the main domain
+const SITE = location.hostname.startsWith('simple.') ? 'https://missing.website' : '';
 
 let run = null;
 let chart = null;
 let loop = null;
+let social = null;
 const ui = {
   side: 'buy', range: 300, cat: 'all', search: '', ltab: 'all', htab: 'holdings', pct: null,
-  paused: false, modal: null, rows: {}, newsEls: new Map(), lastNews: 0, lastPrice: null,
+  view: 'terminal', paused: false, modal: null, rows: {}, newsEls: new Map(), lastNews: 0, lastPrice: null,
   holdKey: '', txKey: '', scans: [],
 };
 
@@ -41,7 +49,15 @@ function boot() {
   // first visit: follow the system's reduced-motion preference
   if (store.isFresh() && globalThis.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { meta.settings.reducedMotion = true; saveMeta(); }
   chart = new Chart($('#chart'));
+  chart.simple = SIMPLE;
+  if (SIMPLE) for (const el of $$('[data-simple]')) el.textContent = el.dataset.simple;
+  social = new SocialView({
+    run: () => run, meta: () => meta, worth: () => worthOf(run), timeLeft: () => timeLeft(run),
+    onTicker: t => { switchView('terminal'); selectAsset(t); }, onBack: () => switchView('terminal'),
+    toast: (t, k) => toast(t, k), saveMeta, sfx,
+  });
   bindUI();
+  bindTips($('#tip'), () => S().tooltips);
   applySettings();
   const saved = store.loadRun();
   $('#boot').remove();
@@ -70,6 +86,7 @@ function newRun(opts = {}) {
 function mountRun() {
   $('#app').hidden = false;
   if (!run.market.assets[run.selected]) run.selected = run.market.order[0];
+  if (!validFeed(run.social)) run.social = createFeed();
   ui.newsEls.clear(); ui.lastNews = 0; ui.lastPrice = null; ui.holdKey = ui.txKey = ui.statsKey = ui.orderKey = '';
   $('#news').replaceChildren();
   buildChips();
@@ -80,6 +97,7 @@ function mountRun() {
   selectAsset(run.selected, true);
   setSide('buy');
   render();
+  if (ui.view === 'social') social.show();
   restartLoop();
 }
 
@@ -96,7 +114,9 @@ function gameTick() {
   handleNotes(notes);
   scan();
   progress();
+  stepFeed(run.social, run, notes, Math.random, meta.profile);
   render();
+  social.tick();
   if (run.market.tick % 5 === 0) saveRun();
   if (run.over) finishRun();
 }
@@ -243,6 +263,7 @@ function chartAlert(text, kind) {
 function render() {
   if (!run) return;
   renderTop();
+  if (ui.view === 'social') return;  // the terminal catches up when you switch back
   renderList();
   renderChart();
   renderTrade();
@@ -263,6 +284,7 @@ function renderTop() {
   const u = unrealized(run.pf, priceFn(run));
   setText($('#unreal'), F.money(u, { sign: true })); setTone($('#unreal'), u);
   setText($('#real'), F.money(run.pf.realized, { sign: true })); setTone($('#real'), run.pf.realized);
+  setText($('#totalPL'), F.money(w - run.stats.start, { sign: true })); setTone($('#totalPL'), w - run.stats.start);
   setText($('#modeLabel'), (MODES[run.mode] || MODES.endless).label);
   const left = timeLeft(run);
   setText($('#timer'), Number.isFinite(left) ? F.clock(left) : 'T+' + F.clock(run.market.tick));
@@ -466,12 +488,15 @@ function setSide(side) {
 }
 
 function currentLev() {
+  if (SIMPLE) return 1;
   const opts = PG.leverageOptions(meta);
   if (!opts.includes(run.lev)) run.lev = 1;
   return run.lev;
 }
 
 function renderLev() {
+  $('#levBox').hidden = SIMPLE;
+  if (SIMPLE) return;
   const box = $('#levOpts');
   const opts = PG.leverageOptions(meta);
   const key = opts.join() + ':' + run.lev + ':' + S().leverageAccepted;
@@ -523,18 +548,18 @@ function renderTrade() {
   const amt = parseAmount($('#amount').value);
   const pv = $('#preview');
   const rows = [];
-  const line = (k, v, cls = '') => rows.push(h('div', {}, h('span', { text: k }), h('b', { class: cls, text: v })));
+  const line = (k, v, cls = '', tip = null) => rows.push(h('div', {}, h('span', { text: k, 'data-tip': tip }), h('b', { class: cls, text: v })));
   if (buy) {
     const lev = currentLev();
     if (amt > 0) {
       const margin = amt / (1 + lev * FEE), qty = margin * lev / p;
       line('You get ≈', `${F.qty(qty)} ${t}`);
       line('Price', F.price(p));
-      line(`Fee (0.1%${lev > 1 ? ' × ' + lev : ''})`, F.money(amt - margin));
+      line(`Fee (0.1%${lev > 1 ? ' × ' + lev : ''})`, F.money(amt - margin), '', 'fee');
       if (lev > 1) {
         line('Position size', F.money(margin * lev));
         const liq = (margin * (lev - 1) + 0.1 * margin) / qty;
-        line('Liquidated below', F.price(liq), 'down');
+        line('Liquidated below', F.price(liq), 'down', 'liq');
       }
       if (pos && pos.lev !== lev) rows.push(h('span', { class: 'err', text: `You hold ${t} at ${pos.lev}×. Switch leverage to ${pos.lev}× or sell first.` }));
       if (amt > run.pf.cash + 1e-9) rows.push(h('span', { class: 'err', text: `Not enough cash (${F.money(run.pf.cash)}).` }));
@@ -574,9 +599,9 @@ function renderTrade() {
     const eq = equityOf(pos, p), pnl = eq - pos.cost, pc = pos.cost > 0 ? pnl / pos.cost * 100 : 0;
     card.className = `position ${pnl >= 0 ? 'win' : 'lose'}`;
     const kids = [h('h3', {}, h('span', { text: 'Your position' }), pos.lev > 1 ? h('span', { class: 'down', text: `${pos.lev}× LEVERAGE` }) : null),
-      row2('Quantity', `${F.qty(pos.qty)} ${t}`), row2('Avg price', F.price(pos.avg)), row2('Value', F.money(eq)),
+      row2('Quantity', `${F.qty(pos.qty)} ${t}`), row2('Avg price', F.price(pos.avg), '', 'avg'), row2('Value', F.money(eq)),
       row2('P/L', `${F.money(pnl, { sign: true })} (${F.pct(pc)})`, F.tone(pnl))];
-    if (pos.lev > 1) kids.push(row2('Liquidation at', F.price(liqPrice(pos)), 'down'));
+    if (pos.lev > 1) kids.push(row2('Liquidation at', F.price(liqPrice(pos)), 'down', 'liq'));
     kids.push(h('div', { class: 'quick' },
       h('button', { type: 'button', text: 'Sell half', onclick: () => quickSell(t, 0.5) }),
       h('button', { type: 'button', text: 'Sell all', onclick: () => quickSell(t, 1) })));
@@ -584,7 +609,7 @@ function renderTrade() {
   }
 }
 
-const row2 = (k, v, cls = '') => h('div', {}, h('span', { text: k }), h('b', { class: cls, text: v }));
+const row2 = (k, v, cls = '', tip = null) => h('div', {}, h('span', { text: k, 'data-tip': tip }), h('b', { class: cls, text: v }));
 
 function pickPct(p) {
   if (!run) return;
@@ -725,7 +750,7 @@ function renderHoldings(body) {
     ui.holdKey = key;
     tbody = h('tbody');
     const head = ['Asset', 'Qty', 'Avg price', 'Price', 'Value', 'P/L', 'P/L %', ...(anyLev ? ['Lev', 'Liq. price'] : []), ''];
-    body.replaceChildren(h('table', {}, h('thead', {}, h('tr', {}, head.map(x => h('th', { text: x })))), tbody, h('tfoot', {}, h('tr', { id: 'holdFoot' }))));
+    body.replaceChildren(h('table', { class: 'hold-table' }, h('thead', {}, h('tr', {}, head.map(x => h('th', { text: x })))), tbody, h('tfoot', {}, h('tr', { id: 'holdFoot' }))));
     for (const x of list) {
       const t = x.p.t;
       tbody.append(h('tr', { dataset: { t }, onclick: () => selectAsset(t) },
@@ -761,7 +786,7 @@ function renderTxs(body) {
   if (ui.txKey === key && body.querySelector('table, .empty-note')) return;
   ui.txKey = key;
   if (!txs.length) { body.replaceChildren(h('p', { class: 'empty-note', text: 'No trades yet.' })); return; }
-  body.replaceChildren(h('table', {},
+  body.replaceChildren(h('table', { class: 'tx-table' },
     h('thead', {}, h('tr', {}, ['Time', 'Type', 'Asset', 'Qty', 'Price', 'Cash', 'P/L'].map(x => h('th', { text: x })))),
     h('tbody', {}, txs.map(x => h('tr', { class: x.pnl > 0 ? 'win' : x.pnl < 0 ? 'lose' : '', onclick: () => selectAsset(x.t) },
       h('td', { text: 'T+' + F.clock(x.tick) }),
@@ -887,7 +912,8 @@ function openMenu() {
       h('button', { type: 'button', class: 'btn', text: '📋 High scores', onclick: openScores }),
       h('button', { type: 'button', class: 'btn', text: '❓ How to play', onclick: openHelp }),
       h('button', { type: 'button', class: 'btn', text: '⚙ Settings', onclick: openSettings }),
-      h('a', { class: 'btn', href: '/pages.html', text: '← missing.website' })),
+      SIMPLE ? h('a', { class: 'btn', href: `${SITE}/pumped/`, text: '🖥 Full view' }) : h('a', { class: 'btn', href: '/simple.pumped/', title: 'Bigger text, plain words, fewer panels. Same save.', text: '🔍 Simple view' }),
+      h('a', { class: 'btn', href: `${SITE}/pages.html`, text: '← missing.website' })),
     h('p', { class: 'disclaimer', text: 'A game. Every company, coin, person and headline is made up. No real money, no real trading, not financial advice.' }),
   ];
   showModal(kids, 'menu');
@@ -963,7 +989,9 @@ function openHelp() {
     h('p', { text: '🚀 Pumps: assets sometimes surge. Some keep going, some fade, some collapse in seconds (a rug pull). 📉 Crashes: single assets or the whole market can drop. Some recover, some don\'t. Cash doesn\'t crash.' }),
     h('p', { text: '📰 News explains moves but doesn\'t promise anything. Developing stories resolve a few seconds later, one way or the other. 🔥 Hype makes pumps bigger, but overheated assets (80+) crash and get rugged more often.' }),
     h('p', { text: '🎲 Leverage multiplies gains and losses and can get you liquidated. ⚡ Clout from each run buys upgrades. Different assets behave very differently: safe funds crawl, degen coins go to the moon or to zero.' }),
-    h('p', { text: 'Keys: B / S buy or sell · 1–4 pick 10/25/50/100% · Enter trade · ↑ ↓ change asset · / search · Space pause · Esc close.' }),
+    h('p', { text: '🦜 Squawker (top left, or press T) is the market\'s social site: celebrities, news and a few hundred bots reacting to every move. It\'s noisy and usually late, and the market keeps running while you scroll. Naming a coin in your own squawk ($GOB) gives it a little hype.' }),
+    h('p', { text: '🔍 Hard to read? Put "simple." in front of the game: missing.website/simple.pumped/ is the same game and save with bigger text and fewer panels.' }),
+    h('p', { text: 'Keys: T terminal / Squawker · B / S buy or sell · 1–4 pick 10/25/50/100% · Enter trade · ↑ ↓ change asset · / search · Space pause · Esc close.' }),
     h('div', { class: 'btn-row end' }, backBtn()),
   ], 'help');
 }
@@ -1025,6 +1053,7 @@ function toast(text, kind = '', ms = 3200) {
 
 // ── Input ────────────────────────────────────────────────────────────────────
 function bindUI() {
+  $$('.vtab').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
   $('#search').addEventListener('input', e => { ui.search = e.target.value; renderList(); });
   $$('.ltab').forEach(b => b.addEventListener('click', () => { ui.ltab = b.dataset.ltab; $$('.ltab').forEach(x => x.classList.toggle('on', x === b)); renderList(); }));
   $$('#ranges button').forEach(b => b.addEventListener('click', () => {
@@ -1068,6 +1097,20 @@ function togglePause() {
   toast(ui.paused ? '⏸ Paused. The market waits for no one… except you.' : '▶ Back to the market.');
 }
 
+// Terminal ↔ Squawker. The market keeps running on both.
+function switchView(v) {
+  if (!run || v === ui.view) return;
+  ui.view = v;
+  $('#terminalView').hidden = v !== 'terminal';
+  $('#socialView').hidden = v !== 'social';
+  $$('.vtab').forEach(b => { b.classList.toggle('on', b.dataset.view === v); b.setAttribute('aria-selected', String(b.dataset.view === v)); });
+  document.body.classList.toggle('in-social', v === 'social');
+  if (v === 'social') social.show(); else { social.hide(); ui.holdKey = ui.txKey = ui.statsKey = ''; render(); }
+  social.tick();
+  sfx.play('click');
+  window.scrollTo(0, 0);
+}
+
 function onKey(e) {
   if (e.key === 'Escape') { if (ui.modal && run && !run.over && ui.modal !== 'results') closeModal(); return; }
   if (ui.modal || !run) return;
@@ -1079,6 +1122,9 @@ function onKey(e) {
     if (k === 'ArrowUp' || k === 'ArrowDown') { e.preventDefault(); moveSel(k === 'ArrowUp' ? -1 : 1); }
     return;
   }
+  if (k === 't' || k === 'T') { switchView(ui.view === 'social' ? 'terminal' : 'social'); return; }
+  if (k === ' ') { e.preventDefault(); togglePause(); return; }
+  if (ui.view === 'social') return;
   if (k === 'b' || k === 'B') setSide('buy');
   else if (k === 's' || k === 'S') setSide('sell');
   else if (k === ' ') { e.preventDefault(); togglePause(); }
@@ -1099,7 +1145,8 @@ function moveSel(d) {
 function exposeDebug() {
   globalThis.pumped = {
     get run() { return run; }, get meta() { return meta; },
-    step(n = 1) { for (let i = 0; i < n && run && !run.over; i++) { handleNotes(stepRun(run)); scan(); progress(); } render(); if (run.over) finishRun(); },
+    step(n = 1) { for (let i = 0; i < n && run && !run.over; i++) { const notes = stepRun(run); handleNotes(notes); scan(); progress(); stepFeed(run.social, run, notes, Math.random, meta.profile); } render(); social.tick(); if (run.over) finishRun(); },
+    view: switchView, get social() { return social; },
     event(id, t) { const r = forceEvent(run.market, id, t); handleNotes(r.notes); render(); return r.headline; },
     pump(t, opts) { handleNotes(forcePump(run.market, t, opts)); },
     crash(t, opts) { handleNotes(forceCrash(run.market, t, opts)); },

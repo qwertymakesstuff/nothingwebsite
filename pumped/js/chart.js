@@ -70,6 +70,7 @@ export class Chart {
 
   draw(progress = 1) {
     const d = this.data, c = this.c, g = this.g, T = this.theme;
+    const fs = this.simple ? 13 : 11;   // simple view: bigger labels, thicker line
     const dpr = Math.min(2, globalThis.devicePixelRatio || 1);
     const W = c.clientWidth, H = c.clientHeight;
     if (!W || !H) return;
@@ -83,7 +84,7 @@ export class Chart {
     const from = this.anim.from;
     if (from && progress < 1) pts[pts.length - 1] = lerp(from.last, pts[pts.length - 1], progress);
 
-    const padL = 8, padR = 70, padT = 14, padB = 22;
+    const padL = 8, padR = this.simple ? 84 : 70, padT = 14, padB = this.simple ? 26 : 22;
     const pw = W - padL - padR, ph = H - padT - padB;
 
     let lo = Infinity, hi = -Infinity;
@@ -102,7 +103,7 @@ export class Chart {
     const inv = py => { const k = a + (1 - (py - padT) / ph) * (b - a); return log ? Math.exp(k) : k; };
 
     // grid + price labels
-    g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+    g.font = `${fs}px "IBM Plex Mono", ui-monospace, monospace`;
     g.textBaseline = 'middle';
     g.strokeStyle = T.grid; g.lineWidth = 1; g.fillStyle = T.text;
     for (let i = 0; i <= 4; i++) {
@@ -134,7 +135,7 @@ export class Chart {
     // line
     g.beginPath(); g.moveTo(x(0), y(pts[0]));
     for (let i = 1; i < pts.length; i++) g.lineTo(x(i), y(pts[i]));
-    g.strokeStyle = col; g.lineWidth = 2; g.lineJoin = 'round'; g.stroke();
+    g.strokeStyle = col; g.lineWidth = this.simple ? 3 : 2; g.lineJoin = 'round'; g.stroke();
 
     // reference lines
     const hline = (v, color, label) => {
@@ -172,7 +173,7 @@ export class Chart {
       g.beginPath(); g.arc(lx, ly, 3.5 + pulse * 9, 0, Math.PI * 2); g.stroke();
     }
     g.fillRect(padL + pw + 2, ly - 9, padR - 4, 18);
-    g.fillStyle = T.bg; g.font = 'bold 11px "IBM Plex Mono", ui-monospace, monospace'; g.textBaseline = 'middle';
+    g.fillStyle = T.bg; g.font = `bold ${fs}px "IBM Plex Mono", ui-monospace, monospace`; g.textBaseline = 'middle';
     g.fillText(F.price(pts[pts.length - 1]), padL + pw + 6, ly);
     if (log) { g.fillStyle = T.text; g.font = '10px "IBM Plex Mono", ui-monospace, monospace'; g.fillText('LOG', padL + 4, padT + 6); }
 
@@ -186,7 +187,7 @@ export class Chart {
       const ago = (pts.length - 1 - i) * d.step;
       const chg = (v / pts[pts.length - 1] - 1) * 100;
       const label = `${F.price(v)}  ${ago ? '-' + F.clock(ago) : 'now'}  (${ago ? F.pct(-chg) + ' since' : 'live'})`;
-      g.font = '11px "IBM Plex Mono", ui-monospace, monospace';
+      g.font = `${fs}px "IBM Plex Mono", ui-monospace, monospace`;
       const tw = g.measureText(label).width + 12;
       const bx = Math.min(Math.max(padL, px - tw / 2), padL + pw - tw);
       g.fillStyle = hexA(T.bg, 0.92); g.fillRect(bx, padT, tw, 18);

@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#05080a" />
+  <script>if (location.hostname.indexOf('simple.') === 0 || /\/simple\.pumped(\/|$)/.test(location.pathname) || /[?&]simple\b/.test(location.search)) document.documentElement.classList.add('simple');</script>
   <meta name="description" content="PUMPED: a fast, chaotic stock and crypto trading game. Start with $1,000 of play money, ride the pumps, dodge the crashes. Fictional assets, no real money." />
   <title>PUMPED</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2305080a'/%3E%3Cpath d='M4 24l7-7 5 4 11-13' fill='none' stroke='%232bff88' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M20 8h7v7' fill='none' stroke='%232bff88' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
@@ -15,14 +16,19 @@
   <div id="app" class="app" hidden>
     <header class="topbar">
       <a class="brand" href="#" id="brand" title="Menu">PUMPED<span>.exe</span></a>
+      <div class="views" role="tablist" aria-label="Switch screen">
+        <button type="button" class="vtab on" data-view="terminal" role="tab" title="Trading terminal (T)">📈 <span>Terminal</span></button>
+        <button type="button" class="vtab" data-view="social" role="tab" title="Squawker (T)">🦜 <span>Squawker</span> <b class="vbadge" id="sqBadge" hidden></b></button>
+      </div>
       <div class="stat stat-worth">
-        <span class="label" data-tip="networth">Net worth</span>
+        <span class="label" data-tip="networth" data-simple="Total money">Net worth</span>
         <b id="worth">$1,000.00</b>
         <small id="worthChg" class="chg">+0.00%</small>
       </div>
-      <div class="stat"><span class="label" data-tip="cash">Cash</span><b id="cash">$1,000.00</b></div>
-      <div class="stat"><span class="label" data-tip="unrealized">Unrealized</span><b id="unreal">$0.00</b></div>
-      <div class="stat"><span class="label" data-tip="realized">Realized</span><b id="real">$0.00</b></div>
+      <div class="stat"><span class="label" data-tip="cash" data-simple="Cash to spend">Cash</span><b id="cash">$1,000.00</b></div>
+      <div class="stat simple-only"><span class="label">Profit / loss</span><b id="totalPL">$0.00</b></div>
+      <div class="stat full-only"><span class="label" data-tip="unrealized">Unrealized</span><b id="unreal">$0.00</b></div>
+      <div class="stat full-only"><span class="label" data-tip="realized">Realized</span><b id="real">$0.00</b></div>
       <div class="stat stat-time"><span class="label" id="modeLabel">Session</span><b id="timer">5:00</b></div>
       <div class="stat stat-sentiment" id="sentimentBox"><span class="label" data-tip="sentiment">Sentiment</span>
         <div class="gauge"><i id="sentimentNeedle"></i></div><small id="sentimentText">Neutral</small></div>
@@ -36,7 +42,7 @@
     </header>
     <div class="tape" aria-hidden="true"><div class="tape-inner" id="tape"></div></div>
 
-    <main class="grid">
+    <main class="grid" id="terminalView">
       <aside class="panel p-list" aria-label="Markets">
         <div class="panel-head">
           <input id="search" class="search" type="search" placeholder="Search ticker or name…" autocomplete="off" aria-label="Search assets" />
@@ -108,7 +114,7 @@
         <div class="preview" id="preview"></div>
         <button type="button" class="go buy" id="goBtn">BUY MBYT</button>
         <div class="position" id="position"></div>
-        <p class="keys"><kbd>↑</kbd><kbd>↓</kbd> asset · <kbd>1</kbd>–<kbd>4</kbd> amount · <kbd>Enter</kbd> trade · <kbd>Space</kbd> pause</p>
+        <p class="keys"><kbd>↑</kbd><kbd>↓</kbd> asset · <kbd>1</kbd>–<kbd>4</kbd> amount · <kbd>Enter</kbd> trade · <kbd>Space</kbd> pause · <kbd>T</kbd> Squawker</p>
       </section>
 
       <aside class="panel p-news" aria-label="News">
@@ -126,6 +132,37 @@
         </div>
         <div class="hold-body" id="holdBody"></div>
       </section>
+    </main>
+
+    <main class="squawk" id="socialView" hidden>
+      <aside class="sq-left">
+        <div class="sq-logo">🦜 Squawker</div>
+        <nav class="sq-nav" aria-label="Squawker">
+          <button type="button" data-sq="home" class="on">🏠 <span>Home</span></button>
+          <button type="button" data-sq="following">👥 <span>Following</span></button>
+          <button type="button" data-sq="mentions">🔔 <span>Mentions</span> <b id="sqMentions"></b></button>
+          <button type="button" data-sq="me">🫵 <span>Profile</span></button>
+        </nav>
+        <button type="button" class="sq-back" id="sqBack">📈 Back to trading</button>
+        <div class="sq-wallet" id="sqWallet"></div>
+      </aside>
+      <section class="sq-main" aria-label="Feed">
+        <div class="sq-head" id="sqHead"></div>
+        <div class="sq-compose" id="sqCompose">
+          <span class="sq-av me" aria-hidden="true">🫵</span>
+          <div>
+            <textarea id="sqText" maxlength="280" rows="2" placeholder="What's happening in the market?" aria-label="Write a squawk"></textarea>
+            <div class="sq-compose-bar"><small class="muted">Name a coin like $GOB to shill it.</small><span id="sqCount">280</span><button type="button" class="sq-btn" id="sqPost" disabled>Squawk</button></div>
+          </div>
+        </div>
+        <button type="button" class="sq-new" id="sqNew" hidden></button>
+        <div class="sq-feed" id="sqFeed" aria-live="off"></div>
+      </section>
+      <aside class="sq-right">
+        <div class="sq-box"><h3>What's happening</h3><div id="sqTrends"></div></div>
+        <div class="sq-box"><h3>Who to follow</h3><div id="sqWho"></div></div>
+        <p class="sq-foot">Squawker is satire. Every account, celebrity and bot is made up.</p>
+      </aside>
     </main>
   </div>
 
