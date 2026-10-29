@@ -1,0 +1,90 @@
+// Every tradable asset in PUMPED. All companies and coins are made up.
+//
+// Behaviour comes from the asset's category (CATS) with per-asset tweaks:
+//   volMul   scales volatility        pumpMul / crashMul  scale how often it pumps / crashes
+//   driftAdd nudges the long-run fair-value drift per tick (log units)
+
+// Per-tick numbers are in log-price units (0.01 ≈ 1%). A tick is one second of game time.
+// fairDrift is the long-run trend: fair value is slowly pulled (ANCHOR) towards the path
+// start × e^(fairDrift × tick), so news and pumps move it for minutes, not forever.
+export const CATS = {
+  safe:   { label: 'Safe',      icon: '🛡', sigma: 0.0025, fairDrift: 0.00008, fairVol: 0.0007, revert: 0.03,
+            pump: 0.0004, crash: 0.00025, pumpStr: [0.004, 0.009], pumpLen: [6, 14], crashStr: [0.008, 0.02], crashLen: [3, 6],
+            fates: { moon: 0.55, fade: 0.45, rug: 0 }, hypeable: false },
+  stock:  { label: 'Stock',     icon: '🏢', sigma: 0.0065, fairDrift: 0.00005, fairVol: 0.0022, revert: 0.02,
+            pump: 0.0012, crash: 0.0009, pumpStr: [0.01, 0.022], pumpLen: [6, 20], crashStr: [0.02, 0.05], crashLen: [3, 8],
+            fates: { moon: 0.35, fade: 0.55, rug: 0.1 }, hypeable: false },
+  crypto: { label: 'Crypto',    icon: '🪙', sigma: 0.011, fairDrift: 0, fairVol: 0.0035, revert: 0.018,
+            pump: 0.0017, crash: 0.0013, pumpStr: [0.014, 0.032], pumpLen: [6, 22], crashStr: [0.03, 0.07], crashLen: [3, 9],
+            fates: { moon: 0.28, fade: 0.5, rug: 0.22 }, hypeable: true },
+  meme:   { label: 'Meme stock', icon: '🦍', sigma: 0.015, fairDrift: -0.0004, fairVol: 0.0045, revert: 0.015,
+            pump: 0.0019, crash: 0.0018, pumpStr: [0.02, 0.048], pumpLen: [5, 24], crashStr: [0.04, 0.09], crashLen: [3, 10],
+            fates: { moon: 0.22, fade: 0.45, rug: 0.33 }, hypeable: true },
+  degen:  { label: 'Degen coin', icon: '🎰', sigma: 0.024, fairDrift: -0.0005, fairVol: 0.007, revert: 0.012,
+            pump: 0.0032, crash: 0.0023, pumpStr: [0.028, 0.065], pumpLen: [5, 26], crashStr: [0.05, 0.13], crashLen: [3, 10],
+            fates: { moon: 0.17, fade: 0.4, rug: 0.43 }, hypeable: true },
+  rare:   { label: 'Rare',      icon: '💎', sigma: 0.009, fairDrift: -0.0002, fairVol: 0.0035, revert: 0.01,
+            pump: 0.0011, crash: 0.0009, pumpStr: [0.045, 0.1], pumpLen: [8, 24], crashStr: [0.08, 0.18], crashLen: [3, 8],
+            fates: { moon: 0.32, fade: 0.28, rug: 0.4 }, hypeable: true, jump: 0.0015 },
+};
+
+export const ANCHOR = 0.0015;
+
+export const CAT_ORDER = ['safe', 'stock', 'meme', 'crypto', 'degen', 'rare'];
+
+// Markets: "main" is always open; the others are unlocked with upgrades.
+export const MARKETS = {
+  main:  { name: 'Main Street Exchange', short: 'MAIN' },
+  orbit: { name: 'Off-World Exchange', short: 'ORBIT' },
+  night: { name: 'The Night Market', short: 'NIGHT' },
+};
+
+const A = (t, name, cat, price, bio, extra = {}) => ({ t, name, cat, price, bio, market: 'main', volMul: 1, pumpMul: 1, crashMul: 1, driftAdd: 0, ...extra });
+
+export const ASSETS = [
+  // safe, slow movers
+  A('BORE', 'Boring Bonds Fund', 'safe', 100, 'Government paper. Moves like a sleepy turtle. Your grandparents love it.'),
+  A('GRAN', "Grandma's Index Fund", 'safe', 250, 'Owns a sliver of everything. Goes up slowly, complains loudly.', { volMul: 1.4 }),
+  A('WATR', 'Aqueduct Utilities', 'safe', 45, 'People will always need water. Dividends, not drama.', { volMul: 1.2 }),
+  // stocks
+  A('MBYT', 'MegaByte Systems', 'stock', 142.5, 'Chips, clouds and a keynote every week. The market\'s favourite nerd.'),
+  A('TITN', 'Titan Energy', 'stock', 58.2, 'Oil, wind and a giant battery nobody is allowed to see.', { volMul: 1.1 }),
+  A('RKTW', 'RocketWorks', 'stock', 23.4, 'Builds rockets. Some of them land. Wildly volatile for a "real" company.', { volMul: 1.7, pumpMul: 1.6, crashMul: 1.4 }),
+  A('NANA', 'Bananaphone Telecom', 'stock', 9.8, 'Ring ring ring ring ring ring ring. Cheap, cheerful, rarely profitable.', { volMul: 1.2 }),
+  A('VLVT', 'Velvet Pharma', 'stock', 77, 'Lives and dies by trial results. Earnings days are a coin flip.', { volMul: 1.3, crashMul: 1.3 }),
+  A('SPUN', 'Greasy Spoon Holdings', 'stock', 31, 'Diners, drive-thrus and a suspiciously loyal fanbase.', { volMul: 0.8 }),
+  // meme stocks
+  A('BUST', 'Blockbusted Video', 'meme', 12, 'A video rental chain in 2026. The apes refuse to let it die.'),
+  A('CRAY', 'CrayonCorp', 'meme', 4.2, 'Makes crayons. Retail traders eat them. Somehow both are bullish.', { volMul: 1.15 }),
+  A('MALL', 'Moldy Mall REIT', 'meme', 2.1, 'Owns 40 empty shopping malls and one very popular food court.', { crashMul: 1.3 }),
+  // crypto
+  A('CORN', 'Bitcorn', 'crypto', 41250, 'The original. Digital gold, or digital corn, depending who you ask.', { volMul: 0.8 }),
+  A('ETHL', 'Ethereal', 'crypto', 2480, 'A world computer that mostly runs cartoon monkey JPEGs.'),
+  A('SFLR', 'SolarFlare', 'crypto', 96, 'Very fast. Goes down for "scheduled maintenance" a lot.', { volMul: 1.25, crashMul: 1.4 }),
+  A('TSD', 'Totally Stable Dollar', 'crypto', 1, 'Always worth $1.00. Always. Probably. Don\'t look at the reserves.', { volMul: 0.04, pumpMul: 0, crashMul: 0.25, stable: true }),
+  // degen coins
+  A('GOB', 'GoblinCoin', 'degen', 0.042, 'Goblins hoard it. Nobody knows what it does. Number go up (sometimes).'),
+  A('PUP', 'MoonPup', 'degen', 0.0031, 'A dog coin, but this dog has a rocket. Community is "very passionate".', { pumpMul: 1.25 }),
+  A('FIRE', 'Dumpster Fire Token', 'degen', 0.66, 'Honest branding. Burns 1% of supply every transaction and 50% of holders.', { crashMul: 1.35 }),
+  A('HFROG', 'HatFrog', 'degen', 1.37, 'It\'s a frog. It has a hat. Market cap: larger than some countries.'),
+  // rare: huge pumps, devastating crashes
+  A('UNOB', 'Unobtainium Mining', 'rare', 3.5, 'Claims to mine a metal that may not exist. Every press release is a lottery ticket.'),
+  A('QBAN', 'QuantumBanana', 'rare', 0.88, 'A quantum computer made of fruit. Either the future, or a smoothie.', { volMul: 1.2 }),
+  A('BOO', 'GhostChain', 'rare', 13, 'An anonymous blockchain run by nobody. Appears and disappears at midnight.'),
+  // Off-World Exchange (unlock)
+  A('MDRT', 'Mars Dirt Co', 'stock', 18, 'Sells genuine Martian soil, shipped in genuine Earth bags.', { market: 'orbit', volMul: 1.5, pumpMul: 1.5 }),
+  A('ROCK', 'Asteroid Bros', 'meme', 6.6, 'Two brothers, one lasso, a trillion-dollar asteroid. What could go wrong?', { market: 'orbit' }),
+  A('ZERO', 'Zero-G Noodles', 'stock', 27, 'Instant ramen for astronauts. Recession proof, gravity proof.', { market: 'orbit', volMul: 1.1 }),
+  A('STAR', 'StarDust Coin', 'crypto', 4.8, 'Mined on a satellite. Latency: 4 minutes. Hype: infinite.', { market: 'orbit', volMul: 1.3, pumpMul: 1.3 }),
+  // The Night Market (unlock)
+  A('LAMBO', 'Lambo DAO', 'degen', 0.19, 'A DAO that votes on which Lambo to buy. It has never bought one.', { market: 'night', pumpMul: 1.4, crashMul: 1.3 }),
+  A('RUGL', 'Rug Pull Labs', 'degen', 0.07, 'Audited by "a guy". Developers have not been seen since Tuesday.', { market: 'night', volMul: 1.3, crashMul: 1.6, pumpMul: 1.5 }),
+  A('GOOSE', 'Golden Goose Protocol', 'rare', 2.2, 'Lays golden eggs. Occasionally lays a regular egg and the price halves.', { market: 'night', pumpMul: 1.4 }),
+  A('WAGMI', 'WAGMI Inu', 'degen', 0.0009, 'We are all gonna make it. Some of us, anyway.', { market: 'night', volMul: 1.2 }),
+];
+
+export const ASSET_BY_T = Object.fromEntries(ASSETS.map(a => [a.t, a]));
+
+export function assetsFor(markets = ['main']) {
+  return ASSETS.filter(a => markets.includes(a.market));
+}

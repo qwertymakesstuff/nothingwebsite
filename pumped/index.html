@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#05080a" />
+  <meta name="description" content="PUMPED: a fast, chaotic stock and crypto trading game. Start with $1,000 of play money, ride the pumps, dodge the crashes. Fictional assets, no real money." />
+  <title>PUMPED</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2305080a'/%3E%3Cpath d='M4 24l7-7 5 4 11-13' fill='none' stroke='%232bff88' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M20 8h7v7' fill='none' stroke='%232bff88' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app" class="app" hidden>
+    <header class="topbar">
+      <a class="brand" href="#" id="brand" title="Menu">PUMPED<span>.exe</span></a>
+      <div class="stat stat-worth">
+        <span class="label" data-tip="networth">Net worth</span>
+        <b id="worth">$1,000.00</b>
+        <small id="worthChg" class="chg">+0.00%</small>
+      </div>
+      <div class="stat"><span class="label" data-tip="cash">Cash</span><b id="cash">$1,000.00</b></div>
+      <div class="stat"><span class="label" data-tip="unrealized">Unrealized</span><b id="unreal">$0.00</b></div>
+      <div class="stat"><span class="label" data-tip="realized">Realized</span><b id="real">$0.00</b></div>
+      <div class="stat stat-time"><span class="label" id="modeLabel">Session</span><b id="timer">5:00</b></div>
+      <div class="stat stat-sentiment" id="sentimentBox"><span class="label" data-tip="sentiment">Sentiment</span>
+        <div class="gauge"><i id="sentimentNeedle"></i></div><small id="sentimentText">Neutral</small></div>
+      <div class="regime" id="regime" hidden></div>
+      <div class="top-actions">
+        <button class="icon-btn" id="pauseBtn" type="button" title="Pause (Space)" aria-label="Pause">❚❚</button>
+        <button class="icon-btn" id="soundBtn" type="button" title="Sound" aria-label="Toggle sound">🔊</button>
+        <button class="icon-btn" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
+        <button class="icon-btn" id="menuBtn" type="button" title="Menu" aria-label="Menu">☰</button>
+      </div>
+    </header>
+    <div class="tape" aria-hidden="true"><div class="tape-inner" id="tape"></div></div>
+
+    <main class="grid">
+      <aside class="panel p-list" aria-label="Markets">
+        <div class="panel-head">
+          <input id="search" class="search" type="search" placeholder="Search ticker or name…" autocomplete="off" aria-label="Search assets" />
+        </div>
+        <div class="chips" id="catChips" role="tablist" aria-label="Filter by category"></div>
+        <div class="list-tabs">
+          <button type="button" class="ltab on" data-ltab="all">All</button>
+          <button type="button" class="ltab" data-ltab="watch">★ Watchlist <span id="watchCount"></span></button>
+          <button type="button" class="ltab" data-ltab="movers">🔥 Movers</button>
+        </div>
+        <div class="asset-list" id="assetList" role="listbox" aria-label="Assets"></div>
+      </aside>
+
+      <section class="panel p-chart" aria-label="Chart">
+        <div class="chart-head">
+          <div class="chart-title">
+            <span class="cat-icon" id="cIcon"></span>
+            <div>
+              <h1 id="cName">MegaByte Systems</h1>
+              <div class="sub"><b id="cTicker">MBYT</b> <span class="badge" id="cCat">Stock</span> <span class="badge ghost" id="cMarket">MAIN</span>
+                <button type="button" class="star" id="cStar" aria-label="Add to watchlist">☆</button></div>
+            </div>
+          </div>
+          <div class="chart-price">
+            <b id="cPrice">0.00</b>
+            <span id="cChg" class="chg">+0.00%</span>
+          </div>
+        </div>
+        <p class="bio" id="cBio"></p>
+        <div class="chart-bar">
+          <div class="ranges" id="ranges" role="tablist" aria-label="Chart range">
+            <button type="button" data-range="60">1M</button>
+            <button type="button" data-range="300" class="on">5M</button>
+            <button type="button" data-range="900">15M</button>
+            <button type="button" data-range="all">ALL</button>
+          </div>
+          <div class="hype" id="hypeBox" data-tip="hype"><span>HYPE</span><div class="hype-bar"><i id="hypeFill"></i></div><b id="hypeVal">0</b></div>
+        </div>
+        <div class="chart-wrap"><canvas id="chart" aria-label="Price chart"></canvas><div class="chart-alert" id="chartAlert" hidden></div></div>
+        <div class="chart-stats">
+          <div><span data-tip="open">Open</span><b id="sOpen">—</b></div>
+          <div><span>High</span><b id="sHigh">—</b></div>
+          <div><span>Low</span><b id="sLow">—</b></div>
+          <div><span data-tip="volatility">Volatility</span><b id="sVol">—</b></div>
+          <div><span>1m</span><b id="s1m">—</b></div>
+        </div>
+      </section>
+
+      <section class="panel p-trade" aria-label="Trade">
+        <div class="trade-tabs">
+          <button type="button" class="ttab buy on" data-side="buy">BUY <kbd>B</kbd></button>
+          <button type="button" class="ttab sell" data-side="sell">SELL <kbd>S</kbd></button>
+        </div>
+        <label class="amount">
+          <span id="amountLabel">Amount (USD)</span>
+          <div class="amount-row"><span class="dollar">$</span><input id="amount" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" /></div>
+          <small id="amountHint">Cash available: $1,000.00</small>
+        </label>
+        <div class="pcts" id="pcts">
+          <button type="button" data-pct="0.1">10%</button>
+          <button type="button" data-pct="0.25">25%</button>
+          <button type="button" data-pct="0.5">50%</button>
+          <button type="button" data-pct="1">MAX</button>
+        </div>
+        <div class="lev" id="levBox">
+          <span class="label" data-tip="leverage">Leverage</span>
+          <div class="lev-opts" id="levOpts"></div>
+        </div>
+        <div class="preview" id="preview"></div>
+        <button type="button" class="go buy" id="goBtn">BUY MBYT</button>
+        <div class="position" id="position"></div>
+        <p class="keys"><kbd>↑</kbd><kbd>↓</kbd> asset · <kbd>1</kbd>–<kbd>4</kbd> amount · <kbd>Enter</kbd> trade · <kbd>Space</kbd> pause</p>
+      </section>
+
+      <aside class="panel p-news" aria-label="News">
+        <div class="panel-head"><h2>📰 Newswire</h2><span class="live" id="liveDot">LIVE</span></div>
+        <div class="scanner" id="scanner" hidden></div>
+        <div class="news" id="news" aria-live="polite"></div>
+      </aside>
+
+      <section class="panel p-hold" aria-label="Portfolio">
+        <div class="hold-tabs">
+          <button type="button" class="htab on" data-htab="holdings">Holdings <span id="holdCount"></span></button>
+          <button type="button" class="htab" data-htab="txs">Transactions</button>
+          <button type="button" class="htab" data-htab="stats">Run stats</button>
+          <button type="button" class="sellall" id="sellAllBtn">Sell everything</button>
+        </div>
+        <div class="hold-body" id="holdBody"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="fx" class="fx" aria-hidden="true"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="tip" class="tip" role="tooltip" hidden></div>
+  <div id="modal" class="modal" hidden><div class="modal-card" id="modalCard" role="dialog" aria-modal="true"></div></div>
+  <p id="boot" class="boot">Loading the market…</p>
+  <noscript><p class="boot">PUMPED needs JavaScript.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
