@@ -18,8 +18,9 @@ const root = new URL('../../pumped/', import.meta.url).pathname;
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps * Math.max(1, Math.abs(a), Math.abs(b)), `${a} ≈ ${b}`);
 
 test('pumped: every module has valid syntax', () => {
-  for (const f of fs.readdirSync(path.join(root, 'js'))) {
-    const r = spawnSync(process.execPath, ['--check', path.join(root, 'js', f)]);
+  const files = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? files(path.join(d, e.name)) : e.name.endsWith('.js') ? [path.join(d, e.name)] : []);
+  for (const f of files(path.join(root, 'js'))) {
+    const r = spawnSync(process.execPath, ['--check', f]);
     assert.equal(r.status, 0, `${f}: ${r.stderr}`);
   }
 });
@@ -250,7 +251,7 @@ test('pumped: number formatting', () => {
 test('pumped: the page wires up its scripts and ids', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(html, /<script type="module" src="js\/main\.js">/);
-  const main = fs.readFileSync(path.join(root, 'js/main.js'), 'utf8');
+  const main = fs.readFileSync(path.join(root, 'js/main.js'), 'utf8') + fs.readFileSync(path.join(root, 'js/chirper-ui.js'), 'utf8');
   const made = new Set([...main.matchAll(/id: '([A-Za-z]+)'/g)].map(m => m[1]));  // created by the script
   for (const id of new Set([...main.matchAll(/\$\('#([A-Za-z]+)'\)/g)].map(m => m[1]))) if (!made.has(id)) assert.match(html, new RegExp(`id="${id}"`), `#${id} missing from index.html`);
 });
@@ -382,10 +383,16 @@ test('pumped: parsing typed amounts', () => {
 });
 
 // ── Squawker, more crypto, simple view ──────────────────────────────────────
-const SQ = await load('social.js');
-const SD = await load('social-data.js');
+// ── Chirper ─────────────────────────────────────────────────────────────────
+const CF = await load('chirper/feed.js');
+const CA = await load('chirper/accounts.js');
+const { THREADS } = await load('chirper/threads.js');
+const { MOVES, canMove, ASSET_COOLDOWN, PAIR_COOLDOWN } = await load('chirper/effects.js');
+const SYS = await load('chirper/system.js');
 const { CAST } = await load('events.js');
-const seeded = (s = 1) => () => (s = (s * 16807) % 2147483647) / 2147483647;
+const PLACEHOLDERS = /\{(\w+)\}/g;
+const ALLOWED = new Set(['asset', 't', 'rival', 'pct', 'you']);
+const stepBoth = (run, feed) => CF.stepFeed(feed, run, G.stepRun(run), { handle: 'tester' });
 
 test('pumped: the crypto market is well populated', () => {
   const main = ASSETS.filter(a => a.market === 'main');
@@ -397,80 +404,220 @@ test('pumped: the crypto market is well populated', () => {
   for (const t of ['TSD', 'PSE']) assert.ok(Math.abs(m.assets[t].p / ASSET_BY_T[t].price - 1) < 0.05, `${t} ${m.assets[t].p}`);
 });
 
-test('squawker: lots of accounts, every named celebrity has one', () => {
-  assert.ok(SD.BOT_HANDLES.length >= 300);
-  assert.equal(new Set(SD.BOT_HANDLES).size, SD.BOT_HANDLES.length, 'bot handles are unique');
-  assert.ok(SD.CELEBS.length >= 30);
-  assert.equal(new Set(SD.CELEBS.map(c => c.handle)).size, SD.CELEBS.length);
-  for (const name of [...CAST.celeb, ...CAST.influencer]) assert.ok(SQ.castAccount(name), `no account for ${name}`);
-  const rnd = seeded(5);
-  const handles = new Set(Array.from({ length: 2000 }, () => SQ.botAuthor(rnd).b));
-  assert.ok(handles.size > 600, `only ${handles.size} distinct bots`);
+test('chirper: the full celebrity cast with deep, distinct pools', () => {
+  const names = ['Dax Dollar', 'Lil Margin', 'Bradley Beef', 'Madame Moonshot', 'Gordon Grumble', 'Princess Paywall', 'The Algorithm', 'Johnny Jackpot', 'Dr. Buzzkill', 'DJ Liquidity',
+    'Brock Blockchain', 'Chadwick Gains', 'Vivienne Viral', 'Sir Reginald Rich', 'Meme Lord Supreme', 'Kiki Clout', 'Rex Rocket', 'Uncle Bagholder', 'Sasha Shortsell', 'Baby Bull'];
+  assert.deepEqual(CA.CELEBS.map(c => c.name).sort(), [...names].sort());
+  const ids = new Set(CA.CELEBS.map(c => c.id));
+  for (const c of CA.CELEBS) {
+    assert.ok(c.handle && c.bio && c.style && c.avatar && c.followers > 0, c.id);
+    assert.ok(c.posts.length >= 25, `${c.id} posts ${c.posts.length}`);
+    assert.ok(Object.values(c.replies).flat().length >= 15, `${c.id} replies`);
+    assert.ok(Object.values(c.react).flat().length >= 10, `${c.id} reactions`);
+    for (const k of ['topics', 'assets', 'rivals', 'jokes', 'catchphrases']) assert.ok(c[k].length > 0, `${c.id} ${k}`);
+    for (const t of c.assets) assert.ok(ASSET_BY_T[t], `${c.id} asset ${t}`);
+    for (const r of c.rivals) assert.ok(ids.has(r) && r !== c.id, `${c.id} rival ${r}`);
+    assert.ok(c.moves.length >= 3 && c.moves.every(m => MOVES[m.type] && m.text && (!m.asset || ASSET_BY_T[m.asset])), `${c.id} moves`);
+    const all = [...c.posts, ...Object.values(c.replies).flat(), ...Object.values(c.react).flat()];
+    assert.equal(new Set(all).size, all.length, `${c.id} repeats itself`);
+  }
+  // no two celebrities share lines
+  const lines = CA.CELEBS.flatMap(c => c.posts);
+  assert.equal(new Set(lines).size, lines.length);
 });
 
-test('squawker: the feed reacts to the market and stays bounded', () => {
-  const run = G.createRun({ seed: 'FEED', mode: 'endless' });
-  const feed = SQ.createFeed();
-  const rnd = seeded(9);
-  for (let i = 0; i < 1500; i++) SQ.stepFeed(feed, run, G.stepRun(run), rnd);
-  const top = feed.posts.filter(p => !p.parent);
-  assert.equal(top.length, SQ.FEED_LEN);
-  assert.ok(feed.posts.some(p => p.parent), 'replies exist');
-  assert.ok(top.some(p => p.a.c === 'wire'), 'news account posts headlines');
-  assert.ok(top.some(p => p.a.b) && top.some(p => p.a.c && p.a.c !== 'wire'), 'bots and celebrities post');
-  assert.ok(feed.posts.every(p => p.text.length <= SQ.MAX_LEN && !/\{\w+\}/.test(p.text)), 'templates fully filled');
-  assert.ok(feed.posts.every(p => !p.parent || feed.posts.some(q => q.id === p.parent)), 'no orphan replies');
-  assert.ok(SQ.trending(feed, run.market.tick).length === 8);
+test('chirper: 40+ regular users with their own posts, replies and reactions', () => {
+  assert.ok(CA.USERS.length >= 40);
+  for (const h of ['rentisdue', 'chartgoblin', 'bagholder420', 'normalperson87', 'definitelynotabroker', 'redcandlesonly', 'coinfliptrader', 'myportfoliohurts', 'lunchbreakinvestor', 'grandmasdaytrading',
+    'sellbuttonmissing', 'thelastbull', 'unemployedanalyst', 'boughtatpeak', 'justhereforlore', 'notfinancialadvicebro', 'taxesarecoming', 'sleepyshareholder', 'cryptidcapital', 'wrongtickeragain']) assert.ok(CA.byHandle(h), h);
+  for (const u of CA.USERS) {
+    assert.ok(u.bio && u.style && u.interests.length && u.talks.length, u.handle);
+    assert.ok(u.posts.length >= 8, `${u.handle} posts`);
+    assert.ok(Object.values(u.replies).flat().length >= 8, `${u.handle} replies`);
+    assert.ok(Object.values(u.react).flat().length >= 3, `${u.handle} reactions`);
+    for (const x of u.talks) assert.ok(ASSET_BY_T[x] || CA.account('c:' + x) || CA.byHandle(x), `${u.handle} talks about unknown ${x}`);
+  }
+  const lines = CA.USERS.flatMap(u => u.posts);
+  assert.equal(new Set(lines).size, lines.length, 'users share posts');
+});
+
+test('chirper: usernames are unique everywhere and every template is fillable', () => {
+  const handles = [...CA.ACCOUNTS.values()].map(a => a.handle.toLowerCase());
+  assert.equal(new Set(handles).size, handles.length, 'duplicate handle');
+  for (const b of SYS.BOT_HANDLES) assert.ok(!CA.byHandle(b), `bot ${b} clashes with an account`);
+  assert.ok(SYS.BOT_HANDLES.length >= 300);
+  for (const a of CA.ACCOUNTS.values()) {
+    const texts = [...(a.posts || []), ...Object.values(a.replies || {}).flat(), ...Object.values(a.react || {}).flat(), ...(a.moves || []).map(m => m.text)];
+    for (const t of texts) {
+      for (const [, k] of t.matchAll(PLACEHOLDERS)) assert.ok(ALLOWED.has(k), `${a.key}: {${k}} in "${t}"`);
+      if (t.includes('{rival}')) assert.ok(a.rivals && a.rivals.length, `${a.key} has no rivals for "${t}"`);
+      assert.ok(t.length <= 240, `${a.key}: too long "${t}"`);
+    }
+  }
+  for (const name of [...CAST.celeb, ...CAST.influencer, ...CAST.official]) assert.ok(CA.castAccount(name), `no account for headline name ${name}`);
+});
+
+test('chirper: 30+ coherent threads between real accounts', () => {
+  assert.ok(THREADS.length >= 30);
+  assert.equal(new Set(THREADS.map(t => t.id)).size, THREADS.length);
+  for (const th of THREADS) {
+    assert.ok(CA.threadRef(th.post.by), `${th.id} author ${th.post.by}`);
+    assert.ok(th.replies.length >= 3 && th.replies.length <= 6, `${th.id} has ${th.replies.length} replies`);
+    for (const t of th.assets) assert.ok(ASSET_BY_T[t], `${th.id} asset ${t}`);
+    if (th.effect) assert.ok(MOVES[th.effect.type], th.id);
+    const speakers = new Set([th.post.by, ...th.replies.map(r => r.by)]);
+    assert.ok(speakers.size >= 3, `${th.id} needs several voices`);
+    for (const msg of [th.post, ...th.replies]) {
+      assert.ok(CA.threadRef(msg.by), `${th.id}: unknown account ${msg.by}`);
+      for (const [, k] of msg.text.matchAll(PLACEHOLDERS)) assert.ok(ALLOWED.has(k), `${th.id}: {${k}}`);
+      for (const [m] of msg.text.matchAll(/@[A-Za-z0-9_]+/g)) assert.ok(CA.byHandle(m), `${th.id}: ${m} is not an account`);
+    }
+  }
+});
+
+test('chirper: an hour of feed is valid, varied, bounded and saveable', () => {
+  const run = G.createRun({ seed: 'CHIRPTEST', mode: 'endless' });
+  const feed = CF.createFeed(run.seed);
+  const seen = new Map(), ids = new Set();
+  let dups = 0, threads = 0, moves = 0, celebs = 0, users = 0, replies = 0;
+  for (let i = 0; i < 3600; i++) {
+    stepBoth(run, feed);
+    for (const p of feed.posts) {
+      if (ids.has(p.id)) continue;
+      ids.add(p.id);
+      assert.ok(p.a.p || p.a.b || CA.ACCOUNTS.has(p.a.k), 'post by unknown account');
+      assert.ok(p.text.length > 0 && p.text.length <= CF.MAX_LEN && !/\{\w+\}/.test(p.text), `bad text "${p.text}"`);
+      if (p.parent) { replies++; assert.ok(feed.posts.some(q => q.id === p.parent), 'reply to a missing post'); continue; }
+      if (p.thread) threads++;
+      if (p.effect) moves++;
+      if (p.a.k && p.a.k.startsWith('c:')) celebs++;
+      if (p.a.k && p.a.k.startsWith('u:')) users++;
+      if (!p.news) { const last = seen.get(p.text); if (last != null && p.tick - last < 900) dups++; seen.set(p.text, p.tick); }
+    }
+  }
+  assert.equal(dups, 0, 'the same chirp came back within 15 minutes');
+  assert.ok(threads >= 20 && moves >= 40 && celebs > 300 && users > 300 && replies > 3000, JSON.stringify({ threads, moves, celebs, users, replies }));
+  assert.ok(feed.posts.filter(p => !p.parent).length <= CF.FEED_LEN && feed.posts.length <= CF.FEED_LEN * 5);
+  assert.equal(CF.trending(feed, run.market.tick).length, 8);
   const back = JSON.parse(JSON.stringify(feed));
-  assert.ok(SQ.validFeed(back));
+  assert.ok(CF.validFeed(back));
+  assert.equal(CF.validFeed({ ...back, v: 1 }), false, 'old Squawker feeds are replaced');
 });
 
-test('squawker: a celebrity in the news posts it themselves', () => {
-  const run = G.createRun({ seed: 'CELEB', tuning: { events: 0 } });
-  const feed = SQ.createFeed();
-  const { headline, notes } = M.forceEvent(run.market, 'celebrity', 'GOB');
-  SQ.stepFeed(feed, run, notes, seeded(3));
-  const acct = SQ.castAccount(headline.cast.celeb);
-  assert.ok(acct);
-  assert.ok(feed.posts.some(p => p.a.c === acct.id && p.tickers.includes('GOB')), `${acct.name} should squawk about $GOB`);
+test('chirper: the same seed and market give the same feed', () => {
+  const play = () => { const run = G.createRun({ seed: 'DET' }); const feed = CF.createFeed(run.seed); for (let i = 0; i < 400; i++) stepBoth(run, feed); return JSON.stringify([feed, run.market]); };
+  assert.equal(play(), play());
 });
 
-test('squawker: reading the feed never changes the market', () => {
-  const a = G.createRun({ seed: 'SAME2' }), b = G.createRun({ seed: 'SAME2' });
-  const feed = SQ.createFeed();
-  for (let i = 0; i < 300; i++) { SQ.stepFeed(feed, a, G.stepRun(a), Math.random); G.stepRun(b); }
+const saved0 = f => f;
+test('chirper: market-moving posts apply once, respect cooldowns and stay bounded', () => {
+  const run = G.createRun({ seed: 'MOVES', mode: 'endless', tuning: { events: 0, regimes: 0, pumps: 0, crashes: 0 } });
+  const feed = CF.createFeed(run.seed);
+  feed.nextMove = 0;
+  stepBoth(run, feed);
+  const post = feed.posts.find(p => p.effect);
+  assert.ok(post, 'a market-moving post was made');
+  const t = post.effect.t;
+  assert.equal(saved0(feed).cd.asset[t], post.tick);
+  // the next ticks (and a save/load) must not apply that post again
+  const saved = JSON.parse(JSON.stringify(feed));
+  saved.nextMove = 1e9;
+  for (let i = 0; i < 5; i++) stepBoth(run, saved);
+  const again = saved.posts.filter(p => p.effect && p.effect.t === t);
+  assert.equal(again.length, 1, 'only the one market-moving post');
+  assert.equal(saved.cd.asset[t], post.tick, 'the effect was not applied again');
+  assert.equal(canMove(saved, post.a.k, t, run.market.tick, run.market), false, 'asset cooldown');
+  assert.equal(canMove(saved, post.a.k, t, post.tick + ASSET_COOLDOWN + 1, run.market), false, 'same account, same asset: longer cooldown');
+  assert.equal(canMove(saved, 'c:zzz', t, post.tick + ASSET_COOLDOWN + 1, run.market), true);
+  // over an hour no asset is moved more often than the cooldowns allow, and no account owns an asset
+  const run2 = G.createRun({ seed: 'MOVES2', mode: 'endless' });
+  const f2 = CF.createFeed(run2.seed);
+  const per = {}, pair = {}, ids = new Set();
+  for (let i = 0; i < 3600; i++) {
+    stepBoth(run2, f2);
+    for (const p of f2.posts) if (p.effect && !ids.has(p.id)) { ids.add(p.id); per[p.effect.t] = (per[p.effect.t] || 0) + 1; const k = p.a.k + '>' + p.effect.t; pair[k] = (pair[k] || 0) + 1; }
+  }
+  for (const [t2, n] of Object.entries(per)) assert.ok(n <= Math.ceil(3600 / ASSET_COOLDOWN), `${t2} moved ${n} times`);
+  for (const [k, n] of Object.entries(pair)) assert.ok(n <= Math.ceil(3600 / PAIR_COOLDOWN) + 1, `${k} moved ${n} times`);
+  const total = Object.values(per).reduce((a, b) => a + b, 0);
+  assert.ok(Math.max(...Object.values(pair)) / total < 0.1, 'one account dominates');
+});
+
+test('chirper: celebrities in the news post it, and bad calls get apologies and receipts', () => {
+  const run = G.createRun({ seed: 'NEWS2', tuning: { events: 0, regimes: 0, pumps: 0, crashes: 0 } });
+  const feed = CF.createFeed(run.seed);
+  const { headline, notes } = M.forceEvent(run.market, 'celebrity', 'MOONCAT');
+  CF.stepFeed(feed, run, notes, null);
+  const acct = CA.castAccount(headline.cast.celeb);
+  assert.ok(acct && feed.posts.some(p => p.a.k === acct.key), `${headline.cast.celeb} should chirp about the news`);
+  assert.ok(feed.posts.some(p => p.a.k === 's:news' && p.news === headline.id), 'breaking news post');
+  // an endorsement followed by a crash gets an apology (or a reaction) and "aged like milk" replies
+  const by = CA.CELEBS.find(c => c.moves.some(m => m.type === 'apology'));
+  feed.nextMove = 1e9;
+  const p = CF.addPost(feed, { k: 'c:' + by.id }, 'buy $GOB', run.market.tick, {});
+  feed.endorse.push({ post: p.id, key: 'c:' + by.id, t: 'GOB', price: run.market.assets.GOB.p, tick: run.market.tick });
+  for (let i = 0; i < 16; i++) stepBoth(run, feed);
+  const gob = run.market.assets.GOB;
+  gob.logP += Math.log(0.5); gob.logFair = gob.logP; gob.p = Math.exp(gob.logP);
+  stepBoth(run, feed);
+  assert.ok(!feed.endorse.some(e => e.post === p.id), 'the endorsement was judged');
+  assert.ok(feed.posts.some(q => q.parent === p.id && q.hindsight === 'bad'), 'hindsight reply');
+  assert.ok(feed.posts.some(q => q.a.k === 'c:' + by.id && q.tick === run.market.tick && !q.parent), 'the celebrity responds');
+});
+
+test('chirper: without market-moving posts, the feed never changes the market', () => {
+  const a = G.createRun({ seed: 'QUIET' }), b = G.createRun({ seed: 'QUIET' });
+  const feed = CF.createFeed('x');
+  for (let i = 0; i < 400; i++) {
+    feed.nextMove = 1e9; feed.endorse = [];                       // no celebrity moves or apologies
+    for (const th of THREADS) feed.threads[th.id] = a.market.tick; // no scripted threads (some move markets)
+    CF.stepFeed(feed, a, G.stepRun(a), null);
+    G.stepRun(b);
+  }
+  assert.ok(feed.posts.length > 100);
   assert.deepEqual(a.market, b.market);
 });
 
-test('squawker: player posts get replies and shill hype with a cooldown', () => {
+test('chirper: player chirps get replies, mentions and limited hype', () => {
   const run = G.createRun({ seed: 'SHILL', tuning: { events: 0 } });
-  const feed = SQ.createFeed();
-  const rnd = seeded(4);
-  assert.equal(SQ.playerPost(feed, run, '   ').ok, false);
-  assert.equal(SQ.playerPost(feed, run, 'x'.repeat(281)).ok, false);
+  const feed = CF.createFeed(run.seed);
+  assert.equal(CF.playerPost(feed, run, '   ').ok, false);
+  assert.equal(CF.playerPost(feed, run, 'x'.repeat(281)).ok, false);
   run.market.assets.GOB.hype = 10;
-  let r = SQ.playerPost(feed, run, 'buy $gob and $MBYT and $TSD', { rnd });
+  let r = CF.playerPost(feed, run, 'buy $gob and $MBYT and $TSD and $GIGACOIN');
   assert.ok(r.ok);
-  assert.deepEqual(r.post.tickers, ['GOB', 'MBYT', 'TSD']);
-  assert.deepEqual(r.hyped, ['GOB']);               // stocks and stablecoins can't be hyped
-  assert.equal(run.market.assets.GOB.hype, 10 + SQ.SHILL_HYPE);
-  r = SQ.playerPost(feed, run, '$GOB again', { rnd });
-  assert.deepEqual(r.hyped, []);                    // cooldown
-  for (let i = 0; i < 12; i++) SQ.stepFeed(feed, run, G.stepRun(run), rnd);
+  assert.deepEqual(r.post.tickers, ['GOB', 'MBYT', 'TSD', 'GIGACOIN']);
+  assert.ok(r.hyped.includes('GOB') && !r.hyped.includes('MBYT') && !r.hyped.includes('TSD'));
+  assert.equal(run.market.assets.GOB.hype, 10 + CF.SHILL_HYPE);
+  r = CF.playerPost(feed, run, '$GOB again');
+  assert.deepEqual(r.hyped, []);
+  for (let i = 0; i < 12; i++) stepBoth(run, feed);
   assert.ok(feed.posts.some(p => p.toMe) && feed.mentions > 0);
-  const reply = SQ.playerPost(feed, run, 'thanks', { parent: r.post.id, rnd });
+  const reply = CF.playerPost(feed, run, 'thanks', { parent: r.post.id });
   assert.ok(reply.ok && reply.post.parent === r.post.id);
-  const p = SQ.toggleLike(feed, r.post.id);
-  assert.ok(p.liked);
-  SQ.toggleLike(feed, r.post.id);
-  assert.ok(!p.liked);
+  assert.ok(CF.toggleLike(feed, r.post.id).liked);
+  assert.ok(!CF.toggleLike(feed, r.post.id).liked);
 });
 
-test('squawker: profile and follows are sanitised', () => {
-  const meta = SV.sanitizeMeta({ profile: { name: '  Ape  ', handle: 'ape <script>' }, follows: ['c:rex', 'c:rex', 'bad key', 'b:MoonBoi420'] });
+test('chirper: profile, follows and feed settings are saved and sanitised', () => {
+  const meta = SV.sanitizeMeta({ profile: { name: '  Ape  ', handle: 'ape <script>' }, follows: ['c:dax', 'c:dax', 'bad key', 'u:rentisdue', 's:news'], chirper: { autoRefresh: false, showEffects: 'yes' } });
   assert.deepEqual(meta.profile, { name: 'Ape', handle: 'apescript' });
-  assert.deepEqual(meta.follows, ['c:rex', 'b:MoonBoi420']);
-  assert.deepEqual(SV.sanitizeMeta({ profile: { name: '', handle: '' } }).profile, SV.defaultMeta().profile);
+  assert.deepEqual(meta.follows, ['c:dax', 'u:rentisdue', 's:news']);
+  assert.deepEqual(meta.chirper, { autoRefresh: false, showEffects: true });
+  for (const k of SV.defaultMeta().follows) assert.ok(CA.ACCOUNTS.has(k), k);
+});
+
+test('chirper: trading still works with the feed running', () => {
+  const run = G.createRun({ seed: 'TRADE', mode: 'endless' });
+  const feed = CF.createFeed(run.seed);
+  for (let i = 0; i < 200; i++) stepBoth(run, feed);
+  const cash = run.pf.cash;
+  assert.ok(G.trade(run, { side: 'buy', t: 'BEEP', amount: 300 }).ok);
+  for (let i = 0; i < 50; i++) stepBoth(run, feed);
+  const s = G.trade(run, { side: 'sell', t: 'BEEP', fraction: 1 });
+  assert.ok(s.ok);
+  near(run.pf.cash, cash - 300 + s.tx.amount, 1e-9);
+  assert.ok(Object.keys(run.pf.positions).length === 0);
 });
 
 test('pumped: simple.pumped is the same page in simple mode', () => {

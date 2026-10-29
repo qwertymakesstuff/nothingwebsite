@@ -9,8 +9,9 @@ import * as PG from './progression.js';
 import { REGIMES } from './regimes.js';
 import { Fx } from './fx.js';
 import { bindTips } from './tips.js';
-import { createFeed, stepFeed, validFeed } from './social.js';
-import { SocialView } from './social-ui.js';
+import { createFeed, stepFeed, validFeed } from './chirper/feed.js';
+import { ACCOUNTS } from './chirper/accounts.js';
+import { ChirperView } from './chirper-ui.js';
 import { Sfx } from './audio.js';
 import { Chart, CHART_THEMES, sparkPath } from './chart.js';
 import { randomSeed } from './rng.js';
@@ -51,7 +52,9 @@ function boot() {
   chart = new Chart($('#chart'));
   chart.simple = SIMPLE;
   if (SIMPLE) for (const el of $$('[data-simple]')) el.textContent = el.dataset.simple;
-  social = new SocialView({
+  // follows saved by older versions can point at accounts that are gone
+  meta.follows = meta.follows.filter(k => ACCOUNTS.has(k) || k.startsWith('b:'));
+  social = new ChirperView({
     run: () => run, meta: () => meta, worth: () => worthOf(run), timeLeft: () => timeLeft(run),
     onTicker: t => { switchView('terminal'); selectAsset(t); }, onBack: () => switchView('terminal'),
     toast: (t, k) => toast(t, k), saveMeta, sfx,
@@ -86,7 +89,7 @@ function newRun(opts = {}) {
 function mountRun() {
   $('#app').hidden = false;
   if (!run.market.assets[run.selected]) run.selected = run.market.order[0];
-  if (!validFeed(run.social)) run.social = createFeed();
+  if (!validFeed(run.social)) run.social = createFeed(run.seed);   // older saves had Squawker: start Chirper fresh
   ui.newsEls.clear(); ui.lastNews = 0; ui.lastPrice = null; ui.holdKey = ui.txKey = ui.statsKey = ui.orderKey = '';
   $('#news').replaceChildren();
   buildChips();
@@ -114,7 +117,7 @@ function gameTick() {
   handleNotes(notes);
   scan();
   progress();
-  stepFeed(run.social, run, notes, Math.random, meta.profile);
+  stepFeed(run.social, run, notes, meta.profile);
   render();
   social.tick();
   if (run.market.tick % 5 === 0) saveRun();
@@ -989,9 +992,9 @@ function openHelp() {
     h('p', { text: '🚀 Pumps: assets sometimes surge. Some keep going, some fade, some collapse in seconds (a rug pull). 📉 Crashes: single assets or the whole market can drop. Some recover, some don\'t. Cash doesn\'t crash.' }),
     h('p', { text: '📰 News explains moves but doesn\'t promise anything. Developing stories resolve a few seconds later, one way or the other. 🔥 Hype makes pumps bigger, but overheated assets (80+) crash and get rugged more often.' }),
     h('p', { text: '🎲 Leverage multiplies gains and losses and can get you liquidated. ⚡ Clout from each run buys upgrades. Different assets behave very differently: safe funds crawl, degen coins go to the moon or to zero.' }),
-    h('p', { text: '🦜 Squawker (top left, or press T) is the market\'s social site: celebrities, news and a few hundred bots reacting to every move. It\'s noisy and usually late, and the market keeps running while you scroll. Naming a coin in your own squawk ($GOB) gives it a little hype.' }),
+    h('p', { text: '🐤 Chirper (top left, or press T) is the market\'s social site: 20 celebrities, 40 regulars, news accounts and a few hundred bots arguing about every move. Celebrity posts can nudge hype and volatility (labelled after they happen), but nothing on there is a guarantee, and the market keeps running while you scroll. Naming a coin in your own chirp ($GOB) gives it a little hype.' }),
     h('p', { text: '🔍 Hard to read? Put "simple." in front of the game: missing.website/simple.pumped/ is the same game and save with bigger text and fewer panels.' }),
-    h('p', { text: 'Keys: T terminal / Squawker · B / S buy or sell · 1–4 pick 10/25/50/100% · Enter trade · ↑ ↓ change asset · / search · Space pause · Esc close.' }),
+    h('p', { text: 'Keys: T terminal / Chirper · B / S buy or sell · 1–4 pick 10/25/50/100% · Enter trade · ↑ ↓ change asset · / search · Space pause · Esc close.' }),
     h('div', { class: 'btn-row end' }, backBtn()),
   ], 'help');
 }
@@ -1097,7 +1100,7 @@ function togglePause() {
   toast(ui.paused ? '⏸ Paused. The market waits for no one… except you.' : '▶ Back to the market.');
 }
 
-// Terminal ↔ Squawker. The market keeps running on both.
+// Terminal ↔ Chirper. The market keeps running on both.
 function switchView(v) {
   if (!run || v === ui.view) return;
   ui.view = v;
@@ -1145,7 +1148,7 @@ function moveSel(d) {
 function exposeDebug() {
   globalThis.pumped = {
     get run() { return run; }, get meta() { return meta; },
-    step(n = 1) { for (let i = 0; i < n && run && !run.over; i++) { const notes = stepRun(run); handleNotes(notes); scan(); progress(); stepFeed(run.social, run, notes, Math.random, meta.profile); } render(); social.tick(); if (run.over) finishRun(); },
+    step(n = 1) { for (let i = 0; i < n && run && !run.over; i++) { const notes = stepRun(run); handleNotes(notes); scan(); progress(); stepFeed(run.social, run, notes, meta.profile); } render(); social.tick(); if (run.over) finishRun(); },
     view: switchView, get social() { return social; },
     event(id, t) { const r = forceEvent(run.market, id, t); handleNotes(r.notes); render(); return r.headline; },
     pump(t, opts) { handleNotes(forcePump(run.market, t, opts)); },

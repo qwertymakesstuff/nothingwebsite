@@ -6,6 +6,7 @@
 //   /pumped                    -> 301 to /pumped/
 //   /simple.pumped(/...)       -> 301 to /pumped/   (what people type after "simple.")
 //   /pumped/<file>             -> the asset <file> (/pumped/ itself is index.html)
+//   /__simpleplay              -> a plain-text "simpleplay is running" check
 // The page turns on the simple HUD because the hostname starts with "simple.".
 
 const GAME = '/pumped/';
@@ -14,6 +15,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
+    if (path === '/__simpleplay') {
+      return new Response(`simpleplay is running on ${url.hostname}. The game is at /pumped/\n`, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+    }
     if (path === '/' || /^\/pumped$/i.test(path) || /^\/simple\.pumped(\/|$)/i.test(path)) {
       return Response.redirect(`${url.origin}${GAME}${url.search}`, 301);
     }

@@ -11,6 +11,12 @@ Cloudflare Worker **simpleplay**.
 - Saves live in the browser per site, so a run on simple.missing.website is separate from one on
   missing.website.
 
+## Checking it
+
+`simple.missing.website/__simpleplay` answers "simpleplay is running" when this Worker is the one
+serving the domain. Anything else (the music player, a Cloudflare error) means the domain or the
+build is pointing somewhere else.
+
 ## Deploying
 
 In Cloudflare: Workers & Pages -> the **simpleplay** Worker -> Settings -> Build: connect this

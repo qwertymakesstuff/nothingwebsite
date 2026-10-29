@@ -15,8 +15,8 @@
 // tone     what the headline sounds like (+1 bullish, -1 bearish). The real outcome can differ.
 
 export const CAST = {
-  celeb: ['pop star Lil Margin', 'action hero Brock Granite', 'rapper MC Liquidity', 'reality star Kimmi Kash', 'billionaire Rex Rocketman', 'streamer DJ Kahoot', 'a famous chef with 90M followers', 'Grandpa Joe (viral TikTok grandpa)'],
-  influencer: ['@DiamondPaws69', 'Chad Moonsworth', 'Crypto Karen', 'Big Tony from the forums', 'the Laser Eyes guy', 'an anonymous frog avatar'],
+  celeb: ['tech billionaire Dax Dollar', 'rapper Lil Margin', 'fitness star Bradley Beef', 'chef Gordon Grumble', 'luxury influencer Princess Paywall', 'beauty mogul Kiki Clout', 'rocket billionaire Rex Rocket', 'streamer Johnny Jackpot', 'DJ Liquidity'],
+  influencer: ['Madame Moonshot', 'Brock Blockchain', 'Chadwick Gains', 'Meme Lord Supreme', 'Baby Bull', 'Vivienne Viral'],
   exchange: ['Wombat Exchange', 'CoinBarn', 'BlockBazaar', 'Lemonade Markets'],
   official: ['Fed Chair Marla Hawke', 'Senator Hal Beige', 'the Securities & Feelings Commission', 'the Ministry of Vibes'],
   partner: ['a major airline', 'the Olympic Committee', 'a mid-sized country', 'every school cafeteria in Ohio', 'a famous burger chain', 'NASA\'s cousin, NASB'],

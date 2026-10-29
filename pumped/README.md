@@ -14,13 +14,24 @@ them in sync). The page also switches to simple mode on any `simple.` subdomain 
 `simple.missing.website/pumped/` is served by the `simpleplay` Worker straight from this folder (see
 `../simpleplay/`). `.assetsignore` keeps this README off that site.
 
-## Squawker
+## Chirper
 
 A Twitter-style social site you can flip to (top-left switch, or `T`) while the market keeps running.
-~30 satirical celebrities, officials, exchanges and news accounts, 350 named bots plus generated ones.
-Posts react to headlines, regimes and visible pumps/crashes (deliberately late and noisy). The player
-can post, reply, like, repost and follow; naming a coin (`$GOB`) adds a little hype to it, once every
-30 seconds per coin. The feed is saved with the run and never touches the market's random numbers.
+
+- `js/chirper/celebs-1.js`, `celebs-2.js`: the 20-celebrity cast (profiles, 25+ posts, 15+ replies,
+  10+ market reactions and a few market-moving posts each, plus topics, assets, rivals, running jokes
+  and catchphrases)
+- `js/chirper/users-1.js`, `users-2.js`: 40 regular users (8 posts, 8 replies, 3 reactions each)
+- `js/chirper/threads.js`: 30+ scripted conversations (a post and 3-6 replies that answer it)
+- `js/chirper/system.js`: news, alerts and officials, 350 filler bots, hindsight lines, event tags
+- `js/chirper/effects.js`: the only place a post type becomes a market effect. Effects are small
+  (hype, volatility, short pumps whose ending is still up to the market) with cooldowns per asset
+  (45s) and per account and asset (240s), so nobody steers a price
+- `js/chirper/feed.js`: the engine. Seeded and deterministic, never touches the market's own random
+  numbers, avoids repeating a line for 30 minutes, applies each effect exactly once
+- `js/chirper-ui.js`: the view (timeline, profiles, threads, trending, mentions, settings)
+
+To add content, add lines to an account's pools or a new thread; nothing else needs to change.
 
 ## Layout
 
@@ -40,9 +51,8 @@ js/chart.js       canvas chart and themes
 js/fx.js          flying numbers, banners, coin bursts, net worth count-up
 js/audio.js       synthesised sound effects
 js/tips.js        glossary tooltips
-js/social-data.js Squawker accounts, bot handles and post lines
-js/social.js      Squawker feed engine (pure)
-js/social-ui.js   Squawker view
+js/chirper/       Chirper content, market effects and feed engine (see above)
+js/chirper-ui.js  Chirper view
 js/main.js        controller: game loop, every panel, menus
 ```
 

@@ -235,7 +235,7 @@ function castVars(rng) {
   return v;
 }
 
-// the people a headline names (so Squawker can have them post about it)
+// the people a headline names (so Chirper can have them post about it)
 function castUsed(tmpl, vars) {
   const out = {};
   for (const k of Object.keys(CAST)) if (tmpl.includes(`{${k}}`)) out[k] = vars[k];

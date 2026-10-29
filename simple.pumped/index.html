@@ -19,7 +19,7 @@
       <a class="brand" href="#" id="brand" title="Menu">PUMPED<span>.exe</span></a>
       <div class="views" role="tablist" aria-label="Switch screen">
         <button type="button" class="vtab on" data-view="terminal" role="tab" title="Trading terminal (T)">📈 <span>Terminal</span></button>
-        <button type="button" class="vtab" data-view="social" role="tab" title="Squawker (T)">🦜 <span>Squawker</span> <b class="vbadge" id="sqBadge" hidden></b></button>
+        <button type="button" class="vtab" data-view="social" role="tab" title="Chirper (T)">🐤 <span>Chirper</span> <b class="vbadge" id="chBadge" hidden></b></button>
       </div>
       <div class="stat stat-worth">
         <span class="label" data-tip="networth" data-simple="Total money">Net worth</span>
@@ -115,7 +115,7 @@
         <div class="preview" id="preview"></div>
         <button type="button" class="go buy" id="goBtn">BUY MBYT</button>
         <div class="position" id="position"></div>
-        <p class="keys"><kbd>↑</kbd><kbd>↓</kbd> asset · <kbd>1</kbd>–<kbd>4</kbd> amount · <kbd>Enter</kbd> trade · <kbd>Space</kbd> pause · <kbd>T</kbd> Squawker</p>
+        <p class="keys"><kbd>↑</kbd><kbd>↓</kbd> asset · <kbd>1</kbd>–<kbd>4</kbd> amount · <kbd>Enter</kbd> trade · <kbd>Space</kbd> pause · <kbd>T</kbd> Chirper</p>
       </section>
 
       <aside class="panel p-news" aria-label="News">
@@ -135,34 +135,34 @@
       </section>
     </main>
 
-    <main class="squawk" id="socialView" hidden>
-      <aside class="sq-left">
-        <div class="sq-logo">🦜 Squawker</div>
-        <nav class="sq-nav" aria-label="Squawker">
-          <button type="button" data-sq="home" class="on">🏠 <span>Home</span></button>
-          <button type="button" data-sq="following">👥 <span>Following</span></button>
-          <button type="button" data-sq="mentions">🔔 <span>Mentions</span> <b id="sqMentions"></b></button>
-          <button type="button" data-sq="me">🫵 <span>Profile</span></button>
+    <main class="chirper" id="socialView" hidden>
+      <aside class="ch-left">
+        <div class="ch-logo">🐤 Chirper</div>
+        <nav class="ch-nav" aria-label="Chirper">
+          <button type="button" data-ch="home" class="on">🏠 <span>Home</span></button>
+          <button type="button" data-ch="following">👥 <span>Following</span></button>
+          <button type="button" data-ch="mentions">🔔 <span>Mentions</span> <b id="chMentions"></b></button>
+          <button type="button" data-ch="me">🫵 <span>Profile</span></button>
         </nav>
-        <button type="button" class="sq-back" id="sqBack">📈 Back to trading</button>
-        <div class="sq-wallet" id="sqWallet"></div>
+        <button type="button" class="ch-back" id="chBack">📈 Back to trading</button>
+        <div class="ch-wallet" id="chWallet"></div>
       </aside>
-      <section class="sq-main" aria-label="Feed">
-        <div class="sq-head" id="sqHead"></div>
-        <div class="sq-compose" id="sqCompose">
-          <span class="sq-av me" aria-hidden="true">🫵</span>
+      <section class="ch-main" aria-label="Timeline">
+        <div class="ch-head" id="chHead"></div>
+        <div class="ch-compose" id="chCompose">
+          <span class="ch-av me" aria-hidden="true">🫵</span>
           <div>
-            <textarea id="sqText" maxlength="280" rows="2" placeholder="What's happening in the market?" aria-label="Write a squawk"></textarea>
-            <div class="sq-compose-bar"><small class="muted">Name a coin like $GOB to shill it.</small><span id="sqCount">280</span><button type="button" class="sq-btn" id="sqPost" disabled>Squawk</button></div>
+            <textarea id="chText" maxlength="280" rows="2" placeholder="What's happening in the market?" aria-label="Write a chirp"></textarea>
+            <div class="ch-compose-bar"><small class="muted">Name a coin like $GOB to hype it.</small><span id="chCount">280</span><button type="button" class="ch-btn" id="chPost" disabled>Chirp</button></div>
           </div>
         </div>
-        <button type="button" class="sq-new" id="sqNew" hidden></button>
-        <div class="sq-feed" id="sqFeed" aria-live="off"></div>
+        <button type="button" class="ch-new" id="chNew" hidden></button>
+        <div class="ch-feed" id="chFeed" aria-live="off"></div>
       </section>
-      <aside class="sq-right">
-        <div class="sq-box"><h3>What's happening</h3><div id="sqTrends"></div></div>
-        <div class="sq-box"><h3>Who to follow</h3><div id="sqWho"></div></div>
-        <p class="sq-foot">Squawker is satire. Every account, celebrity and bot is made up.</p>
+      <aside class="ch-right">
+        <div class="ch-box"><h3>What's happening</h3><div id="chTrends"></div></div>
+        <div class="ch-box"><h3>Who to follow</h3><div id="chWho"></div></div>
+        <p class="ch-foot">Chirper is satire. Every celebrity, user and bot is made up, and so is every chirp.</p>
       </aside>
     </main>
   </div>

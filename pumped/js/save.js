@@ -53,7 +53,8 @@ export function defaultMeta() {
     settings: { ...DEFAULT_SETTINGS },
     watch: ['MBYT', 'CORN', 'GOB'],
     profile: { name: 'You', handle: 'pumped_trader' },
-    follows: ['c:wire', 'c:rex'],
+    follows: ['s:news', 'c:dax', 'c:moonshot'],
+    chirper: { autoRefresh: true, showEffects: true },
   };
 }
 
@@ -78,7 +79,9 @@ export function sanitizeMeta(m) {
     const name = String(m.profile.name || '').trim().slice(0, 30), handle = String(m.profile.handle || '').replace(/[^A-Za-z0-9_]/g, '').slice(0, 20);
     if (name && handle) out.profile = { name, handle };
   }
-  if (Array.isArray(m.follows)) out.follows = [...new Set(m.follows.filter(k => typeof k === 'string' && /^[cb]:[A-Za-z0-9_]{1,30}$/.test(k)))].slice(0, 100);
+  // follows from older versions may name accounts that no longer exist; the Chirper view drops those
+  if (Array.isArray(m.follows)) out.follows = [...new Set(m.follows.filter(k => typeof k === 'string' && /^[cusb]:[A-Za-z0-9_]{1,30}$/.test(k)))].slice(0, 100);
+  if (m.chirper && typeof m.chirper === 'object') for (const k of Object.keys(out.chirper)) if (typeof m.chirper[k] === 'boolean') out.chirper[k] = m.chirper[k];
   return out;
 }
 
