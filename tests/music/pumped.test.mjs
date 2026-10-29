@@ -73,9 +73,9 @@ test('pumped: markets move both ways: rises, falls, pumps, crashes and news all 
 test('pumped: forced pumps raise the price, forced crashes lower it', () => {
   const m = M.createMarket({ seed: 'FORCE', tuning: { events: 0, pumps: 0, crashes: 0 } });
   const p0 = m.assets.GOB.p;
-  M.forcePump(m, 'GOB', { mul: 2, len: [10, 10], fates: { moon: 1, fade: 0, rug: 0 } });
+  M.forcePump(m, 'GOB', { mul: 3, len: [10, 10], fates: { moon: 1, fade: 0, rug: 0 } });
   for (let i = 0; i < 10; i++) M.stepMarket(m);
-  assert.ok(m.assets.GOB.p > p0 * 1.3, `pumped ${m.assets.GOB.p / p0}`);
+  assert.ok(m.assets.GOB.p > p0 * 1.2, `pumped ${m.assets.GOB.p / p0}`);
   const p1 = m.assets.MBYT.p;
   M.forceCrash(m, 'MBYT', { mul: 2, len: [6, 6] });
   for (let i = 0; i < 6; i++) M.stepMarket(m);

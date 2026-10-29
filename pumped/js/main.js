@@ -8,6 +8,7 @@ import { Store, addScore } from './save.js';
 import * as PG from './progression.js';
 import { REGIMES } from './regimes.js';
 import { Fx } from './fx.js';
+import { bindTips } from './tips.js';
 import { Sfx } from './audio.js';
 import { Chart, CHART_THEMES, sparkPath } from './chart.js';
 import { randomSeed } from './rng.js';
@@ -42,6 +43,7 @@ function boot() {
   if (store.isFresh() && globalThis.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { meta.settings.reducedMotion = true; saveMeta(); }
   chart = new Chart($('#chart'));
   bindUI();
+  bindTips($('#tip'), () => S().tooltips);
   applySettings();
   const saved = store.loadRun();
   $('#boot').remove();
@@ -523,18 +525,18 @@ function renderTrade() {
   const amt = parseAmount($('#amount').value);
   const pv = $('#preview');
   const rows = [];
-  const line = (k, v, cls = '') => rows.push(h('div', {}, h('span', { text: k }), h('b', { class: cls, text: v })));
+  const line = (k, v, cls = '', tip = null) => rows.push(h('div', {}, h('span', { text: k, 'data-tip': tip }), h('b', { class: cls, text: v })));
   if (buy) {
     const lev = currentLev();
     if (amt > 0) {
       const margin = amt / (1 + lev * FEE), qty = margin * lev / p;
       line('You get ≈', `${F.qty(qty)} ${t}`);
       line('Price', F.price(p));
-      line(`Fee (0.1%${lev > 1 ? ' × ' + lev : ''})`, F.money(amt - margin));
+      line(`Fee (0.1%${lev > 1 ? ' × ' + lev : ''})`, F.money(amt - margin), '', 'fee');
       if (lev > 1) {
         line('Position size', F.money(margin * lev));
         const liq = (margin * (lev - 1) + 0.1 * margin) / qty;
-        line('Liquidated below', F.price(liq), 'down');
+        line('Liquidated below', F.price(liq), 'down', 'liq');
       }
       if (pos && pos.lev !== lev) rows.push(h('span', { class: 'err', text: `You hold ${t} at ${pos.lev}×. Switch leverage to ${pos.lev}× or sell first.` }));
       if (amt > run.pf.cash + 1e-9) rows.push(h('span', { class: 'err', text: `Not enough cash (${F.money(run.pf.cash)}).` }));
@@ -574,9 +576,9 @@ function renderTrade() {
     const eq = equityOf(pos, p), pnl = eq - pos.cost, pc = pos.cost > 0 ? pnl / pos.cost * 100 : 0;
     card.className = `position ${pnl >= 0 ? 'win' : 'lose'}`;
     const kids = [h('h3', {}, h('span', { text: 'Your position' }), pos.lev > 1 ? h('span', { class: 'down', text: `${pos.lev}× LEVERAGE` }) : null),
-      row2('Quantity', `${F.qty(pos.qty)} ${t}`), row2('Avg price', F.price(pos.avg)), row2('Value', F.money(eq)),
+      row2('Quantity', `${F.qty(pos.qty)} ${t}`), row2('Avg price', F.price(pos.avg), '', 'avg'), row2('Value', F.money(eq)),
       row2('P/L', `${F.money(pnl, { sign: true })} (${F.pct(pc)})`, F.tone(pnl))];
-    if (pos.lev > 1) kids.push(row2('Liquidation at', F.price(liqPrice(pos)), 'down'));
+    if (pos.lev > 1) kids.push(row2('Liquidation at', F.price(liqPrice(pos)), 'down', 'liq'));
     kids.push(h('div', { class: 'quick' },
       h('button', { type: 'button', text: 'Sell half', onclick: () => quickSell(t, 0.5) }),
       h('button', { type: 'button', text: 'Sell all', onclick: () => quickSell(t, 1) })));
@@ -584,7 +586,7 @@ function renderTrade() {
   }
 }
 
-const row2 = (k, v, cls = '') => h('div', {}, h('span', { text: k }), h('b', { class: cls, text: v }));
+const row2 = (k, v, cls = '', tip = null) => h('div', {}, h('span', { text: k, 'data-tip': tip }), h('b', { class: cls, text: v }));
 
 function pickPct(p) {
   if (!run) return;

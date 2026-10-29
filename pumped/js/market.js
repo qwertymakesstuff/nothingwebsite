@@ -24,7 +24,7 @@ export const MAX_PRICE = 1e12;
 export const NEWS_LEN = 60;
 const LOG_MIN = Math.log(MIN_PRICE);
 const LOG_MAX = Math.log(MAX_PRICE);
-const TIER_MUL = { mini: 1, big: 1.7, mega: 2.6 };
+const TIER_MUL = { mini: 1, big: 1.7, mega: 2.6, moonshot: 5 };
 
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
@@ -114,7 +114,7 @@ function stepAsset(m, a, rng, notes) {
     const step = p.str * ramp * (0.4 + 1.2 * rng.next());
     r += step; p.gain += step; p.ticks++;
     if (c.hypeable && !d.stable) a.hype += 1.2 * TIER_MUL[p.tier];
-    if (p.ticks >= p.len) endPump(m, a, rng, notes);
+    if (p.ticks >= p.len || p.gain >= c.pumpCap * (p.tier === 'moonshot' ? 1.5 : 1)) endPump(m, a, rng, notes);
   } else if (a.crash) {
     const k = a.crash;
     const step = k.str * (0.5 + rng.next());
@@ -167,7 +167,8 @@ function stepAsset(m, a, rng, notes) {
 export function startPump(m, a, rng, notes, { mul = 1, len = null, fates = null, cause = 'spontaneous' } = {}) {
   const d = ASSET_BY_T[a.t], c = CATS[d.cat];
   if (d.pumpMul === 0 && cause === 'spontaneous') return;
-  const tier = rng.weighted([['mini', 0.6], ['big', 0.3], ['mega', 0.1]]);
+  const wild = ['degen', 'rare'].includes(d.cat);
+  const tier = rng.weighted([['mini', 0.6], ['big', 0.3], ['mega', 0.1], ['moonshot', wild ? 0.035 : 0]]);
   const hypeMul = 1 + (a.hype || 0) / 150;
   const str = rng.range(c.pumpStr[0], c.pumpStr[1]) * TIER_MUL[tier] * mul * hypeMul;
   const n = rng.int(...(len || c.pumpLen));

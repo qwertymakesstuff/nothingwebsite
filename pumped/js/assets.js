@@ -7,24 +7,25 @@
 // Per-tick numbers are in log-price units (0.01 ≈ 1%). A tick is one second of game time.
 // fairDrift is the long-run trend: fair value is slowly pulled (ANCHOR) towards the path
 // start × e^(fairDrift × tick), so news and pumps move it for minutes, not forever.
+// pumpStr is the per-tick push of an average pump; pumpCap the most one pump can add (log units).
 export const CATS = {
   safe:   { label: 'Safe',      icon: '🛡', sigma: 0.0025, fairDrift: 0.00008, fairVol: 0.0007, revert: 0.03,
-            pump: 0.0004, crash: 0.00025, pumpStr: [0.004, 0.009], pumpLen: [6, 14], crashStr: [0.008, 0.02], crashLen: [3, 6],
+            pump: 0.0004, crash: 0.00025, pumpStr: [0.0015, 0.003], pumpCap: 0.08, pumpLen: [6, 14], crashStr: [0.008, 0.02], crashLen: [3, 6],
             fates: { moon: 0.55, fade: 0.45, rug: 0 }, hypeable: false },
   stock:  { label: 'Stock',     icon: '🏢', sigma: 0.0065, fairDrift: 0.00005, fairVol: 0.0022, revert: 0.02,
-            pump: 0.0012, crash: 0.0009, pumpStr: [0.01, 0.022], pumpLen: [6, 20], crashStr: [0.02, 0.05], crashLen: [3, 8],
+            pump: 0.0012, crash: 0.0009, pumpStr: [0.003, 0.0065], pumpCap: 0.45, pumpLen: [6, 20], crashStr: [0.02, 0.05], crashLen: [3, 8],
             fates: { moon: 0.35, fade: 0.55, rug: 0.1 }, hypeable: false },
-  crypto: { label: 'Crypto',    icon: '🪙', sigma: 0.011, fairDrift: 0, fairVol: 0.0035, revert: 0.018,
-            pump: 0.0017, crash: 0.0013, pumpStr: [0.014, 0.032], pumpLen: [6, 22], crashStr: [0.03, 0.07], crashLen: [3, 9],
+  crypto: { label: 'Crypto',    icon: '🪙', sigma: 0.011, fairDrift: 0.0001, fairVol: 0.0035, revert: 0.018,
+            pump: 0.0017, crash: 0.0013, pumpStr: [0.005, 0.011], pumpCap: 0.8, pumpLen: [6, 22], crashStr: [0.03, 0.07], crashLen: [3, 9],
             fates: { moon: 0.28, fade: 0.5, rug: 0.22 }, hypeable: true },
   meme:   { label: 'Meme stock', icon: '🦍', sigma: 0.015, fairDrift: -0.0004, fairVol: 0.0045, revert: 0.015,
-            pump: 0.0019, crash: 0.0018, pumpStr: [0.02, 0.048], pumpLen: [5, 24], crashStr: [0.04, 0.09], crashLen: [3, 10],
+            pump: 0.0019, crash: 0.0018, pumpStr: [0.01, 0.02], pumpCap: 1.5, pumpLen: [5, 24], crashStr: [0.04, 0.09], crashLen: [3, 10],
             fates: { moon: 0.22, fade: 0.45, rug: 0.33 }, hypeable: true },
   degen:  { label: 'Degen coin', icon: '🎰', sigma: 0.024, fairDrift: -0.0005, fairVol: 0.007, revert: 0.012,
-            pump: 0.0032, crash: 0.0023, pumpStr: [0.028, 0.065], pumpLen: [5, 26], crashStr: [0.05, 0.13], crashLen: [3, 10],
+            pump: 0.0032, crash: 0.0023, pumpStr: [0.012, 0.026], pumpCap: 2.2, pumpLen: [5, 26], crashStr: [0.05, 0.13], crashLen: [3, 10],
             fates: { moon: 0.17, fade: 0.4, rug: 0.43 }, hypeable: true },
   rare:   { label: 'Rare',      icon: '💎', sigma: 0.009, fairDrift: -0.0002, fairVol: 0.0035, revert: 0.01,
-            pump: 0.0011, crash: 0.0009, pumpStr: [0.045, 0.1], pumpLen: [8, 24], crashStr: [0.08, 0.18], crashLen: [3, 8],
+            pump: 0.0011, crash: 0.0009, pumpStr: [0.018, 0.036], pumpCap: 3.0, pumpLen: [8, 24], crashStr: [0.08, 0.18], crashLen: [3, 8],
             fates: { moon: 0.32, fade: 0.28, rug: 0.4 }, hypeable: true, jump: 0.0015 },
 };
 

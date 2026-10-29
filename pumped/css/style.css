@@ -70,7 +70,8 @@ kbd { font: 10px var(--mono); border: 1px solid var(--line2); border-bottom-widt
 .p-chart { grid-area: chart; padding: 10px 12px; }
 .p-trade { grid-area: trade; padding: 10px 12px; overflow: auto; }
 .p-news { grid-area: news; }
-.p-hold { grid-area: hold; }
+.p-hold { grid-area: hold; overflow: hidden; }
+.p-list, .p-news { overflow: hidden; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid var(--line); gap: 8px; }
 .panel-head h2 { margin: 0; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
 
@@ -387,4 +388,9 @@ input[type="range"] { accent-color: var(--up); }
   .modal-card { padding: 16px; }
   th, td { padding: 5px 6px; }
   .keys { display: none; }
+  .hold-tabs { overflow-x: auto; }
+  .toasts { left: 10px; right: 10px; bottom: 10px; max-width: none; }
+  .toast:nth-last-child(n + 4) { display: none; }
+  .hold-tabs .htab { padding: 7px 9px; }
+  .sellall { padding: 0 8px; white-space: nowrap; }
 }

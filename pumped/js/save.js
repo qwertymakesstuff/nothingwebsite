@@ -30,14 +30,14 @@ function write(storage, key, value) {
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 export const DEFAULT_SETTINGS = {
-  sound: true, volume: 0.6, effects: true, reducedMotion: false, confirmBig: true,
+  sound: true, volume: 0.6, effects: true, reducedMotion: false,
   chartTheme: 'terminal', speed: 1, tooltips: true, leverageAccepted: false,
 };
 
 export function sanitizeSettings(s) {
   const out = { ...DEFAULT_SETTINGS };
   if (!s || typeof s !== 'object') return out;
-  for (const k of ['sound', 'effects', 'reducedMotion', 'confirmBig', 'tooltips', 'leverageAccepted']) if (typeof s[k] === 'boolean') out[k] = s[k];
+  for (const k of ['sound', 'effects', 'reducedMotion', 'tooltips', 'leverageAccepted']) if (typeof s[k] === 'boolean') out[k] = s[k];
   if (Number.isFinite(s.volume)) out.volume = Math.min(1, Math.max(0, Math.round(s.volume * 10) / 10));
   if ([0.5, 1, 2].includes(s.speed)) out.speed = s.speed;
   if (typeof s.chartTheme === 'string' && /^[a-z]{1,20}$/.test(s.chartTheme)) out.chartTheme = s.chartTheme;
