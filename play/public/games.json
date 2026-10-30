@@ -236,5 +236,12 @@
     "url": "https://missing.website/hollow-saint/",
     "description": "Low-resolution survival horror. Bellwether, 1987: a missing sister, a tape that changes every time you play it, and something under the town. Three chapters, four endings.",
     "group": "horror"
+  },
+  {
+    "name": "Zero Day",
+    "image": "banners/zeroday.svg",
+    "url": "https://missing.website/zero-day/",
+    "description": "Underground hacking simulator: take contracts, crack 34 fictional targets through eight puzzle minigames, dodge a detection meter and climb from script kiddie to elite. Entirely make-believe — no real systems.",
+    "group": "sims"
   }
 ]

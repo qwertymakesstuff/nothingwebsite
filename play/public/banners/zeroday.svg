@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 320" width="1260" height="320" role="img" aria-hidden="true">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1a13"/><stop offset="1" stop-color="#050807"/></linearGradient>
+<linearGradient id="grn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8dffc2"/><stop offset="1" stop-color="#1f8f52"/></linearGradient>
+<filter id="glow" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="1260" height="320" fill="url(#bg)"/>
+<!-- scanlines -->
+<g opacity=".18">
+<rect width="1260" height="320" fill="url(#grn)" opacity="0"/>
+<g fill="#39ff8c" opacity=".06"><rect y="0" width="1260" height="2"/><rect y="6" width="1260" height="2"/><rect y="12" width="1260" height="2"/><rect y="18" width="1260" height="2"/></g>
+</g>
+<!-- falling code columns -->
+<g font-family="monospace" font-size="20" fill="#39ff8c" opacity=".16">
+<text x="60" y="40">10110</text><text x="60" y="80">01001</text><text x="60" y="120">11010</text><text x="60" y="160">00111</text>
+<text x="150" y="60">◆▲●</text><text x="150" y="110">■✦⬟</text><text x="150" y="170">01101</text>
+<text x="1080" y="50">11001</text><text x="1080" y="100">◆●■</text><text x="1080" y="150">10110</text><text x="1080" y="200">01011</text>
+<text x="1160" y="80">▲✦●</text><text x="1160" y="140">00110</text><text x="1160" y="210">11010</text>
+</g>
+<!-- terminal window -->
+<g transform="translate(250 196)" opacity=".92">
+<rect width="330" height="96" rx="8" fill="#0c120f" stroke="#27382e" stroke-width="3"/>
+<rect width="330" height="20" rx="6" fill="#0f1713"/>
+<circle cx="16" cy="10" r="4" fill="#ff5c5c"/><circle cx="32" cy="10" r="4" fill="#ffc24b"/><circle cx="48" cy="10" r="4" fill="#39ff8c"/>
+<text x="16" y="48" font-family="monospace" font-size="16" fill="#39ff8c">$ breach --target</text>
+<text x="16" y="72" font-family="monospace" font-size="16" fill="#6f9a84">access granted <tspan fill="#39ff8c">█</tspan></text>
+</g>
+<!-- lock node graphic -->
+<g transform="translate(900 150)" fill="none" stroke="#39ff8c" stroke-width="5" filter="url(#glow)" opacity=".8">
+<circle cx="0" cy="0" r="40"/><circle cx="90" cy="-50" r="14"/><circle cx="110" cy="40" r="14"/><circle cx="30" cy="90" r="14"/>
+<line x1="34" y1="-18" x2="80" y2="-44"/><line x1="40" y1="12" x2="98" y2="36"/><line x1="18" y1="36" x2="30" y2="76"/>
+</g>
+<!-- title -->
+<text x="630" y="150" text-anchor="middle" font-family="'Orbitron',Arial Black,sans-serif" font-size="110" font-weight="900" fill="none" stroke="#39ff8c" stroke-width="6" filter="url(#glow)" letter-spacing="12">ZERO DAY</text>
+<text x="630" y="150" text-anchor="middle" font-family="'Orbitron',Arial Black,sans-serif" font-size="110" font-weight="900" fill="#050807" letter-spacing="12">ZERO DAY</text>
+<text x="630" y="150" text-anchor="middle" font-family="'Orbitron',Arial Black,sans-serif" font-size="110" font-weight="900" fill="none" stroke="#d6f5e4" stroke-width="1.5" letter-spacing="12">ZERO DAY</text>
+<text x="630" y="196" text-anchor="middle" font-family="monospace" font-size="22" fill="#6f9a84" letter-spacing="6">// hacking simulator</text>
+</svg>
