@@ -214,7 +214,8 @@
     "image": "plate-hunter/assets/banner.svg",
     "url": "plate-hunter/",
     "description": "Spin, discover, and collect incredibly rare license plates.",
-    "group": "sims"
+    "group": "sims",
+    "hidden": true
   },
   {
     "name": "Elemental",
