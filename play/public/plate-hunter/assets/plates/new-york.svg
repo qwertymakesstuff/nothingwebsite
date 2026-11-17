@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-label="Original blank new york-inspired license plate background">
+<defs><linearGradient id="metal" x2="0" y2="1"><stop stop-color="#d4e8ef"/><stop offset=".48" stop-color="#ebf2f4"/><stop offset="1" stop-color="#d4e8ef"/></linearGradient><linearGradient id="edge" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#000" stop-opacity=".26"/></linearGradient><filter id="shadow" x="-.1" y="-.2" width="1.2" height="1.5"><feGaussianBlur stdDeviation="15"/></filter></defs>
+<ellipse cx="600" cy="550" rx="510" ry="30" fill="#000" opacity=".42" filter="url(#shadow)"/>
+<rect x="40" y="40" width="1120" height="520" rx="48" fill="#0b1115" opacity=".7"/>
+<rect x="48" y="42" width="1104" height="516" rx="44" fill="url(#metal)" stroke="url(#edge)" stroke-width="9"/>
+<rect x="66" y="60" width="1068" height="480" rx="32" fill="none" stroke="#164a70" stroke-width="5" opacity=".42"/>
+<path d="M90 450v-90h75v-80h70v125h54V275h75v175h61v-75h75v75h57V230h92v220h56v-95h58v95h62v-70h81v70h56" fill="#78a0b2" opacity=".28"/><path d="M88 465h1024" stroke="#164a70" stroke-width="8" opacity=".3"/>
+<text x="600" y="137" text-anchor="middle" font-family="Arial,sans-serif" font-size="37" font-weight="800" letter-spacing="9" fill="#164a70" opacity=".85">NEW YORK</text>
+<text x="600" y="492" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="8" fill="#164a70" opacity=".68">ORIGINAL SERIES</text>
+<g fill="#14202a" opacity=".9"><circle cx="91" cy="91" r="16"/><circle cx="1109" cy="91" r="16"/><circle cx="91" cy="509" r="16"/><circle cx="1109" cy="509" r="16"/></g><g fill="#d5d7d4"><circle cx="91" cy="91" r="8"/><circle cx="1109" cy="91" r="8"/><circle cx="91" cy="509" r="8"/><circle cx="1109" cy="509" r="8"/></g>
+<path d="M85 77q0-14 14-14h1000" fill="none" stroke="#fff" stroke-width="6" opacity=".36"/>
+</svg>

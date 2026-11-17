@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-label="Original blank florida-inspired license plate background">
+<defs><linearGradient id="metal" x2="0" y2="1"><stop stop-color="#bfe4e0"/><stop offset=".48" stop-color="#f4f0d9"/><stop offset="1" stop-color="#bfe4e0"/></linearGradient><linearGradient id="edge" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#000" stop-opacity=".26"/></linearGradient><filter id="shadow" x="-.1" y="-.2" width="1.2" height="1.5"><feGaussianBlur stdDeviation="15"/></filter></defs>
+<ellipse cx="600" cy="550" rx="510" ry="30" fill="#000" opacity=".42" filter="url(#shadow)"/>
+<rect x="40" y="40" width="1120" height="520" rx="48" fill="#0b1115" opacity=".7"/>
+<rect x="48" y="42" width="1104" height="516" rx="44" fill="url(#metal)" stroke="url(#edge)" stroke-width="9"/>
+<rect x="66" y="60" width="1068" height="480" rx="32" fill="none" stroke="#254655" stroke-width="5" opacity=".42"/>
+<circle cx="990" cy="300" r="112" fill="#e08d4c" opacity=".55"/><path d="M160 430q70-180 130 0m-130-150q60-60 130 4m-125 23q-15-70 5-110m150 107q10-70 56-95" fill="none" stroke="#254655" stroke-width="13" opacity=".45"/><path d="M80 468h1040" stroke="#254655" stroke-width="7" opacity=".25"/>
+<text x="600" y="137" text-anchor="middle" font-family="Arial,sans-serif" font-size="37" font-weight="800" letter-spacing="9" fill="#254655" opacity=".85">SUNSHINE STATE</text>
+<text x="600" y="492" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" font-weight="700" letter-spacing="8" fill="#254655" opacity=".68">ORIGINAL SERIES</text>
+<g fill="#14202a" opacity=".9"><circle cx="91" cy="91" r="16"/><circle cx="1109" cy="91" r="16"/><circle cx="91" cy="509" r="16"/><circle cx="1109" cy="509" r="16"/></g><g fill="#d5d7d4"><circle cx="91" cy="91" r="8"/><circle cx="1109" cy="91" r="8"/><circle cx="91" cy="509" r="8"/><circle cx="1109" cy="509" r="8"/></g>
+<path d="M85 77q0-14 14-14h1000" fill="none" stroke="#fff" stroke-width="6" opacity=".36"/>
+</svg>

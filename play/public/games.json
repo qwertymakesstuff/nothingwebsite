@@ -210,6 +210,13 @@
     "group": "sims"
   },
   {
+    "name": "PLATE HUNTER",
+    "image": "plate-hunter/assets/banner.svg",
+    "url": "plate-hunter/",
+    "description": "Spin, discover, and collect incredibly rare license plates.",
+    "group": "sims"
+  },
+  {
     "name": "Elemental",
     "image": "banners/elemental.svg",
     "url": "https://missing.website/elemental/",
