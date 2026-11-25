@@ -1,16 +1,19 @@
 'use client';
 
 // React wrapper around chessground (GPL-3.0-or-later, see /licenses). The board is "dumb":
-// it shows `fen`, lets the user drag/click only the moves in `dests`, and reports moves as UCI.
+// it shows `fen`, lets the user drag/click only the moves in `dests`, and reports moves.
 // Rules live in @rookery/chess-core; authority for live games lives on the server.
+// Appearance (theme, coordinates, animation, legal-move dots) follows the user's preferences
+// unless overridden by props.
 
 import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Config } from '@lichess-org/chessground/config';
 import type { Color, Key } from '@lichess-org/chessground/types';
 import { useEffect, useRef } from 'react';
-
-export type BoardTheme = 'slate' | 'walnut' | 'harbor';
+import type { BoardThemeId } from '@/lib/boardThemes';
+import { cn } from '@/lib/cn';
+import { ANIMATION_MS, usePreferences } from '@/lib/preferences';
 
 export interface ChessBoardProps {
   fen: string;
@@ -22,11 +25,19 @@ export interface ChessBoardProps {
   dests?: Map<string, string[]>;
   lastMove?: [string, string];
   check?: boolean;
-  theme?: BoardTheme;
+  /** Overrides the user's preference (used by the settings preview). */
+  theme?: BoardThemeId;
   coordinates?: boolean;
-  /** Called with a UCI string. Promotions need the caller to supply the piece (see `needsPromotion`). */
   onMove?: (from: string, to: string) => void;
   className?: string;
+  /** Accessible description of the position. */
+  label?: string;
+  /**
+   * Purely decorative board that will never accept moves (mini boards, previews). Chessground
+   * only binds input handlers when a board is created interactive, so boards that may become
+   * playable later must leave this off and control moves through `movableColor` instead.
+   */
+  viewOnly?: boolean;
 }
 
 export function ChessBoard({
@@ -37,38 +48,46 @@ export function ChessBoard({
   dests,
   lastMove,
   check = false,
-  theme = 'slate',
-  coordinates = true,
+  theme,
+  coordinates,
   onMove,
-  className = '',
+  className,
+  label = 'Chess board',
+  viewOnly = false,
 }: ChessBoardProps) {
+  const { prefs } = usePreferences();
   const el = useRef<HTMLDivElement>(null);
   const api = useRef<Api | null>(null);
   const onMoveRef = useRef(onMove);
   onMoveRef.current = onMove;
 
+  const showCoords = coordinates ?? prefs.showCoordinates;
+  const anim = ANIMATION_MS[prefs.reduceMotion ? 'off' : prefs.animation];
+
   const config: Config = {
     fen,
     orientation,
     turnColor,
-    coordinates,
+    coordinates: showCoords,
     check,
-    lastMove: lastMove as Key[] | undefined,
-    viewOnly: movableColor === undefined,
-    highlight: { lastMove: true, check: true },
-    animation: { enabled: true, duration: 180 },
+    lastMove: prefs.highlightLastMove ? (lastMove as Key[] | undefined) : undefined,
+    viewOnly,
+    highlight: { lastMove: prefs.highlightLastMove, check: true },
+    animation: { enabled: anim > 0, duration: anim },
     movable: {
       free: false,
       color: movableColor,
       dests: dests as Map<Key, Key[]> | undefined,
-      showDests: true,
+      showDests: prefs.showLegalMoves,
       events: { after: (orig, dest) => onMoveRef.current?.(orig, dest) },
     },
     premovable: { enabled: false },
-    draggable: { enabled: true, showGhost: true },
+    draggable: { enabled: movableColor !== undefined, showGhost: true },
+    selectable: { enabled: movableColor !== undefined },
   };
 
   // Create once; later renders only push config changes into the existing instance.
+  // `coordinates` and `viewOnly` only take effect at creation, so the board is rebuilt when they change.
   useEffect(() => {
     if (!el.current) return;
     api.current = Chessground(el.current, config);
@@ -77,14 +96,18 @@ export function ChessBoard({
       api.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showCoords, viewOnly]);
 
   useEffect(() => {
     api.current?.set(config);
   });
 
   return (
-    <div className={`rk-board theme-${theme} aspect-square w-full ${className}`}>
+    <div
+      className={cn('rk-board aspect-square w-full', `theme-${theme ?? prefs.boardTheme}`, className)}
+      role="img"
+      aria-label={label}
+    >
       <div ref={el} className="h-full w-full" />
     </div>
   );

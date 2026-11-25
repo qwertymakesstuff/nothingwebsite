@@ -49,7 +49,7 @@ export function ServerStatus() {
   }, []);
 
   return (
-    <ul className="space-y-2 text-sm">
+    <ul className="space-y-2.5 text-sm">
       <Row label="Realtime API" status={api} />
       <Row label="Live game socket" status={ws} />
       <Row label="Accounts (Supabase)" status={db} />
@@ -58,12 +58,12 @@ export function ServerStatus() {
 }
 
 function Row({ label, status }: { label: string; status: Status }) {
-  const dot = status.state === 'ok' ? 'bg-win' : status.state === 'down' ? 'bg-loss' : 'bg-ink-400 animate-pulse';
+  const dot = status.state === 'ok' ? 'bg-win' : status.state === 'down' ? 'bg-loss' : 'bg-fg-subtle animate-pulse';
   return (
     <li className="flex items-center gap-3">
       <span className={`size-2.5 shrink-0 rounded-full ${dot}`} aria-hidden />
       <span className="font-semibold">{label}</span>
-      <span className="ml-auto text-right text-ink-400">{status.state === 'checking' ? 'checking…' : status.detail}</span>
+      <span className="ml-auto text-right text-fg-subtle">{status.state === 'checking' ? 'checking…' : status.detail}</span>
     </li>
   );
 }

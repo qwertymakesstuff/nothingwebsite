@@ -3,53 +3,164 @@
 @import '@lichess-org/chessground/assets/chessground.cburnett.css';
 @import './board-themes.css';
 
-/* ── Rookery design tokens ────────────────────────────────────────────── */
+/* ══ Rookery design tokens ═══════════════════════════════════════════════════════════════
+   Warm charcoal surfaces, parchment text, a muted antique-gold accent.
+   Every colour in the app comes from here; components never use raw hex values.        */
 @theme {
-  --color-ink-950: #0e0e10;
-  --color-ink-900: #161618;
-  --color-ink-850: #1c1c1f;
-  --color-ink-800: #232327;
-  --color-ink-700: #2e2e33;
-  --color-ink-600: #3d3d44;
-  --color-ink-400: #8a8a94;
-  --color-ink-200: #c9c9d1;
-  --color-ink-50: #f4f4f6;
+  /* Surfaces, darkest → lightest */
+  --color-surface-0: #100f0d; /* page */
+  --color-surface-1: #181714; /* cards */
+  --color-surface-2: #201e1b; /* raised / hover */
+  --color-surface-3: #2a2824; /* inputs, chips */
+  --color-surface-4: #36332e; /* strong hover */
 
-  /* Ember: Rookery's accent (deliberately not green). */
-  --color-ember-300: #ffc27a;
-  --color-ember-400: #ffab4a;
-  --color-ember-500: #f28c1c;
-  --color-ember-600: #d47210;
-  --color-ember-700: #a85708;
+  --color-line: rgb(255 241 214 / 0.07);
+  --color-line-strong: rgb(255 241 214 / 0.13);
 
-  --color-win: #6fcf6f;
-  --color-loss: #ef6a6a;
+  /* Text */
+  --color-fg: #f3eee4;
+  --color-fg-muted: #b5ad9f;
+  --color-fg-subtle: #847d71;
+  --color-fg-inverse: #15130f;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-display: 'Trebuchet MS', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  /* Antique gold accent */
+  --color-gold-200: #efe0bb;
+  --color-gold-300: #e3cc93;
+  --color-gold-400: #d4b26c;
+  --color-gold-500: #c19a52;
+  --color-gold-600: #a07c3a;
+  --color-gold-700: #765b2a;
+
+  /* Results and status (muted, never neon) */
+  --color-win: #8dbb7f;
+  --color-loss: #d9806f;
+  --color-draw: #a9a397;
+  --color-info: #86a9c7;
+  --color-warn: #d9b25f;
+
+  /* Type */
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* Shape and depth */
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --shadow-card: 0 1px 0 rgb(255 241 214 / 0.04) inset, 0 12px 32px -18px rgb(0 0 0 / 0.7);
+  --shadow-pop: 0 1px 0 rgb(255 241 214 / 0.06) inset, 0 24px 60px -20px rgb(0 0 0 / 0.85);
+
+  /* Motion: short and calm */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-fade-in: fade-in 180ms var(--ease-out);
+  --animate-pop-in: pop-in 200ms var(--ease-out);
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
 }
 
 html {
   color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: var(--color-ink-950);
-  color: var(--color-ink-50);
+  background-color: var(--color-surface-0);
+  color: var(--color-fg);
   font-family: var(--font-sans);
+  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Desaturated backdrop, like a dim club room. Pure CSS (no photo asset to license). */
-.rk-backdrop {
-  background:
-    radial-gradient(ellipse 80% 60% at 15% 20%, rgb(255 171 74 / 0.06), transparent 60%),
-    radial-gradient(ellipse 70% 70% at 90% 90%, rgb(255 255 255 / 0.04), transparent 60%),
-    repeating-conic-gradient(rgb(255 255 255 / 0.018) 0 25%, transparent 0 50%) 0 0 / 120px 120px,
-    var(--color-ink-950);
+::selection {
+  background: rgb(193 154 82 / 0.35);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-ember-400);
+  outline: 2px solid var(--color-gold-400);
   outline-offset: 2px;
+}
+
+/* Numbers that change (ratings, clocks) shouldn't jitter. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Page backdrops (Settings → Background). Pure CSS: no photos to license. ───────────── */
+.rk-backdrop {
+  background-color: var(--color-surface-0);
+  background-attachment: fixed;
+}
+[data-backdrop='study'] .rk-backdrop {
+  background-image:
+    radial-gradient(ellipse 70% 55% at 12% 0%, rgb(193 154 82 / 0.09), transparent 60%),
+    radial-gradient(ellipse 60% 60% at 100% 100%, rgb(255 241 214 / 0.035), transparent 60%),
+    repeating-conic-gradient(rgb(255 241 214 / 0.016) 0 25%, transparent 0 50%);
+  background-size: auto, auto, 96px 96px;
+}
+[data-backdrop='felt'] .rk-backdrop {
+  background-image:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgb(68 92 74 / 0.32), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgb(0 0 0 / 0.5), transparent 70%);
+}
+[data-backdrop='night'] .rk-backdrop {
+  background-image:
+    radial-gradient(ellipse 80% 60% at 80% 0%, rgb(86 104 140 / 0.18), transparent 65%),
+    radial-gradient(1px 1px at 20% 30%, rgb(255 255 255 / 0.25), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgb(255 255 255 / 0.2), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgb(255 255 255 / 0.18), transparent);
+  background-size: auto, 220px 220px, 260px 260px, 300px 300px;
+}
+/* 'plain' = surface-0 only */
+
+/* Skeleton shimmer */
+.rk-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 0%,
+    var(--color-surface-3) 50%,
+    var(--color-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Thin, warm scrollbars inside panels */
+.rk-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-4) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+[data-reduce-motion='true'] *,
+[data-reduce-motion='true'] *::before,
+[data-reduce-motion='true'] *::after {
+  animation-duration: 1ms !important;
+  transition-duration: 1ms !important;
 }

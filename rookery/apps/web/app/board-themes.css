@@ -1,30 +1,65 @@
 /* Rookery board themes. A theme is a class on the board wrapper that sets a few variables;
-   squares are drawn with a CSS gradient, so there are no board images to license. */
+   squares are drawn with a CSS gradient, so there are no board images to license.
+   The list of themes (names, swatches) lives in lib/boardThemes.ts. */
 
 .rk-board {
-  --sq-light: #c4c4c8;
-  --sq-dark: #8b8b92;
-  --coord-on-light: #4a4a52;
-  --coord-on-dark: #f0f0f2;
-  --hl-last: rgb(242 140 28 / 0.38);
-  --hl-selected: rgb(242 140 28 / 0.55);
-  --hl-dest: rgb(30 30 34 / 0.38);
+  --sq-light: #cfc9bd;
+  --sq-dark: #8f897d;
+  --coord-on-light: #5c574e;
+  --coord-on-dark: #f4f0e8;
+  --hl-last: rgb(212 178 108 / 0.42);
+  --hl-selected: rgb(212 178 108 / 0.6);
+  --hl-dest: rgb(24 22 19 / 0.34);
+  position: relative;
+  container-type: inline-size; /* coordinates scale with the board (cqi units) */
 }
 
-.rk-board.theme-slate {
-  /* default (above) */
+/* Stone (default): warm greys */
+.rk-board.theme-stone {
 }
+/* Walnut: classic wood tones */
 .rk-board.theme-walnut {
-  --sq-light: #e3c9a2;
-  --sq-dark: #a7764c;
-  --coord-on-light: #a7764c;
-  --coord-on-dark: #f3e2c7;
+  --sq-light: #e6d0ad;
+  --sq-dark: #a77b51;
+  --coord-on-light: #8a6340;
+  --coord-on-dark: #f6ead6;
 }
+/* Slate: cool blue-grey */
+.rk-board.theme-slate {
+  --sq-light: #c9ced4;
+  --sq-dark: #7d8792;
+  --coord-on-light: #5d6670;
+  --coord-on-dark: #eef1f4;
+}
+/* Harbor: soft sea blue */
 .rk-board.theme-harbor {
-  --sq-light: #d7e1ea;
-  --sq-dark: #6f8aa3;
-  --coord-on-light: #6f8aa3;
-  --coord-on-dark: #eef3f7;
+  --sq-light: #dde5ea;
+  --sq-dark: #6f8ca3;
+  --coord-on-light: #5a778e;
+  --coord-on-dark: #eef4f8;
+}
+/* Sage: muted olive */
+.rk-board.theme-sage {
+  --sq-light: #e4e2cf;
+  --sq-dark: #8a9a74;
+  --coord-on-light: #6b7a57;
+  --coord-on-dark: #f3f3e8;
+}
+/* Midnight: low-glare dark board */
+.rk-board.theme-midnight {
+  --sq-light: #6c6a75;
+  --sq-dark: #45434d;
+  --coord-on-light: #2f2e35;
+  --coord-on-dark: #c9c7d2;
+}
+/* Contrast: high contrast, colour-blind friendly */
+.rk-board.theme-contrast {
+  --sq-light: #f2f2f2;
+  --sq-dark: #5a6b8c;
+  --coord-on-light: #3c4a66;
+  --coord-on-dark: #ffffff;
+  --hl-last: rgb(255 196 0 / 0.5);
+  --hl-selected: rgb(255 196 0 / 0.7);
 }
 
 .rk-board cg-board {
@@ -32,7 +67,7 @@
   /* Conic quadrants run clockwise from 12 o'clock, so this puts a light square top-left (a8). */
   background-image: repeating-conic-gradient(var(--sq-dark) 0 25%, var(--sq-light) 0 50%);
   background-size: 25% 25%;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .rk-board cg-board square.last-move {
@@ -48,22 +83,24 @@
   background: radial-gradient(transparent 0%, transparent 79%, var(--hl-dest) 80%);
 }
 .rk-board cg-board square.move-dest:hover {
-  background: rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.16);
 }
 .rk-board cg-board square.check {
-  background: radial-gradient(ellipse at center, rgb(239 68 68 / 0.95) 0%, rgb(239 68 68 / 0.6) 30%, transparent 75%);
+  background: radial-gradient(ellipse at center, rgb(217 96 80 / 0.95) 0%, rgb(217 96 80 / 0.55) 32%, transparent 75%);
+}
+.rk-board.hide-dests cg-board square.move-dest,
+.rk-board.hide-dests cg-board square.oc.move-dest {
+  background: none;
 }
 
 /* Coordinates drawn inside the edge squares, coloured to contrast with each square. */
 .rk-board coords {
   font-family: var(--font-sans);
-  font-size: clamp(10px, 2.1vmin, 14px);
-  font-weight: 700;
+  font-size: clamp(9px, 2.6cqi, 13px);
+  font-weight: 650;
   line-height: 1;
   opacity: 1;
 }
-/* Ranks in the top-left corner of the left-hand column, files in the bottom-right corner of the
-   bottom row (inside the board, so nothing is clipped on small screens). */
 .rk-board coords.ranks {
   left: 3px;
   top: 3px;
