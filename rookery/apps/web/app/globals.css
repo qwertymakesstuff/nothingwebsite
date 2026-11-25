@@ -1,0 +1,55 @@
+@import 'tailwindcss';
+@import '@lichess-org/chessground/assets/chessground.base.css';
+@import '@lichess-org/chessground/assets/chessground.cburnett.css';
+@import './board-themes.css';
+
+/* ── Rookery design tokens ────────────────────────────────────────────── */
+@theme {
+  --color-ink-950: #0e0e10;
+  --color-ink-900: #161618;
+  --color-ink-850: #1c1c1f;
+  --color-ink-800: #232327;
+  --color-ink-700: #2e2e33;
+  --color-ink-600: #3d3d44;
+  --color-ink-400: #8a8a94;
+  --color-ink-200: #c9c9d1;
+  --color-ink-50: #f4f4f6;
+
+  /* Ember: Rookery's accent (deliberately not green). */
+  --color-ember-300: #ffc27a;
+  --color-ember-400: #ffab4a;
+  --color-ember-500: #f28c1c;
+  --color-ember-600: #d47210;
+  --color-ember-700: #a85708;
+
+  --color-win: #6fcf6f;
+  --color-loss: #ef6a6a;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Trebuchet MS', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-ink-950);
+  color: var(--color-ink-50);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Desaturated backdrop, like a dim club room. Pure CSS (no photo asset to license). */
+.rk-backdrop {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgb(255 171 74 / 0.06), transparent 60%),
+    radial-gradient(ellipse 70% 70% at 90% 90%, rgb(255 255 255 / 0.04), transparent 60%),
+    repeating-conic-gradient(rgb(255 255 255 / 0.018) 0 25%, transparent 0 50%) 0 0 / 120px 120px,
+    var(--color-ink-950);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ember-400);
+  outline-offset: 2px;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@rookery/db",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0",
+    "vitest": "^4.1.0"
+  }
+}

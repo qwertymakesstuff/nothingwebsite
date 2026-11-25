@@ -1,0 +1,32 @@
+{
+  // Cloudflare Worker "rookery" (chess.missing.website).
+  //  - The website is a prerendered Next.js export, served as static assets from apps/web/out
+  //    (static asset requests are free and don't count toward Worker request limits).
+  //  - Only /api/* and /ws/* run Worker code: apps/realtime (live games on Durable Objects).
+  // In Cloudflare (Workers & Pages > your worker > Settings > Build):
+  //   Root directory = rookery, Build command = npm ci && npm run build, Deploy command = npx wrangler deploy
+  // The Worker's name in Cloudflare must match the name below.
+  "name": "rookery",
+  "main": "./apps/realtime/src/index.ts",
+  "compatibility_date": "2026-09-23",
+  "assets": {
+    "directory": "./apps/web/out",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*", "/ws/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }]
+  },
+  // SQLite-backed Durable Objects are the ones available on the Workers Free plan.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
+  "vars": {
+    "SUPABASE_URL": "https://fazzxshhvfecpfypqusz.supabase.co"
+  },
+  // Secrets (set in the Cloudflare dashboard, never in this file): none needed yet.
+  "workers_dev": false,
+  "preview_urls": false,
+  // Attach the custom domain on deploy (Cloudflare creates the DNS record and certificate).
+  "routes": [{ "pattern": "chess.missing.website", "custom_domain": true }],
+  "observability": { "enabled": true }
+}
