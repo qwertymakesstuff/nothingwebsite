@@ -89,9 +89,10 @@ jobs:
       - uses: supabase/setup-cli@v1
         if: steps.gate.outputs.run == 'true'
         with:
-          version: latest
+          version: 3.4.0
       - name: Push migrations
         if: steps.gate.outputs.run == 'true'
         run: |
-          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
-          supabase db push --password "$SUPABASE_DB_PASSWORD"
+          # Pinned CLI (3.x): `link` takes no password; `db push` targets the linked project via --remote.
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          supabase db push --remote --include-all --password "$SUPABASE_DB_PASSWORD"
