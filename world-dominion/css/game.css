@@ -1,0 +1,110 @@
+/* WORLD DOMINION — game screen layout: the map, and the three permanent HUD pieces floating over it. */
+html,body{margin:0;height:100%;overflow:hidden;background:var(--map-space);color:var(--text);font-family:var(--font-ui);font-size:var(--fs-md);
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+
+/* ——— Map ——— */
+.map{position:fixed;inset:0;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(1200px 700px at 50% 45%,#0b131c,var(--map-space))}
+.map.dragging{cursor:grabbing}
+.map svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.map .sphere{fill:url(#oceanGrad);stroke:rgba(160,190,220,.12);stroke-width:1;vector-effect:non-scaling-stroke}
+.map .grid{fill:none;stroke:var(--map-grid);stroke-width:1;vector-effect:non-scaling-stroke}
+.map .c{stroke:var(--map-border);stroke-width:.7;stroke-linejoin:round;vector-effect:non-scaling-stroke;cursor:pointer;
+  transition:fill var(--t-med),filter var(--t-fast)}
+.map .t0{fill:var(--land-0)} .map .t1{fill:var(--land-1)} .map .t2{fill:var(--land-2)}
+.map .t3{fill:var(--land-3)} .map .t4{fill:var(--land-4)} .map .t5{fill:var(--land-5)}
+.map:not(.dragging) .c:hover{filter:brightness(1.28)}
+.map .c.player{fill:var(--land-player)}
+.map .c.player-ter{fill:color-mix(in srgb,var(--land-player) 70%,var(--map-ocean))}
+.map .c.dim{filter:saturate(.55) brightness(.72)}
+.map:not(.dragging) .c.dim:hover{filter:saturate(.8) brightness(1)}
+.map .c.neighbor{filter:brightness(1.12)}
+.map .outline-player{fill:none;stroke:var(--land-player-edge);stroke-width:1.2;vector-effect:non-scaling-stroke;pointer-events:none;opacity:.9}
+.map .outline-select{fill:none;stroke:var(--land-select-edge);stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none;
+  filter:drop-shadow(0 0 4px rgba(255,255,255,.45));animation:wd-select var(--t-slow) var(--ease)}
+.map .labels text{font:600 10.5px/1 var(--font-ui);letter-spacing:.12em;text-transform:uppercase;fill:rgba(233,238,244,.78);
+  paint-order:stroke;stroke:rgba(8,13,19,.75);stroke-width:3px;stroke-linejoin:round;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.map .labels text.big{font-size:12.5px;letter-spacing:.2em}
+.map .labels text.player{fill:#fff3d6;font-weight:700}
+.map .labels text.sel{fill:#fff}
+@keyframes wd-select{from{stroke-width:6;opacity:0}}
+
+/* ——— Top bar ——— */
+.topbar{position:fixed;z-index:20;top:var(--edge);left:var(--edge);right:var(--edge);height:var(--topbar-h);display:grid;
+  grid-template-columns:1fr auto 1fr;align-items:center;gap:var(--s3);padding:0 var(--s2);pointer-events:none}
+.topbar>*{pointer-events:auto}
+.tb-group{display:flex;align-items:center;gap:var(--s2);height:100%;padding:0 var(--s2);border-radius:var(--r-lg)}
+.tb-nation{justify-self:start;padding:0 var(--s3) 0 var(--s2);cursor:pointer;border:1px solid var(--line);transition:background var(--t-fast)}
+.tb-nation:hover{background:rgba(26,36,48,.9)}
+.tb-flag{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.tb-name{display:flex;flex-direction:column;line-height:1.15}
+.tb-name b{font-family:var(--font-display);font-size:var(--fs-lg);font-weight:600;letter-spacing:-.01em}
+.tb-name small{font-size:var(--fs-xs);color:var(--text-dim)}
+.tb-time{justify-self:center;gap:var(--s3);padding:0 6px 0 var(--s4)}
+.tb-date{font-family:var(--font-display);font-weight:600;font-size:var(--fs-lg);font-variant-numeric:tabular-nums;min-width:118px;text-align:center}
+.tb-date.paused{color:var(--text-muted)}
+.tb-stats{justify-self:end;gap:var(--s5);padding:0 var(--s4)}
+.tb-stats .wd-stat-v{font-size:15px;display:flex;align-items:center;gap:6px}
+.tb-stats .wd-stat-v .wd-ico{width:15px;height:15px;color:var(--text-dim)}
+.tb-stats .wd-stat-l{display:flex;gap:6px}
+
+/* ——— Dock (bottom toolbar, max 5 buttons) ——— */
+.dock{position:fixed;z-index:20;left:50%;bottom:var(--edge);transform:translateX(-50%);height:var(--dock-h);display:flex;gap:4px;padding:6px;border-radius:20px}
+.wd-dock-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:76px;height:100%;border:0;border-radius:14px;
+  background:transparent;color:var(--text-muted);cursor:pointer;font-size:var(--fs-xs);font-weight:600;letter-spacing:.01em;
+  transition:background var(--t-fast),color var(--t-fast);-webkit-tap-highlight-color:transparent}
+.wd-dock-btn:hover{background:var(--surface-hover);color:var(--text)}
+.wd-dock-btn.on{background:var(--accent-soft);color:var(--accent)}
+.wd-dock-btn .wd-ico{width:22px;height:22px}
+
+/* ——— Zoom controls ——— */
+.zoom{position:fixed;z-index:20;right:var(--edge);bottom:var(--edge);display:flex;flex-direction:column;padding:4px;gap:2px;border-radius:14px;
+  transition:right var(--t-med) var(--ease)}
+body.right-open .zoom{right:calc(var(--drawer-w) + var(--edge) * 2)}
+
+/* ——— Paused pill ——— */
+.paused-pill{position:fixed;z-index:19;left:50%;bottom:calc(var(--dock-h) + var(--edge) + 10px);transform:translateX(-50%);
+  font-size:var(--fs-xs);font-weight:700;letter-spacing:.14em;color:var(--text-muted);padding:4px 10px;border-radius:var(--r-pill);
+  background:rgba(16,23,32,.6);border:1px solid var(--line);pointer-events:none}
+
+/* ——— Nation picker (start screen) ——— */
+.picker{position:fixed;z-index:25;left:var(--edge);top:var(--edge);bottom:var(--edge);width:min(392px,calc(100vw - 24px));display:flex;flex-direction:column;overflow:hidden}
+.picker-head{padding:var(--s6) var(--s6) var(--s4)}
+.brand{margin:0;font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:.16em;line-height:1.05}
+.brand span{color:var(--accent)}
+.picker-head p{margin:var(--s3) 0 0;color:var(--text-muted);line-height:1.5}
+.picker-body{flex:1;overflow:auto;padding:0 var(--s6) var(--s4);display:flex;flex-direction:column;gap:var(--s5);scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.search{display:flex;align-items:center;gap:var(--s2);height:44px;padding:0 var(--s3);border-radius:var(--r-md);background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.search:focus-within{border-color:var(--accent)}
+.search input{flex:1;min-width:0;height:100%;border:0;background:transparent;color:var(--text);font:inherit;outline:none}
+.search input::placeholder{color:var(--text-dim)}
+.search .wd-ico{color:var(--text-dim)}
+.picker-list{display:flex;flex-direction:column;gap:2px}
+.picker-list button{display:flex;align-items:center;gap:10px;min-height:38px;padding:0 10px;border:0;border-radius:var(--r-sm);background:transparent;text-align:left;cursor:pointer;color:var(--text)}
+.picker-list button:hover{background:var(--surface-hover)}
+.picker-list small{margin-left:auto;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.picker-foot{padding:var(--s4) var(--s6) var(--s6);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:var(--s2)}
+.picker-foot a{color:var(--text-dim);font-size:var(--fs-sm);text-align:center;text-decoration:none}
+.picker-foot a:hover{color:var(--text)}
+
+/* Body states: the picker hides the HUD, a modal hides nothing but pauses */
+body.picking .topbar,body.picking .dock,body.picking .paused-pill{display:none}
+body.picking .zoom{display:flex}
+
+/* ——— Small screens: drawers become bottom sheets; the HUD tightens ——— */
+@media (max-width:820px){
+  :root{--drawer-w:100vw;--dock-h:60px}
+  .tb-stats .hide-sm{display:none}
+  .tb-name small{display:none}
+  .tb-date{min-width:0}
+  .topbar{grid-template-columns:auto 1fr;grid-template-rows:auto auto;height:auto}
+  .tb-nation,.tb-stats{height:46px}
+  .tb-time{grid-column:1/-1;grid-row:2;justify-self:center;height:44px}
+  .tb-stats{gap:var(--s3);padding:0 var(--s3)}
+  .wd-toasts{top:118px}
+  .wd-drawer{top:auto!important;bottom:calc(var(--dock-h) + var(--edge) * 2);left:var(--edge)!important;right:var(--edge)!important;width:auto;max-height:62vh}
+  .wd-drawer.left:not(.open),.wd-drawer.right:not(.open){transform:translateY(calc(100% + 120px))}
+  .wd-dock-btn{width:62px}
+  .zoom{display:none}
+  .picker{top:auto;max-height:70vh}
+}

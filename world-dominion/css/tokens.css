@@ -1,0 +1,61 @@
+/* WORLD DOMINION — design tokens.
+   Direction: "night cartography". A dark, quiet ocean; muted land in six tints; the player's nation in
+   warm gold so it is always the brightest thing on screen. UI floats over the map as frosted glass.
+   These names mirror the Figma variable collections described in world-dominion/DESIGN.md. */
+:root{
+  /* — Map — */
+  --map-space:#070c12;          /* outside the globe outline */
+  --map-ocean:#0e1925;          /* sea */
+  --map-ocean-hi:#132233;       /* sea highlight (centre of the globe) */
+  --map-grid:rgba(160,190,220,.07);
+  --map-border:#0b141e;         /* country borders = slightly darker than sea */
+  --land-0:#4f5f57; --land-1:#64604f; --land-2:#4e5b6c; --land-3:#625667; --land-4:#566964; --land-5:#6a6650;
+  --land-player:#d9a441; --land-player-edge:#ffd98a;
+  --land-select-edge:#f4f7fb;
+
+  /* — Surfaces — */
+  --surface:rgba(16,23,32,.84);
+  --surface-solid:#111922;
+  --surface-raised:rgba(255,255,255,.04);
+  --surface-hover:rgba(255,255,255,.07);
+  --surface-press:rgba(255,255,255,.1);
+  --scrim:rgba(4,8,12,.55);
+  --line:rgba(255,255,255,.08);
+  --line-strong:rgba(255,255,255,.14);
+
+  /* — Text — */
+  --text:#e9eef4;
+  --text-muted:#9aa7b6;
+  --text-dim:#66727f;
+  --text-on-accent:#1b1406;
+
+  /* — Semantic — */
+  --accent:#e2ad4a;             /* player / primary action */
+  --accent-hi:#f1c46c;
+  --accent-soft:rgba(226,173,74,.14);
+  --good:#5ec38c;  --good-soft:rgba(94,195,140,.14);
+  --bad:#e66a5f;   --bad-soft:rgba(230,106,95,.14);
+  --warn:#e8a23d;  --warn-soft:rgba(232,162,61,.14);
+  --info:#6fa9ec;  --info-soft:rgba(111,169,236,.14);
+
+  /* — Type — */
+  --font-ui:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-display:'Space Grotesk','Inter',system-ui,sans-serif;
+  --fs-xs:11px; --fs-sm:12.5px; --fs-md:14px; --fs-lg:16px; --fs-xl:20px; --fs-2xl:26px;
+
+  /* — Space, shape, depth — */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px;
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+  --blur:blur(16px) saturate(140%);
+  --shadow:0 10px 30px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.25);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.3);
+  --hit:40px;                   /* minimum touch target */
+
+  /* — Motion — */
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --t-fast:140ms; --t-med:240ms; --t-slow:420ms;
+
+  /* — Layout — */
+  --topbar-h:52px; --dock-h:64px; --edge:12px; --drawer-w:372px;
+}
+@media (prefers-reduced-motion:reduce){:root{--t-fast:0ms;--t-med:0ms;--t-slow:0ms}}

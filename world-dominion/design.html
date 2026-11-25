@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#070c12" />
+  <meta name="robots" content="noindex" />
+  <title>WORLD DOMINION — design system</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <style>
+    body{margin:0;background:var(--map-space);color:var(--text);font-family:var(--font-ui);font-size:var(--fs-md);-webkit-font-smoothing:antialiased}
+    main{max-width:1080px;margin:0 auto;padding:40px 16px 80px;display:flex;flex-direction:column;gap:48px}
+    header h1{margin:0;font-family:var(--font-display);font-size:34px;letter-spacing:.14em}
+    header h1 span{color:var(--accent)}
+    header p{color:var(--text-muted);max-width:640px;line-height:1.6}
+    header a{color:var(--accent)}
+    h2{font-family:var(--font-display);font-size:var(--fs-xl);font-weight:600;margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+    .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+    .sw{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);background:var(--surface-solid)}
+    .sw i{display:block;height:64px}
+    .sw div{padding:8px 10px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.5}
+    .sw b{display:block;color:var(--text);font-size:var(--fs-sm)}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .stage{padding:20px;border-radius:var(--r-lg);border:1px dashed var(--line-strong);background:radial-gradient(600px 300px at 50% 0,var(--map-ocean-hi),var(--map-ocean));display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+    .icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+    .icons div{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;border-radius:var(--r-md);background:var(--surface-raised);border:1px solid var(--line);font-size:var(--fs-xs);color:var(--text-muted)}
+    .icons .wd-ico{width:24px;height:24px;color:var(--text)}
+    .type div{margin:6px 0}
+    .static{position:static!important;transform:none!important;opacity:1!important;pointer-events:auto!important}
+    .wd-drawer.static{width:340px;max-height:none}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>WORLD <span>DOMINION</span></h1>
+    <p>The game's UI design system, rendered from the same CSS the game uses (<code>css/tokens.css</code>, <code>css/components.css</code>). Each section matches a page of the Figma library described in <code>DESIGN.md</code>. <a href="./">Back to the game</a>.</p>
+  </header>
+  <section><h2>Map colours</h2><div class="grid" id="mapColors"></div></section>
+  <section><h2>Interface colours</h2><div class="grid" id="uiColors"></div></section>
+  <section class="type"><h2>Type</h2>
+    <div style="font:700 28px var(--font-display);letter-spacing:.16em">DISPLAY · Space Grotesk 700</div>
+    <div style="font:600 26px var(--font-display)">Event title · 26 / 600</div>
+    <div style="font:600 20px var(--font-display)">Panel title · 20 / 600</div>
+    <div style="font:600 16px var(--font-display);font-variant-numeric:tabular-nums">Stat value $1.25T · 16 / 600 tabular</div>
+    <div style="font:400 14px var(--font-ui)">Body · Inter 14 / 400 — clear, short sentences.</div>
+    <div class="wd-section-t">Section label · 11 / 600 caps</div>
+  </section>
+  <section><h2>Buttons</h2><div class="row" id="buttons"></div></section>
+  <section><h2>Tags, chips, keys</h2><div class="row" id="tags"></div></section>
+  <section><h2>Stats, meters, controls</h2><div class="stage" id="stats"></div></section>
+  <section><h2>Rows</h2><div id="rows" style="max-width:380px"></div></section>
+  <section><h2>Dock, drawer, toast, event</h2><div class="stage" id="overlays"></div></section>
+  <section><h2>Icons</h2><div class="icons" id="icons"></div></section>
+</main>
+<script type="module">
+  import { h } from './js/ui/dom.js';
+  import { icon, ICON_NAMES } from './js/ui/icons.js';
+  const css = getComputedStyle(document.documentElement);
+  const swatch = (v, note) => h('div.sw', h('i', { style: { background: `var(${v})` } }), h('div', h('b', v), css.getPropertyValue(v).trim(), note ? h('div', { style: { padding: 0 } }, note) : ''));
+  document.getElementById('mapColors').append(
+    swatch('--map-ocean', 'sea'), swatch('--map-ocean-hi', 'sea highlight'), swatch('--map-space', 'outside the globe'),
+    ...[0, 1, 2, 3, 4, 5].map((i) => swatch('--land-' + i, 'land tint ' + i)), swatch('--land-player', 'your nation'), swatch('--land-select-edge', 'selection outline'));
+  document.getElementById('uiColors').append(...['--surface-solid', '--text', '--text-muted', '--text-dim', '--accent', '--good', '--bad', '--warn', '--info'].map((v) => swatch(v)));
+  document.getElementById('buttons').append(
+    h('button.wd-btn.primary', icon('crown'), 'Primary'), h('button.wd-btn', 'Secondary'), h('button.wd-btn.danger', icon('swords'), 'Danger'),
+    h('button.wd-btn.ghost', 'Ghost'), h('button.wd-btn.primary.lg', 'Large'), h('button.wd-btn', { disabled: true }, 'Disabled'),
+    h('button.wd-icon-btn', icon('close')), h('button.wd-icon-btn.on', icon('play')));
+  document.getElementById('tags').append(
+    h('span.wd-tag.you', 'Your nation'), h('span.wd-tag.good', 'Friendly'), h('span.wd-tag.info', 'Cordial'), h('span.wd-tag', 'Neutral'),
+    h('span.wd-tag.warn', 'Wary'), h('span.wd-tag.bad', 'Hostile'), h('span.wd-tag.plain', 'Soon'),
+    h('button.wd-chip', h('span.wd-swatch', { style: { background: 'var(--land-2)' } }), 'Country chip'),
+    h('span.wd-kbd', 'Space'), h('span.wd-kbd', 'M'),
+    h('span.wd-fx.up', '+6 stability'), h('span.wd-fx.down', '−$4.5B treasury'), h('span.wd-fx.neutral', 'No immediate effect'));
+  const stat = (l, v, d) => h('div.wd-stat', h('span.wd-stat-l', l), h('span.wd-stat-v', v), d || '');
+  const meter = (l, v, t) => h(`div.wd-meter.${t}`, h('div.wd-meter-top', h('span', l), h('b', v + '%')), h('div.wd-meter-bar', h('span', { style: { width: v + '%' } })));
+  document.getElementById('stats').append(
+    h('div.wd-stat-grid', { style: { width: '300px' } }, stat('Treasury', '$831B', h('span.wd-stat-d.up', '+$23B / month')), stat('Population', '335M'), stat('Military', '1.33M'), stat('Expenses', '$392B', h('span.wd-stat-d.down', 'rising'))),
+    h('div', { style: { width: '260px', display: 'flex', flexDirection: 'column', gap: '16px' } }, meter('Stability', 72, 'good'), meter('Unrest', 41, 'warn'), meter('War support', 18, 'bad'), meter('Readiness', 64, 'info')),
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: '16px' } },
+      h('div.wd-seg', h('button', '›'), h('button.on', '››'), h('button', '›››')),
+      h('div.wd-slider', { style: { width: '220px' } }, h('div.wd-meter-top', h('span', 'Tax rate'), h('b', '30%')), h('input', { type: 'range', min: 10, max: 60, value: 30 })),
+      h('label.search', { style: { display: 'flex', alignItems: 'center', gap: '8px', height: '44px', padding: '0 12px', borderRadius: '12px', background: 'rgba(255,255,255,.05)', border: '1px solid var(--line)', color: 'var(--text-dim)' } }, icon('search'), 'Search countries')));
+  const row = (ic, t, s, end) => h('button.wd-row', h('span.wd-row-ic', icon(ic)), h('span.wd-row-main', h('span.wd-row-t', t), s ? h('span.wd-row-s', s) : ''), end ? h('span.wd-row-end', end) : '');
+  document.getElementById('rows').append(h('div.wd-rows', row('handshake', 'Improve relations', 'Send an envoy · $22B'), row('factory', 'Factory', 'More output, more pollution', '$55B'), row('trade', 'Propose trade deal', null, h('span.wd-tag.plain', 'Soon'))));
+  document.getElementById('overlays').append(
+    h('nav.wd-surface', { style: { display: 'flex', gap: '4px', padding: '6px', borderRadius: '20px', height: '64px' } },
+      [['military', 'Military'], ['build', 'Build'], ['diplomacy', 'Diplomacy'], ['economy', 'Economy'], ['more', 'More']].map(([ic, l], i) =>
+        h('button.wd-dock-btn' + (i === 3 ? '.on' : ''), { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', width: '76px', border: 0, borderRadius: '14px', background: i === 3 ? 'var(--accent-soft)' : 'transparent', color: i === 3 ? 'var(--accent)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 600 } }, icon(ic), l))),
+    h('aside.wd-drawer.wd-surface.static.open',
+      h('header.wd-drawer-head', h('div.wd-drawer-title', h('h2', 'Drawer title'), h('p', 'Short subtitle')), h('button.wd-icon-btn', icon('close'))),
+      h('div.wd-drawer-body', h('p.wd-note', 'Panels slide in from the left (tools) or right (country). On phones they become bottom sheets.')),
+      h('div.wd-drawer-foot', h('button.wd-btn.primary.block', 'Primary action'))),
+    h('div', { style: { width: '360px', display: 'flex', flexDirection: 'column', gap: '8px' } },
+      h('div.wd-toast.good', icon('coins'), h('div.wd-toast-msg', { html: 'Monthly budget: <b>+$23B</b>' }), h('button.wd-icon-btn', icon('close', 'sm'))),
+      h('div.wd-toast.gold', icon('crown'), h('div.wd-toast-msg', 'Minor events appear here and fade away.'), h('button.wd-icon-btn', icon('close', 'sm')))),
+    h('div.wd-modal', { style: { width: '420px', animation: 'none' } },
+      h('div.wd-modal-art', icon('megaphone')),
+      h('div.wd-modal-body', h('div.wd-modal-kicker', h('span.wd-tag.warn', 'Domestic unrest')), h('h2', 'Major event'), h('p', 'Major events pause the game and ask for a decision. Each choice previews its effects.'),
+        h('div.wd-choices', h('button.wd-choice', h('span.wd-choice-t', 'Meet their demands'), h('span.wd-effects', h('span.wd-fx.down', '−$4.5B treasury'), h('span.wd-fx.up', '+6 stability')))))));
+  document.getElementById('icons').append(...ICON_NAMES.map((n) => h('div', icon(n), n)));
+</script>
+</body>
+</html>

@@ -251,5 +251,12 @@
     "url": "https://missing.website/zero-day/",
     "description": "Underground hacking simulator: take contracts, crack 34 fictional targets through eight puzzle minigames, dodge a detection meter and climb from script kiddie to elite. Entirely make-believe — no real systems.",
     "group": "sims"
+  },
+  {
+    "name": "World Dominion",
+    "image": "banners/world-dominion.svg",
+    "url": "https://missing.website/world-dominion/",
+    "description": "Map-first country sandbox: lead a real nation, expand, build, negotiate and weather political crises.",
+    "group": "strategy"
   }
 ]
