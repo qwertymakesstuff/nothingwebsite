@@ -34,14 +34,14 @@ Rendered live at `world-dominion/design.html`. Source of truth today: `css/token
 `wd-tag` (you / good / info / neutral / warn / bad / plain) · `wd-chip` + `wd-swatch` · `wd-stat` / `wd-stat-grid` ·
 `wd-meter` · `wd-row` (icon, title, subtitle, trailing value or tag) · `wd-section` · `wd-slider` · `wd-seg` ·
 `wd-kbd` · `wd-drawer` · `wd-modal` + `wd-choice` + `wd-fx` · `wd-toast` · `wd-tip` · dock button · icons (`js/ui/icons.js`) ·
-map-mode picker (`layers-pop`, opened from the layers button at the top of the zoom stack) · map legend (`legend`, 7 stepped
+ledger (`wd-ledger`: label/value lines for budgets, factors and decision logs) · map-mode picker (`layers-pop`, opened from the layers button at the top of the zoom stack) · map legend (`legend`, 7 stepped
 swatches) · flag (`flag`, 4:3, 40×30).
 
 ### Map modes
 
 Political uses the six land tints (territories take their sovereign's tint; touching owners never share one) and gold
 for the player. Data modes use 7-step ramps from dark (few) to light (many): blue `--ramp-pop-*` for population,
-green `--ramp-eco-*` for the economy. Neither ramp uses gold, so the player's outline still reads on every mode.
+green `--ramp-eco-*` for the economy, red-to-green `--ramp-stab-*` for stability, slate-to-rose `--ramp-mil-*` for military strength. Neither ramp uses gold, so the player's outline still reads on every mode.
 `--land-none` marks no data. Region borders (`--region-edge`) are a thin light line, only drawn when zoomed in.
 
 Relation scale used everywhere (tags, meters, tooltips): Hostile (bad) → Wary (warn) → Neutral → Cordial (info)

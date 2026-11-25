@@ -124,3 +124,12 @@ export const CRISIS = {
 
 // Quick-pick starts shown on the nation picker.
 export const FEATURED = ['USA', 'CHN', 'RUS', 'DEU', 'IND', 'BRA', 'JPN', 'GBR', 'FRA', 'TUR'];
+
+// Military spending, % of GDP, for countries where it differs a lot from what their army size implies
+// (approximate, from public SIPRI-style figures). Everyone else starts with enough to pay their army.
+export const MIL_SPEND = {
+  USA: 3.4, RUS: 6, CHN: 1.7, IND: 2.4, GBR: 2.3, FRA: 2.1, DEU: 1.6, JPN: 1.2, KOR: 2.8, SAU: 7, ISR: 5.3, UKR: 10,
+  PAK: 3, IRN: 2.2, TUR: 1.5, BRA: 1.1, POL: 4, ITA: 1.6, AUS: 2, CAN: 1.3, ESP: 1.3, NLD: 1.6, DZA: 4.5, EGY: 1.2,
+  ARE: 5, QAT: 4, OMN: 5.5, KWT: 4.5, IRQ: 2.5, SGP: 3, TWN: 2.5, GRC: 3, NOR: 1.6, SWE: 1.5, FIN: 2.3, BLR: 1.5,
+  AZE: 5, ARM: 4.5, COL: 3, MAR: 4, MMR: 4, SYR: 4, PRK: 12, ERI: 10, MLI: 4, TCD: 3, SSD: 5, LBN: 3, JOR: 4.5,
+};

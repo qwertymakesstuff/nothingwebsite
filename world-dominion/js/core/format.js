@@ -18,9 +18,15 @@ export function troops(thousands) {
   if (thousands >= 1) return Math.round(thousands) + 'K';
   return thousands > 0 ? Math.round(thousands * 1000).toString() : 'None';
 }
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-export const START = Date.UTC(2026, 0, 1);
-export function dateOf(day) { return new Date(START + day * 86400000); }
-export function dateLabel(day) { const d = dateOf(day); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
-export function monthLabel(day) { const d = dateOf(day); return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; }
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+export const START_YEAR = 2026;
+// The calendar counts whole months: month 0 is January 2026.
+export const yearOf = (m) => START_YEAR + Math.floor(m / 12);
+export const monthOf = (m) => ((m % 12) + 12) % 12;
+export function monthLabel(m) { return `${MONTHS[monthOf(m)]} ${yearOf(m)}`; }           // "March 2026"
+export function monthShort(m) { return `${MONTHS[monthOf(m)].slice(0, 3)} ${yearOf(m)}`; } // "Mar 2026"
+export function pct(x, { sign = false, digits = 1 } = {}) {                               // 0.021 -> "+2.1%"
+  const v = (x * 100).toFixed(digits).replace(/\.0+$/, '');
+  return (sign && x > 0 ? '+' : x < 0 ? '−' : '') + v.replace('-', '') + '%';
+}
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

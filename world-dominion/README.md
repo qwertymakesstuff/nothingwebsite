@@ -3,11 +3,13 @@
 Map-first country sandbox at `missing.website/world-dominion/`. You lead a real nation on an interactive world
 map and play however you like: conquest, development, diplomacy, economy, or just ruling indefinitely.
 
-**Status: checkpoint 2 — the real world map and the country database.**
+**Status: checkpoint 3 — the living world.**
 Checkpoint 1 built the interface (top bar, 5-button dock, drawers, event window, design system). Checkpoint 2
-replaced the placeholder map with Natural Earth 1:50m countries, added a structured country database, on-demand
-first-level regions, flags, and the map-mode (overlay) framework with Political, Population and Economy modes.
-The simulation (armies, AI, politics) is still to come; actions that need it are tagged *Soon* in the UI.
+added the real map (Natural Earth 1:50m), the country database, on-demand regions, flags and map modes.
+Checkpoint 3 added the simulation: a monthly calendar with pause, step and 1×/2×/5×/10× speeds; economy,
+population, stability, infrastructure and passive military recruitment for **every** country; AI countries that
+manage their own budgets and armies; and events that come out of the simulation. War, diplomacy deals and
+individual building projects are still to come; they are tagged *Soon* in the UI.
 
 ## How it fits into the site
 
@@ -46,8 +48,9 @@ js/ui/icons.js, dom.js   icon set, DOM helper
 js/core/db.js            THE COUNTRY DATABASE (joins geography + starting data, derives game values)
 js/core/regions.js       region geography, fetched on demand
 js/core/overlays.js      map modes: Political, Population, Economy (+ how to add more)
+js/core/sim.js           THE SIMULATION ENGINE: monthly tick, economy, population, stability, military, AI
 js/core/state.js         game state (what changes in play), save/load, migration
-js/core/events.js        event shape (major / minor) + the sample event
+js/core/events.js        events triggered by the simulation (major: pause + choices; minor: notifications)
 js/core/format.js        money / people / date formatting
 js/data/world.js         GENERATED geography: 240 countries and territories
 js/data/nations.js       GAMEPLAY starting data: capitals, population, GDP, government, military, resources
@@ -98,10 +101,62 @@ resources[], sources{}`. Live values go through `ownerOf`, `regionOwnerOf`, `sta
   per country, drawn as clipped hit areas plus internal borders. Nothing region-related loads at world view.
   Ownership is country-level today; `state.regionOwners` is the hook for partial conquest, separatism and civil war.
 
+## The simulation (checkpoint 3)
+
+One engine, `js/core/sim.js`, owns every number that changes. The UI only reads `sim.view(state, id)`; panels,
+the top bar, tooltips and map modes all show the same computed breakdowns the tick uses, so nothing is
+calculated twice.
+
+**Time.** The world moves only through `tickMonth(state)`: whole months, nothing else. The real-time clock in
+`main.js` just decides when to call it (1× ≈ 6 s a month, 2×, 5×, 10× ≈ 0.6 s; never more than one month per
+frame; paused while a major event is open or the tab is hidden), and **Next month** steps once. Random variation
+comes from a hash of (save seed, month, country), so the same save and the same decisions always produce the
+same history, independent of frame rate. All countries are planned from the same snapshot, so processing order
+doesn't matter.
+
+**Every country** (player and AI alike) has: population, GDP, treasury (negative = debt), income, expenses,
+stability, infrastructure, active troops, reserves, equipment quality, government, resources and five policies:
+tax rate, military budget (% of GDP), development spending (% of GDP), recruitment level, reserve share.
+Territories grow but have no budget; the country that governs them collects part of their taxes.
+
+| System | How it works (yearly rates, applied monthly) | Talks to |
+|---|---|---|
+| Income | GDP × tax rate × collection efficiency (55–100%: infrastructure; worse below 40% stability) + 60% of what governed lands would pay | GDP, taxes, infrastructure, stability, ownership |
+| Expenses | public services 15% of GDP · infrastructure & building upkeep (grows with infrastructure) · military budget · development · debt interest (3%+, more with heavy debt or unrest) | everything that costs money |
+| Growth | catch-up (poorer grows faster) + population growth + infrastructure vs. what the country's wealth usually affords + stability − high taxes − military burden + development − debt above 60% of GDP + events, ±noise | stability, debt, policy, population |
+| Population | 3% a year in the poorest countries down to ~0.5% in the richest; people leave when stability is below 25 | GDP growth, manpower, stability |
+| Infrastructure | development spending builds it (with diminishing returns); it wears down 1 point a year, faster in unrest | growth, tax collection, upkeep, military strength |
+| Stability | drifts 10% a month toward a target: government type + taxes + economy + development + debt + unpaid soldiers + conscription burden + conflict + a young fast-growing population + newly acquired land + regional inequality + event modifiers | growth, tax collection, recruitment, interest rates, protests |
+| Recruitment | each level (Halt/Low/Standard/High/Maximum) aims at a share of the manpower pool (a slice of the population); recruits replace losses and close 5% of the gap a month, limited by spare military budget (training costs money) and by stability (people enlist less in unrest) | population, budget, stability |
+| Military cost | soldiers cost ~2.2× GDP per head a year each (reserves a quarter); if the budget doesn't cover pay, readiness falls, soldiers desert and stability suffers; the rest of the budget buys equipment quality | budget, stability |
+| Strength | (active + ⅓ reserves) × equipment quality × readiness × logistics (infrastructure), on a 0–100 log scale — **not** troop numbers (Germany's 181K outranks Eritrea's 200K) | AI threat assessment, map mode |
+
+Countries start near a balanced budget (their tax rate is set so that today's spending is covered), with a small
+cash reserve and no public debt; real-world debt levels aren't modelled yet.
+
+**AI.** Every AI country reviews its policies every three months (staggered): it fixes deficits (taxes up, then
+development or military cut, by personality), spends surpluses (tax cuts if restless, otherwise development or
+the army), cuts taxes when stability collapses, pays unpaid soldiers, and arms up when a neighbour's strength
+outclasses its own. A fixed per-country personality (from government type plus a seeded random) makes some
+militarist and some developers. Decisions are logged and shown in each country's panel.
+
+**Events** (`events.js`) are conditions on the player's month-to-month change: *protests* (stability < 45) and
+*debt crisis* (debt > 90% of GDP) are major (pause, three choices with concrete effects and timed modifiers);
+recession, recovery, an empty treasury, unpaid soldiers, exhausted manpower and slipping stability are
+notifications. Each has a cooldown.
+
+**Where to see it.** Top bar: date, play/pause, next month, speeds, treasury (with monthly balance), stability,
+troops — hover any of them for detail, click to open the matching panel. Economy panel: treasury/debt, balance,
+GDP and growth, tax collection, tax and development sliders, the monthly budget line by line, what drives growth.
+Military panel: troops, reserves, strength, readiness, budget, recruitment level, reserve share, manpower.
+Country panel: live stats, stability with its causes, and (for AI countries) their recent decisions. Map modes:
+Stability and Military were added; Population and Economy now show live values.
+
 ## Map modes (overlays)
 
 The layers button (top of the zoom stack, or `L`) switches modes. Political shows owners (territories share their
-sovereign's colour; the player is gold). Population and Economy use 7-step colour ramps with a legend.
+sovereign's colour; the player is gold). Population, Economy, Stability and Military use 7-step colour ramps with
+a legend, coloured from the live simulation every month.
 
 To add a mode, push a definition into `OVERLAYS` in `js/core/overlays.js`:
 `{ id, label, icon, hint, fill(country, {state}) → css colour, legend(ctx) → null | {title, steps, note}, describe(country, ctx) → string }`.
@@ -151,18 +206,37 @@ node tools/world-dominion/build-world.mjs /tmp/wd /tmp/wd && node tools/world-do
 `node --test tests/music/world-dominion.test.mjs` (also part of `node --test tests/music/*.test.mjs`): geography
 (ids, ISO codes, symmetric borders, sovereignty, colouring), regions (files, counts, unique ids), flags, the
 database (fields, sources, derived values), ownership, overlays, region loading, game state, save migration.
+Simulation: every country is simulated and starts near balance; months are deterministic for a seed; the treasury
+receives exactly income − expenses; taxes, military and development move the budget and growth the right way;
+mismanagement creates debt, interest and instability, and sensible policy recovers it; population grows faster in
+poorer countries and feeds GDP and manpower; stability factors (taxes, events with expiry, new territory,
+regional inequality) and gradual drift; recruitment depends on level, money, stability and population; reserves
+are cheaper and weaker; strength ≠ troops; AI countries fix deficits, calm unrest and arm against stronger
+neighbours, and never touch the player's policies; a 20-year run stays sane; events fire from conditions with
+cooldowns; saves from checkpoints 1 and 2 migrate. One simulated month for all 240 countries takes ~6 ms.
 
 In headless Chromium (1440×900 and an iPhone 13 profile): rendering of all 240 shapes, hover highlight and
 tooltip, click selection and outline, panel contents and flag, generated flag, regions appearing on zoom (and not
 loading at world view), region names and region hover, flying to a region from the panel, microstate dots, all
 three map modes and their legends and tooltips, recolouring on ownership change, a checkpoint-1 save continuing,
-no horizontal overflow on a phone — plus every checkpoint-1 interaction. Pan/zoom measured at ~18–20 ms per frame
+no horizontal overflow on a phone — plus every checkpoint-1 interaction. Checkpoint 3 in the browser: next-month
+stepping, 10× speed, determinism, live economy and military panels (sliders change the budget as you drag),
+recruitment levels, an underfunded army, AI decisions appearing in country panels, a debt crisis and default,
+stability and military map modes, top-bar tooltips, save/continue, and phone layout. Pan/zoom measured at ~18–20 ms per frame
 (p95 ~33 ms) in software-rendered headless Chromium; a real GPU does better.
+
+## Simulation limitations
+
+- One number per country: no regional economies or populations yet (`state.regionOwners` is ready for it).
+- No public debt at the start, no trade between countries, no business cycle shared across the world.
+- Military strength is a single index; there are no units, fronts or equipment types yet.
+- AI rules are deliberately simple and readable; they don't plan wars or alliances yet.
+- Building projects are represented by development spending and infrastructure; individual buildings come later.
 
 ## Next checkpoints
 
 1. **Military** — armies on the map, war, battles, occupation (country-level first, regions later), peace deals.
-2. **Simulation core** — a deterministic daily tick and AI nations.
+2. **AI foreign policy** — AI countries choosing rivals, allies and wars using the strength and stability they now simulate.
 3. **Build & economy** — buildings (`state.buildings`), trade, budget categories, debt.
 4. **Diplomacy** — alliances, trade deals, opinion drift, reactions to aggression.
 5. **Politics** — the event engine, rebellions, separatism and civil war using `state.regionOwners`.

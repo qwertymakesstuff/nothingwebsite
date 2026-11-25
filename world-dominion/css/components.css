@@ -162,3 +162,18 @@ button{font:inherit;color:inherit}
 @keyframes wd-fade{from{opacity:0}}
 @keyframes wd-rise{from{opacity:0;transform:translateY(14px) scale(.98)}}
 @keyframes wd-drop{from{opacity:0;transform:translateY(-8px)}}
+
+/* Ledger — label / value lines (budgets, factor lists, logs) */
+.wd-ledger{display:flex;flex-direction:column;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface-raised);overflow:hidden}
+.wd-ledger>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 12px;font-size:var(--fs-sm);color:var(--text-muted)}
+.wd-ledger>div+div{border-top:1px solid var(--line)}
+.wd-ledger>div>span{min-width:0}
+.wd-ledger b{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wd-ledger b.up{color:var(--good)} .wd-ledger b.down{color:var(--bad)}
+.wd-ledger .head{background:rgba(255,255,255,.03);color:var(--text);font-weight:600}
+.wd-ledger.log b{font-weight:500;color:var(--text-dim)}
+.wd-section>.wd-ledger+.wd-ledger{margin-top:6px}
+.wd-seg.wide{display:flex}
+.wd-seg.wide button{flex:1;min-width:0;font-size:11px;padding:0 4px}
+.wd-tag:empty{display:none}
+.wd-drawer-title p span{color:inherit}

@@ -3,8 +3,9 @@
 //   start — nations.js (rounded real-world estimates) or Natural Earth's 2019 attributes    → realistic starting values
 //   game  — derived here (stability, infrastructure, military strength)                       → simulated game values
 // Each record says where its numbers came from in `sources`, so the UI can tell facts from game values.
-// Records are immutable starting data; anything that changes in play (ownership, relations, buildings,
-// regional control) lives in the game state and is read through the helpers at the bottom.
+// Records are immutable STARTING data. Everything that changes in play — population, GDP, treasury, stability,
+// troops, policies — is simulated in core/sim.js on state.nations; ownership and regional control live in the
+// game state and are read through the helpers at the bottom.
 import { COUNTRIES } from '../data/world.js';
 import { NATIONS, GOV, TERRITORY_CAPITALS, RESOURCES, CRISIS } from '../data/nations.js';
 
@@ -67,6 +68,4 @@ export function ownerOf(state, id) {
   return BY_ID.get(id)?.sovereign || id;
 }
 export function regionOwnerOf(state, regionId, countryId) { return state?.regionOwners?.[regionId] || ownerOf(state, countryId); }
-export function stabilityOf(state, id) { return state && id === state.player ? state.stability : BY_ID.get(id)?.stability ?? 50; }
-export function troopsOf(state, id) { return state && id === state.player ? state.army : BY_ID.get(id)?.troops ?? 0; }
 export function buildingsOf(state, id) { return state?.buildings?.[id] || []; }

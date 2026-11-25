@@ -1,31 +1,30 @@
-// Game state: the parts of the world that change during play. Starting facts come from core/db.js.
-// Still deliberately thin — the simulation (armies, AI, politics) arrives in later checkpoints and adds fields
-// here (they are all plain JSON so saves stay simple).
+// Game state: everything that changes during play, as plain JSON (so saving is one JSON.stringify).
+// The rules that change it live in core/sim.js; starting facts come from core/db.js.
+//
+// state = {
+//   v, seed, player, month,                 // month 0 = January 2026; time only moves through sim.tickMonth
+//   nations: { [id]: nation },              // every country's simulated numbers and policies (see sim.initNation)
+//   owners, regionOwners, buildings,        // control of land; empty until wars and building arrive
+//   opinions, flags, cooldowns,             // diplomacy and event bookkeeping
+// }
 import { country, playable, ownerOf, hash01, ALL } from './db.js';
+import { initNations, initNation } from './sim.js';
 import { clamp } from './format.js';
 
 export { playable, hash01 };
 export const SAVE_KEY = 'world-dominion-save-v0';  // storage key kept stable; the format version is inside
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
-export function newGame(playerId) {
-  const c = country(playerId);
-  if (!c || !playable(playerId)) throw new Error('not a playable nation: ' + playerId);
+export function newGame(playerId, seed = String(Date.now() % 1e9)) {
+  if (!playable(playerId)) throw new Error('not a playable nation: ' + playerId);
   return {
-    v: SAVE_VERSION,
-    player: playerId,
-    day: 0,
-    treasury: money2(Math.max(0.05, c.gdp * 0.03)),   // floor so micro-states don't start broke
-    stability: c.stability,
-    taxRate: 30,
-    army: c.troops,
-    opinions: {},       // id -> -100..100, only once it differs from the seeded default
-    flags: {},          // one-off event ids that have fired
-    owners: {},         // country id -> owner id, only where it differs from the start (conquest, independence)
-    regionOwners: {},   // region id -> owner id, for partial control (future: occupation, separatism, civil war)
-    buildings: {},      // country id -> [{ type, region? }]
+    v: SAVE_VERSION, seed, player: playerId, month: 0,
+    nations: initNations(),
+    owners: {}, regionOwners: {}, buildings: {},
+    opinions: {}, flags: {}, cooldowns: {},
   };
 }
+export const me = (state) => state.nations[state.player];
 
 // Opinion of `other` toward the player: neighbours start a little cooler, everyone else spread around neutral.
 export function opinion(state, other) {
@@ -45,36 +44,15 @@ export function relation(state, id) {
   return { key: 'bad', label: 'Hostile' };
 }
 
-// Monthly budget in US$ billions. Placeholder economics: tax revenue vs. a fixed cost of running the state.
-export function budget(state) {
-  const gdp = country(state.player).gdp;
-  const income = gdp * (state.taxRate / 100) * 0.6 / 12;
-  const expenses = gdp * 0.17 / 12 + state.army * 0.00008;
-  return { income: money2(income), expenses: money2(expenses), balance: money2(income - expenses) };
-}
-// Taxes above 30% slowly erode stability, lower taxes slowly build it (per month).
-export const taxMood = (taxRate) => round1((30 - taxRate) * 0.08);
-
-export function monthTick(state) {
-  const b = budget(state);
-  state.treasury = money2(state.treasury + b.balance);
-  state.stability = clamp(round1(state.stability + taxMood(state.taxRate)), 0, 100);
-  return b;
-}
-
-export function applyEffects(state, fx) {
-  if (fx.treasury) state.treasury = money2(state.treasury + fx.treasury);
-  if (fx.stability) state.stability = clamp(round1(state.stability + fx.stability), 0, 100);
-  if (fx.army) state.army = Math.max(0, state.army + fx.army);
-}
-
 export function serialize(state) { return JSON.stringify(state); }
 export function deserialize(text) {
   try {
     let s = JSON.parse(text);
     if (s && s.v === 0) s = migrateV0(s);
-    if (!s || s.v !== SAVE_VERSION || !playable(s.player) || typeof s.day !== 'number') return null;
-    return { opinions: {}, flags: {}, owners: {}, regionOwners: {}, buildings: {}, ...s };
+    if (s && s.v === 1) s = migrateV1(s);
+    if (!s || s.v !== SAVE_VERSION || !playable(s.player) || typeof s.month !== 'number' || !s.nations) return null;
+    for (const c of ALL) if (!s.nations[c.id]) s.nations[c.id] = initNation(c.id);   // countries added by a data update
+    return { owners: {}, regionOwners: {}, buildings: {}, opinions: {}, flags: {}, cooldowns: {}, ...s };
   } catch { return null; }
 }
 
@@ -87,7 +65,16 @@ function migrateV0(s) {
   for (const [k, v] of Object.entries(s.opinions || {})) if (map(k)) opinions[map(k)] = v;
   return { ...s, v: 1, player: map(s.player), opinions };
 }
-
-function round1(n) { return Math.round(n * 10) / 10; }
-// Money is in US$ billions, kept to 0.01 (= $10M) so micro-economies don't round to zero.
-export function money2(n) { return Math.round(n * 100) / 100; }
+// Version 1 (checkpoints 1–2) counted days and only tracked the player's money; version 2 simulates everyone monthly.
+function migrateV1(s) {
+  const nations = initNations();
+  const n = nations[s.player];
+  if (n && n.policy) {
+    if (typeof s.treasury === 'number') n.treasury = s.treasury;
+    if (typeof s.stability === 'number') n.stability = s.stability;
+    if (typeof s.army === 'number') n.troops = s.army;
+    if (typeof s.taxRate === 'number') n.policy.tax = s.taxRate;
+  }
+  return { v: 2, seed: 'migrated-' + (s.player || ''), player: s.player, month: Math.floor((s.day || 0) / 30.44), nations,
+    owners: s.owners || {}, regionOwners: s.regionOwners || {}, buildings: s.buildings || {}, opinions: s.opinions || {}, flags: s.flags || {}, cooldowns: {} };
+}

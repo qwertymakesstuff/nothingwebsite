@@ -17,6 +17,8 @@
   --region-edge:rgba(225,232,240,.26);
   /* Overlay ramps — 7 steps, dark (few) to light (many); chosen to stay distinct from the gold player colour */
   --ramp-pop-0:#1b2a3b; --ramp-pop-1:#22405a; --ramp-pop-2:#2a587a; --ramp-pop-3:#35719a; --ramp-pop-4:#4b8cb8; --ramp-pop-5:#72abd2; --ramp-pop-6:#a9cfeb;
+  --ramp-stab-0:#5a1f24; --ramp-stab-1:#7a3127; --ramp-stab-2:#8f5a2c; --ramp-stab-3:#7c7a3a; --ramp-stab-4:#4f7d4a; --ramp-stab-5:#3f8f63; --ramp-stab-6:#5bb487;
+  --ramp-mil-0:#262433; --ramp-mil-1:#342c45; --ramp-mil-2:#463257; --ramp-mil-3:#5b3768; --ramp-mil-4:#743c74; --ramp-mil-5:#94467c; --ramp-mil-6:#bd5f86;
   --ramp-eco-0:#1c2e2a; --ramp-eco-1:#21433a; --ramp-eco-2:#285a4a; --ramp-eco-3:#2f725a; --ramp-eco-4:#3e8d6c; --ramp-eco-5:#62ad86; --ramp-eco-6:#9fd3b0;
 
   /* — Surfaces — */

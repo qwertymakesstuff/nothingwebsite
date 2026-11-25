@@ -29,6 +29,7 @@ export class Drawer {
   // content: { key, lead?, title, subtitle?, body: Node[], foot?: Node[] }
   show(content) {
     this.key = content.key;
+    this.update = content.update || null;   // refreshes live figures in place (no rebuild)
     clear(this.leadEl); if (content.lead) this.leadEl.append(content.lead);
     this.leadEl.hidden = !content.lead;
     clear(this.titleEl).append(h('h2', content.title), content.subtitle ? h('p', content.subtitle) : '');
@@ -43,7 +44,7 @@ export class Drawer {
   close() {
     if (!this.isOpen) return;
     this.el.classList.remove('open'); this.el.setAttribute('aria-hidden', 'true');
-    const key = this.key; this.key = null;
+    const key = this.key; this.key = null; this.update = null;
     remove(this); this.onClose?.(key);
   }
 }

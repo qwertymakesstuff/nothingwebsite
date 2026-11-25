@@ -1352,6 +1352,7 @@
 "/world-dominion/js/core/format.js",
 "/world-dominion/js/core/overlays.js",
 "/world-dominion/js/core/regions.js",
+"/world-dominion/js/core/sim.js",
 "/world-dominion/js/core/state.js",
 "/world-dominion/js/data/nations.js",
 "/world-dominion/js/data/world.js",
