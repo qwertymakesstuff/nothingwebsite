@@ -1,6 +1,6 @@
-# Rookery (chess.missing.website): checks every change, and applies database migrations to
-# Supabase when they land on main. Deployment itself is done by Cloudflare's GitHub integration
-# (Workers & Pages > rookery > Settings > Build), not by this workflow.
+# Rookery (chess.missing.website): checks every change; on main it applies database migrations
+# to Supabase and deploys the Worker to Cloudflare. Each of those steps runs only once its
+# repository secrets exist, and skips itself otherwise.
 name: rookery
 
 on:
@@ -97,3 +97,48 @@ jobs:
           # and --yes confirms non-interactively (CI has no terminal to answer the prompt).
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
           supabase db push --remote --include-all --yes --password "$SUPABASE_DB_PASSWORD"
+
+  # Builds the static site and deploys the Worker (site + realtime) with Wrangler. Runs only on
+  # main, after the checks pass, and only once these repository secrets exist:
+  # CLOUDFLARE_API_TOKEN ("Edit Cloudflare Workers" template) and CLOUDFLARE_ACCOUNT_ID.
+  # If this is used, turn off Git builds for the rookery Worker in Cloudflare so they don't both deploy.
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, site-regression]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: rookery-deploy
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    defaults:
+      run:
+        working-directory: rookery
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip if secrets are not configured
+        id: gate
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Cloudflare secrets not set; skipping deploy."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rookery/package-lock.json
+      - if: steps.gate.outputs.run == 'true'
+        run: npm ci --no-audit --no-fund
+      - name: Build static site
+        if: steps.gate.outputs.run == 'true'
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Deploy to Cloudflare
+        if: steps.gate.outputs.run == 'true'
+        run: npx wrangler deploy
