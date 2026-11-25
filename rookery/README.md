@@ -16,19 +16,20 @@ entirely in this folder. The only files it touches outside it are:
 | 0 | Scaffold: monorepo, static site, realtime Worker + Durable Object, first DB migration, CI | **done** |
 | 1 | Frontend foundation: design system, navigation, every page layout, reusable components | **done** |
 | 2 | Accounts: sign-up (13+), profiles, settings sync | next |
-| 3 | Computer opponents (Stockfish WASM, data-driven personas) | |
+| 3 | Computer opponents: Stockfish WASM in a Web Worker, 15 configured personas, calibrated strength | **done** |
 | 4 | Live multiplayer: matchmaking, server clocks, ratings | |
 | 5–11 | Review, puzzles, leaderboards, social, progression, tournaments, launch | |
 
 ### What works today vs. what is sample data
 
-**Working for real:** pass-and-play with clocks, promotion and resign/draw; the analysis board,
+**Working for real:** games against 15 computer opponents and a custom-strength engine (see
+[`docs/AI.md`](docs/AI.md)), with saved history; pass-and-play with clocks, promotion and resign/draw; the analysis board,
 including PGN/FEN import and export and keyboard navigation; settings (board theme, background,
 coordinates, legal-move dots, animation, auto-queen, reduce motion), saved per device and applied
 to every board; all navigation; and the live system-status checks.
 
 **Sample data, clearly labelled with a "Sample" badge or banner:** players, ratings, game history,
-leaderboards, friends, the bot roster, puzzles and achievements. Pages read data only through
+leaderboards, friends, puzzles and achievements. Pages read data only through
 `apps/web/lib/data/`, which marks each result as `source: 'sample' | 'live'`. The fake data lives
 in `apps/web/lib/sample/` (see its README). Features that aren't built yet are shown disabled,
 with a "Stage N" badge. Nothing pretends to be an online opponent, an AI or a signed-in user.
@@ -47,6 +48,7 @@ apps/web/               Next.js, fully prerendered (`output: 'export'` → apps/
 apps/realtime/          Worker code + GameRoom Durable Object (one per live game)
 packages/chess-core/    rules (chess.js wrapper), clocks, time controls: pure, no DOM, no I/O
 packages/protocol/      zod schemas for every browser ↔ server message
+packages/ai/            computer opponents: persona configs, strength model, Stockfish UCI driver (+ vendored engine)
 packages/db/            Supabase config + SQL migrations (+ tests on PGlite)
 docs/                   architecture, licences
 ```

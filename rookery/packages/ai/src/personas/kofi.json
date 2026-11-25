@@ -1,0 +1,123 @@
+{
+  "id": "kofi",
+  "name": "Kofi",
+  "tier": "club",
+  "country": "GH",
+  "tagline": "Sees forks in his sleep",
+  "bio": "A sharp tactician who hunts for double attacks. Leave a piece undefended and he will find it.",
+  "style": [
+    "Tactical",
+    "Forks"
+  ],
+  "portrait": {
+    "bg": [
+      "#6e5d3e",
+      "#433722"
+    ],
+    "skin": "#7a4a2e",
+    "hair": "#141010",
+    "hairStyle": "short",
+    "accessory": "headphones",
+    "shirt": "#3d6a8a"
+  },
+  "strength": {
+    "elo": 1580
+  },
+  "personality": {
+    "aggression": 0.8,
+    "risk": 0.7,
+    "chattiness": 0.65,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -800,
+      "moves": 3
+    },
+    "acceptDrawWithinCp": 40,
+    "thinking": {
+      "minMs": 500,
+      "maxMs": 2000
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "scotch",
+        "weight": 3
+      },
+      {
+        "opening": "italian",
+        "weight": 2
+      }
+    ],
+    "black": [
+      {
+        "opening": "sicilian-najdorf",
+        "weight": 3
+      },
+      {
+        "opening": "scandinavian",
+        "weight": 1
+      }
+    ],
+    "fidelity": 0.9
+  },
+  "dialogue": {
+    "greeting": [
+      "Every loose piece is a gift. Thank you in advance.",
+      "Headphones on. Let's go."
+    ],
+    "botCapture": [
+      "Loose pieces drop off.",
+      "Found it."
+    ],
+    "botCheck": [
+      "Check, and look what else it hits."
+    ],
+    "playerCapture": [
+      "Okay, okay. Nice."
+    ],
+    "playerBlunder": [
+      "Ooh. I see something."
+    ],
+    "playerGoodMove": [
+      "Sharp. Respect."
+    ],
+    "botWinning": [
+      "The tactics are flowing."
+    ],
+    "botLosing": [
+      "You saw further than me there."
+    ],
+    "botWins": [
+      "Tactics flow from a superior position. Mine."
+    ],
+    "botLoses": [
+      "Clean game. You didn't leave me anything."
+    ],
+    "draw": [
+      "Fair."
+    ],
+    "drawAccepted": [
+      "Fine, we'll call it."
+    ],
+    "drawDeclined": [
+      "Nah, there's still a trick in here somewhere."
+    ],
+    "botResigns": [
+      "I'm out of tricks. Good game."
+    ],
+    "playerResigns": [
+      "Good game!"
+    ],
+    "takeback": [
+      "Sure, run it back."
+    ],
+    "rematch": [
+      "Rematch. Let's go."
+    ]
+  }
+}

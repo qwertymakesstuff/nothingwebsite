@@ -19,6 +19,10 @@ export interface Preferences {
   confirmResign: boolean;
   sound: boolean;
   reduceMotion: boolean;
+  /** Computer opponents: how long they pause before moving. */
+  botMoveSpeed: 'natural' | 'fast' | 'instant';
+  /** Computer opponents: show their chat lines. */
+  botChat: boolean;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -33,7 +37,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
   confirmResign: true,
   sound: true,
   reduceMotion: false,
+  botMoveSpeed: 'natural',
+  botChat: true,
 };
+
+/** Multiplier applied to a computer opponent's human-like thinking pause. */
+export const BOT_DELAY_FACTOR: Record<Preferences['botMoveSpeed'], number> = { natural: 1, fast: 0.35, instant: 0 };
 
 export const ANIMATION_MS: Record<Preferences['animation'], number> = { off: 0, fast: 110, normal: 200, slow: 320 };
 

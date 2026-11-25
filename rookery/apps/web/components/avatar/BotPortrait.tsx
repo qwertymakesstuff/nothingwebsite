@@ -41,7 +41,7 @@ export function BotPortrait({
         <rect width="64" height="64" fill={`url(#${gid})`} />
         {/* faint chequer motif */}
         <path d="M0 0h8v8H0zM16 0h8v8h-8zM8 8h8v8H8zM56 48h8v8h-8zM48 56h8v8h-8z" fill="#fff" opacity="0.04" />
-        {raven ? <Raven spec={spec} /> : <Person spec={spec} />}
+        {raven || spec.raven ? <Raven spec={spec} /> : <Person spec={spec} />}
       </g>
     </svg>
   );

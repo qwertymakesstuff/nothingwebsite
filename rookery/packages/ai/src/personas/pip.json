@@ -1,0 +1,95 @@
+{
+  "id": "pip",
+  "name": "Pip",
+  "tier": "newcomer",
+  "country": "GB",
+  "tagline": "Just learned how the horsey moves",
+  "bio": "Pip found a chess set in the attic last week and has been hooked ever since. Expect enthusiasm, not accuracy.",
+  "style": [
+    "Friendly",
+    "Random"
+  ],
+  "portrait": {
+    "bg": [
+      "#4f6b5a",
+      "#2f4236"
+    ],
+    "skin": "#f1c9a5",
+    "hair": "#c46a2b",
+    "hairStyle": "short",
+    "shirt": "#e3b34f"
+  },
+  "strength": {
+    "elo": 300
+  },
+  "personality": {
+    "aggression": 0.6,
+    "risk": 0.8,
+    "chattiness": 0.9,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1.2,
+      "endgame": 1
+    },
+    "resign": null,
+    "acceptDrawWithinCp": null,
+    "thinking": {
+      "minMs": 700,
+      "maxMs": 2200
+    }
+  },
+  "openings": {
+    "white": [],
+    "black": [],
+    "fidelity": 0.0
+  },
+  "dialogue": {
+    "greeting": [
+      "Ooh, a game! Which one is the castle again?",
+      "Hi! I'm going to try really hard this time."
+    ],
+    "botCapture": [
+      "Got one!",
+      "Yum. Is that allowed?"
+    ],
+    "botCheck": [
+      "Check! I think?",
+      "Is that check? It's check!"
+    ],
+    "playerCapture": [
+      "Hey, I was using that!",
+      "Oh no, not my horsey."
+    ],
+    "playerBlunder": [
+      "Wait, can I take that? I'm taking it."
+    ],
+    "botWinning": [
+      "Am I... winning? Don't tell anyone."
+    ],
+    "botLosing": [
+      "This is going a bit wobbly."
+    ],
+    "botWins": [
+      "I WON? I'm telling everyone!"
+    ],
+    "botLoses": [
+      "Good game! Can you show me what I did wrong?",
+      "You're really good."
+    ],
+    "draw": [
+      "A draw! That counts as half a win, right?"
+    ],
+    "playerResigns": [
+      "You're giving up? Okay! Good game!"
+    ],
+    "drawDeclined": [
+      "No thanks, I'm having fun!"
+    ],
+    "takeback": [
+      "Sure, everyone makes mistakes!"
+    ],
+    "rematch": [
+      "Yes! Again again!"
+    ]
+  }
+}

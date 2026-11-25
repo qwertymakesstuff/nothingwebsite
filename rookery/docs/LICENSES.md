@@ -12,7 +12,7 @@ with this file.
 | Next.js, React, Tailwind CSS, Zod, Supabase JS, PGlite (dev) | MIT / Apache-2.0 | Framework, styling, validation, data | Keep notices |
 | Fraunces, Inter, JetBrains Mono (via Fontsource) | SIL OFL 1.1 | Typefaces, self-hosted | Don't sell the fonts on their own; keep the licence |
 | Lucide icons | ISC | Interface icons | Keep notice |
-| Stockfish (Phase 3) | GPL-3.0 | Engine | Ship licence and link to the exact source; publish any changes |
+| Stockfish 19 via Stockfish.js 19.0.1 (lite, single-threaded WASM), vendored unmodified in `packages/ai/engine/` | GPL-3.0 | Computer opponents | Licence served at `/engine/COPYING.txt`; exact source linked on `/licenses` and in `packages/ai/engine/README.md`; publish any changes |
 | Lichess puzzle DB, lichess-org/chess-openings (Phase 6) | CC0 | Puzzles, opening names | None (attribution is courteous) |
 
 ## Rules for adding assets

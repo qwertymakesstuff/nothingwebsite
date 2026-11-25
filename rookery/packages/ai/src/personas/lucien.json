@@ -1,0 +1,119 @@
+{
+  "id": "lucien",
+  "name": "Lucien",
+  "tier": "expert",
+  "country": "BE",
+  "tagline": "Chaos is a ladder",
+  "bio": "Lucien steers every game into wild, unbalanced positions where calculation matters more than theory.",
+  "style": [
+    "Chaotic",
+    "Imbalances"
+  ],
+  "portrait": {
+    "bg": [
+      "#4e4570",
+      "#2d2846"
+    ],
+    "skin": "#efcfb6",
+    "hair": "#e2c56a",
+    "hairStyle": "long",
+    "accessory": "monocle",
+    "shirt": "#6b2f3a"
+  },
+  "strength": {
+    "elo": 2210
+  },
+  "personality": {
+    "aggression": 0.75,
+    "risk": 1.0,
+    "chattiness": 0.7,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -600,
+      "moves": 2
+    },
+    "acceptDrawWithinCp": null,
+    "thinking": {
+      "minMs": 400,
+      "maxMs": 2000
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "english",
+        "weight": 2
+      },
+      {
+        "opening": "vienna",
+        "weight": 2
+      }
+    ],
+    "black": [
+      {
+        "opening": "sicilian-dragon",
+        "weight": 3
+      },
+      {
+        "opening": "dutch",
+        "weight": 3
+      }
+    ],
+    "fidelity": 0.9
+  },
+  "dialogue": {
+    "greeting": [
+      "Symmetry is boring, don't you think?",
+      "Let's make a mess, shall we?"
+    ],
+    "botCapture": [
+      "Delicious disorder."
+    ],
+    "botCheck": [
+      "Check. Isn't this fun?"
+    ],
+    "playerCapture": [
+      "Oh, bold. I approve."
+    ],
+    "playerBlunder": [
+      "Chaos claims another victim."
+    ],
+    "playerGoodMove": [
+      "Ooh. Inspired."
+    ],
+    "botWinning": [
+      "The fog of war favours me tonight."
+    ],
+    "botLosing": [
+      "You've tamed the chaos. How rude."
+    ],
+    "botWins": [
+      "Order from chaos. Mine."
+    ],
+    "botLoses": [
+      "Magnificent. You found the thread through the maze."
+    ],
+    "draw": [
+      "Chaos, perfectly balanced."
+    ],
+    "drawDeclined": [
+      "A draw? But it's just getting interesting!"
+    ],
+    "botResigns": [
+      "Even chaos has limits. I resign."
+    ],
+    "playerResigns": [
+      "Too much chaos? Understandable."
+    ],
+    "takeback": [
+      "Take it back. More chaos to come."
+    ],
+    "rematch": [
+      "Another dance?"
+    ]
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "id": "marlow",
+  "name": "Marlow",
+  "tier": "newcomer",
+  "country": "IE",
+  "tagline": "Retired postman, unhurried",
+  "bio": "Marlow plays the way he walked his route: steady, cheerful, and never in a rush to capture anything.",
+  "style": [
+    "Patient",
+    "Passive"
+  ],
+  "portrait": {
+    "bg": [
+      "#5d5a7a",
+      "#36344a"
+    ],
+    "skin": "#e0b48f",
+    "hair": "#d9d6d0",
+    "hairStyle": "bald",
+    "accessory": "cap",
+    "shirt": "#3f5e8c"
+  },
+  "strength": {
+    "elo": 550
+  },
+  "personality": {
+    "aggression": 0.2,
+    "risk": 0.3,
+    "chattiness": 0.6,
+    "mistakePhases": {
+      "opening": 0.6,
+      "middlegame": 1.2,
+      "endgame": 1.2
+    },
+    "resign": null,
+    "acceptDrawWithinCp": 150,
+    "thinking": {
+      "minMs": 900,
+      "maxMs": 2600
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "london",
+        "weight": 3
+      }
+    ],
+    "black": [
+      {
+        "opening": "french",
+        "weight": 2
+      },
+      {
+        "opening": "italian",
+        "weight": 1
+      }
+    ],
+    "fidelity": 0.7
+  },
+  "dialogue": {
+    "greeting": [
+      "Take your time, there's no post to deliver today.",
+      "Lovely day for a game."
+    ],
+    "botCapture": [
+      "I'll just pop that in the sack.",
+      "Signed for, thank you."
+    ],
+    "botCheck": [
+      "Mind your king, there."
+    ],
+    "playerCapture": [
+      "Ah. Return to sender, that one."
+    ],
+    "playerBlunder": [
+      "Hm, are you sure about that? Too late now, I suppose."
+    ],
+    "botLosing": [
+      "I may have taken the long way round."
+    ],
+    "botWins": [
+      "Well, would you look at that. Delivered."
+    ],
+    "botLoses": [
+      "Good game. You've a sharp eye."
+    ],
+    "draw": [
+      "Even-stevens. Fair enough."
+    ],
+    "drawAccepted": [
+      "A draw suits me fine."
+    ],
+    "drawDeclined": [
+      "Let's keep going a little while longer."
+    ],
+    "playerResigns": [
+      "Already? Well, cheers for the game."
+    ],
+    "takeback": [
+      "Go on then, take it back."
+    ],
+    "rematch": [
+      "One more round before tea."
+    ]
+  }
+}

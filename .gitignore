@@ -6,3 +6,4 @@ rookery/apps/web/.next/
 rookery/apps/web/out/
 rookery/**/.dev.vars*
 rookery/**/.env*.local
+rookery/apps/web/public/engine/

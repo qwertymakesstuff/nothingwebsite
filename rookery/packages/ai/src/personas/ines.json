@@ -1,0 +1,121 @@
+{
+  "id": "ines",
+  "name": "Inês",
+  "tier": "club",
+  "country": "PT",
+  "tagline": "Squeezes positions slowly",
+  "bio": "Inês plays positional chess: good bishops, weak squares, long plans. Patience is the lesson.",
+  "style": [
+    "Positional",
+    "Endgames"
+  ],
+  "portrait": {
+    "bg": [
+      "#5a6e64",
+      "#33423b"
+    ],
+    "skin": "#c78f69",
+    "hair": "#3a2418",
+    "hairStyle": "bun",
+    "shirt": "#b98d4f"
+  },
+  "strength": {
+    "elo": 1420
+  },
+  "personality": {
+    "aggression": 0.3,
+    "risk": 0.35,
+    "chattiness": 0.5,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -900,
+      "moves": 3
+    },
+    "acceptDrawWithinCp": 60,
+    "thinking": {
+      "minMs": 900,
+      "maxMs": 2600
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "qgd",
+        "weight": 3
+      },
+      {
+        "opening": "english",
+        "weight": 2
+      }
+    ],
+    "black": [
+      {
+        "opening": "french",
+        "weight": 2
+      },
+      {
+        "opening": "nimzo-indian",
+        "weight": 3
+      }
+    ],
+    "fidelity": 0.95
+  },
+  "dialogue": {
+    "greeting": [
+      "Let's see whose pawn structure holds.",
+      "Bom dia. Slow and steady today?"
+    ],
+    "botCapture": [
+      "Thank you."
+    ],
+    "botCheck": [
+      "Check."
+    ],
+    "playerCapture": [
+      "Good. You noticed."
+    ],
+    "playerBlunder": [
+      "That pawn was holding everything together."
+    ],
+    "playerGoodMove": [
+      "Precise. I like that."
+    ],
+    "botWinning": [
+      "The position is breathing for me now."
+    ],
+    "botLosing": [
+      "You've outplayed me here. Let me find something."
+    ],
+    "botWins": [
+      "Small advantages, added up."
+    ],
+    "botLoses": [
+      "Very clean. Obrigada for the lesson."
+    ],
+    "draw": [
+      "A fair result."
+    ],
+    "drawAccepted": [
+      "Agreed. Nothing left to squeeze."
+    ],
+    "drawDeclined": [
+      "There's still play in this position."
+    ],
+    "botResigns": [
+      "It's lost. Well played."
+    ],
+    "playerResigns": [
+      "The position spoke for itself."
+    ],
+    "takeback": [
+      "All right."
+    ],
+    "rematch": [
+      "Another? Gladly."
+    ]
+  }
+}

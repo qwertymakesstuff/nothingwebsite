@@ -79,6 +79,41 @@ export function useLocalGame(initialFen = START_FEN) {
     [view.fen],
   );
 
+  /**
+   * Appends a move at the end of the game, whatever position is being viewed, and jumps to it.
+   * Used for opponents' moves (computer, or later the server), which must never truncate history.
+   */
+  const push = useCallback(
+    (uci: string) => {
+      const endFen = line.length ? line[line.length - 1]!.fenAfter : state.initialFen;
+      if (!tryMove(new Chess(endFen), uci)) return false;
+      setState((s) => ({ ...s, moves: [...s.moves, uci], cursor: s.moves.length + 1 }));
+      return true;
+    },
+    [line, state.initialFen],
+  );
+
+  /** Removes the last `n` moves (takebacks) and shows the new final position. */
+  const takeBack = useCallback(
+    (n: number) =>
+      setState((s) => {
+        const moves = s.moves.slice(0, Math.max(0, s.moves.length - n));
+        return { ...s, moves, cursor: moves.length };
+      }),
+    [],
+  );
+
+  /** Starts a new game from `fen`, optionally after a sequence of SAN moves (an opening). */
+  const start = useCallback((fen = START_FEN, openingSan: string[] = []) => {
+    const chess = new Chess(fen);
+    const moves: string[] = [];
+    for (const san of openingSan) {
+      const m = chess.move(san);
+      moves.push(m.from + m.to + (m.promotion ?? ''));
+    }
+    setState({ initialFen: fen, moves, cursor: moves.length });
+  }, []);
+
   const goTo = useCallback(
     (ply: number) => setState((s) => ({ ...s, cursor: Math.max(0, Math.min(ply, line.length)) })),
     [line.length],
@@ -128,5 +163,5 @@ export function useLocalGame(initialFen = START_FEN) {
     return chess.pgn();
   }, [line, state.initialFen]);
 
-  return { state, line, view, atEnd, isPromotion, play, goTo, undo, reset, loadFen, loadPgn, pgn };
+  return { state, line, view, atEnd, isPromotion, play, push, takeBack, start, goTo, undo, reset, loadFen, loadPgn, pgn, endFen: line.length ? line[line.length - 1]!.fenAfter : state.initialFen };
 }

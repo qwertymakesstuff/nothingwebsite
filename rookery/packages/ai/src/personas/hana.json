@@ -1,0 +1,117 @@
+{
+  "id": "hana",
+  "name": "Hana",
+  "tier": "club",
+  "country": "JP",
+  "tagline": "Endgame specialist",
+  "bio": "Hana trades into endgames on purpose, because she knows them better than you do. Probably.",
+  "style": [
+    "Endgames",
+    "Technical"
+  ],
+  "portrait": {
+    "bg": [
+      "#6b4b5e",
+      "#40293a"
+    ],
+    "skin": "#f0d0b5",
+    "hair": "#1a1416",
+    "hairStyle": "bob",
+    "shirt": "#e6e0d3"
+  },
+  "strength": {
+    "elo": 1740
+  },
+  "personality": {
+    "aggression": 0.3,
+    "risk": 0.2,
+    "chattiness": 0.45,
+    "mistakePhases": {
+      "opening": 1.3,
+      "middlegame": 1.2,
+      "endgame": 0.5
+    },
+    "resign": {
+      "belowCp": -700,
+      "moves": 3
+    },
+    "acceptDrawWithinCp": 40,
+    "thinking": {
+      "minMs": 800,
+      "maxMs": 2600
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "ruy-lopez",
+        "weight": 3
+      }
+    ],
+    "black": [
+      {
+        "opening": "caro-kann",
+        "weight": 3
+      },
+      {
+        "opening": "qgd",
+        "weight": 2
+      }
+    ],
+    "fidelity": 0.95
+  },
+  "dialogue": {
+    "greeting": [
+      "Let's go straight to the interesting part.",
+      "Shall we trade the queens early?"
+    ],
+    "botCapture": [
+      "One step closer to an endgame."
+    ],
+    "botCheck": [
+      "Check."
+    ],
+    "playerCapture": [
+      "A fair trade."
+    ],
+    "playerBlunder": [
+      "That will matter in the endgame."
+    ],
+    "playerGoodMove": [
+      "Good technique."
+    ],
+    "botWinning": [
+      "This endgame is mine now."
+    ],
+    "botLosing": [
+      "I misjudged the ending. Interesting."
+    ],
+    "botWins": [
+      "Opposition, then zugzwang. Thank you."
+    ],
+    "botLoses": [
+      "Beautiful technique. Arigatō."
+    ],
+    "draw": [
+      "A theoretical draw. Correct."
+    ],
+    "drawAccepted": [
+      "Agreed. It's a book draw."
+    ],
+    "drawDeclined": [
+      "The endgame isn't over yet."
+    ],
+    "botResigns": [
+      "The ending is lost. I resign."
+    ],
+    "playerResigns": [
+      "Thank you for the game."
+    ],
+    "takeback": [
+      "Very well."
+    ],
+    "rematch": [
+      "One more endgame, please."
+    ]
+  }
+}

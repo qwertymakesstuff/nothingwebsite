@@ -1,0 +1,53 @@
+{
+  "runs": [
+    {
+      "date": "2026-11-25T21:24:00.506Z",
+      "gamesPerMatch": 24,
+      "anchorMovetimeMs": 700,
+      "rows": [
+        {
+          "skill": 0.8,
+          "elo": 1065,
+          "vs": "SF1320",
+          "score": 0.1875,
+          "games": 24
+        },
+        {
+          "skill": 0.65,
+          "elo": 461,
+          "vs": "skill0.8",
+          "score": 0.020833333333333332,
+          "games": 24
+        },
+        {
+          "skill": 0.5,
+          "elo": 44,
+          "vs": "skill0.65",
+          "score": 0.08333333333333333,
+          "games": 24
+        },
+        {
+          "skill": 0.35,
+          "elo": -426,
+          "vs": "skill0.5",
+          "score": 0.0625,
+          "games": 24
+        },
+        {
+          "skill": 0.2,
+          "elo": -733,
+          "vs": "skill0.35",
+          "score": 0.14583333333333334,
+          "games": 24
+        },
+        {
+          "skill": 0.05,
+          "elo": -988,
+          "vs": "skill0.2",
+          "score": 0.1875,
+          "games": 24
+        }
+      ]
+    }
+  ]
+}

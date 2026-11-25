@@ -1,0 +1,108 @@
+{
+  "id": "rosa",
+  "name": "Rosa",
+  "tier": "casual",
+  "country": "ES",
+  "tagline": "Attacks first, asks later",
+  "bio": "Rosa throws pawns at your king and sorts out the consequences afterwards. Defend well and she overreaches.",
+  "style": [
+    "Aggressive",
+    "Sacrificial"
+  ],
+  "portrait": {
+    "bg": [
+      "#8a4b45",
+      "#552c28"
+    ],
+    "skin": "#d9a07b",
+    "hair": "#1f1512",
+    "hairStyle": "long",
+    "shirt": "#2c2a33"
+  },
+  "strength": {
+    "elo": 1050
+  },
+  "personality": {
+    "aggression": 0.95,
+    "risk": 0.9,
+    "chattiness": 0.75,
+    "mistakePhases": {
+      "opening": 0.8,
+      "middlegame": 1.3,
+      "endgame": 1
+    },
+    "resign": null,
+    "acceptDrawWithinCp": null,
+    "thinking": {
+      "minMs": 500,
+      "maxMs": 1700
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "kings-gambit",
+        "weight": 3
+      },
+      {
+        "opening": "vienna",
+        "weight": 2
+      }
+    ],
+    "black": [
+      {
+        "opening": "sicilian-dragon",
+        "weight": 3
+      }
+    ],
+    "fidelity": 0.9
+  },
+  "dialogue": {
+    "greeting": [
+      "¡Vamos! Hope your king likes fresh air.",
+      "Let's not waste time. Attack!"
+    ],
+    "botCapture": [
+      "¡Olé!",
+      "Mine now."
+    ],
+    "botCheck": [
+      "Check! Run, little king.",
+      "Knock knock."
+    ],
+    "playerCapture": [
+      "Fine, take it. I don't need it.",
+      "Sacrifice! ...Well, it is now."
+    ],
+    "playerBlunder": [
+      "¡Ay! That door was open."
+    ],
+    "botWinning": [
+      "Smell that? That's your king's castle burning."
+    ],
+    "botLosing": [
+      "Okay, okay, maybe that sacrifice was a little hopeful."
+    ],
+    "botWins": [
+      "¡Jaque mate! That's how it's done."
+    ],
+    "botLoses": [
+      "You defended like a wall. Respect."
+    ],
+    "draw": [
+      "A draw? I hate draws."
+    ],
+    "drawDeclined": [
+      "A draw? Never. I'm attacking."
+    ],
+    "playerResigns": [
+      "Smart. It was only getting worse."
+    ],
+    "takeback": [
+      "Hmph. Fine. Once."
+    ],
+    "rematch": [
+      "Again! This time I attack harder."
+    ]
+  }
+}

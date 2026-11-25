@@ -73,30 +73,9 @@ export interface LeaderboardEntry {
   trend: number[]; // recent ratings, oldest first
 }
 
-export type BotTier = 'newcomer' | 'casual' | 'club' | 'expert' | 'master';
-
-/** Presentation side of a computer opponent. Engine behaviour is configured in Stage 3. */
-export interface BotProfile {
-  id: string;
-  name: string;
-  tier: BotTier;
-  rating: number;
-  country?: string;
-  tagline: string;
-  bio: string;
-  style: string[];
-  greeting: string;
-  portrait: PortraitSpec;
-}
-
-export interface PortraitSpec {
-  bg: [string, string];
-  skin: string;
-  hair: string;
-  hairStyle: 'short' | 'long' | 'bun' | 'curly' | 'bald' | 'mohawk' | 'bob';
-  accessory?: 'glasses' | 'beret' | 'headphones' | 'monocle' | 'scarf' | 'cap';
-  shirt: string;
-}
+/** Portrait drawing spec (same shape as an opponent's `portrait` in packages/ai). */
+export type { Persona } from '@rookery/ai';
+export type PortraitSpec = import('@rookery/ai').Persona['portrait'];
 
 export interface PuzzleSummary {
   id: string;

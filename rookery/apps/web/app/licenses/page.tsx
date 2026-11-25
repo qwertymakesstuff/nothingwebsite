@@ -18,6 +18,12 @@ const COMPONENTS: { name: string; licence: string; use: string; source: string }
     source: 'https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces',
   },
   {
+    name: 'Stockfish 19 (Stockfish.js lite, single-threaded WebAssembly)',
+    licence: 'GPL-3.0',
+    use: 'The chess engine behind computer opponents. Runs in your browser, unmodified.',
+    source: 'https://github.com/nmrugg/stockfish.js/tree/v19.0.1',
+  },
+  {
     name: 'chess.js',
     licence: 'BSD-2-Clause',
     use: 'Chess rules and move validation.',

@@ -1,5 +1,6 @@
 import { ArrowRight, Bot, Code2, Globe2, HeartHandshake, Microscope, Puzzle, ShieldCheck, Swords } from 'lucide-react';
 import Link from 'next/link';
+import { displayRating } from '@rookery/ai';
 import { BotPortrait } from '@/components/avatar/BotPortrait';
 import { HeroBoard } from '@/components/home/HeroBoard';
 import { ComingSoon } from '@/components/ui/Badge';
@@ -58,8 +59,8 @@ export default function HomePage() {
           <Feature href="/play" icon={<Globe2 />} title="Play online" stage={4}>
             Bullet to classical. Fair pairings by rating, and clocks that run on our servers.
           </Feature>
-          <Feature href="/bots" icon={<Bot />} title="Computer opponents" stage={3}>
-            Fifteen characters from total beginner to full strength, each with a playing style.
+          <Feature href="/bots" icon={<Bot />} title="Computer opponents">
+            {data.bots.length} characters from total beginner to full Stockfish strength, each with a playing style.
           </Feature>
           <Feature href="/puzzles" icon={<Puzzle />} title="Puzzles" stage={6}>
             A new daily puzzle, rated training that adapts to you, and themes to drill weaknesses.
@@ -94,9 +95,9 @@ export default function HomePage() {
                     href={`/bots?bot=${b.id}`}
                     className="group flex flex-col items-center rounded-[var(--radius-card)] border border-line bg-surface-2/60 p-4 text-center transition-colors hover:border-gold-500/40"
                   >
-                    <BotPortrait spec={b.portrait} name={b.name} size="lg" raven={b.id === 'corvus'} />
+                    <BotPortrait spec={b.portrait} name={b.name} size="lg" />
                     <span className="mt-3 text-sm font-semibold text-fg">{b.name}</span>
-                    <span className="tabular text-xs text-fg-subtle">{b.rating}</span>
+                    <span className="tabular text-xs text-fg-subtle">{displayRating(b)}</span>
                   </Link>
                 </li>
               ))}
