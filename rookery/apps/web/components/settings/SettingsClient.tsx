@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Check, Gamepad2, LayoutGrid, Lock, MonitorCog, RotateCcw, UserRound } from 'lucide-react';
+import { Bell, Bot, Check, Gamepad2, LayoutGrid, Lock, MonitorCog, RotateCcw, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { ChessBoard } from '@/components/board/ChessBoard';
 import { ComingSoon } from '@/components/ui/Badge';
@@ -9,16 +9,18 @@ import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Dropdown';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/States';
+import { EngineSettings } from './EngineSettings';
 import { Switch } from '@/components/ui/Switch';
 import { BACKDROPS, BOARD_THEMES, PIECE_SETS } from '@/lib/boardThemes';
 import { cn } from '@/lib/cn';
 import { usePreferences, type Preferences } from '@/lib/preferences';
 
-type Section = 'board' | 'gameplay' | 'interface' | 'profile' | 'account' | 'notifications';
+type Section = 'board' | 'gameplay' | 'computer' | 'interface' | 'profile' | 'account' | 'notifications';
 
 const SECTIONS: { id: Section; label: string; icon: typeof LayoutGrid; stage?: number }[] = [
   { id: 'board', label: 'Board & pieces', icon: LayoutGrid },
   { id: 'gameplay', label: 'Gameplay', icon: Gamepad2 },
+  { id: 'computer', label: 'Computer opponents', icon: Bot },
   { id: 'interface', label: 'Interface', icon: MonitorCog },
   { id: 'profile', label: 'Profile', icon: UserRound, stage: 2 },
   { id: 'account', label: 'Account & privacy', icon: Lock, stage: 2 },
@@ -192,6 +194,8 @@ export function SettingsClient() {
             </div>
           </div>
         )}
+
+        {section === 'computer' && <EngineSettings />}
 
         {section === 'interface' && (
           <div className="max-w-2xl divide-y divide-line">

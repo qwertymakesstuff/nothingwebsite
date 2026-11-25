@@ -3,12 +3,11 @@
 // happens its return `source` becomes 'live' and the sample notices disappear by themselves.
 
 import { ACHIEVEMENTS, sampleUnlocks, type Achievement } from '../sample/achievements';
-import { SAMPLE_BOTS, BOT_TIERS } from '../sample/bots';
+import { ROSTER, tierInfo, type Persona, type TierInfo } from '@rookery/ai';
 import { SAMPLE_GAMES, sampleGamesFor } from '../sample/games';
 import { PREVIEW_USERNAME, SAMPLE_PROFILES, sampleLeaderboard, sampleProfile } from '../sample/players';
 import { PUZZLE_THEMES, SAMPLE_DAILY_PUZZLE, SAMPLE_PUZZLES } from '../sample/puzzles';
 import type {
-  BotProfile,
   Category,
   GameSummary,
   LeaderboardEntry,
@@ -53,9 +52,9 @@ export function getLeaderboard(category: Category): Sourced<LeaderboardEntry[]> 
   return sample(sampleLeaderboard(category));
 }
 
-// ── Computer opponents (Stage 3: packages/ai personas) ─────────────────────────────────
-export function getBots(): Sourced<{ tiers: typeof BOT_TIERS; bots: BotProfile[] }> {
-  return sample({ tiers: BOT_TIERS, bots: SAMPLE_BOTS });
+// ── Computer opponents (live: the configured roster in packages/ai) ─────────────────────
+export function getBots(): Sourced<{ tiers: TierInfo[]; bots: Persona[] }> {
+  return { data: { tiers: tierInfo(), bots: [...ROSTER] }, source: 'live' };
 }
 
 // ── Puzzles (Stage 6: Lichess CC0 puzzle import) ───────────────────────────────────────

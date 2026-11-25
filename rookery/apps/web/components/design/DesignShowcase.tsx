@@ -16,7 +16,7 @@ import { SampleNotice } from '@/components/ui/SampleNotice';
 import { EmptyState, ErrorState, LoadingState, Skeleton, Spinner } from '@/components/ui/States';
 import { Segmented, Switch } from '@/components/ui/Switch';
 import { Tabs } from '@/components/ui/Tabs';
-import type { BotProfile } from '@/lib/types';
+import type { Persona } from '@rookery/ai';
 
 const SWATCHES = [
   ['surface-0', 'bg-surface-0'], ['surface-1', 'bg-surface-1'], ['surface-2', 'bg-surface-2'], ['surface-3', 'bg-surface-3'], ['surface-4', 'bg-surface-4'],
@@ -24,7 +24,7 @@ const SWATCHES = [
   ['fg', 'bg-fg'], ['fg-muted', 'bg-fg-muted'], ['fg-subtle', 'bg-fg-subtle'], ['win', 'bg-win'], ['loss', 'bg-loss'], ['draw', 'bg-draw'], ['info', 'bg-info'],
 ];
 
-export function DesignShowcase({ bots }: { bots: BotProfile[] }) {
+export function DesignShowcase({ bots }: { bots: Persona[] }) {
   const [modal, setModal] = useState(false);
   const [sw, setSw] = useState(true);
   const [seg, setSeg] = useState<'a' | 'b' | 'c'>('b');
@@ -139,7 +139,7 @@ export function DesignShowcase({ bots }: { bots: BotProfile[] }) {
                 <PlayerAvatar name="brassbishop" size="lg" online={false} />
               </div>
               <div className="flex flex-wrap gap-2">
-                {bots.map((b) => <BotPortrait key={b.id} spec={b.portrait} name={b.name} size="sm" raven={b.id === 'corvus'} />)}
+                {bots.map((b) => <BotPortrait key={b.id} spec={b.portrait} name={b.name} size="sm" />)}
               </div>
             </CardBody>
           </Card>

@@ -1,0 +1,110 @@
+{
+  "id": "theo",
+  "name": "Theo",
+  "tier": "casual",
+  "country": "FR",
+  "tagline": "Café regular, two sugars",
+  "bio": "Theo has played the same café table every Sunday for a decade. Knows a few openings by heart, forgets them by move eight.",
+  "style": [
+    "Opening book",
+    "Chatty"
+  ],
+  "portrait": {
+    "bg": [
+      "#6b5a45",
+      "#3e3326"
+    ],
+    "skin": "#e8bd98",
+    "hair": "#4a3222",
+    "hairStyle": "curly",
+    "accessory": "scarf",
+    "shirt": "#5b7a6b"
+  },
+  "strength": {
+    "elo": 900
+  },
+  "personality": {
+    "aggression": 0.5,
+    "risk": 0.5,
+    "chattiness": 0.8,
+    "mistakePhases": {
+      "opening": 0.4,
+      "middlegame": 1.3,
+      "endgame": 1.3
+    },
+    "resign": null,
+    "acceptDrawWithinCp": 80,
+    "thinking": {
+      "minMs": 700,
+      "maxMs": 2400
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "italian",
+        "weight": 4
+      }
+    ],
+    "black": [
+      {
+        "opening": "italian",
+        "weight": 3
+      },
+      {
+        "opening": "french",
+        "weight": 1
+      }
+    ],
+    "fidelity": 0.95
+  },
+  "dialogue": {
+    "greeting": [
+      "Bonjour! White or black, I always play the Italian.",
+      "Ah, a new opponent. Café crème?"
+    ],
+    "botCapture": [
+      "Merci beaucoup.",
+      "Ah, you left this on the table."
+    ],
+    "botCheck": [
+      "Échec! Excuse my French."
+    ],
+    "playerCapture": [
+      "Ouf. I needed that piece."
+    ],
+    "playerBlunder": [
+      "Oh là là. Did you mean to do that?"
+    ],
+    "botWinning": [
+      "The coffee is working today."
+    ],
+    "botLosing": [
+      "I think I forgot my book after move eight. Again."
+    ],
+    "botWins": [
+      "Voilà! Same time next Sunday?"
+    ],
+    "botLoses": [
+      "Bravo. Next coffee is on me."
+    ],
+    "draw": [
+      "Égalité. Very civilised."
+    ],
+    "drawAccepted": [
+      "A draw? D'accord, let's order dessert."
+    ],
+    "drawDeclined": [
+      "Non, non, the game is still young."
+    ],
+    "playerResigns": [
+      "Already? Ah well, more time for croissants."
+    ],
+    "takeback": [
+      "Bien sûr, take it back."
+    ],
+    "rematch": [
+      "Encore!"
+    ]
+  }
+}

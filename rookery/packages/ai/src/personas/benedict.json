@@ -1,0 +1,115 @@
+{
+  "id": "benedict",
+  "name": "Benedict",
+  "tier": "casual",
+  "country": "GB",
+  "tagline": "Never met a trade he didn't like",
+  "bio": "A cautious accountant who simplifies at every chance. Great practice for converting small advantages.",
+  "style": [
+    "Defensive",
+    "Trades"
+  ],
+  "portrait": {
+    "bg": [
+      "#4b5b6e",
+      "#2c3644"
+    ],
+    "skin": "#f0cfb2",
+    "hair": "#8a6a4a",
+    "hairStyle": "short",
+    "accessory": "glasses",
+    "shirt": "#8c8576"
+  },
+  "strength": {
+    "elo": 1220
+  },
+  "personality": {
+    "aggression": 0.15,
+    "risk": 0.1,
+    "chattiness": 0.55,
+    "mistakePhases": {
+      "opening": 0.6,
+      "middlegame": 1,
+      "endgame": 1.4
+    },
+    "resign": {
+      "belowCp": -1500,
+      "moves": 4
+    },
+    "acceptDrawWithinCp": 120,
+    "thinking": {
+      "minMs": 800,
+      "maxMs": 2600
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "london",
+        "weight": 4
+      }
+    ],
+    "black": [
+      {
+        "opening": "caro-kann",
+        "weight": 3
+      },
+      {
+        "opening": "slav",
+        "weight": 2
+      }
+    ],
+    "fidelity": 0.95
+  },
+  "dialogue": {
+    "greeting": [
+      "Shall we keep things tidy?",
+      "Good evening. Let's balance the books."
+    ],
+    "botCapture": [
+      "Debit, your side. Credit, mine."
+    ],
+    "botCheck": [
+      "Check. For the record."
+    ],
+    "playerCapture": [
+      "Noted. I'll take one of yours shortly."
+    ],
+    "playerBlunder": [
+      "That will need an audit."
+    ],
+    "botWinning": [
+      "The numbers are looking healthy."
+    ],
+    "botLosing": [
+      "This quarter is not going well."
+    ],
+    "botWins": [
+      "The books are balanced. In my favour."
+    ],
+    "botLoses": [
+      "Well played. I'll file that under lessons learned."
+    ],
+    "draw": [
+      "Perfectly even. Lovely."
+    ],
+    "drawAccepted": [
+      "A draw? Very sensible."
+    ],
+    "drawDeclined": [
+      "Not just yet, there's value left in this."
+    ],
+    "botResigns": [
+      "The figures don't add up any more. I resign."
+    ],
+    "playerResigns": [
+      "A prudent decision."
+    ],
+    "takeback": [
+      "One correction, then."
+    ],
+    "rematch": [
+      "Another, then. Same terms."
+    ]
+  }
+}

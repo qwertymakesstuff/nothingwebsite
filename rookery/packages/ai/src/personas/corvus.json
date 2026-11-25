@@ -1,0 +1,86 @@
+{
+  "id": "corvus",
+  "name": "Corvus",
+  "tier": "master",
+  "tagline": "The rook of the Rookery",
+  "bio": "The club's resident raven and our strongest opponent: Stockfish at full strength, no personality settings, no mercy.",
+  "style": [
+    "Maximum strength"
+  ],
+  "portrait": {
+    "bg": [
+      "#3a3326",
+      "#1c1913"
+    ],
+    "skin": "#2a2a2e",
+    "hair": "#141416",
+    "hairStyle": "bald",
+    "shirt": "#c19a52",
+    "raven": true
+  },
+  "strength": {
+    "elo": "max"
+  },
+  "personality": {
+    "aggression": 0.5,
+    "risk": 0.5,
+    "chattiness": 0.4,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -400,
+      "moves": 2
+    },
+    "acceptDrawWithinCp": 10,
+    "thinking": {
+      "minMs": 200,
+      "maxMs": 800
+    }
+  },
+  "openings": {
+    "white": [],
+    "black": [],
+    "fidelity": 0.0
+  },
+  "dialogue": {
+    "greeting": [
+      "Caw."
+    ],
+    "botCapture": [
+      "Caw."
+    ],
+    "playerBlunder": [
+      "Caw caw."
+    ],
+    "botWinning": [
+      "Caaaw."
+    ],
+    "botWins": [
+      "Caw!"
+    ],
+    "botLoses": [
+      "...caw?"
+    ],
+    "draw": [
+      "Caw."
+    ],
+    "drawDeclined": [
+      "Caw."
+    ],
+    "drawAccepted": [
+      "Caw."
+    ],
+    "botResigns": [
+      "Caw."
+    ],
+    "playerResigns": [
+      "Caw."
+    ],
+    "rematch": [
+      "Caw."
+    ]
+  }
+}

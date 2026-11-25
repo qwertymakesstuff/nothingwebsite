@@ -1,0 +1,208 @@
+{
+  "runs": [
+    {
+      "date": "2026-11-25T21:24:00.506Z",
+      "gamesPerMatch": 24,
+      "anchorMovetimeMs": 700,
+      "rows": [
+        {
+          "skill": 0.8,
+          "elo": 1065,
+          "vs": "SF1320",
+          "score": 0.1875,
+          "games": 24
+        },
+        {
+          "skill": 0.65,
+          "elo": 461,
+          "vs": "skill0.8",
+          "score": 0.020833333333333332,
+          "games": 24
+        },
+        {
+          "skill": 0.5,
+          "elo": 44,
+          "vs": "skill0.65",
+          "score": 0.08333333333333333,
+          "games": 24
+        },
+        {
+          "skill": 0.35,
+          "elo": -426,
+          "vs": "skill0.5",
+          "score": 0.0625,
+          "games": 24
+        },
+        {
+          "skill": 0.2,
+          "elo": -733,
+          "vs": "skill0.35",
+          "score": 0.14583333333333334,
+          "games": 24
+        },
+        {
+          "skill": 0.05,
+          "elo": -988,
+          "vs": "skill0.2",
+          "score": 0.1875,
+          "games": 24
+        }
+      ]
+    },
+    {
+      "date": "2026-11-25T21:29:04.733Z",
+      "gamesPerMatch": 24,
+      "anchorMovetimeMs": 700,
+      "rows": [
+        {
+          "skill": 0.75,
+          "elo": 833,
+          "vs": "skill0.8",
+          "score": 0.20833333333333334,
+          "games": 24
+        },
+        {
+          "skill": 0.7,
+          "elo": 526,
+          "vs": "skill0.75",
+          "score": 0.14583333333333334,
+          "games": 24
+        },
+        {
+          "skill": 0.65,
+          "elo": 406,
+          "vs": "skill0.7",
+          "score": 0.3333333333333333,
+          "games": 24
+        },
+        {
+          "skill": 0.6,
+          "elo": 252,
+          "vs": "skill0.65",
+          "score": 0.2916666666666667,
+          "games": 24
+        }
+      ]
+    },
+    {
+      "date": "2026-11-25T22:00:29.470Z",
+      "gamesPerMatch": 24,
+      "anchorMovetimeMs": 700,
+      "rows": [
+        {
+          "skill": 0.85,
+          "elo": 1129,
+          "vs": "SF1320",
+          "score": 0.25,
+          "games": 24
+        },
+        {
+          "skill": 0.9,
+          "elo": 1231,
+          "vs": "SF1320",
+          "score": 0.375,
+          "games": 24
+        },
+        {
+          "skill": 0.95,
+          "elo": 1409,
+          "vs": "SF1320",
+          "score": 0.625,
+          "games": 24
+        },
+        {
+          "skill": 1,
+          "elo": 1306,
+          "vs": "SF1320",
+          "score": 0.4791666666666667,
+          "games": 24
+        }
+      ]
+    },
+    {
+      "date": "2026-11-25T22:09:21.325Z",
+      "gamesPerMatch": 24,
+      "anchorMovetimeMs": 700,
+      "rows": [],
+      "validation": [
+        {
+          "pair": "rosa:theo",
+          "expected": 0.703,
+          "score": 0.6458333333333334,
+          "games": 24
+        },
+        {
+          "pair": "benedict:rosa",
+          "expected": 0.727,
+          "score": 1,
+          "games": 24
+        },
+        {
+          "pair": "theo:juniper",
+          "expected": 0.738,
+          "score": 0.7291666666666666,
+          "games": 24
+        },
+        {
+          "pair": "marlow:pip",
+          "expected": 0.808,
+          "score": 0.8541666666666666,
+          "games": 24
+        }
+      ]
+    },
+    {
+      "date": "2026-11-25T22:19:10.639Z",
+      "gamesPerMatch": 24,
+      "anchorMovetimeMs": 700,
+      "rows": [
+        {
+          "skill": 0.85,
+          "elo": 1158,
+          "vs": "skill0.9",
+          "score": 0.3958333333333333,
+          "games": 24
+        },
+        {
+          "skill": 0.8,
+          "elo": 1004,
+          "vs": "skill0.85",
+          "score": 0.2916666666666667,
+          "games": 24
+        }
+      ]
+    },
+    {
+      "date": "2026-11-25T22:27:08.183Z",
+      "gamesPerMatch": 24,
+      "anchorMovetimeMs": 700,
+      "rows": [],
+      "validation": [
+        {
+          "pair": "benedict:rosa",
+          "expected": 0.727,
+          "score": 0.9166666666666666,
+          "games": 24
+        },
+        {
+          "pair": "rosa:theo",
+          "expected": 0.703,
+          "score": 0.7916666666666666,
+          "games": 24
+        },
+        {
+          "pair": "theo:juniper",
+          "expected": 0.738,
+          "score": 0.6041666666666666,
+          "games": 24
+        },
+        {
+          "pair": "juniper:marlow",
+          "expected": 0.727,
+          "score": 0.7083333333333334,
+          "games": 24
+        }
+      ]
+    }
+  ]
+}

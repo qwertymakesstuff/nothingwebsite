@@ -1,0 +1,112 @@
+{
+  "id": "selene",
+  "name": "Selene",
+  "tier": "master",
+  "tagline": "Calm, cold, correct",
+  "bio": "Selene rarely speaks and almost never blunders. A true test of your endgame technique.",
+  "style": [
+    "Universal",
+    "Accurate"
+  ],
+  "portrait": {
+    "bg": [
+      "#2f3b4e",
+      "#1a222e"
+    ],
+    "skin": "#e9d3c2",
+    "hair": "#cfd6df",
+    "hairStyle": "long",
+    "shirt": "#1e2633"
+  },
+  "strength": {
+    "elo": 2610
+  },
+  "personality": {
+    "aggression": 0.5,
+    "risk": 0.45,
+    "chattiness": 0.15,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -450,
+      "moves": 2
+    },
+    "acceptDrawWithinCp": 20,
+    "thinking": {
+      "minMs": 300,
+      "maxMs": 1200
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "reti",
+        "weight": 2
+      },
+      {
+        "opening": "english",
+        "weight": 2
+      }
+    ],
+    "black": [
+      {
+        "opening": "slav",
+        "weight": 2
+      },
+      {
+        "opening": "nimzo-indian",
+        "weight": 2
+      },
+      {
+        "opening": "caro-kann",
+        "weight": 1
+      }
+    ],
+    "fidelity": 1.0
+  },
+  "dialogue": {
+    "greeting": [
+      "…",
+      "Begin."
+    ],
+    "playerBlunder": [
+      "…"
+    ],
+    "botWinning": [
+      "It is decided."
+    ],
+    "botLosing": [
+      "Interesting."
+    ],
+    "botWins": [
+      "Checkmate."
+    ],
+    "botLoses": [
+      "Well played."
+    ],
+    "draw": [
+      "Draw."
+    ],
+    "drawAccepted": [
+      "Agreed."
+    ],
+    "drawDeclined": [
+      "No."
+    ],
+    "botResigns": [
+      "I resign."
+    ],
+    "playerResigns": [
+      "Accepted."
+    ],
+    "takeback": [
+      "Very well."
+    ],
+    "rematch": [
+      "Again."
+    ]
+  }
+}

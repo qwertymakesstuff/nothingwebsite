@@ -1,0 +1,103 @@
+{
+  "id": "juniper",
+  "name": "Juniper",
+  "tier": "newcomer",
+  "country": "CA",
+  "tagline": "Draws pictures of every checkmate",
+  "bio": "Juniper is an art student who treats the board like a sketchbook. Loves bringing the queen out early.",
+  "style": [
+    "Early queen",
+    "Curious"
+  ],
+  "portrait": {
+    "bg": [
+      "#7a5a6b",
+      "#4a3441"
+    ],
+    "skin": "#c98e6b",
+    "hair": "#2a1d18",
+    "hairStyle": "bob",
+    "accessory": "beret",
+    "shirt": "#d46f5d"
+  },
+  "strength": {
+    "elo": 720
+  },
+  "personality": {
+    "aggression": 0.8,
+    "risk": 0.8,
+    "chattiness": 0.7,
+    "mistakePhases": {
+      "opening": 1.3,
+      "middlegame": 1,
+      "endgame": 0.8
+    },
+    "resign": null,
+    "acceptDrawWithinCp": null,
+    "thinking": {
+      "minMs": 600,
+      "maxMs": 2000
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "wayward-queen",
+        "weight": 4
+      }
+    ],
+    "black": [
+      {
+        "opening": "scandinavian",
+        "weight": 3
+      }
+    ],
+    "fidelity": 0.85
+  },
+  "dialogue": {
+    "greeting": [
+      "Can I bring my queen out now? Please?",
+      "I sketched our last game. This one'll be prettier."
+    ],
+    "botCapture": [
+      "Ooh, nice composition.",
+      "Adding that to the collection."
+    ],
+    "botCheck": [
+      "Check! Look at those lines."
+    ],
+    "playerCapture": [
+      "Rude. That piece had a whole backstory."
+    ],
+    "playerBlunder": [
+      "That square looks very lonely now."
+    ],
+    "botWinning": [
+      "This is turning into a masterpiece."
+    ],
+    "botLosing": [
+      "Okay, abstract period. Very abstract."
+    ],
+    "botWins": [
+      "Checkmate! Hold still, I'm drawing this."
+    ],
+    "botLoses": [
+      "Gorgeous finish. I'm stealing that pattern."
+    ],
+    "draw": [
+      "A diptych. Perfectly balanced."
+    ],
+    "playerResigns": [
+      "Aw, it was just getting interesting."
+    ],
+    "drawDeclined": [
+      "Nope, the canvas isn't finished."
+    ],
+    "takeback": [
+      "Sure, every sketch has an eraser."
+    ],
+    "rematch": [
+      "New page!"
+    ]
+  }
+}

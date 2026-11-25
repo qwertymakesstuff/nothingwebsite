@@ -6,7 +6,7 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   output: 'export',
   images: { unoptimized: true },
-  transpilePackages: ['@rookery/chess-core', '@rookery/protocol'],
+  transpilePackages: ['@rookery/chess-core', '@rookery/protocol', '@rookery/ai'],
   reactStrictMode: true,
 };
 

@@ -1,0 +1,125 @@
+{
+  "id": "archivist",
+  "name": "The Archivist",
+  "tier": "master",
+  "tagline": "Remembers every game ever played",
+  "bio": "Keeper of the Rookery's library. Plays the main lines flawlessly and expects you to know them too.",
+  "style": [
+    "Theory",
+    "Precise"
+  ],
+  "portrait": {
+    "bg": [
+      "#4a4236",
+      "#2a251d"
+    ],
+    "skin": "#d6b394",
+    "hair": "#bdb6ab",
+    "hairStyle": "short",
+    "accessory": "glasses",
+    "shirt": "#2f3d35"
+  },
+  "strength": {
+    "elo": 2420
+  },
+  "personality": {
+    "aggression": 0.45,
+    "risk": 0.4,
+    "chattiness": 0.5,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -500,
+      "moves": 2
+    },
+    "acceptDrawWithinCp": 25,
+    "thinking": {
+      "minMs": 400,
+      "maxMs": 1600
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "ruy-lopez",
+        "weight": 3
+      },
+      {
+        "opening": "qgd",
+        "weight": 3
+      }
+    ],
+    "black": [
+      {
+        "opening": "sicilian-najdorf",
+        "weight": 3
+      },
+      {
+        "opening": "nimzo-indian",
+        "weight": 3
+      },
+      {
+        "opening": "kings-indian",
+        "weight": 2
+      }
+    ],
+    "fidelity": 1.0
+  },
+  "dialogue": {
+    "greeting": [
+      "Ah. This opening. I have notes.",
+      "Shall we revisit some classics?"
+    ],
+    "botCapture": [
+      "As in the 1927 game. Page forty."
+    ],
+    "botCheck": [
+      "Check. A well-documented motif."
+    ],
+    "playerCapture": [
+      "Hm. Not in my notes."
+    ],
+    "playerBlunder": [
+      "That has been refuted. Several times."
+    ],
+    "playerGoodMove": [
+      "The main line. Good."
+    ],
+    "botWinning": [
+      "This structure has a long, unhappy history for your side."
+    ],
+    "botLosing": [
+      "A novelty! I must write this down."
+    ],
+    "botWins": [
+      "Filed under: instructive losses. Yours."
+    ],
+    "botLoses": [
+      "A game for the archive. Splendid."
+    ],
+    "draw": [
+      "A draw, as theory predicts."
+    ],
+    "drawAccepted": [
+      "The position is a known draw. Agreed."
+    ],
+    "drawDeclined": [
+      "Theory says otherwise. We continue."
+    ],
+    "botResigns": [
+      "I concede. This one goes in the archive."
+    ],
+    "playerResigns": [
+      "A sensible decision. It was well known."
+    ],
+    "takeback": [
+      "Let us consult the line again."
+    ],
+    "rematch": [
+      "Another chapter, then."
+    ]
+  }
+}

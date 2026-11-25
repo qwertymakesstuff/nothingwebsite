@@ -1,0 +1,118 @@
+{
+  "id": "viktor",
+  "name": "Viktor",
+  "tier": "expert",
+  "country": "CZ",
+  "tagline": "Every gambit, every game",
+  "bio": "Viktor believes a pawn is a small price for initiative. Sharp, romantic and dangerous in the opening.",
+  "style": [
+    "Gambits",
+    "Initiative"
+  ],
+  "portrait": {
+    "bg": [
+      "#5e3e3e",
+      "#3a2424"
+    ],
+    "skin": "#e6c0a0",
+    "hair": "#5b3a22",
+    "hairStyle": "mohawk",
+    "shirt": "#1f1d22"
+  },
+  "strength": {
+    "elo": 1920
+  },
+  "personality": {
+    "aggression": 0.9,
+    "risk": 0.9,
+    "chattiness": 0.6,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -700,
+      "moves": 2
+    },
+    "acceptDrawWithinCp": null,
+    "thinking": {
+      "minMs": 400,
+      "maxMs": 1800
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "kings-gambit",
+        "weight": 3
+      },
+      {
+        "opening": "danish-gambit",
+        "weight": 3
+      }
+    ],
+    "black": [
+      {
+        "opening": "dutch",
+        "weight": 2
+      },
+      {
+        "opening": "sicilian-dragon",
+        "weight": 2
+      }
+    ],
+    "fidelity": 1.0
+  },
+  "dialogue": {
+    "greeting": [
+      "A pawn for your thoughts?",
+      "Gambits accepted, gambits offered."
+    ],
+    "botCapture": [
+      "The initiative pays."
+    ],
+    "botCheck": [
+      "Check, and the attack continues."
+    ],
+    "playerCapture": [
+      "Take it. Pawns are for pushing aside."
+    ],
+    "playerBlunder": [
+      "Ha! Now the attack plays itself."
+    ],
+    "playerGoodMove": [
+      "Good defence. Annoying, but good."
+    ],
+    "botWinning": [
+      "Romantic chess is not dead."
+    ],
+    "botLosing": [
+      "Perhaps that pawn was worth something after all."
+    ],
+    "botWins": [
+      "Glory to the gambit!"
+    ],
+    "botLoses": [
+      "You survived the storm. Well done."
+    ],
+    "draw": [
+      "A draw? How dull."
+    ],
+    "drawDeclined": [
+      "Draws are for cowards. We play on!"
+    ],
+    "botResigns": [
+      "The attack has run dry. I resign, with style."
+    ],
+    "playerResigns": [
+      "The initiative wins again."
+    ],
+    "takeback": [
+      "Take it back, but the gambit remains."
+    ],
+    "rematch": [
+      "Another gambit!"
+    ]
+  }
+}

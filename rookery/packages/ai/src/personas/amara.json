@@ -1,0 +1,126 @@
+{
+  "id": "amara",
+  "name": "Amara",
+  "tier": "expert",
+  "country": "NG",
+  "tagline": "Walls, not windows",
+  "bio": "An immovable defender who absorbs attacks and counter-punches once you overextend.",
+  "style": [
+    "Solid",
+    "Counter-attack"
+  ],
+  "portrait": {
+    "bg": [
+      "#3f5a5a",
+      "#253838"
+    ],
+    "skin": "#5e3a26",
+    "hair": "#120e0c",
+    "hairStyle": "curly",
+    "accessory": "glasses",
+    "shirt": "#c19a52"
+  },
+  "strength": {
+    "elo": 2060
+  },
+  "personality": {
+    "aggression": 0.25,
+    "risk": 0.2,
+    "chattiness": 0.4,
+    "mistakePhases": {
+      "opening": 1,
+      "middlegame": 1,
+      "endgame": 1
+    },
+    "resign": {
+      "belowCp": -600,
+      "moves": 3
+    },
+    "acceptDrawWithinCp": 30,
+    "thinking": {
+      "minMs": 500,
+      "maxMs": 2200
+    }
+  },
+  "openings": {
+    "white": [
+      {
+        "opening": "qgd",
+        "weight": 2
+      },
+      {
+        "opening": "reti",
+        "weight": 2
+      }
+    ],
+    "black": [
+      {
+        "opening": "caro-kann",
+        "weight": 3
+      },
+      {
+        "opening": "slav",
+        "weight": 2
+      },
+      {
+        "opening": "french",
+        "weight": 1
+      }
+    ],
+    "fidelity": 1.0
+  },
+  "dialogue": {
+    "greeting": [
+      "Go on. Show me your attack.",
+      "Patience wins more games than talent."
+    ],
+    "botCapture": [
+      "Overextended. Thank you."
+    ],
+    "botCheck": [
+      "Check."
+    ],
+    "playerCapture": [
+      "Noted."
+    ],
+    "playerBlunder": [
+      "And there's the crack in the wall."
+    ],
+    "playerGoodMove": [
+      "Strong. Keep pushing."
+    ],
+    "botWinning": [
+      "You've run out of attack."
+    ],
+    "botLosing": [
+      "The wall is cracking. Impressive."
+    ],
+    "botWins": [
+      "Defence, then counter-attack. Every time."
+    ],
+    "botLoses": [
+      "You broke through. Very well played."
+    ],
+    "draw": [
+      "A solid result."
+    ],
+    "drawAccepted": [
+      "Agreed."
+    ],
+    "drawDeclined": [
+      "Not yet."
+    ],
+    "botResigns": [
+      "I can't hold this. Well played."
+    ],
+    "playerResigns": [
+      "Good game."
+    ],
+    "takeback": [
+      "Fine."
+    ],
+    "rematch": [
+      "Again."
+    ]
+  }
+}
