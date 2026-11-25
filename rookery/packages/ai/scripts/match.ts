@@ -74,7 +74,7 @@ export async function playGame(
         fen: START_FEN,
         moves,
         multiPv: Math.min(p.multiPv, legal.length),
-        ...(p.kind === 'engine' ? { movetimeMs: p.movetimeMs, uciElo: p.uciElo } : { depth: p.depth }),
+        ...(p.kind === 'engine' ? { movetimeMs: p.movetimeMs, uciElo: p.uciElo } : { depth: p.depth, nodes: p.nodeCap }),
       });
       uci = selectMove({
         fen: chess.fen(),

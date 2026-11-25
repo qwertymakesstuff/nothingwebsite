@@ -46,19 +46,33 @@ export class UciEngine {
   private options = new Map<string, string>();
   private ready: Promise<void>;
   private dead = false;
+  /** Recent traffic, included in timeout errors to make engine problems diagnosable. */
+  private trace: string[] = [];
 
   constructor(private transport: Transport) {
     transport.onLine((line) => {
+      this.remember(`< ${line}`);
       for (const l of [...this.listeners]) l(line);
     });
     this.ready = this.handshake();
+  }
+
+  private remember(entry: string): void {
+    if (entry.startsWith('< info') && !entry.includes(' pv ')) return;
+    this.trace.push(entry.length > 160 ? entry.slice(0, 160) + '…' : entry);
+    if (this.trace.length > 12) this.trace.shift();
+  }
+
+  private send(cmd: string): void {
+    this.remember(`> ${cmd}`);
+    this.transport.send(cmd);
   }
 
   private waitFor(pred: (line: string) => boolean, timeoutMs = 30_000): Promise<string> {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.listeners = this.listeners.filter((l) => l !== fn);
-        reject(new Error('Engine did not respond in time'));
+        reject(new Error(`Engine did not respond in time. Recent traffic:\n${this.trace.join('\n')}`));
       }, timeoutMs);
       const fn = (line: string) => {
         if (pred(line)) {
@@ -73,14 +87,14 @@ export class UciEngine {
 
   private async handshake(): Promise<void> {
     const ok = this.waitFor((l) => l === 'uciok');
-    this.transport.send('uci');
+    this.send('uci');
     await ok;
     await this.isReady();
   }
 
   private async isReady(): Promise<void> {
     const ok = this.waitFor((l) => l === 'readyok');
-    this.transport.send('isready');
+    this.send('isready');
     await ok;
   }
 
@@ -88,7 +102,7 @@ export class UciEngine {
     const v = String(value);
     if (this.options.get(name) === v) return;
     this.options.set(name, v);
-    this.transport.send(`setoption name ${name} value ${v}`);
+    this.send(`setoption name ${name} value ${v}`);
   }
 
   /** Runs a search. Calls are serialised; a new game should call `newGame()` first. */
@@ -111,13 +125,13 @@ export class UciEngine {
       const done = this.waitFor((l) => l.startsWith('bestmove'), (opts.movetimeMs ?? 0) + 60_000);
       const started = Date.now();
       const moves = opts.moves?.length ? ` moves ${opts.moves.join(' ')}` : '';
-      this.transport.send(`position fen ${opts.fen}${moves}`);
+      this.send(`position fen ${opts.fen}${moves}`);
       const limits = [
         opts.depth !== undefined ? `depth ${opts.depth}` : '',
         opts.movetimeMs !== undefined ? `movetime ${Math.round(opts.movetimeMs)}` : '',
         opts.nodes !== undefined ? `nodes ${Math.round(opts.nodes)}` : '',
       ].filter(Boolean);
-      this.transport.send(`go ${limits.join(' ') || 'depth 10'}`);
+      this.send(`go ${limits.join(' ') || 'depth 10'}`);
       try {
         const line = await done;
         return { bestmove: parseBestMove(line), candidates: collector.result(), ms: Date.now() - started };
@@ -134,7 +148,7 @@ export class UciEngine {
   newGame(): Promise<void> {
     const run = async () => {
       await this.ready;
-      this.transport.send('ucinewgame');
+      this.send('ucinewgame');
       await this.isReady();
     };
     const p = this.queue.then(run, run);
@@ -144,7 +158,7 @@ export class UciEngine {
 
   /** Asks a running search to finish now (it still resolves, with the best move so far). */
   stop(): void {
-    this.transport.send('stop');
+    this.send('stop');
   }
 
   terminate(): void {

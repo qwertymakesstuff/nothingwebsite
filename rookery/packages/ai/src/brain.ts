@@ -90,7 +90,7 @@ export class BotBrain {
       fen: pos.initialFen,
       moves: pos.moves,
       multiPv: Math.min(p.multiPv, legalMoves.length),
-      ...(p.kind === 'engine' ? { movetimeMs: Math.max(50, p.movetimeMs * this.movetimeScale), uciElo: p.uciElo } : { depth: p.depth }),
+      ...(p.kind === 'engine' ? { movetimeMs: Math.max(50, p.movetimeMs * this.movetimeScale), uciElo: p.uciElo } : { depth: p.depth, nodes: p.nodeCap }),
     });
     const sel = selectMove({
       fen,

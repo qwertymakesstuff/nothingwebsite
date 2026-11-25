@@ -34,6 +34,12 @@ export interface SampleProfile {
   /** A "mistake" loses at least this much. */
   mistakeMinLossCp: number;
   styleWindowCp: number;
+  /**
+   * Hard cap on nodes searched. Depth-limited multi-line searches are normally quick, but in sharp
+   * positions they can explode (one measured case: 23.7M nodes, 40 s). The cap bounds every move to
+   * under a second without making strength depend on the device's speed, as a time cap would.
+   */
+  nodeCap: number;
 }
 
 export type StrengthProfile = EngineProfile | SampleProfile;
@@ -41,6 +47,7 @@ export type StrengthProfile = EngineProfile | SampleProfile;
 export const ENGINE_FLOOR_ELO = 1320;
 export const DEFAULT_ENGINE_MOVETIME_MS = 700;
 export const FULL_STRENGTH_MOVETIME_MS = 1500;
+export const SAMPLE_NODE_CAP = 400_000;
 
 /** Parameters of the sampled model for a skill in [0, 1]. */
 export function sampleProfile(skill: number): SampleProfile {
@@ -55,20 +62,28 @@ export function sampleProfile(skill: number): SampleProfile {
     randomRate: 0.3 * weak * weak,
     mistakeRate: 0.02 + 0.16 * weak,
     mistakeMinLossCp: 150,
-    styleWindowCp: 40 + 80 * weak,
+    // Narrow, so personality changes *which* reasonable move is chosen, not how strong it is.
+    styleWindowCp: 15 + 25 * weak,
+    nodeCap: SAMPLE_NODE_CAP,
   };
 }
 
 /**
- * Measured rating of the sampled model at several skill values, anchored to Stockfish's
- * UCI_Elo 1320. Sorted by rating. Filled in from calibration (docs/AI_CALIBRATION.md).
+ * Rating of the sampled model by skill, measured against Stockfish UCI_Elo 1320 (direct matches
+ * for skill ≥ 0.8) and a ladder of neighbouring skills below that, 24 games per match. Raw results
+ * are in docs/AI_CALIBRATION.json; this table is a monotone fit of them (noisy neighbours pooled).
+ * Each point carries roughly ±80 Elo of statistical uncertainty. See docs/AI_CALIBRATION.md.
  */
 export const SAMPLE_CALIBRATION: readonly { elo: number; skill: number }[] = [
-  { elo: 250, skill: 0 },
-  { elo: 600, skill: 0.3 },
-  { elo: 900, skill: 0.55 },
-  { elo: 1150, skill: 0.8 },
-  { elo: 1320, skill: 1 },
+  { elo: 250, skill: 0.6 },
+  { elo: 405, skill: 0.65 },
+  { elo: 500, skill: 0.7 },
+  { elo: 805, skill: 0.75 },
+  { elo: 1035, skill: 0.8 },
+  { elo: 1145, skill: 0.85 },
+  { elo: 1230, skill: 0.9 },
+  { elo: 1320, skill: 0.95 },
+  { elo: 1360, skill: 1 },
 ];
 
 export function skillForElo(elo: number): number {

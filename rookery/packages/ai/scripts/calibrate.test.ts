@@ -8,6 +8,9 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { test } from 'vitest';
 import { OPENINGS } from '../src/openings';
+import { BotBrain } from '../src/brain';
+import { getPersona } from '../src/personas';
+import { numericRating } from '../src/schema';
 import { DEFAULT_ENGINE_MOVETIME_MS, sampleProfile, type StrengthProfile } from '../src/strength';
 import { eloDiff, playGame, seededRng, type Player } from './match';
 import { createNodeEngine } from './nodeEngine';
@@ -19,7 +22,18 @@ function player(label: string, profile: StrengthProfile): Player {
   return { label, profile };
 }
 
-async function match(a: Player, b: Player, games: number, seed: number) {
+type PlayerFactory = (engine: ReturnType<typeof createNodeEngine>, seed: number) => Player;
+
+/** A real persona (strength + personality + book), wrapped as a match player. */
+function personaPlayer(id: string): PlayerFactory {
+  const persona = getPersona(id)!;
+  return (engine, seed) => {
+    const brain = new BotBrain(persona, engine, seededRng(seed));
+    return { label: id, profile: brain.profile, choose: async (fen, moves) => (await brain.move({ initialFen: fen, moves })).uci };
+  };
+}
+
+async function match(a: Player | PlayerFactory, b: Player | PlayerFactory, games: number, seed: number) {
   const openings = OPENINGS.map((o) => o.moves.split(' ').slice(0, 4));
   let score = 0;
   let next = 0;
@@ -30,7 +44,9 @@ async function match(a: Player, b: Player, games: number, seed: number) {
       while (next < games) {
         const g = next++;
         const aWhite = g % 2 === 0;
-        const rec = await playGame(aWhite ? a : b, aWhite ? b : a, engines, {
+        const pa = typeof a === 'function' ? a(aWhite ? engines.white : engines.black, seed * 1000 + g) : a;
+        const pb = typeof b === 'function' ? b(aWhite ? engines.black : engines.white, seed * 2000 + g) : b;
+        const rec = await playGame(aWhite ? pa : pb, aWhite ? pb : pa, engines, {
           openingSan: openings[Math.floor(g / 2) % openings.length],
           rng: seededRng(seed * 1000 + g),
         });
@@ -38,7 +54,7 @@ async function match(a: Player, b: Player, games: number, seed: number) {
         const aScore = rec.result === '1/2-1/2' ? 0.5 : (rec.result === '1-0') === aWhite ? 1 : 0;
         score += aScore;
         results.push(`${aScore}`);
-        process.stdout.write(`  [${a.label} vs ${b.label}] game ${g + 1}/${games} (w${w}): ${aScore} by ${rec.reason} in ${rec.plies} plies\n`);
+        process.stdout.write(`  [${pa.label} vs ${pb.label}] game ${g + 1}/${games} (w${w}): ${aScore} by ${rec.reason} in ${rec.plies} plies\n`);
       }
     } finally {
       engines.white.terminate();
@@ -81,6 +97,17 @@ test('calibrate sampled strength model', { timeout: 6 * 60 * 60 * 1000 }, async 
     }
   }
 
+  // VALIDATE=rosa:theo,benedict:rosa  real personas head to head; compares with the expected score.
+  const validation: { pair: string; expected: number; score: number; games: number }[] = [];
+  for (const [i, pair] of (process.env.VALIDATE ? process.env.VALIDATE.split(',') : []).entries()) {
+    const [x, y] = pair.split(':') as [string, string];
+    const { score, games } = await match(personaPlayer(x), personaPlayer(y), GAMES, 300 + i);
+    const diff = numericRating(getPersona(x)!) - numericRating(getPersona(y)!);
+    const expected = 1 / (1 + 10 ** (-diff / 400));
+    validation.push({ pair, expected: Math.round(expected * 1000) / 1000, score, games });
+    process.stdout.write(`→ ${pair}: scored ${(score * 100).toFixed(1)}% (expected ${(expected * 100).toFixed(1)}% from ratings)\n`);
+  }
+
   const file = new URL('../../../docs/AI_CALIBRATION.json', import.meta.url);
   let doc: { runs: unknown[] } = { runs: [] };
   try {
@@ -89,7 +116,7 @@ test('calibrate sampled strength model', { timeout: 6 * 60 * 60 * 1000 }, async 
   } catch {
     /* first run */
   }
-  doc.runs.push({ date: new Date().toISOString(), gamesPerMatch: GAMES, anchorMovetimeMs: DEFAULT_ENGINE_MOVETIME_MS, rows });
+  doc.runs.push({ date: new Date().toISOString(), gamesPerMatch: GAMES, anchorMovetimeMs: DEFAULT_ENGINE_MOVETIME_MS, rows, ...(validation.length ? { validation } : {}) });
   writeFileSync(file, JSON.stringify(doc, null, 2) + '\n');
   console.table(rows);
 });
