@@ -1,16 +1,21 @@
-import Link from 'next/link';
+import { ButtonLink } from '@/components/ui/Button';
 
 export default function NotFound() {
   return (
-    <div className="mx-auto max-w-md py-20 text-center">
-      <p className="text-6xl" aria-hidden>
+    <div className="mx-auto max-w-md py-24 text-center">
+      <p className="font-[family-name:var(--font-display)] text-7xl text-gold-400" aria-hidden>
         ♜
       </p>
-      <h1 className="mt-4 text-2xl font-bold">That square is empty</h1>
-      <p className="mt-2 text-ink-400">The page you were looking for doesn&apos;t exist.</p>
-      <Link href="/" className="mt-6 inline-block rounded-lg bg-ember-500 px-5 py-2.5 font-bold text-ink-950 hover:bg-ember-400">
-        Back to the board
-      </Link>
+      <h1 className="mt-6 font-[family-name:var(--font-display)] text-3xl font-semibold">That square is empty</h1>
+      <p className="mt-2 text-fg-muted">The page you were looking for doesn&apos;t exist, or has moved.</p>
+      <div className="mt-8 flex justify-center gap-2">
+        <ButtonLink href="/" variant="primary">
+          Back to the club
+        </ButtonLink>
+        <ButtonLink href="/play" variant="ghost">
+          Play a game
+        </ButtonLink>
+      </div>
     </div>
   );
 }

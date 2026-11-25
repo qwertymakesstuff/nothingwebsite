@@ -24,6 +24,18 @@ const COMPONENTS: { name: string; licence: string; use: string; source: string }
     source: 'https://github.com/jhlywa/chess.js',
   },
   {
+    name: 'Fraunces, Inter, JetBrains Mono',
+    licence: 'SIL Open Font License 1.1',
+    use: 'Typefaces (self-hosted via Fontsource).',
+    source: 'https://fontsource.org',
+  },
+  {
+    name: 'Lucide icons',
+    licence: 'ISC',
+    use: 'Interface icons.',
+    source: 'https://github.com/lucide-icons/lucide',
+  },
+  {
     name: 'Next.js, React',
     licence: 'MIT',
     use: 'Website framework.',
@@ -47,14 +59,14 @@ export default function LicensesPage() {
   return (
     <article className="max-w-3xl space-y-6">
       <header>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold">Licenses</h1>
-        <p className="mt-2 leading-relaxed text-ink-200">
+        <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold">Licenses</h1>
+        <p className="mt-2 leading-relaxed text-fg-muted">
           Rookery is free software: you can redistribute it and/or modify it under the terms of the{' '}
-          <a className="text-ember-400 underline" href="https://www.gnu.org/licenses/gpl-3.0.html">
+          <a className="text-gold-300 underline" href="https://www.gnu.org/licenses/gpl-3.0.html">
             GNU General Public License, version 3
           </a>{' '}
           or (at your option) any later version. The complete source code of this website is available at{' '}
-          <a className="text-ember-400 underline" href={REPO}>
+          <a className="text-gold-300 underline" href={REPO}>
             github.com/qwertymakesstuff/nothingwebsite
           </a>
           . Rookery is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
@@ -63,16 +75,16 @@ export default function LicensesPage() {
 
       <section>
         <h2 className="mb-3 text-lg font-bold">Third-party software and assets</h2>
-        <ul className="divide-y divide-white/5 overflow-hidden rounded-xl bg-ink-900/90 ring-1 ring-white/5">
+        <ul className="divide-y divide-white/5 overflow-hidden rounded-xl bg-surface-1/90 border border-line">
           {COMPONENTS.map((c) => (
             <li key={c.name} className="grid gap-1 p-4 sm:grid-cols-[1fr_auto]">
               <div>
                 <p className="font-semibold">{c.name}</p>
-                <p className="text-sm text-ink-400">{c.use}</p>
+                <p className="text-sm text-fg-subtle">{c.use}</p>
               </div>
               <div className="text-sm sm:text-right">
-                <p className="text-ink-200">{c.licence}</p>
-                <a className="text-ember-400 underline" href={c.source}>
+                <p className="text-fg-muted">{c.licence}</p>
+                <a className="text-gold-300 underline" href={c.source}>
                   source
                 </a>
               </div>
@@ -81,7 +93,7 @@ export default function LicensesPage() {
         </ul>
       </section>
 
-      <p className="text-sm text-ink-400">
+      <p className="text-sm text-fg-subtle">
         Rookery is an independent project. It is not affiliated with Lichess, Chess.com or any other chess site.
       </p>
     </article>

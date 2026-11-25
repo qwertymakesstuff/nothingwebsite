@@ -11,20 +11,39 @@ entirely in this folder. The only files it touches outside it are:
 
 ## Status
 
-| Phase | What | Status |
+| Stage | What | Status |
 | --- | --- | --- |
 | 0 | Scaffold: monorepo, static site, realtime Worker + Durable Object, first DB migration, CI | **done** |
-| 1 | Board + chess-core: promotion picker, clocks, move list, sounds, settings | next |
-| 2 | Accounts: sign-up (13+), profiles, settings | |
+| 1 | Frontend foundation: design system, navigation, every page layout, reusable components | **done** |
+| 2 | Accounts: sign-up (13+), profiles, settings sync | next |
 | 3 | Computer opponents (Stockfish WASM, data-driven personas) | |
-| 4 | Live multiplayer: matchmaking, clocks, ratings | |
-| 5–11 | History and review, puzzles, dashboard, social, progression, tournaments, launch | |
+| 4 | Live multiplayer: matchmaking, server clocks, ratings | |
+| 5–11 | Review, puzzles, leaderboards, social, progression, tournaments, launch | |
+
+### What works today vs. what is sample data
+
+**Working for real:** pass-and-play with clocks, promotion and resign/draw; the analysis board,
+including PGN/FEN import and export and keyboard navigation; settings (board theme, background,
+coordinates, legal-move dots, animation, auto-queen, reduce motion), saved per device and applied
+to every board; all navigation; and the live system-status checks.
+
+**Sample data, clearly labelled with a "Sample" badge or banner:** players, ratings, game history,
+leaderboards, friends, the bot roster, puzzles and achievements. Pages read data only through
+`apps/web/lib/data/`, which marks each result as `source: 'sample' | 'live'`. The fake data lives
+in `apps/web/lib/sample/` (see its README). Features that aren't built yet are shown disabled,
+with a "Stage N" badge. Nothing pretends to be an online opponent, an AI or a signed-in user.
 
 ## Layout
 
 ```
 wrangler.jsonc          one Cloudflare Worker: static site (free) + /api and /ws (realtime)
 apps/web/               Next.js, fully prerendered (`output: 'export'` → apps/web/out)
+  app/                  routes: / dashboard play bots puzzles analysis leaderboard u/[username] settings design licenses
+  components/ui/        design-system primitives (Button, Card, Modal, Menu/Select, Tabs, Badge, Switch, states)
+  components/board/     ChessBoard (chessground), BoardFrame, PlayerStrip/Clock, MoveList, GamePanel, EvalBar, PromotionPicker
+  components/<feature>/ page-level components (play, bots, puzzles, analysis, leaderboard, profile, settings, home)
+  lib/                  types, data layer, preferences, local game + clock hooks, formatting
+  lib/sample/           SAMPLE DATA ONLY (fictional players, ratings, games, bots, puzzles)
 apps/realtime/          Worker code + GameRoom Durable Object (one per live game)
 packages/chess-core/    rules (chess.js wrapper), clocks, time controls: pure, no DOM, no I/O
 packages/protocol/      zod schemas for every browser ↔ server message
@@ -43,6 +62,9 @@ npm run build && npx wrangler dev   # the real thing, site + realtime, on http:/
 npm test               # chess-core, realtime (inside workerd) and database tests
 npm run check          # typecheck + test + build (what CI runs)
 ```
+
+The full component catalogue, with colours, type, buttons, dropdowns, modal, tabs and states, is at
+`/design` on the running site.
 
 ## Deploy (Cloudflare)
 
