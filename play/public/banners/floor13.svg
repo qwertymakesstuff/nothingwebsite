@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 320" width="1260" height="320" role="img" aria-hidden="true">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1914"/><stop offset="1" stop-color="#0b0907"/></linearGradient>
+<radialGradient id="lamp" cx=".5" cy="0" r=".8"><stop offset="0" stop-color="#fff3d6" stop-opacity=".22"/><stop offset="1" stop-color="#fff3d6" stop-opacity="0"/></radialGradient>
+<radialGradient id="btn" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#fff4d2"/><stop offset=".4" stop-color="#e2c27c"/><stop offset="1" stop-color="#6c4f1f"/></radialGradient>
+<linearGradient id="door" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4a4033"/><stop offset=".45" stop-color="#776a55"/><stop offset="1" stop-color="#3c3428"/></linearGradient>
+<filter id="glow" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="1260" height="320" fill="url(#bg)"/>
+<rect width="1260" height="320" fill="url(#lamp)"/>
+<rect x="420" y="14" width="420" height="5" rx="2" fill="#fff3d6" opacity=".5" filter="url(#glow)"/>
+<g transform="translate(70 60)">
+<rect x="0" y="0" width="230" height="250" fill="#070605" stroke="#2e271d" stroke-width="5"/>
+<rect x="4" y="4" width="85" height="242" fill="url(#door)"/>
+<rect x="141" y="4" width="85" height="242" fill="url(#door)"/>
+<rect x="89" y="4" width="52" height="242" fill="#ffcc66" opacity=".28"/>
+</g>
+<text x="640" y="190" text-anchor="middle" font-family="monospace" font-size="124" font-weight="bold" letter-spacing="10" fill="#f3dfa8" filter="url(#glow)">FLOOR 13</text>
+<text x="640" y="236" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="24" fill="#b9a983">There are twelve buttons. There are not twelve floors.</text>
+<g transform="translate(1000 54)">
+<rect x="0" y="0" width="200" height="226" rx="12" fill="#a8843f" stroke="#5d4520" stroke-width="3"/>
+<g font-family="monospace" font-size="22" font-weight="bold" fill="#3a2709" text-anchor="middle">
+<circle cx="50" cy="44" r="24" fill="url(#btn)"/><text x="50" y="52">10</text>
+<circle cx="100" cy="44" r="24" fill="url(#btn)"/><text x="100" y="52">11</text>
+<circle cx="150" cy="44" r="24" fill="url(#btn)"/><text x="150" y="52">12</text>
+<circle cx="50" cy="104" r="24" fill="url(#btn)"/><text x="50" y="112">7</text>
+<circle cx="100" cy="104" r="24" fill="url(#btn)"/><text x="100" y="112">8</text>
+<circle cx="150" cy="104" r="24" fill="url(#btn)"/><text x="150" y="112">9</text>
+<circle cx="100" cy="176" r="30" fill="#ffd97a" stroke="#6b4304" stroke-width="3" filter="url(#glow)"/><text x="100" y="185" font-size="26">13</text>
+</g>
+</g>
+</svg>
