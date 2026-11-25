@@ -1,0 +1,12 @@
+{
+  // Test-only config for @cloudflare/vitest-pool-workers: same Worker and Durable Objects as
+  // ../../wrangler.jsonc, minus the static site and custom domain (no build needed to test).
+  "name": "rookery-test",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-09-23",
+  "durable_objects": {
+    "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
+  "vars": { "SUPABASE_URL": "http://localhost:54321" }
+}

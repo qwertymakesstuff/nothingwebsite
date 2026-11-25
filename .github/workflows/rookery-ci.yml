@@ -1,0 +1,97 @@
+# Rookery (chess.missing.website): checks every change, and applies database migrations to
+# Supabase when they land on main. Deployment itself is done by Cloudflare's GitHub integration
+# (Workers & Pages > rookery > Settings > Build), not by this workflow.
+name: rookery
+
+on:
+  push:
+    paths:
+      - 'rookery/**'
+      - 'tools/offline/**'
+      - '.github/workflows/rookery-ci.yml'
+  pull_request:
+    paths:
+      - 'rookery/**'
+      - 'tools/offline/**'
+      - '.github/workflows/rookery-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rookery-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rookery
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rookery/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit, Worker and database tests
+        run: npm test
+      - name: Build static site
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+  # The rest of missing.website must keep working: its tests pass and Rookery stays out of the
+  # offline downloads.
+  site-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/music/*.test.mjs
+      - name: Offline file list unchanged and free of rookery/
+        run: |
+          node tools/offline/build-manifest.mjs
+          git diff --exit-code offline-files.json
+          ! grep -q '"/rookery/' offline-files.json
+
+  # Applies new SQL migrations to the Supabase project. Runs only on main, and only once these
+  # repository secrets exist: SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, SUPABASE_PROJECT_REF.
+  migrate:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, site-regression]
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    defaults:
+      run:
+        working-directory: rookery/packages/db
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip if secrets are not configured
+        id: gate
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "::notice::Supabase secrets not set; skipping migrations."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: supabase/setup-cli@v1
+        if: steps.gate.outputs.run == 'true'
+        with:
+          version: latest
+      - name: Push migrations
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --password "$SUPABASE_DB_PASSWORD"

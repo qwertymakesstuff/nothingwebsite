@@ -1,0 +1,97 @@
+/* Rookery board themes. A theme is a class on the board wrapper that sets a few variables;
+   squares are drawn with a CSS gradient, so there are no board images to license. */
+
+.rk-board {
+  --sq-light: #c4c4c8;
+  --sq-dark: #8b8b92;
+  --coord-on-light: #4a4a52;
+  --coord-on-dark: #f0f0f2;
+  --hl-last: rgb(242 140 28 / 0.38);
+  --hl-selected: rgb(242 140 28 / 0.55);
+  --hl-dest: rgb(30 30 34 / 0.38);
+}
+
+.rk-board.theme-slate {
+  /* default (above) */
+}
+.rk-board.theme-walnut {
+  --sq-light: #e3c9a2;
+  --sq-dark: #a7764c;
+  --coord-on-light: #a7764c;
+  --coord-on-dark: #f3e2c7;
+}
+.rk-board.theme-harbor {
+  --sq-light: #d7e1ea;
+  --sq-dark: #6f8aa3;
+  --coord-on-light: #6f8aa3;
+  --coord-on-dark: #eef3f7;
+}
+
+.rk-board cg-board {
+  background-color: var(--sq-dark);
+  /* Conic quadrants run clockwise from 12 o'clock, so this puts a light square top-left (a8). */
+  background-image: repeating-conic-gradient(var(--sq-dark) 0 25%, var(--sq-light) 0 50%);
+  background-size: 25% 25%;
+  border-radius: 4px;
+}
+
+.rk-board cg-board square.last-move {
+  background-color: var(--hl-last);
+}
+.rk-board cg-board square.selected {
+  background-color: var(--hl-selected);
+}
+.rk-board cg-board square.move-dest {
+  background: radial-gradient(var(--hl-dest) 19%, transparent 20%);
+}
+.rk-board cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0%, transparent 79%, var(--hl-dest) 80%);
+}
+.rk-board cg-board square.move-dest:hover {
+  background: rgb(255 255 255 / 0.18);
+}
+.rk-board cg-board square.check {
+  background: radial-gradient(ellipse at center, rgb(239 68 68 / 0.95) 0%, rgb(239 68 68 / 0.6) 30%, transparent 75%);
+}
+
+/* Coordinates drawn inside the edge squares, coloured to contrast with each square. */
+.rk-board coords {
+  font-family: var(--font-sans);
+  font-size: clamp(10px, 2.1vmin, 14px);
+  font-weight: 700;
+  line-height: 1;
+  opacity: 1;
+}
+/* Ranks in the top-left corner of the left-hand column, files in the bottom-right corner of the
+   bottom row (inside the board, so nothing is clipped on small screens). */
+.rk-board coords.ranks {
+  left: 3px;
+  top: 3px;
+  width: auto;
+  height: 100%;
+}
+.rk-board coords.ranks coord {
+  transform: none;
+}
+.rk-board coords.files {
+  left: 0;
+  bottom: 3px;
+  width: 100%;
+  height: auto;
+  text-transform: lowercase;
+}
+.rk-board coords.files coord {
+  text-align: right;
+  padding-right: 4px;
+}
+.rk-board coords coord {
+  color: var(--coord-on-light);
+}
+/* White at the bottom: ranks sit on the a-file (a1 dark), files on rank 1 (a1 dark). */
+.rk-board coords.ranks:not(.black) coord:nth-child(odd),
+.rk-board coords.files:not(.black) coord:nth-child(odd),
+/* Black at the bottom: ranks sit on the h-file (h1 light), files on rank 8 (h8 dark). */
+.rk-board coords.ranks.black coord:nth-child(even),
+.rk-board coords.files.black coord:nth-child(even) {
+  color: var(--coord-on-dark);
+}
