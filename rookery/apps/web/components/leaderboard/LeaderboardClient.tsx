@@ -1,61 +1,48 @@
 'use client';
 
-import { Crown, LogIn } from 'lucide-react';
+import { BarChart3, Crown, LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { CountryTag, PlayerAvatar } from '@/components/avatar/PlayerAvatar';
-import { Sparkline } from '@/components/charts/Sparkline';
+import { ratingLabel } from '@/components/profile/ProfileView';
+import { ButtonLink } from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { SampleNotice } from '@/components/ui/SampleNotice';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/States';
 import { Tabs } from '@/components/ui/Tabs';
+import { useAuth } from '@/lib/auth';
 import { CATEGORY_ICON } from '@/lib/categoryIcons';
 import { cn } from '@/lib/cn';
+import { avatarUrl, fetchLeaderboard, fetchRatings, RATING_CATEGORIES, type LeaderboardRow, type RatingCategory, type RatingRow } from '@/lib/db';
 import { CATEGORY_LABEL } from '@/lib/format';
-import type { Category, DataSource, LeaderboardEntry } from '@/lib/types';
 
 const MEDAL = ['text-gold-300', 'text-[#c9cdd3]', 'text-[#c58b5a]'];
 
-export function LeaderboardClient({ boards, source }: { boards: Record<Category, LeaderboardEntry[]>; source: DataSource }) {
-  const cats = Object.keys(boards) as Category[];
+export function LeaderboardClient() {
+  const [category, setCategory] = useState<RatingCategory>('blitz');
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Card className="min-w-0 overflow-hidden">
         <Tabs
           label="Leaderboard category"
           listClassName="px-3 pt-1"
-          defaultValue="blitz"
-          items={cats.map((c) => {
+          value={category}
+          onChange={setCategory}
+          items={RATING_CATEGORIES.map((c) => {
             const Icon = CATEGORY_ICON[c];
-            return {
-              value: c,
-              label: CATEGORY_LABEL[c],
-              icon: <Icon className="size-4" />,
-              content: <Board entries={boards[c]} category={c} />,
-            };
+            return { value: c, label: CATEGORY_LABEL[c], icon: <Icon className="size-4" />, content: <Board category={c} /> };
           })}
         />
       </Card>
-
       <div className="space-y-6">
-        <Card>
-          <CardHeader title="Your position" />
-          <CardBody>
-            <div className="flex items-center gap-3 rounded-[12px] border border-dashed border-line p-4">
-              <LogIn className="size-5 text-fg-subtle" aria-hidden />
-              <p className="text-sm text-fg-muted">Sign in to see where you rank. Accounts open in Stage 2.</p>
-            </div>
-          </CardBody>
-        </Card>
+        <YourPosition category={category} />
         <Card>
           <CardHeader title="How rankings work" />
           <CardBody className="space-y-3 text-sm leading-relaxed text-fg-muted">
             <p>
-              Ratings use the <span className="text-fg">Glicko-2</span> system, separately for each time control.
+              Ratings use the <span className="text-fg">Glicko-2</span> system, with a separate rating for each time control.
             </p>
-            <p>To appear here you need 20 or more rated games in the category and a settled rating (low uncertainty).</p>
-            <p>Leaderboards refresh every few minutes.</p>
-            <SampleNotice source={source} variant="banner">
-              The players listed are fictional examples.
-            </SampleNotice>
+            <p>Only rated online games count, and the server calculates every rating change. Games against computer opponents are never rated.</p>
+            <p>Ratings marked “?” are provisional until enough games have been played.</p>
           </CardBody>
         </Card>
       </div>
@@ -63,70 +50,97 @@ export function LeaderboardClient({ boards, source }: { boards: Record<Category,
   );
 }
 
-function Board({ entries, category }: { entries: LeaderboardEntry[]; category: Category }) {
-  const podium = entries.slice(0, 3);
+function Board({ category }: { category: RatingCategory }) {
+  const [state, setState] = useState<{ status: 'loading' } | { status: 'error'; message: string } | { status: 'ready'; rows: LeaderboardRow[] }>({ status: 'loading' });
+  useEffect(() => {
+    let alive = true;
+    setState({ status: 'loading' });
+    fetchLeaderboard(category)
+      .then((rows) => alive && setState({ status: 'ready', rows }))
+      .catch((e: Error) => alive && setState({ status: 'error', message: e.message }));
+    return () => {
+      alive = false;
+    };
+  }, [category]);
+
+  if (state.status === 'loading') return <LoadingState label="Loading rankings…" />;
+  if (state.status === 'error') return <ErrorState>{state.message}</ErrorState>;
+  if (!state.rows.length) {
+    return (
+      <EmptyState icon={<BarChart3 className="size-5" />} title={`No ranked ${CATEGORY_LABEL[category].toLowerCase()} players yet`} action={<ButtonLink href="/bots" variant="secondary">Play the computer meanwhile</ButtonLink>}>
+        The leaderboard fills up with rated online games, which arrive with live multiplayer.
+      </EmptyState>
+    );
+  }
   return (
-    <div>
-      <div className="grid gap-3 border-b border-line p-4 sm:grid-cols-3 sm:p-5">
-        {podium.map((e, i) => (
-          <Link
-            key={e.player.username}
-            href={`/u/${e.player.username}`}
-            className={cn(
-              'flex items-center gap-3 rounded-[14px] border p-4 transition-colors hover:border-gold-500/40',
-              i === 0 ? 'border-gold-500/30 bg-gold-500/[0.07]' : 'border-line bg-surface-2/50',
-            )}
-          >
-            <div className="relative">
-              <PlayerAvatar name={e.player.username} size="lg" />
-              <Crown className={cn('absolute -top-2.5 -right-2 size-5 drop-shadow', MEDAL[i])} aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <p className="tabular text-xs font-semibold text-fg-subtle">#{e.rank}</p>
-              <p className="truncate font-semibold text-fg">{e.player.username}</p>
-              <p className="tabular font-[family-name:var(--font-display)] text-xl font-semibold">{e.rating}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[36rem] text-sm">
-          <caption className="sr-only">{CATEGORY_LABEL[category]} leaderboard</caption>
-          <thead>
-            <tr className="border-b border-line text-left text-xs text-fg-subtle">
-              <th className="w-16 py-2.5 pl-5 font-medium">Rank</th>
-              <th className="py-2.5 font-medium">Player</th>
-              <th className="py-2.5 text-right font-medium">Rating</th>
-              <th className="hidden py-2.5 text-right font-medium sm:table-cell">Games</th>
-              <th className="hidden py-2.5 text-right font-medium md:table-cell">Win rate</th>
-              <th className="w-32 py-2.5 pr-5 pl-6 font-medium">Trend</th>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[30rem] text-sm">
+        <caption className="sr-only">{CATEGORY_LABEL[category]} leaderboard</caption>
+        <thead>
+          <tr className="border-b border-line text-left text-xs text-fg-subtle">
+            <th className="w-16 py-2.5 pl-5 font-medium">Rank</th>
+            <th className="py-2.5 font-medium">Player</th>
+            <th className="py-2.5 text-right font-medium">Rating</th>
+            <th className="py-2.5 pr-5 text-right font-medium">Games</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {state.rows.map((r, i) => (
+            <tr key={r.profile.username} className="transition-colors hover:bg-surface-2/60">
+              <td className="tabular py-3 pl-5 font-semibold text-fg-subtle">
+                {i < 3 ? <Crown className={cn('size-4', MEDAL[i])} aria-label={`#${i + 1}`} /> : i + 1}
+              </td>
+              <td className="py-2">
+                <Link href={`/u/${r.profile.username}`} className="flex items-center gap-3 hover:text-gold-300">
+                  <PlayerAvatar name={r.profile.username} src={avatarUrl(r.profile.avatar_path)} size="sm" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{r.profile.username}</span>
+                    {r.profile.display_name && <span className="block truncate text-xs text-fg-subtle">{r.profile.display_name}</span>}
+                  </span>
+                  <CountryTag code={r.profile.country ?? undefined} />
+                </Link>
+              </td>
+              <td className="tabular py-3 text-right font-semibold">{ratingLabel(r)}</td>
+              <td className="tabular py-3 pr-5 text-right text-fg-muted">{r.games}</td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {entries.map((e) => (
-              <tr key={e.player.username} className="transition-colors hover:bg-surface-2/60">
-                <td className="tabular py-3 pl-5 font-semibold text-fg-subtle">{e.rank}</td>
-                <td className="py-2">
-                  <Link href={`/u/${e.player.username}`} className="flex items-center gap-3 hover:text-gold-300">
-                    <PlayerAvatar name={e.player.username} size="sm" />
-                    <span className="min-w-0">
-                      <span className="block truncate font-semibold">{e.player.username}</span>
-                      <span className="block truncate text-xs text-fg-subtle">{e.player.displayName}</span>
-                    </span>
-                    <CountryTag code={e.player.country} />
-                  </Link>
-                </td>
-                <td className="tabular py-3 text-right font-semibold">{e.rating}</td>
-                <td className="tabular hidden py-3 text-right text-fg-muted sm:table-cell">{e.games.toLocaleString('en-US')}</td>
-                <td className="tabular hidden py-3 text-right text-fg-muted md:table-cell">{Math.round(e.winRate * 100)}%</td>
-                <td className="py-3 pr-5 pl-6">
-                  <Sparkline values={e.trend} className="h-6" label={`${e.player.username} rating trend`} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
+  );
+}
+
+function YourPosition({ category }: { category: RatingCategory }) {
+  const { status, userId } = useAuth();
+  const [mine, setMine] = useState<RatingRow | null>(null);
+  useEffect(() => {
+    if (!userId) return setMine(null);
+    fetchRatings(userId).then((rs) => setMine(rs.find((r) => r.category === category) ?? null)).catch(() => setMine(null));
+  }, [userId, category]);
+
+  return (
+    <Card>
+      <CardHeader title="Your position" />
+      <CardBody>
+        {status !== 'signedIn' ? (
+          <div className="flex items-center gap-3 rounded-[12px] border border-dashed border-line p-4">
+            <LogIn className="size-5 text-fg-subtle" aria-hidden />
+            <p className="text-sm text-fg-muted">
+              <Link href="/login?next=/leaderboard" className="font-semibold text-gold-300 hover:underline">
+                Sign in
+              </Link>{' '}
+              to see your rating here.
+            </p>
+          </div>
+        ) : mine ? (
+          <div>
+            <p className="tabular font-[family-name:var(--font-display)] text-3xl font-semibold">{ratingLabel(mine)}</p>
+            <p className="mt-1 text-sm text-fg-muted">{mine.games ? `${mine.games} rated games` : 'Unranked until your first rated game'}</p>
+          </div>
+        ) : (
+          <LoadingState className="py-4" />
+        )}
+      </CardBody>
+    </Card>
   );
 }

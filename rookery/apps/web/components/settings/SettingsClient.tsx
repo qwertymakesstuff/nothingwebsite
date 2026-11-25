@@ -9,7 +9,9 @@ import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Dropdown';
 import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/States';
+import { AccountSettings, ProfileSettings } from './AccountSettings';
 import { EngineSettings } from './EngineSettings';
+import { useSearchParams } from 'next/navigation';
 import { Switch } from '@/components/ui/Switch';
 import { BACKDROPS, BOARD_THEMES, PIECE_SETS } from '@/lib/boardThemes';
 import { cn } from '@/lib/cn';
@@ -22,8 +24,8 @@ const SECTIONS: { id: Section; label: string; icon: typeof LayoutGrid; stage?: n
   { id: 'gameplay', label: 'Gameplay', icon: Gamepad2 },
   { id: 'computer', label: 'Computer opponents', icon: Bot },
   { id: 'interface', label: 'Interface', icon: MonitorCog },
-  { id: 'profile', label: 'Profile', icon: UserRound, stage: 2 },
-  { id: 'account', label: 'Account & privacy', icon: Lock, stage: 2 },
+  { id: 'profile', label: 'Profile', icon: UserRound },
+  { id: 'account', label: 'Account & privacy', icon: Lock },
   { id: 'notifications', label: 'Notifications', icon: Bell, stage: 8 },
 ];
 
@@ -31,8 +33,11 @@ const SECTIONS: { id: Section; label: string; icon: typeof LayoutGrid; stage?: n
 const PREVIEW_FEN = 'r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2N1PN2/PP2BPPP/R2QKB1R w KQ - 0 8';
 
 export function SettingsClient() {
-  const { prefs, setPref, reset } = usePreferences();
-  const [section, setSection] = useState<Section>('board');
+  const { prefs, setPref, reset, sync } = usePreferences();
+  const params = useSearchParams();
+  const requested = params.get('section') as Section | null;
+  const [section, setSection] = useState<Section>(requested && SECTIONS.some((s) => s.id === requested) ? requested : 'board');
+  const accountSection = section === 'profile' || section === 'account';
   const [confirmReset, setConfirmReset] = useState(false);
   const current = SECTIONS.find((s) => s.id === section)!;
 
@@ -65,9 +70,16 @@ export function SettingsClient() {
       <Card className="min-w-0 p-5 sm:p-7">
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold">{current.label}</h2>
-          {!current.stage && (
-            <span className="flex items-center gap-1 text-xs text-fg-subtle">
-              <Check className="size-3.5 text-win" aria-hidden /> Saved on this device automatically
+          {!current.stage && !accountSection && (
+            <span className="flex items-center gap-1 text-xs text-fg-subtle" role="status">
+              <Check className={cn('size-3.5', sync === 'error' ? 'text-loss' : 'text-win')} aria-hidden />
+              {sync === 'device'
+                ? 'Saved on this device automatically'
+                : sync === 'saving' || sync === 'loading'
+                  ? 'Saving to your account…'
+                  : sync === 'error'
+                    ? 'Couldn’t save to your account; saved on this device'
+                    : 'Saved to your account'}
             </span>
           )}
         </div>
@@ -212,6 +224,9 @@ export function SettingsClient() {
             </div>
           </div>
         )}
+
+        {section === 'profile' && <ProfileSettings />}
+        {section === 'account' && <AccountSettings />}
 
         {current.stage && (
           <EmptyState icon={<current.icon className="size-5" />} title={`${current.label} needs an account`}>

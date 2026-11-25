@@ -1,28 +1,16 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { ProfileView } from '@/components/profile/ProfileView';
-import { getAchievements, getProfile, getRecentGames, listProfileUsernames } from '@/lib/data';
+import { ProfileRoute } from '@/components/profile/ProfileRoute';
 
-// Static export: every known profile is prerendered. When accounts arrive (Stage 2) this route
-// is served by the Worker with the profile fetched from Supabase in the browser.
+// One static shell (/u/_) serves every profile: the Worker rewrites /u/<name> to it and the
+// browser loads the player from Supabase. See apps/realtime/src/index.ts.
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return listProfileUsernames().map((username) => ({ username }));
+  return [{ username: '_' }];
 }
 
-type Params = { params: Promise<{ username: string }> };
+export const metadata: Metadata = { title: 'Player profile' };
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { username } = await params;
-  return { title: `${username}'s profile` };
-}
-
-export default async function ProfilePage({ params }: Params) {
-  const { username } = await params;
-  const profile = getProfile(username);
-  if (!profile) notFound();
-  const games = getRecentGames(username, 20);
-  const achievements = getAchievements(username);
-  return <ProfileView profile={profile.data} games={games.data} achievements={achievements.data} source={profile.source} />;
+export default function ProfilePage() {
+  return <ProfileRoute />;
 }

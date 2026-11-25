@@ -13,7 +13,7 @@
     "directory": "./apps/web/out",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*", "/ws/*"]
+    "run_worker_first": ["/api/*", "/ws/*", "/u/*"]
   },
   "durable_objects": {
     "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }]
@@ -23,7 +23,8 @@
   "vars": {
     "SUPABASE_URL": "https://fazzxshhvfecpfypqusz.supabase.co"
   },
-  // Secrets (set in the Cloudflare dashboard, never in this file): none needed yet.
+  // Secrets (Cloudflare dashboard → Worker → Settings → Variables and Secrets; never in this file):
+  //   SUPABASE_SECRET_KEY  the project's secret API key (sb_secret_…), used only by /api/*.
   "workers_dev": false,
   "preview_urls": false,
   // Attach the custom domain on deploy (Cloudflare creates the DNS record and certificate).

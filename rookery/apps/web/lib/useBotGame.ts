@@ -8,7 +8,10 @@ import { BotBrain, displayRating, getOpening, type DialogueEvent, type MoveFeatu
 import { getTimeControl, resignOutcome, START_FEN, timeoutOutcome, type Outcome } from '@rookery/chess-core';
 import { Chess } from 'chess.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { BotGameSubmission } from '@rookery/protocol';
+import { useAuth } from './auth';
 import { saveBotGame } from './botHistory';
+import { ApiFailure, submitBotGame } from './db';
 import { getEngine, resetEngine } from './engine/browserEngine';
 import { BOT_DELAY_FACTOR, usePreferences } from './preferences';
 import type { Side } from './types';
@@ -24,6 +27,9 @@ export interface BotGameSettings {
   openingId?: string;
   takebacks: boolean;
 }
+
+/** Whether the finished game reached the player's account. */
+export type SaveState = { status: 'idle' } | { status: 'guest' } | { status: 'saving' } | { status: 'saved'; achievements: string[] } | { status: 'error'; message: string };
 
 export interface ChatEntry {
   id: number;
@@ -47,6 +53,9 @@ export function useBotGame(settings: BotGameSettings) {
   const [engineError, setEngineError] = useState<string | null>(null);
   const [lastSource, setLastSource] = useState<string | null>(null);
   const [lastEval, setLastEval] = useState<number | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>({ status: 'idle' });
+  const { status: authStatus } = useAuth();
+  const startedAt = useRef(new Date().toISOString());
 
   const brain = useMemo(() => new BotBrain(persona, getEngine()), [persona]);
   const token = useRef(0); // bumping it cancels any in-flight bot move
@@ -92,6 +101,8 @@ export function useBotGame(settings: BotGameSettings) {
     setEngineError(null);
     setLastEval(null);
     setChat([]);
+    setSaveState({ status: 'idle' });
+    startedAt.current = new Date().toISOString();
     const opening = settings.openingId ? getOpening(settings.openingId) : undefined;
     game.start(START_FEN, opening ? opening.moves.split(' ') : []);
     clock.resetClock(tc?.initialMs ?? 0, tc?.incrementMs ?? 0);
@@ -140,8 +151,32 @@ export function useBotGame(settings: BotGameSettings) {
     } else if (!ended.winner) say('draw');
     else say(ended.winner === botColor ? 'botWins' : 'botLoses');
     if (ended.winner === botColor || ended.winner === playerColor || ended.result === '1/2-1/2') {
+      const clientRef = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+      // Signed in: the server validates the game and stores it on the account (unrated).
+      if (authStatus === 'signedIn') {
+        const sub: BotGameSubmission = {
+          clientRef,
+          botId: persona.id,
+          ...(persona.id === 'custom' ? { customElo: persona.strength.elo } : {}),
+          playerColor,
+          timeControl: settings.timeControl,
+          initialFen: game.state.initialFen,
+          moves: game.state.moves,
+          result: ended.result,
+          termination: ended.termination,
+          ...(settings.openingId ? { openingId: settings.openingId } : {}),
+          startedAt: startedAt.current,
+          endedAt: new Date().toISOString(),
+        };
+        setSaveState({ status: 'saving' });
+        submitBotGame(sub)
+          .then((r) => setSaveState({ status: 'saved', achievements: r.achievements }))
+          .catch((e: unknown) => setSaveState({ status: 'error', message: e instanceof ApiFailure ? e.message : 'Could not reach the server.' }));
+      } else {
+        setSaveState({ status: 'guest' });
+      }
       saveBotGame({
-        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        id: clientRef,
         botId: persona.id,
         botName: persona.name,
         botRating: displayRating(persona),
@@ -152,9 +187,11 @@ export function useBotGame(settings: BotGameSettings) {
         plies: game.line.length,
         timeControl: settings.timeControl,
         opening: settings.openingId ? getOpening(settings.openingId)?.name : undefined,
+        openingId: settings.openingId,
         playedAt: new Date().toISOString(),
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ended, say, playerColor, botColor, persona, game.pgn, game.line.length, settings.timeControl, settings.openingId]);
 
   // ── The bot's turn ─────────────────────────────────────────────────────────────────────
@@ -278,5 +315,6 @@ export function useBotGame(settings: BotGameSettings) {
     takeback,
     restart: begin,
     retryEngine,
+    saveState,
   };
 }

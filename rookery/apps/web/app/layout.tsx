@@ -6,6 +6,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { SITE_URL } from '@/lib/config';
+import { AuthProvider } from '@/lib/auth';
 import { PreferencesProvider } from '@/lib/preferences';
 
 export const metadata: Metadata = {
@@ -26,9 +27,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-backdrop="study">
       <body>
-        <PreferencesProvider>
-          <AppShell>{children}</AppShell>
-        </PreferencesProvider>
+        <AuthProvider>
+          <PreferencesProvider>
+            <AppShell>{children}</AppShell>
+          </PreferencesProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -58,10 +58,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
           <div className="mt-2 border-t border-line pt-3">
             <div className="hidden xl:block">
-              <AccountMenu align="start" />
+              <AccountMenu align="start" side="top" />
             </div>
             <div className="flex justify-center xl:hidden">
-              <AccountMenu compact align="start" />
+              <AccountMenu compact align="start" side="top" />
             </div>
           </div>
         </div>
