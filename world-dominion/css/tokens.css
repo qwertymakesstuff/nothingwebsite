@@ -12,6 +12,12 @@
   --land-0:#4f5f57; --land-1:#64604f; --land-2:#4e5b6c; --land-3:#625667; --land-4:#566964; --land-5:#6a6650;
   --land-player:#d9a441; --land-player-edge:#ffd98a;
   --land-select-edge:#f4f7fb;
+  --land-player-ter:#b58a3e;    /* your territories: gold, a step darker */
+  --land-none:#2a323c;          /* no data in a data overlay */
+  --region-edge:rgba(225,232,240,.26);
+  /* Overlay ramps — 7 steps, dark (few) to light (many); chosen to stay distinct from the gold player colour */
+  --ramp-pop-0:#1b2a3b; --ramp-pop-1:#22405a; --ramp-pop-2:#2a587a; --ramp-pop-3:#35719a; --ramp-pop-4:#4b8cb8; --ramp-pop-5:#72abd2; --ramp-pop-6:#a9cfeb;
+  --ramp-eco-0:#1c2e2a; --ramp-eco-1:#21433a; --ramp-eco-2:#285a4a; --ramp-eco-3:#2f725a; --ramp-eco-4:#3e8d6c; --ramp-eco-5:#62ad86; --ramp-eco-6:#9fd3b0;
 
   /* — Surfaces — */
   --surface:rgba(16,23,32,.84);

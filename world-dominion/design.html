@@ -53,7 +53,7 @@
   <section><h2>Tags, chips, keys</h2><div class="row" id="tags"></div></section>
   <section><h2>Stats, meters, controls</h2><div class="stage" id="stats"></div></section>
   <section><h2>Rows</h2><div id="rows" style="max-width:380px"></div></section>
-  <section><h2>Dock, drawer, toast, event</h2><div class="stage" id="overlays"></div></section>
+  <section><h2>Dock, drawer, toast, event, map mode</h2><div class="stage" id="overlays"></div></section>
   <section><h2>Icons</h2><div class="icons" id="icons"></div></section>
 </main>
 <script type="module">
@@ -63,7 +63,9 @@
   const swatch = (v, note) => h('div.sw', h('i', { style: { background: `var(${v})` } }), h('div', h('b', v), css.getPropertyValue(v).trim(), note ? h('div', { style: { padding: 0 } }, note) : ''));
   document.getElementById('mapColors').append(
     swatch('--map-ocean', 'sea'), swatch('--map-ocean-hi', 'sea highlight'), swatch('--map-space', 'outside the globe'),
-    ...[0, 1, 2, 3, 4, 5].map((i) => swatch('--land-' + i, 'land tint ' + i)), swatch('--land-player', 'your nation'), swatch('--land-select-edge', 'selection outline'));
+    ...[0, 1, 2, 3, 4, 5].map((i) => swatch('--land-' + i, 'land tint ' + i)), swatch('--land-player', 'your nation'), swatch('--land-player-ter', 'your territories'),
+    swatch('--land-select-edge', 'selection outline'), swatch('--land-none', 'no data'),
+    ...[0, 3, 6].map((i) => swatch('--ramp-pop-' + i, 'population ramp ' + i + '/6')), ...[0, 3, 6].map((i) => swatch('--ramp-eco-' + i, 'economy ramp ' + i + '/6')));
   document.getElementById('uiColors').append(...['--surface-solid', '--text', '--text-muted', '--text-dim', '--accent', '--good', '--bad', '--warn', '--info'].map((v) => swatch(v)));
   document.getElementById('buttons').append(
     h('button.wd-btn.primary', icon('crown'), 'Primary'), h('button.wd-btn', 'Secondary'), h('button.wd-btn.danger', icon('swords'), 'Danger'),
@@ -101,6 +103,15 @@
       h('div.wd-modal-art', icon('megaphone')),
       h('div.wd-modal-body', h('div.wd-modal-kicker', h('span.wd-tag.warn', 'Domestic unrest')), h('h2', 'Major event'), h('p', 'Major events pause the game and ask for a decision. Each choice previews its effects.'),
         h('div.wd-choices', h('button.wd-choice', h('span.wd-choice-t', 'Meet their demands'), h('span.wd-effects', h('span.wd-fx.down', '−$4.5B treasury'), h('span.wd-fx.up', '+6 stability')))))));
+  document.getElementById('overlays').append(
+    h('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
+      h('div.wd-surface', { style: { padding: '10px 12px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '6px' } },
+        h('div', { style: { fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' } }, 'Population ', h('small', { style: { color: 'var(--text-dim)', fontWeight: 500 } }, 'Map legend')),
+        h('div', { style: { display: 'flex', gap: '2px' } }, [0, 1, 2, 3, 4, 5, 6].map((i) => h('i', { style: { display: 'block', width: '40px', height: '8px', borderRadius: '2px', background: `var(--ramp-pop-${i})` } })))),
+      h('div.wd-surface', { style: { padding: '6px', borderRadius: '16px', width: '250px' } },
+        [['flag', 'Political', 'Countries and who governs them', true], ['people', 'Population', 'How many people live in each country'], ['economy', 'Economy', 'Size of each economy (GDP)']].map(([ic, t, s, on]) =>
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', borderRadius: '12px', background: on ? 'var(--accent-soft)' : '' } },
+            h('span.wd-row-ic', { style: on ? { color: 'var(--accent)' } : {} }, icon(ic)), h('span.wd-row-main', h('span.wd-row-t', t), h('span.wd-row-s', s)))))));
   document.getElementById('icons').append(...ICON_NAMES.map((n) => h('div', icon(n), n)));
 </script>
 </body>

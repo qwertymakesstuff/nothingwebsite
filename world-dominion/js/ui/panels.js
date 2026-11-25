@@ -1,79 +1,118 @@
 // What goes inside the drawers. Each builder returns { key, lead, title, subtitle, body, foot } for Drawer.show().
 // Rows tagged "Soon" are placeholders for systems that arrive in later checkpoints; they say so instead of pretending.
-import { h } from './dom.js';
+import { h, clear } from './dom.js';
 import { icon } from './icons.js';
 import { toast } from './overlays.js';
-import { nation, opinion, relation, budget, taxMood } from '../core/state.js';
+import { flagImg } from './flags.js';
+import { opinion, relation, budget, taxMood } from '../core/state.js';
+import { country, ownerOf, stabilityOf, troopsOf } from '../core/db.js';
+import { loadRegions, hasRegions, regionNoun } from '../core/regions.js';
+import { RESOURCE_LABELS } from '../data/nations.js';
 import { money, people, troops, monthLabel } from '../core/format.js';
 
-const TINT_VARS = ['--land-0', '--land-1', '--land-2', '--land-3', '--land-4', '--land-5'];
+// Political colour of a country (its owner's tint; gold for the player's).
 export function swatchColor(g, id) {
-  const n = nation(id);
-  if (id === g.state?.player || (n?.owner && n.owner === g.state?.player)) return 'var(--land-player)';
-  return `var(${TINT_VARS[n?.tint ?? 0]})`;
+  const owner = ownerOf(g.state, id);
+  if (g.state && owner === g.state.player) return 'var(--land-player)';
+  return `var(--land-${country(owner)?.tint ?? 0})`;
 }
 const stat = (label, value, delta) => h('div.wd-stat', h('span.wd-stat-l', label), h('span.wd-stat-v', value), delta || '');
+const sub = (text, cls = '') => h('span.wd-stat-d' + cls, { style: { color: cls ? '' : 'var(--text-dim)' } }, text);
 const meter = (label, value, tone, shown = Math.round(value) + '%') =>
   h(`div.wd-meter.${tone}`, h('div.wd-meter-top', h('span', label), h('b', shown)), h('div.wd-meter-bar', h('span', { style: { width: Math.max(0, Math.min(100, value)) + '%' } })));
 const section = (title, ...kids) => h('section.wd-section', title ? h('h3.wd-section-t', title) : '', ...kids);
 const soonTag = () => h('span.wd-tag.plain', 'Soon');
-function row({ ic, title, sub, end, onClick }) {
+function row({ ic, title, sub: s, end, onClick }) {
   return h('button.wd-row', { type: 'button', on: { click: onClick } },
-    h('span.wd-row-ic', icon(ic)), h('span.wd-row-main', h('span.wd-row-t', title), sub ? h('span.wd-row-s', sub) : ''), end ? h('span.wd-row-end', end) : '');
+    h('span.wd-row-ic', icon(ic)), h('span.wd-row-main', h('span.wd-row-t', title), s ? h('span.wd-row-s', s) : ''), end ? h('span.wd-row-end', end) : '');
 }
 export const soon = (what) => toast(`<b>${what}</b> arrives with the simulation in a later checkpoint.`, { icon: 'sparkle', tone: 'gold', ms: 3200 });
 const stabilityTone = (v) => (v >= 60 ? 'good' : v >= 35 ? 'warn' : 'bad');
 const opinionTone = (o) => (o >= 10 ? 'good' : o > -20 ? 'info' : o > -45 ? 'warn' : 'bad');
+const perPerson = (c) => (c.gdpPerCapita >= 1000 ? '$' + Math.round(c.gdpPerCapita / 100) / 10 + 'K' : '$' + c.gdpPerCapita) + ' per person';
 
 function countryChip(g, id) {
-  const n = nation(id);
   return h('button.wd-chip', { type: 'button', on: { click: () => g.select(id, { fly: true }) } },
-    h('span.wd-swatch', { style: { background: swatchColor(g, id) } }), n.name);
+    h('span.wd-swatch', { style: { background: swatchColor(g, id) } }), country(id).name);
+}
+
+// Regions section: filled in when the region file arrives (it's fetched on demand).
+function regionsSection(g, c) {
+  if (!hasRegions(c.id)) return '';
+  const body = h('div.wd-chips', h('span.wd-note', 'Loading regions…'));
+  const title = h('h3.wd-section-t', 'Regions');
+  loadRegions(c.id).then((data) => {
+    if (!data) return;
+    const noun = regionNoun(data);
+    title.textContent = `${data.regions.length} ${data.regions.length === 1 ? noun.one : noun.many}`;
+    const top = data.regions.slice(0, 8);
+    clear(body).append(...top.map((r) => h('button.wd-chip', { type: 'button', title: r.type, on: { click: () => g.focusRegion(c.id, r.id) } }, icon('region', 'sm'), r.name)),
+      data.regions.length > top.length ? h('span.wd-note', { style: { alignSelf: 'center' } }, `+${data.regions.length - top.length} more — zoom in to see them all`) : '');
+  }).catch(() => { clear(body).append(h('span.wd-note', 'Regions couldn’t be loaded.')); });
+  return h('section.wd-section', title, body);
+}
+
+function dataNote(c) {
+  const est = c.sources.population === 'estimate';
+  return h('p.data-note', `Borders: Natural Earth. ${est ? 'Population, economy and military: rounded real-world estimates (mid-2020s).' : 'Population and economy: Natural Earth 2019 estimates.'} Stability and strength are game values.`);
 }
 
 // ——— Country panel ———
-export function countryPanel(g, id) {
-  const n = nation(id), st = g.state;
-  const lead = h('span.tb-flag', { style: { background: 'color-mix(in srgb,' + swatchColor(g, id) + ' 22%,transparent)', color: swatchColor(g, id) } }, icon(n.territory ? 'flag' : 'globe'));
+// opts.region: a region the player clicked (shown as context at the top).
+export function countryPanel(g, id, opts = {}) {
+  const c = country(id), st = g.state;
+  const owner = ownerOf(st, id);
+  const subtitle = owner !== id ? `Territory of ${country(owner).name}` : c.government.label;
+  const lead = flagImg(c);
+  const stab = stabilityOf(st, id), tr = troopsOf(st, id);
+  const kicker = [];
+  if (st) { const rel = relation(st, id); kicker.push(h(`span.wd-tag.${rel.key}`, rel.label)); }
+  kicker.push(h('span.wd-tag.plain', c.subregion));
+  if (opts.region) kicker.push(h('span.wd-tag.info', { title: opts.region.type }, opts.region.name));
+  const grid = section(null, h('div.wd-stat-grid',
+    stat('Population', people(c.population), sub(Math.round(c.areaKm2).toLocaleString('en') + ' km²')),
+    stat('Economy (GDP)', money(c.gdp), sub(perPerson(c))),
+    stat('Military', troops(tr), sub(c.military.tier)),
+    stat('Capital', c.capital || '—', sub(c.continent))));
+  const resources = c.resources.length ? section('Resources', h('div.wd-chips', c.resources.slice(0, 6).map((r) => h('span.wd-tag.plain', RESOURCE_LABELS[r])))) : '';
+  const borders = c.neighbors.length
+    ? section('Borders', h('div.wd-chips', c.neighbors.map((x) => countryChip(g, x))))
+    : section('Borders', h('p.wd-note', 'No land borders.'));
+  const base = { key: 'country:' + id, lead, title: c.name, subtitle, keepScroll: g.drawerKeyIs('right', 'country:' + id) };
 
   // Picking a starting nation: same panel, one primary action.
   if (!st) {
     const can = g.canPlay(id);
     return {
-      key: 'country:' + id, lead, title: n.name,
-      subtitle: n.territory ? `Territory of ${nation(n.owner).name}` : n.govLabel,
-      body: [
-        section(null, h('div.wd-stat-grid', stat('Population', people(n.pop)), stat('Economy (GDP)', money(n.gdp)), stat('Military', troops(n.army)), stat('Capital', n.capital))),
-        n.neighbors.length ? section('Borders', h('div.wd-chips', n.neighbors.map((x) => countryChip(g, x)))) : section('Borders', h('p.wd-note', 'An island nation — no land borders.')),
-        can ? '' : h('p.wd-note', n.territory ? 'Territories can’t be led directly. Pick the nation that governs it, or any independent country.' : 'This country can’t be played yet.'),
-      ],
-      foot: [h('button.wd-btn.primary.lg.block', { type: 'button', disabled: !can, on: { click: () => g.start(id) } }, icon('crown'), `Lead ${n.name}`)],
+      ...base,
+      body: [h('div.wd-chips', kicker), grid, section(null, meter('Stability', stab, stabilityTone(stab))), regionsSection(g, c), borders,
+        can ? '' : h('p.wd-note', c.territory ? `Territories can’t be led directly. Pick ${country(owner).name}, or any independent country.` : 'This country can’t be played yet.'),
+        dataNote(c)],
+      foot: [h('button.wd-btn.primary.lg.block', { type: 'button', disabled: !can, on: { click: () => g.start(id) } }, icon('crown'), `Lead ${c.name}`)],
     };
   }
 
-  const rel = relation(st, id), mine = rel.key === 'you';
-  const kicker = h('div.wd-chips', h(`span.wd-tag.${rel.key}`, rel.label), n.territory ? h('span.wd-tag.plain', 'Territory') : '');
-  const body = [kicker];
-
+  const mine = owner === st.player;
+  const body = [h('div.wd-chips', kicker)];
   if (id === st.player) {
     const b = budget(st);
     body.push(
       section(null, h('div.wd-stat-grid',
         stat('Treasury', money(st.treasury), h(`span.wd-stat-d.${b.balance >= 0 ? 'up' : 'down'}`, money(b.balance, { sign: true }) + ' / month')),
-        stat('Population', people(n.pop)), stat('Economy (GDP)', money(n.gdp)), stat('Military', troops(st.army)))),
-      section(null, meter('Stability', st.stability, stabilityTone(st.stability))),
+        stat('Population', people(c.population)), stat('Economy (GDP)', money(c.gdp), sub(perPerson(c))), stat('Military', troops(st.army), sub(c.military.tier)))),
+      section(null, meter('Stability', st.stability, stabilityTone(st.stability)), meter('Infrastructure', c.infrastructure, 'info')),
       section('Manage', h('div.wd-rows',
         row({ ic: 'economy', title: 'Economy', sub: 'Taxes and the monthly budget', onClick: () => g.openTool('economy') }),
         row({ ic: 'build', title: 'Build', sub: 'Infrastructure and industry', onClick: () => g.openTool('build') }),
         row({ ic: 'military', title: 'Military', sub: 'Armies and defence', onClick: () => g.openTool('military') }))),
     );
   } else {
-    const o = opinion(st, id);
-    body.push(
-      section(null, h('div.wd-stat-grid', stat('Population', people(n.pop)), stat('Economy (GDP)', money(n.gdp)), stat('Military', troops(n.army)), stat('Government', n.territory ? 'Territory' : n.govLabel.replace('Constitutional ', 'Const. ')))),
-      mine ? '' : section(null, meter('Their opinion of you', (o + 100) / 2, opinionTone(o), (o > 0 ? '+' : '') + o)),
-    );
-    if (!mine && !n.territory) {
+    const o = opinion(st, owner);
+    body.push(grid, section(null, meter('Stability', stab, stabilityTone(stab)),
+      mine ? '' : meter(owner === id ? 'Their opinion of you' : `${country(owner).name}’s opinion of you`, (o + 100) / 2, opinionTone(o), (o > 0 ? '+' : '') + o)));
+    if (c.territory && !mine) {
+      body.push(section('Actions', h('div.wd-rows', row({ ic: 'flag', title: `View ${country(owner).name}`, sub: 'The country that governs this territory', onClick: () => g.select(owner, { fly: true }) }))));
+    } else if (!mine) {
       body.push(section('Actions', h('div.wd-rows',
         row({ ic: 'handshake', title: 'Improve relations', sub: `Send an envoy · ${money(g.envoyCost())}`, onClick: () => g.improveRelations(id) }),
         row({ ic: 'trade', title: 'Propose trade deal', end: soonTag(), onClick: () => soon('Trade deals') }),
@@ -81,14 +120,11 @@ export function countryPanel(g, id) {
       )));
     }
   }
-  body.push(n.neighbors.length
-    ? section('Borders', h('div.wd-chips', n.neighbors.map((x) => countryChip(g, x))))
-    : section('Borders', h('p.wd-note', 'No land borders.')));
-  body.push(h('p.wd-note', h('b', 'Capital: '), n.capital));
+  body.push(resources, regionsSection(g, c), borders, dataNote(c));
 
   const foot = [];
-  if (id !== st.player && !mine && !n.territory) foot.push(h('button.wd-btn.danger.block', { type: 'button', on: { click: () => g.confirmWar(id) } }, icon('swords'), 'Declare war'));
-  return { key: 'country:' + id, lead, title: n.name, subtitle: n.territory ? `Territory of ${nation(n.owner).name}` : n.govLabel, body, foot, keepScroll: g.drawerKeyIs('right', 'country:' + id) };
+  if (!mine && !c.territory) foot.push(h('button.wd-btn.danger.block', { type: 'button', on: { click: () => g.confirmWar(id) } }, icon('swords'), 'Declare war'));
+  return { ...base, body, foot };
 }
 
 // ——— Toolbar panels ———
@@ -101,7 +137,7 @@ export const TOOLS = [
 ];
 
 export function toolPanel(g, key) {
-  const st = g.state, me = nation(st.player);
+  const st = g.state, me = country(st.player);
   const keepScroll = g.drawerKeyIs('left', key);
   switch (key) {
     case 'military': return {
@@ -130,8 +166,8 @@ export function toolPanel(g, key) {
       };
     }
     case 'diplomacy': {
-      const ids = [...me.neighbors].sort((a, b) => opinion(st, b) - opinion(st, a));
-      const relRow = (id) => { const n = nation(id), r = relation(st, id), o = opinion(st, id);
+      const ids = [...me.neighbors].filter((id) => !country(id).territory).sort((a, b) => opinion(st, b) - opinion(st, a));
+      const relRow = (id) => { const n = country(id), r = relation(st, id), o = opinion(st, id);
         return row({ ic: 'flag', title: n.name, sub: r.label, end: (o > 0 ? '+' : '') + o, onClick: () => g.select(id, { fly: true }) }); };
       return {
         key, keepScroll, title: 'Diplomacy', subtitle: 'How the world sees you',

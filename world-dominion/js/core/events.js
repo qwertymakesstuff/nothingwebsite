@@ -3,12 +3,13 @@
 //   minor — a dismissible notification, the game keeps running
 // This checkpoint ships one sample major event; the event engine (triggers, chains, civil wars,
 // separatism, crises) is a later checkpoint and will produce objects of this same shape.
-import { nation, budget } from './state.js';
+import { budget } from './state.js';
+import { country } from './db.js';
 
 export const SAMPLE_EVENT_DAY = 18;
 
 export function protestEvent(state) {
-  const n = nation(state.player);
+  const n = country(state.player);
   const cost = Math.max(0.1, Math.round(Math.abs(budget(state).income) * 0.6 * 10) / 10);
   return {
     id: 'sample-protests',

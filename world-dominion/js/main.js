@@ -1,14 +1,16 @@
-// WORLD DOMINION — UI prototype entry point.
-// Wires the map, the minimal HUD (top bar, 5-button dock, zoom), the drawers, toasts and the event window
-// to a thin game state. The full simulation is a later checkpoint; see world-dominion/README.md.
+// WORLD DOMINION — entry point.
+// Wires the map (with overlays and regions), the minimal HUD (top bar, 5-button dock, zoom + layers), the
+// drawers, toasts and the event window to the country database and a thin game state. See README.md.
 import { h, $, clear } from './ui/dom.js';
 import { icon } from './ui/icons.js';
 import { WorldMap } from './ui/map.js';
-import { Drawer, openModal, toast, tooltip, closeTop, modalOpen } from './ui/overlays.js';
+import { Drawer, openModal, toast, tooltip, closeTop, modalOpen, pushLayer, remove as removeLayer } from './ui/overlays.js';
 import { countryPanel, toolPanel, TOOLS, swatchColor } from './ui/panels.js';
-import { COUNTRIES } from './data/world.js';
 import { FEATURED } from './data/nations.js';
-import { nation, playable, newGame, relation, budget, monthTick, applyEffects, serialize, deserialize, SAVE_KEY, opinion } from './core/state.js';
+import { playable, newGame, relation, budget, monthTick, applyEffects, serialize, deserialize, SAVE_KEY, opinion } from './core/state.js';
+import { country, ALL } from './core/db.js';
+import { loadRegions } from './core/regions.js';
+import { OVERLAYS, overlay as overlayById } from './core/overlays.js';
 import { protestEvent, describeEffects, SAMPLE_EVENT_DAY } from './core/events.js';
 import { money, people, troops, dateLabel, dateOf, clamp } from './core/format.js';
 
@@ -19,7 +21,7 @@ const store = {
 };
 
 const g = {
-  state: null, speed: 1, paused: true, lastSaved: null,
+  state: null, speed: 1, paused: true, lastSaved: null, overlay: 'political',
   canPlay: playable,
   drawerKeyIs: (side, key) => (side === 'left' ? left : right).isOpen && (side === 'left' ? left : right).key === key,
 };
@@ -29,15 +31,56 @@ const picker = { el: null }; // the start-screen panel while choosing a nation
 // ——— Map ———
 const tip = tooltip();
 const map = new WorldMap($('#map'), {
-  onSelect: (id) => g.select(id),
+  loadRegions,
+  onSelect: (id, regionId) => g.select(id, { regionId }),
   onBackground: () => right.close(),
-  onHover: (id, x, y) => {
+  onHover: (id, x, y, region) => {
     if (!id) return tip.hide();
-    const n = nation(id);
-    const extra = g.state ? relation(g.state, id).label : n.territory ? 'Territory' : people(n.pop) + ' people';
-    tip.show([h('span.wd-swatch', { style: { background: swatchColor(g, id) } }), n.name, h('small', extra)], x, y);
+    const c = country(id), ov = overlayById(g.overlay);
+    const extra = g.overlay !== 'political' ? ov.describe(c, { state: g.state }) : g.state ? relation(g.state, id).label : ov.describe(c, { state: null });
+    tip.show([h('span.wd-swatch', { style: { background: map.fills.get(id) || swatchColor(g, id) } }),
+      region ? h('span', region.name, h('small', { style: { marginLeft: '6px' } }, c.name)) : c.name, h('small', extra)], x, y);
   },
 });
+window.WD.map = map;
+
+// ——— Overlays (map modes) ———
+// Recolours every country from the active overlay; call again whenever ownership or the player changes.
+g.applyOverlay = () => {
+  const ov = overlayById(g.overlay), ctx = { state: g.state }, fills = new Map();
+  for (const c of ALL) fills.set(c.id, ov.fill(c, ctx));
+  map.setFills(fills);
+  renderLegend(ov.legend(ctx));
+};
+g.setOverlay = (id) => { g.overlay = overlayById(id).id; g.applyOverlay(); if (layersPop.el) openLayers(); };
+const legendEl = h('div.legend.wd-surface', { hidden: true, 'aria-live': 'polite' });
+document.body.append(legendEl);
+function renderLegend(lg) {
+  legendEl.hidden = !lg;
+  if (!lg) return;
+  clear(legendEl).append(h('div.legend-t', lg.title, lg.note ? h('small', lg.note) : ''),
+    h('div.legend-steps', lg.steps.map((s) => h('span', h('i', { style: { background: s.color } }), s.label))));
+}
+const layersPop = { el: null, layer: null };
+function closeLayers() { layersPop.el?.remove(); layersPop.el = null; if (layersPop.layer) removeLayer(layersPop.layer); layersBtn.classList.remove('on'); }
+function openLayers() {
+  layersPop.el?.remove();
+  layersPop.el = h('div.layers-pop.wd-surface', { role: 'dialog', 'aria-label': 'Map mode' },
+    h('h3.wd-section-t', 'Map mode'),
+    OVERLAYS.map((o) => h('button.layer-opt' + (o.id === g.overlay ? '.on' : ''), { type: 'button', 'aria-pressed': String(o.id === g.overlay), on: { click: () => { g.setOverlay(o.id); closeLayers(); } } },
+      h('span.wd-row-ic', icon(o.icon)), h('span.wd-row-main', h('span.wd-row-t', o.label), h('span.wd-row-s', o.hint)), o.id === g.overlay ? icon('check', 'check') : '')));
+  document.body.append(layersPop.el);
+  layersPop.layer = { close: closeLayers };
+  pushLayer(layersPop.layer);
+  layersBtn.classList.add('on');
+}
+const layersBtn = h('button.wd-icon-btn', { type: 'button', title: 'Map mode (L)', 'aria-label': 'Map mode', on: { click: () => (layersPop.el ? closeLayers() : openLayers()) } }, icon('layers'));
+document.addEventListener('pointerdown', (e) => { if (layersPop.el && !layersPop.el.contains(e.target) && !layersBtn.contains(e.target)) closeLayers(); });
+document.body.append(h('div.zoom.wd-surface',
+  layersBtn,
+  h('button.wd-icon-btn.zb', { type: 'button', title: 'Zoom in (+)', 'aria-label': 'Zoom in', on: { click: () => map.zoomBy(1.6) } }, icon('plus')),
+  h('button.wd-icon-btn.zb', { type: 'button', title: 'Zoom out (−)', 'aria-label': 'Zoom out', on: { click: () => map.zoomBy(1 / 1.6) } }, icon('minus')),
+  h('button.wd-icon-btn.zb', { type: 'button', title: 'Whole world (0)', 'aria-label': 'Show the whole world', on: { click: () => map.home() } }, icon('locate'))));
 
 // ——— Drawers ———
 const left = new Drawer('left', { onClose: () => { syncDock(); syncInsets(); } });
@@ -54,13 +97,20 @@ function syncInsets() {
 }
 addEventListener('resize', syncInsets);
 
-g.select = (id, { fly = false } = {}) => {
-  if (!nation(id)) return;
+g.select = (id, { fly = false, regionId = null } = {}) => {
+  if (!country(id)) return;
   map.setSelected(id);
-  right.show(countryPanel(g, id));
+  right.show(countryPanel(g, id, { region: regionId ? map.regionById(id, regionId) : null }));
   if (innerWidth <= 820) left.close();
   syncInsets();
   if (fly) map.flyTo(id);
+};
+// Zoom to a region chosen from the country panel and flash it once its shapes are on screen.
+g.focusRegion = async (countryId, regionId) => {
+  const data = await loadRegions(countryId);
+  const r = data?.regions.find((x) => x.id === regionId); if (!r) return;
+  map.frame(r.box, { maxZoom: 24, minZoom: 3, fill: 0.45 });
+  setTimeout(() => map.flashRegion(regionId), 900);
 };
 g.openTool = (key) => {
   if (!g.state) return;
@@ -99,17 +149,13 @@ function buildHud() {
   hud.dock = h('nav.dock.wd-surface', { 'aria-label': 'Main actions' }, TOOLS.map((t) =>
     h('button.wd-dock-btn', { type: 'button', 'data-key': t.key, title: `${t.label} (${t.hotkey})`, on: { click: () => g.openTool(t.key) } }, icon(t.ic), t.label)));
   hud.pill = h('div.paused-pill', { hidden: true }, 'PAUSED');
-  const zoom = h('div.zoom.wd-surface',
-    h('button.wd-icon-btn', { type: 'button', title: 'Zoom in (+)', 'aria-label': 'Zoom in', on: { click: () => map.zoomBy(1.6) } }, icon('plus')),
-    h('button.wd-icon-btn', { type: 'button', title: 'Zoom out (−)', 'aria-label': 'Zoom out', on: { click: () => map.zoomBy(1 / 1.6) } }, icon('minus')),
-    h('button.wd-icon-btn', { type: 'button', title: 'Whole world (0)', 'aria-label': 'Show the whole world', on: { click: () => map.home() } }, icon('locate')));
-  document.body.append(top, hud.pill, hud.dock, zoom);
+  document.body.append(top, hud.pill, hud.dock);
 }
 function syncDock() { for (const b of hud.dock.children) b.classList.toggle('on', left.isOpen && left.key === b.dataset.key); }
 function renderHud() {
   const s = g.state; if (!s) return;
-  const n = nation(s.player), b = budget(s);
-  hud.flagName.textContent = n.name; hud.gov.textContent = n.govLabel;
+  const n = country(s.player), b = budget(s);
+  hud.flagName.textContent = n.name; hud.gov.textContent = n.government.label;
   hud.date.textContent = dateLabel(s.day); hud.date.classList.toggle('paused', g.paused);
   clear(hud.playBtn).append(icon(g.paused ? 'play' : 'pause'));
   hud.playBtn.setAttribute('aria-label', g.paused ? 'Resume time' : 'Pause time');
@@ -174,20 +220,20 @@ function fireEvent(ev) {
 g.triggerSampleEvent = () => { left.close(); fireEvent(protestEvent(g.state)); };
 
 // ——— Actions ———
-g.envoyCost = () => Math.max(0.05, Math.round(nation(g.state.player).gdp * 0.0008 * 100) / 100);
+g.envoyCost = () => Math.max(0.05, Math.round(country(g.state.player).gdp * 0.0008 * 100) / 100);
 g.improveRelations = (id) => {
   const s = g.state, cost = g.envoyCost();
   if (s.treasury < cost) { toast('Not enough money in the treasury.', { tone: 'bad', icon: 'coins' }); return; }
   const before = opinion(s, id);
-  if (before >= 100) { toast(`${nation(id).name} already adores you.`, { icon: 'handshake' }); return; }
+  if (before >= 100) { toast(`${country(id).name} already adores you.`, { icon: 'handshake' }); return; }
   s.treasury = Math.round((s.treasury - cost) * 100) / 100;
   s.opinions[id] = clamp(before + 8, -100, 100);
-  toast(`Envoy sent to <b>${nation(id).name}</b>. Opinion +8.`, { tone: 'good', icon: 'handshake' });
+  toast(`Envoy sent to <b>${country(id).name}</b>. Opinion +8.`, { tone: 'good', icon: 'handshake' });
   renderHud(); refreshPanels();
 };
 g.setTax = (v, redraw) => { g.state.taxRate = v; renderHud(); if (redraw) refreshPanels(); };
 g.confirmWar = (id) => {
-  const n = nation(id);
+  const n = country(id);
   openModal({
     tone: 'bad', icon: 'swords', kicker: [h('span.wd-tag.bad', 'War')],
     title: `Declare war on ${n.name}?`,
@@ -217,7 +263,7 @@ g.showHelp = () => openModal({
 });
 g.showKeys = () => openModal({
   tone: 'info', icon: 'keyboard', title: 'Keyboard shortcuts', body: h('span', { style: { display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 14px', alignItems: 'center' } },
-    [['Space', 'Pause / resume'], ['1 2 3', 'Game speed'], ['M B D E O', 'Military, Build, Diplomacy, Economy, More'], ['C', 'Go to your nation'], ['+ −', 'Zoom'], ['0', 'Whole world'], ['Esc', 'Close the top panel']]
+    [['Space', 'Pause / resume'], ['1 2 3', 'Game speed'], ['L', 'Map mode'], ['M B D E O', 'Military, Build, Diplomacy, Economy, More'], ['C', 'Go to your nation'], ['+ −', 'Zoom'], ['0', 'Whole world'], ['Esc', 'Close the top panel']]
       .flatMap(([k, v]) => [h('span', k.split(' ').map((x) => h('span.wd-kbd', { style: { marginRight: '3px' } }, x))), h('span', v)])),
   choices: [{ label: 'Close', onPick: () => {} }],
 });
@@ -226,12 +272,12 @@ g.showKeys = () => openModal({
 function showPicker(saved) {
   document.body.classList.add('picking');
   const list = h('div.picker-list');
-  const all = COUNTRIES.filter((c) => playable(c.id)).map((c) => nation(c.id));
+  const all = ALL.filter((c) => playable(c.id));
   const renderList = (q = '') => {
     q = q.trim().toLowerCase();
     clear(list).append(...all.filter((n) => !q || n.name.toLowerCase().includes(q)).slice(0, q ? 40 : 200)
       .map((n) => h('button', { type: 'button', on: { click: () => g.select(n.id, { fly: true }) } },
-        h('span.wd-swatch', { style: { background: swatchColor(g, n.id) } }), n.name, h('small', people(n.pop)))));
+        h('span.wd-swatch', { style: { background: swatchColor(g, n.id) } }), n.name, h('small', people(n.population)))));
     if (!list.children.length) list.append(h('p.wd-note', 'No country by that name.'));
   };
   renderList();
@@ -241,13 +287,14 @@ function showPicker(saved) {
     h('div.picker-head', h('h1.brand', 'WORLD', h('br'), h('span', 'DOMINION')),
       h('p', 'Choose a nation to lead. Click any country on the map, or pick one below.')),
     h('div.picker-body',
-      savedState ? h('button.wd-btn.primary.lg.block', { type: 'button', on: { click: () => enterGame(savedState, true) } }, icon('play'), `Continue as ${nation(savedState.player).name}`) : '',
+      savedState ? h('button.wd-btn.primary.lg.block', { type: 'button', on: { click: () => enterGame(savedState, true) } }, icon('play'), `Continue as ${country(savedState.player).name}`) : '',
       h('section.wd-section', h('h3.wd-section-t', 'Popular starts'), h('div.wd-chips', FEATURED.map((id) =>
-        h('button.wd-chip', { type: 'button', on: { click: () => g.select(id, { fly: true }) } }, h('span.wd-swatch', { style: { background: swatchColor(g, id) } }), nation(id).name)))),
+        h('button.wd-chip', { type: 'button', on: { click: () => g.select(id, { fly: true }) } }, h('span.wd-swatch', { style: { background: swatchColor(g, id) } }), country(id).name)))),
       h('section.wd-section', h('h3.wd-section-t', 'All nations'), h('label.search', icon('search'), input), list)),
     h('div.picker-foot', h('a', { href: '../play/public/' }, '← back to the arcade')));
   document.body.append(picker.el);
   syncInsets();
+  g.applyOverlay();
   map.home(false);
 }
 g.start = (id) => enterGame(newGame(id), false);
@@ -258,8 +305,9 @@ function enterGame(state, resumed) {
   document.body.classList.remove('picking');
   right.close(); left.close();
   if (!hud.dock) buildHud();
-  const n = nation(state.player);
-  map.setPlayer(state.player, COUNTRIES.filter((c) => nation(c.id)?.owner === state.player).map((c) => c.id));
+  const n = country(state.player);
+  map.setPlayer(state.player);
+  g.applyOverlay();
   syncInsets();
   map.flyTo(state.player, { maxZoom: 4 });
   renderHud();
@@ -275,6 +323,7 @@ addEventListener('keydown', (e) => {
   if (e.key === '+' || e.key === '=') { map.zoomBy(1.6); return; }
   if (e.key === '-' || e.key === '_') { map.zoomBy(1 / 1.6); return; }
   if (e.key === '0') { map.home(); return; }
+  if (e.key.toLowerCase() === 'l' && !modalOpen()) { layersPop.el ? closeLayers() : openLayers(); return; }
   if (!g.state || modalOpen()) return;
   const k = e.key.toLowerCase();
   if (e.key === ' ') { e.preventDefault(); g.togglePause(); }
