@@ -93,6 +93,7 @@ jobs:
       - name: Push migrations
         if: steps.gate.outputs.run == 'true'
         run: |
-          # Pinned CLI (3.x): `link` takes no password; `db push` targets the linked project via --remote.
+          # Pinned CLI (3.x): `link` takes no password; `db push` targets the linked project via --remote,
+          # and --yes confirms non-interactively (CI has no terminal to answer the prompt).
           supabase link --project-ref "$SUPABASE_PROJECT_REF"
-          supabase db push --remote --include-all --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --remote --include-all --yes --password "$SUPABASE_DB_PASSWORD"
