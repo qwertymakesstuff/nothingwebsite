@@ -113,6 +113,55 @@ export class SupabaseAdmin {
     return { duplicate: Boolean(body.duplicate) };
   }
 
+  /** Calls a database function with the secret key. */
+  async rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+    const res = await this.f(`${this.env.SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: this.headers(), body: JSON.stringify(args) });
+    const text = await res.text();
+    if (!res.ok) throw new SupabaseError(fn, res.status, text);
+    return (text ? JSON.parse(text) : null) as T;
+  }
+
+  /** Generic REST call (service role). */
+  async rest<T = unknown>(method: string, path: string, body?: unknown, prefer?: string): Promise<T> {
+    const res = await this.f(`${this.env.SUPABASE_URL}/rest/v1/${path}`, {
+      method,
+      headers: this.headers(prefer ? { prefer } : {}),
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await res.text();
+    if (!res.ok) throw new SupabaseError(`${method} ${path.split('?')[0]}`, res.status, text);
+    return (text ? JSON.parse(text) : null) as T;
+  }
+
+  async isRestricted(userId: string, kind: 'mute' | 'no_play' | 'no_tournaments' | 'ban'): Promise<boolean> {
+    return Boolean(await this.rpc<boolean>('is_restricted', { p_user: userId, p_kind: kind }));
+  }
+
+  async areFriends(a: string, b: string): Promise<boolean> {
+    return Boolean(await this.rpc<boolean>('are_friends', { a, b }));
+  }
+
+  async staffRole(userId: string): Promise<'admin' | 'moderator' | null> {
+    const rows = await this.rest<{ role: 'admin' | 'moderator' }[]>('GET', `staff?user_id=eq.${encodeURIComponent(userId)}&select=role`);
+    return rows[0]?.role ?? null;
+  }
+
+  /** A player's chat preference: all | friends | presets | off. */
+  async chatSetting(userId: string): Promise<string> {
+    const rows = await this.rest<{ chat: string }[]>('GET', `user_settings?user_id=eq.${encodeURIComponent(userId)}&select=chat`);
+    return rows[0]?.chat ?? 'all';
+  }
+
+  /** Blocks (or unblocks) sign-in for a user in Supabase Auth. */
+  async setAuthBan(userId: string, banned: boolean, days?: number): Promise<void> {
+    const res = await this.f(`${this.env.SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: this.headers({ authorization: `Bearer ${this.env.SUPABASE_SECRET_KEY}` }),
+      body: JSON.stringify({ ban_duration: banned ? `${(days ?? 36500) * 24}h` : 'none' }),
+    });
+    if (!res.ok) throw new SupabaseError('auth ban', res.status, await res.text());
+  }
+
   private async get<T>(path: string): Promise<T> {
     const res = await this.f(`${this.env.SUPABASE_URL}/rest/v1/${path}`, { headers: this.headers() });
     if (!res.ok) throw new Error(`GET ${path.split('?')[0]} failed: ${res.status} ${await res.text()}`);
@@ -176,7 +225,7 @@ interface RawProfile {
 }
 
 function toRating(r: RawRating | undefined): StoredRating {
-  if (!r) return { rating: 1500, rd: 350, volatility: 0.06, updatedAt: Date.now() };
+  if (!r) return { rating: 500, rd: 350, volatility: 0.06, updatedAt: Date.now() };
   return { rating: Number(r.rating), rd: Number(r.rd), volatility: Number(r.volatility), updatedAt: Date.parse(r.updated_at) };
 }
 
@@ -189,4 +238,14 @@ function toPlayer(r: RawProfile): PlayerCard & { glicko: StoredRating } {
     country: r.country,
     glicko: toRating(r.ratings?.[0]),
   };
+}
+
+export class SupabaseError extends Error {
+  constructor(
+    public what: string,
+    public status: number,
+    public body: string,
+  ) {
+    super(`${what} failed: ${status} ${body.slice(0, 300)}`);
+  }
 }

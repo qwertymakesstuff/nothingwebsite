@@ -39,7 +39,8 @@ GameRoom object (`apps/realtime/src/GameRoom.ts`):
   current position and is rejected (`stale`). Draw acceptances are tied to the offer's position;
   resignations to the position the player saw.
 - **Clocks** are measured with the server's time only; messages carry no clock values (extra
-  fields are discarded). Clocks start after both first moves, the increment is added by the server,
+  fields are discarded). White's clock starts as soon as both players have the game open, Black's
+  when White moves; the increment is added by the server,
   and an alarm ends the game the instant a flag falls, even if nobody sends anything. A move that
   arrives after the flag loses on time. Running out against a lone king (or king + minor) is a draw.
 - **Results** are never sent by clients. The server decides them (checkmate, stalemate, repetition,
@@ -53,14 +54,17 @@ GameRoom object (`apps/realtime/src/GameRoom.ts`):
   game, so nothing is lost. The opponent sees a connection dot and, if you've gone, a countdown.
 - A player who stays away for 60 s loses by **abandonment** (a draw if the opponent couldn't ever
   checkmate). Coming back in time cancels it. Your clock keeps running meanwhile.
-- **First moves:** each side has 30 s for its first move, otherwise the game is **aborted** (not
-  recorded, no rating change). Either player may abort before both have moved.
+- **First moves:** the clock runs from the start of each side's first turn, and each side also
+  has 30 s to make that first move, otherwise the game is **aborted** (not recorded, no rating
+  change), so a no-show never costs anyone rating. Either player may abort before both have moved.
 
 ## Ratings
 
 Glicko-2 (`packages/chess-core/src/glicko.ts`, verified against Glickman's worked example), one
 rating per format (bullet, blitz, rapid, classical), each game its own rating period, τ = 0.75, RD
-between 45 and 350, growing with inactivity. Ratings with RD > 110 are shown as provisional (`1500?`).
+between 45 and 350, growing with inactivity. Everyone starts at **500**; ratings with RD > 110 are
+shown as provisional (`500?`). (Glicko-2 only uses rating differences, so the starting number is a
+choice of scale.)
 
 Ratings change **only** after a rated game between two players ends with a verified result. The
 GameRoom computes the update and calls `record_online_game` (service role only), which in one
@@ -78,9 +82,8 @@ queue.
 
 ## Limits and what's next
 
-- Friends lists arrive with the social features (Stage 8). Until then, the "friends only" challenge
-  setting means nobody can challenge you.
-- No premoves or spectating yet; chat arrives with the social features (13+).
+- Friends, chat and tournaments arrived in Stage 6 (see [`PLATFORM.md`](PLATFORM.md)).
+- No premoves or spectating of live games yet.
 - Network lag isn't compensated: the server charges the time between receiving moves.
 
 ## Cost

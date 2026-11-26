@@ -38,6 +38,11 @@ export const ClientMessage = z.discriminatedUnion('t', [
     color: z.enum(['white', 'black', 'random']),
   }),
   z.object({ t: z.literal('challenge-decline'), id: GameId }),
+  // In-game chat
+  z.object({ t: z.literal('chat'), text: z.string().min(1).max(140) }),
+  // Tournament
+  z.object({ t: z.literal('tournament-join') }),
+  z.object({ t: z.literal('tournament-pause') }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
@@ -63,7 +68,7 @@ export const GameView = z.object({
   id: GameId,
   version: z.number().int(),
   status: GameStatus,
-  source: z.enum(['online', 'challenge']),
+  source: z.enum(['online', 'challenge', 'tournament']),
   rated: z.boolean(),
   tc: z.object({ id: TcId, initialMs: z.number(), incrementMs: z.number(), category: z.string() }),
   white: PlayerInfo.nullable(),
@@ -90,6 +95,8 @@ export const GameView = z.object({
   ratingChange: z.object({ white: z.number(), black: z.number() }).nullable(),
   /** Whether the result has been saved to both players' histories. */
   recorded: z.boolean(),
+  /** Arena tournament this game belongs to, if any. */
+  tournamentId: GameId.nullable().optional(),
   you: z.enum(['white', 'black', 'none']),
 });
 export type GameView = z.infer<typeof GameView>;
@@ -103,6 +110,47 @@ export const ChallengeInfo = z.object({
   createdAt: z.number(),
 });
 export type ChallengeInfo = z.infer<typeof ChallengeInfo>;
+
+export const ChatLine = z.object({
+  id: z.number().int(),
+  from: z.enum(['white', 'black', 'system']),
+  text: z.string(),
+  at: z.number(),
+});
+export type ChatLine = z.infer<typeof ChatLine>;
+
+export const TournamentStanding = z.object({
+  userId: z.string(),
+  username: z.string(),
+  rating: z.number(),
+  score: z.number().int(),
+  games: z.number().int(),
+  wins: z.number().int(),
+  draws: z.number().int(),
+  losses: z.number().int(),
+  /** Consecutive wins: from 2, the next win or draw scores double. */
+  streak: z.number().int(),
+  active: z.boolean(),
+  playing: z.boolean(),
+});
+export type TournamentStanding = z.infer<typeof TournamentStanding>;
+
+export const TournamentView = z.object({
+  id: GameId,
+  name: z.string(),
+  tc: z.string(),
+  category: z.string(),
+  rated: z.boolean(),
+  status: z.enum(['scheduled', 'running', 'finished', 'cancelled']),
+  startsAt: z.number(),
+  endsAt: z.number(),
+  createdBy: z.string().nullable(),
+  standings: z.array(TournamentStanding),
+  players: z.number().int(),
+  ongoingGames: z.number().int(),
+  you: z.object({ joined: z.boolean(), active: z.boolean(), gameId: GameId.nullable() }).nullable(),
+});
+export type TournamentView = z.infer<typeof TournamentView>;
 
 /** Server → client over WebSocket. */
 export const ServerMessage = z.discriminatedUnion('t', [
@@ -120,6 +168,12 @@ export const ServerMessage = z.discriminatedUnion('t', [
   z.object({ t: z.literal('challenge-created'), gameId: GameId }),
   z.object({ t: z.literal('challenge-declined'), gameId: GameId, by: z.string() }),
   z.object({ t: z.literal('lobby'), online: z.number().int(), seeking: z.record(z.string(), z.number().int()) }),
+  // In-game chat: full history on connect, then one line at a time.
+  z.object({ t: z.literal('chat-history'), lines: z.array(ChatLine), enabled: z.boolean() }),
+  z.object({ t: z.literal('chat-line'), line: ChatLine }),
+  // Tournament
+  z.object({ t: z.literal('tournament'), tournament: TournamentView, serverTime: z.number() }),
+  z.object({ t: z.literal('tournament-paired'), gameId: GameId }),
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 
@@ -176,3 +230,44 @@ export type BotGameSaved = z.infer<typeof BotGameSaved>;
 
 export const ApiError = z.object({ error: z.string(), message: z.string() });
 export type ApiError = z.infer<typeof ApiError>;
+
+export const PuzzleMoveRequest = z.object({
+  /** The solver's moves so far, including the newest one (UCI). */
+  moves: z.array(Uci).max(9),
+  /** Asking for a hint or the solution counts as a miss. */
+  help: z.enum(['hint', 'solution']).optional(),
+});
+export type PuzzleMoveRequest = z.infer<typeof PuzzleMoveRequest>;
+
+export const PuzzleMoveResponse = z.object({
+  status: z.enum(['continue', 'solved', 'failed', 'hint']),
+  /** The opponent's reply after a correct move. */
+  reply: z.string().optional(),
+  /** On failure (or "solution"): the full solution, for showing it. */
+  solution: z.array(z.string()).optional(),
+  /** For a hint: the square of the piece to move. */
+  hintSquare: z.string().optional(),
+  /** Present when this attempt changed the player's puzzle rating. */
+  rating: z.object({ before: z.number(), after: z.number(), change: z.number() }).optional(),
+  achievements: z.array(z.string()).optional(),
+});
+export type PuzzleMoveResponse = z.infer<typeof PuzzleMoveResponse>;
+
+export const TournamentCreate = z.object({
+  name: z.string().trim().min(3).max(40).regex(/^[^\x00-\x1f<>]+$/),
+  tc: z.string().regex(/^\d{1,3}\+\d{1,3}$/),
+  rated: z.boolean(),
+  /** Minutes from now until the start (2 minutes to 7 days). */
+  startsInMinutes: z.number().int().min(2).max(7 * 24 * 60),
+  durationMinutes: z.number().int().min(10).max(180),
+});
+export type TournamentCreate = z.infer<typeof TournamentCreate>;
+
+export const AdminBan = z.object({
+  userId: z.string().uuid(),
+  ban: z.boolean(),
+  reason: z.string().min(3).max(500),
+  /** Ban length in days; omitted = permanent. */
+  days: z.number().int().min(1).max(3650).optional(),
+});
+export type AdminBan = z.infer<typeof AdminBan>;

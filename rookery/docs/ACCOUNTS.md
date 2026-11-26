@@ -14,7 +14,7 @@ Worker's `/api/*` (server, secret key).
 | Recover password | `/forgot-password` → email → `/auth/confirm` → `/auth/reset` | The response never reveals whether an address has an account. |
 | Profile | `/u/<username>`, Settings → Profile | Display name, country, bio, avatar (cropped to 256 px WebP in the browser, ≤ 256 KB). |
 | Settings | Settings | Saved to the account when signed in (server copy wins on a new device), per device for guests. |
-| Ratings | profile, dashboard | Bullet, blitz, rapid, classical, puzzles. Start at 1500 (provisional, shown with "?"). Change only after rated online games (see [`MULTIPLAYER.md`](MULTIPLAYER.md)). |
+| Ratings | profile, dashboard | Bullet, blitz, rapid, classical, puzzles. Start at 500 (provisional, shown with "?"). Change only after rated online games (see [`MULTIPLAYER.md`](MULTIPLAYER.md)). |
 | Game history + statistics | profile, dashboard | Wins/draws/losses and win % per format and source, computed in SQL (`player_stats` view). |
 | Achievements | profile, dashboard, end of game | 11 achievements, awarded by the database (`award_achievements`). |
 | Data | Settings → Account | Download all your data as JSON; delete the account (typed confirmation). |

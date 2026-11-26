@@ -66,6 +66,7 @@ export interface GameRow {
   black_delta: number | null;
   white?: { username: string; avatar_path: string | null } | null;
   black?: { username: string; avatar_path: string | null } | null;
+  tournament_id?: string | null;
 }
 
 export interface AchievementRow {
@@ -93,7 +94,7 @@ export function avatarUrl(path: string | null | undefined): string | undefined {
   return path ? `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}` : undefined;
 }
 
-function check<T>(res: { data: T | null; error: { message: string } | null }): T {
+export function check<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message);
   return res.data as T;
 }
@@ -242,12 +243,12 @@ export class ApiFailure extends Error {
   }
 }
 
-async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function api<T>(method: string, path: string, body?: unknown, opts: { optionalAuth?: boolean } = {}): Promise<T> {
   const t = await token();
-  if (!t) throw new ApiFailure(401, 'unauthenticated', 'Sign in first.');
+  if (!t && !opts.optionalAuth) throw new ApiFailure(401, 'unauthenticated', 'Sign in first.');
   const res = await fetch(path, {
     method,
-    headers: { authorization: `Bearer ${t}`, ...(body ? { 'content-type': 'application/json' } : {}) },
+    headers: { ...(t ? { authorization: `Bearer ${t}` } : {}), ...(body ? { 'content-type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (res.status === 204) return undefined as T;
@@ -268,13 +269,18 @@ export function deleteAccount(): Promise<void> {
 /** Everything we hold about the signed-in player, for "Download my data". */
 export async function exportMyData(userId: string): Promise<unknown> {
   const sb = supabase();
-  const [profile, priv, settings, ratings, games, achievements] = await Promise.all([
+  const [profile, priv, settings, ratings, games, achievements, friends, puzzles, notifications, reports, restrictions] = await Promise.all([
     sb.from('profiles').select('*').eq('id', userId).maybeSingle(),
     sb.from('user_private').select('*').eq('user_id', userId).maybeSingle(),
     sb.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
     sb.from('ratings').select('*').eq('user_id', userId),
     sb.from('games').select('*').or(`white_id.eq.${userId},black_id.eq.${userId}`),
     sb.from('user_achievements').select('*').eq('user_id', userId),
+    sb.from('friendships').select('*').or(`requester_id.eq.${userId},addressee_id.eq.${userId}`),
+    sb.from('puzzle_attempts').select('*').eq('user_id', userId),
+    sb.from('notifications').select('*').eq('user_id', userId),
+    sb.from('reports').select('id, target_id, game_id, reason, details, status, created_at').eq('reporter_id', userId),
+    sb.from('restrictions').select('kind, reason, expires_at, created_at, lifted_at').eq('user_id', userId),
   ]);
   const { data: auth } = await sb.auth.getUser();
   return {
@@ -286,5 +292,10 @@ export async function exportMyData(userId: string): Promise<unknown> {
     ratings: ratings.data,
     games: games.data,
     achievements: achievements.data,
+    friendships: friends.data,
+    puzzleAttempts: puzzles.data,
+    notifications: notifications.data,
+    reportsFiled: reports.data,
+    restrictions: restrictions.data,
   };
 }

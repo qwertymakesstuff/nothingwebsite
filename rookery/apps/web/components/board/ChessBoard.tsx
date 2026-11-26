@@ -9,6 +9,7 @@
 import { Chessground } from '@lichess-org/chessground';
 import type { Api } from '@lichess-org/chessground/api';
 import type { Config } from '@lichess-org/chessground/config';
+import type { DrawShape } from '@lichess-org/chessground/draw';
 import type { Color, Key } from '@lichess-org/chessground/types';
 import { useEffect, useRef } from 'react';
 import type { BoardThemeId } from '@/lib/boardThemes';
@@ -38,6 +39,8 @@ export interface ChessBoardProps {
    * playable later must leave this off and control moves through `movableColor` instead.
    */
   viewOnly?: boolean;
+  /** Arrows and circles drawn on the board (hints, best moves). */
+  shapes?: { orig: string; dest?: string; brush: 'green' | 'red' | 'blue' | 'yellow' | 'paleBlue' | 'paleGreen' }[];
 }
 
 export function ChessBoard({
@@ -54,6 +57,7 @@ export function ChessBoard({
   className,
   label = 'Chess board',
   viewOnly = false,
+  shapes,
 }: ChessBoardProps) {
   const { prefs } = usePreferences();
   const el = useRef<HTMLDivElement>(null);
@@ -82,6 +86,7 @@ export function ChessBoard({
       events: { after: (orig, dest) => onMoveRef.current?.(orig, dest) },
     },
     premovable: { enabled: false },
+    drawable: { autoShapes: (shapes ?? []) as DrawShape[] },
     draggable: { enabled: movableColor !== undefined, showGhost: true },
     selectable: { enabled: movableColor !== undefined },
   };

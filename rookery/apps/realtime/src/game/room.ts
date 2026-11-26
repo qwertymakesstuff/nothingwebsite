@@ -46,11 +46,13 @@ export interface RoomState {
   id: string;
   version: number;
   status: GameStatus;
-  source: 'online' | 'challenge';
+  source: 'online' | 'challenge' | 'tournament';
   rated: boolean;
   tc: TimeControlSpec;
   white: PlayerInfo | null;
   black: PlayerInfo | null;
+  /** Arena tournament this game belongs to. */
+  tournamentId?: string | null;
   /** The challenger, for challenges (only they may cancel). */
   creator: Color | null;
   invited: { userId: string; username: string } | null;
@@ -58,6 +60,8 @@ export interface RoomState {
   clock: ClockState;
   firstMoveDeadline: number | null;
   away: { white: number | null; black: number | null };
+  /** Whether each player has connected at least once (White's clock starts when both have). */
+  seen?: { white: boolean; black: boolean };
   drawOffer: { by: Color; ply: number } | null;
   lastDrawOffer: { white: number; black: number };
   rematch: { offeredBy: Color | null; declined: boolean; gameId: string | null };
@@ -118,7 +122,8 @@ export interface Step {
 
 export function createRoom(init: {
   id: string;
-  source: 'online' | 'challenge';
+  source: 'online' | 'challenge' | 'tournament';
+  tournamentId?: string | null;
   rated: boolean;
   tc: TimeControlSpec;
   white: PlayerInfo | null;
@@ -135,6 +140,7 @@ export function createRoom(init: {
     version: 1,
     status: both ? 'active' : 'waiting',
     source: init.source,
+    tournamentId: init.tournamentId ?? null,
     rated: init.rated,
     tc: init.tc,
     white: init.white,
@@ -145,6 +151,7 @@ export function createRoom(init: {
     clock: createClock(init.tc.initialMs, init.tc.incrementMs),
     firstMoveDeadline: both ? init.now + timing.firstMoveMs : null,
     away: { white: null, black: null },
+    seen: { white: false, black: false },
     drawOffer: null,
     lastDrawOffer: { white: -100, black: -100 },
     rematch: { offeredBy: null, declined: false, gameId: null },
@@ -197,16 +204,17 @@ export function move(s: RoomState, color: Color, uci: string, ply: number, now: 
   if (!tryMove(chess, uci)) return { state: s, error: 'illegal_move' };
 
   let clock = s.clock;
-  let firstMoveDeadline = s.firstMoveDeadline;
   const plies = s.moves.length + 1;
-  if (plies === 1) firstMoveDeadline = now + s.timing.firstMoveMs; // now black's first move
-  else if (plies === 2) {
-    firstMoveDeadline = null;
-    clock = start(clock, 'white', now); // clocks start once both sides have moved
-  } else {
+  // Each side has a deadline for its first move (no-shows abort the game, unrated).
+  const firstMoveDeadline = plies === 1 ? now + s.timing.firstMoveMs : null;
+  if (clock.running === color) {
+    // The mover's clock has been running since their turn began: charge it, add the increment.
     const pressed = press(clock, now);
     if (pressed.flagged) return finish({ ...s, clock: pressed.clock }, timeoutOutcome(replay(s.moves), color), now);
     clock = pressed.clock;
+  } else {
+    // White moved before the clocks started (the opponent hadn't connected yet): start Black's.
+    clock = start(clock, other(color), now);
   }
   const next: RoomState = {
     ...s,
@@ -260,6 +268,7 @@ export function draw(s: RoomState, color: Color, action: 'offer' | 'accept' | 'd
 
 export function rematch(s: RoomState, color: Color, action: 'offer' | 'accept' | 'decline'): Step {
   if (s.status !== 'ended') return { state: s, error: 'not_finished' };
+  if (s.source === 'tournament') return { state: s, error: 'not_allowed' }; // the arena pairs the next game
   if (s.rematch.gameId) return { state: s };
   const theirs = s.rematch.offeredBy === other(color);
   if (action === 'offer' && !theirs) {
@@ -293,9 +302,22 @@ export function decline(s: RoomState, userId: string): Step {
 /** A player's last connection closed (away) or one came back (present). */
 export function presence(s: RoomState, color: Color, present: boolean, now: number): Step {
   if (s.status !== 'active') return { state: s };
+  const seen = s.seen ?? { white: true, black: true }; // games stored before this field existed
+  const nowSeen = present && !seen[color] ? { ...seen, [color]: true } : seen;
   const deadline = present ? null : (s.away[color] ?? now + s.timing.awayMs);
-  if (s.away[color] === deadline) return { state: s };
-  return { state: bump({ ...s, away: { ...s.away, [color]: deadline } }) };
+  // White's turn begins (and their clock starts) once both players have the board in front of them.
+  const startClock = nowSeen.white && nowSeen.black && s.moves.length === 0 && s.clock.running === null;
+  if (s.away[color] === deadline && nowSeen === seen && !startClock) return { state: s };
+  return {
+    state: bump({
+      ...s,
+      seen: nowSeen,
+      away: { ...s.away, [color]: deadline },
+      clock: startClock ? start(s.clock, 'white', now) : s.clock,
+      // The first-move window also counts from when White's turn really begins.
+      firstMoveDeadline: startClock ? now + s.timing.firstMoveMs : s.firstMoveDeadline,
+    }),
+  };
 }
 
 /**
@@ -354,6 +376,7 @@ export function view(s: RoomState, you: Color | 'none', connected: { white: bool
     version: s.version,
     status: s.status,
     source: s.source,
+    tournamentId: s.tournamentId ?? null,
     rated: s.rated,
     tc: s.tc,
     white: s.white,

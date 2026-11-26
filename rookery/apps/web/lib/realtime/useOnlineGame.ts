@@ -4,7 +4,7 @@
 // are shown immediately (optimistically) and confirmed or rolled back by the next server state.
 
 import { getTimeControl } from '@rookery/chess-core';
-import type { GameView } from '@rookery/protocol';
+import type { ChatLine, GameView } from '@rookery/protocol';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RealtimeSocket, type SocketStatus } from './socket';
 
@@ -24,6 +24,7 @@ export interface OnlineGame {
   draw: (action: 'offer' | 'accept' | 'decline') => void;
   rematch: (action: 'offer' | 'accept' | 'decline') => void;
   cancel: () => void;
+  chat: { lines: ChatLine[]; enabled: boolean; send: (text: string) => void };
 }
 
 export function useOnlineGame(gameId: string | null, enabled: boolean): OnlineGame {
@@ -32,6 +33,8 @@ export function useOnlineGame(gameId: string | null, enabled: boolean): OnlineGa
   const [status, setStatus] = useState<SocketStatus>('connecting');
   const [fatal, setFatal] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lines, setLines] = useState<ChatLine[]>([]);
+  const [chatEnabled, setChatEnabled] = useState(true);
   const sock = useRef<RealtimeSocket | null>(null);
   const latest = useRef<GameView | null>(null);
   latest.current = game;
@@ -47,6 +50,11 @@ export function useOnlineGame(gameId: string | null, enabled: boolean): OnlineGa
         if (msg.t === 'state') {
           setGame((prev) => (prev && prev.id === msg.game.id && prev.version > msg.game.version ? prev : msg.game));
           setPending(null);
+        } else if (msg.t === 'chat-history') {
+          setLines(msg.lines);
+          setChatEnabled(msg.enabled);
+        } else if (msg.t === 'chat-line') {
+          setLines((l) => (l.some((x) => x.id === msg.line.id) ? l : [...l, msg.line].slice(-100)));
         } else if (msg.t === 'error') {
           if (['not_found', 'not_a_player', 'seat_taken', 'not_invited'].includes(msg.code)) setFatal(msg.code);
           setError(msg.message);
@@ -92,6 +100,7 @@ export function useOnlineGame(gameId: string | null, enabled: boolean): OnlineGa
     draw: (action) => send({ t: 'draw', action, ply: ply() }),
     rematch: (action) => send({ t: 'rematch', action }),
     cancel: () => send({ t: 'cancel' }),
+    chat: { lines, enabled: chatEnabled, send: (text) => send({ t: 'chat', text }) },
   };
 }
 

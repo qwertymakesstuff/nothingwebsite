@@ -15,10 +15,11 @@ const SCALE = 173.7178;
 /** System constant: how much volatility may change. Lichess uses 0.75. */
 const TAU = 0.75;
 const EPSILON = 0.000001;
-export const DEFAULT_RATING: Rating = { rating: 1500, rd: 350, volatility: 0.06 };
+/** Where every new player starts (the 1500s below are only Glicko-2’s internal scale centre). */
+export const DEFAULT_RATING: Rating = { rating: 500, rd: 350, volatility: 0.06 };
 export const MIN_RD = 45;
 export const MAX_RD = 350;
-/** Above this RD a rating is shown as provisional ("1500?"). */
+/** Above this RD a rating is shown as provisional ("500?"). */
 export const PROVISIONAL_RD = 110;
 
 const g = (phi: number) => 1 / Math.sqrt(1 + (3 * phi * phi) / (Math.PI * Math.PI));

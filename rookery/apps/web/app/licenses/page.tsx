@@ -20,8 +20,20 @@ const COMPONENTS: { name: string; licence: string; use: string; source: string }
   {
     name: 'Stockfish 19 (Stockfish.js lite, single-threaded WebAssembly)',
     licence: 'GPL-3.0',
-    use: 'The chess engine behind computer opponents. Runs in your browser, unmodified.',
+    use: 'The chess engine behind computer opponents, game review and analysis. Runs in your browser, unmodified. Also used offline to generate and verify Rookery’s puzzles.',
     source: 'https://github.com/nmrugg/stockfish.js/tree/v19.0.1',
+  },
+  {
+    name: 'lichess chess-openings',
+    licence: 'CC0 1.0 (public domain)',
+    use: 'Opening names in the explorer, game review and statistics.',
+    source: 'https://github.com/lichess-org/chess-openings',
+  },
+  {
+    name: 'Win-chance and accuracy formulas (lichess/lila)',
+    licence: 'AGPL-3.0 (formulas only, reimplemented)',
+    use: 'Move classification and accuracy in game review, so numbers are comparable with lichess.',
+    source: 'https://github.com/lichess-org/lila',
   },
   {
     name: 'chess.js',

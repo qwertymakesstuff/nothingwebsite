@@ -5,7 +5,7 @@
 // the current Supabase access token on every (re)connection, and estimates the offset between this
 // device's clock and the server's so countdowns can be drawn from server timestamps.
 
-import { ServerMessage, type ClientMessage } from '@rookery/protocol';
+import type { ClientMessage, ServerMessage } from '@rookery/protocol';
 import { supabase } from '@/lib/supabase/client';
 
 export type SocketStatus = 'connecting' | 'online' | 'reconnecting' | 'closed';
@@ -39,6 +39,8 @@ export class RealtimeSocket {
     },
     /** Measure the server clock offset (game rooms). The lobby doesn't need it. */
     private syncClock = false,
+    /** Spectating allowed: connect without signing in when there's no session. */
+    private authOptional = false,
   ) {
     this.connect();
   }
@@ -95,16 +97,25 @@ export class RealtimeSocket {
 
   private async receive(raw: unknown): Promise<void> {
     if (raw === '"heartbeat"') return;
+    // Messages come from our own server (same origin), which validates everything it receives;
+    // a shape check is enough here and keeps the schema library out of every page's bundle.
     let msg: ServerMessage;
     try {
-      msg = ServerMessage.parse(JSON.parse(String(raw)));
+      msg = JSON.parse(String(raw)) as ServerMessage;
     } catch {
       return;
     }
+    if (!msg || typeof msg !== 'object' || typeof (msg as { t?: unknown }).t !== 'string') return;
     if (msg.t === 'hello') {
       this.offset = msg.serverTime - Date.now();
       const { data } = await supabase().auth.getSession(); // refreshes an expired token first
       const token = data.session?.access_token;
+      if (!token && this.authOptional) {
+        this.attempts = 0;
+        this.setStatus('online');
+        this.startHeartbeat();
+        return;
+      }
       if (!token) {
         this.stopped = true;
         this.ws?.close(1000, 'signed out');

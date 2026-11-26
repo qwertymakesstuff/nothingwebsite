@@ -112,7 +112,7 @@ try {
   const tokA = await token(page);
   const me = await (await fetch(`${SB}/auth/v1/user`, { headers: { apikey: PUB, authorization: `Bearer ${tokA}` } })).json();
   const ratings = await (await rest(`ratings?user_id=eq.${me.id}&select=category,rating`)).json();
-  ok(ratings.length === 5 && ratings.every((r) => Number(r.rating) === 1500), 'profile created with 5 provisional ratings');
+  ok(ratings.length === 5 && ratings.every((r) => Number(r.rating) === 500), 'profile created with 5 provisional ratings of 500');
 
   // ── Settings persist to the account (and follow to a new device) ────────────────────
   await page.goto(`${SITE}/settings`);

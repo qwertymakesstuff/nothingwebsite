@@ -62,7 +62,7 @@ export default function HomePage() {
           <Feature href="/bots" icon={<Bot />} title="Computer opponents">
             {data.bots.length} characters from total beginner to full Stockfish strength, each with a playing style.
           </Feature>
-          <Feature href="/puzzles" icon={<Puzzle />} title="Puzzles" stage={6}>
+          <Feature href="/puzzles" icon={<Puzzle />} title="Puzzles">
             A new daily puzzle, rated training that adapts to you, and themes to drill weaknesses.
           </Feature>
           <Feature href="/analysis" icon={<Microscope />} title="Analysis board">
