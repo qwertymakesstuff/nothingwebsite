@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { PlayerAvatar } from '@/components/avatar/PlayerAvatar';
 import { EmptyState } from '@/components/ui/States';
 import { cn } from '@/lib/cn';
-import type { GameRow } from '@/lib/db';
+import { avatarUrl, type GameRow } from '@/lib/db';
 import { formatDate } from '@/lib/format';
 import { gamePgn, perspective, sendToAnalysis } from '@/lib/gameUtils';
 
@@ -62,7 +62,7 @@ export function GamesTable({ games, userId, username, compact }: { games: GameRo
                         <Bot className="size-3.5 text-fg-subtle" />
                       </span>
                     ) : (
-                      <PlayerAvatar name={p.opponent.name} size="xs" />
+                      <PlayerAvatar name={p.opponent.name} src={'avatarPath' in p.opponent ? avatarUrl(p.opponent.avatarPath) : undefined} size="xs" />
                     )}
                     <span className="truncate font-semibold">{p.opponent.name}</span>
                     {p.opponent.rating && <span className="tabular text-xs text-fg-subtle">({p.opponent.rating})</span>}
@@ -76,7 +76,15 @@ export function GamesTable({ games, userId, username, compact }: { games: GameRo
                 </td>
                 <td className="py-3 text-center">
                   <span className={cn('inline-flex h-6 min-w-12 items-center justify-center rounded-full px-2 text-xs font-semibold', STYLE[p.outcome])}>{LABEL[p.outcome]}</span>
-                  <span className="mt-0.5 block text-[11px] text-fg-subtle capitalize">{g.termination.replace('-', ' ')}</span>
+                  <span className="mt-0.5 block text-[11px] text-fg-subtle capitalize">
+                    {g.termination.replace('-', ' ')}
+                    {p.delta !== null && p.delta !== undefined && (
+                      <span className={cn('tabular ml-1 font-semibold normal-case', p.delta > 0 ? 'text-win' : p.delta < 0 ? 'text-loss' : '')}>
+                        {p.delta > 0 ? '+' : p.delta < 0 ? '−' : '±'}
+                        {Math.abs(p.delta)}
+                      </span>
+                    )}
+                  </span>
                 </td>
                 {!compact && <td className="tabular py-3 text-right text-fg-muted">{Math.ceil(g.plies / 2)}</td>}
                 <td className="py-3 text-right text-xs whitespace-nowrap text-fg-subtle">{formatDate(g.ended_at)}</td>

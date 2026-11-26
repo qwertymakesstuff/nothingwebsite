@@ -197,13 +197,6 @@ export function SettingsClient() {
                 ]}
               />
             </div>
-            <div className="flex items-center justify-between gap-6 py-3 opacity-60">
-              <div>
-                <p className="text-sm font-medium">Premoves</p>
-                <p className="mt-0.5 text-[13px] text-fg-subtle">Queue a move during your opponent&apos;s turn in online games.</p>
-              </div>
-              <ComingSoon stage={4} />
-            </div>
           </div>
         )}
 

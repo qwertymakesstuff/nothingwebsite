@@ -2,7 +2,7 @@
 
 import { getTimeControl, resignOutcome, timeoutOutcome, type Outcome } from '@rookery/chess-core';
 import { Chess } from 'chess.js';
-import { ArrowRight, Bot, FlipVertical2, Flag, Globe2, Handshake, Microscope, RotateCcw, Swords, Users } from 'lucide-react';
+import { ArrowRight, Bot, FlipVertical2, Flag, Handshake, Microscope, RotateCcw, Swords, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,6 +22,7 @@ import { usePreferences } from '@/lib/preferences';
 import type { Side } from '@/lib/types';
 import { useChessClock } from '@/lib/useChessClock';
 import { useLocalGame } from '@/lib/useLocalGame';
+import { OnlinePlay } from '@/components/online/OnlinePlay';
 import { TimeControlPicker } from './TimeControlPicker';
 
 import { ANALYSIS_HANDOFF_KEY } from '@/lib/gameUtils';
@@ -181,13 +182,12 @@ export function PlayClient() {
               <h2 className="mb-3 text-sm font-semibold text-fg">Time control</h2>
               <TimeControlPicker value={tcId} onChange={setTcId} />
             </section>
+            <OnlinePlay tcId={tcId} />
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-fg">Choose how to play</h2>
+              <h2 className="mb-3 text-sm font-semibold text-fg">Other ways to play</h2>
               <div className="space-y-2">
-                <ModeRow icon={<Globe2 />} title="Play online" text="Rated games against someone at your level." stage={4} />
                 <ModeRow icon={<Bot />} title="Play the computer" text="Fifteen opponents, beginner to master." href="/bots" />
-                <ModeRow icon={<Users />} title="Play a friend" text="Send a challenge link." stage={8} />
-                <ModeRow icon={<Swords />} title="Pass and play" text="Two players, one device. Works now." onClick={start} highlight />
+                <ModeRow icon={<Swords />} title="Pass and play" text="Two players, one device." onClick={start} />
               </div>
             </section>
             <Switch checked={useClock} onChange={setUseClock} label="Use a clock for pass and play" description={`${tc.label} per side`} />

@@ -82,9 +82,13 @@ function Profile({ data }: { data: PlayerData }) {
               <CalendarDays className="size-3.5" aria-hidden /> Joined {formatMonthYear(profile.created_at)}
             </p>
           </div>
-          {own && (
+          {own ? (
             <ButtonLink href="/settings?section=profile" variant="secondary" icon={<Pencil className="size-4" />}>
               Edit profile
+            </ButtonLink>
+          ) : (
+            <ButtonLink href={`/play?challenge=${encodeURIComponent(profile.username)}`} variant="primary" icon={<Swords className="size-4" />}>
+              Challenge
             </ButtonLink>
           )}
         </div>

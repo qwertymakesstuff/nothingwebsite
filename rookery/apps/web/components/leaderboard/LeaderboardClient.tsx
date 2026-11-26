@@ -68,7 +68,7 @@ function Board({ category }: { category: RatingCategory }) {
   if (!state.rows.length) {
     return (
       <EmptyState icon={<BarChart3 className="size-5" />} title={`No ranked ${CATEGORY_LABEL[category].toLowerCase()} players yet`} action={<ButtonLink href="/bots" variant="secondary">Play the computer meanwhile</ButtonLink>}>
-        The leaderboard fills up with rated online games, which arrive with live multiplayer.
+        The leaderboard fills up as people play rated online games.
       </EmptyState>
     );
   }

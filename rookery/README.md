@@ -17,8 +17,8 @@ entirely in this folder. The only files it touches outside it are:
 | 1 | Frontend foundation: design system, navigation, every page layout, reusable components | **done** |
 | 3 | Computer opponents: Stockfish WASM in a Web Worker, 15 configured personas, calibrated strength | **done** |
 | 4 | Accounts and progression: sign-up (13+), email verification, password recovery, profiles + avatars, settings sync, per-format ratings, game history, statistics, achievements | **done** (see [`docs/ACCOUNTS.md`](docs/ACCOUNTS.md)) |
-| 5 | Live multiplayer: matchmaking, server clocks, rated games | next |
-| 6–11 | Puzzles, review, social, tournaments, launch | |
+| 5 | Live multiplayer: matchmaking by time control and rating, challenges and invitation links, server-authoritative games and clocks, draws, rematches, reconnection and abandonment, Glicko-2 ratings | **done** (see [`docs/MULTIPLAYER.md`](docs/MULTIPLAYER.md)) |
+| 6–11 | Puzzles, review, social (friends, chat), tournaments, launch | next: 6 |
 
 ### What works today vs. what is sample data
 
@@ -27,11 +27,12 @@ recovery, change email/password, sign out everywhere, data download, account del
 profiles with avatars; settings saved to your account (or per device for guests); per-format
 ratings; game history, win/draw/loss statistics and achievements, all from Supabase; games against
 15 computer opponents and a custom-strength engine (see [`docs/AI.md`](docs/AI.md)), saved to
-your profile when signed in; pass-and-play with clocks; the analysis board; leaderboards.
+your profile when signed in; **live games against other people** (matchmaking, challenges,
+invitation links, rated or casual, with server clocks, draw offers, rematches and reconnection);
+pass-and-play with clocks; the analysis board; leaderboards.
 
-Ratings only change in rated online games, which arrive with live multiplayer (Stage 5), so for now
-every player shows a provisional 1500 and the leaderboards are empty. Games against the computer
-are recorded and count towards statistics and achievements, but never towards ratings.
+Ratings (Glicko-2, one per format) change only after rated online games, verified and recorded by
+the server. Games against the computer count towards statistics and achievements, never ratings.
 
 **Sample data, clearly labelled with a "Sample" badge:** puzzles only (replaced in Stage 6). The
 sample content lives in `apps/web/lib/sample/` (see its README). Features that aren't built yet are

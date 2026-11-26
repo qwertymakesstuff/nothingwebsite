@@ -278,3 +278,48 @@ describe('stage 4: account deletion', () => {
     expect((await db.query('select 1 from public.profiles where id = $1', [CAROL])).rows.length).toBe(0);
   });
 });
+
+describe('stage 5: online games and ratings', () => {
+  const game = (id: string, extra: Record<string, unknown> = {}) => ({
+    id, white_id: ALICE, black_id: BOB, source: 'online', rated: true, category: 'blitz', time_control: '5+0',
+    initial_fen: 'startpos', moves: 'f2f3 e7e5 g2g4 d8h4', plies: 4, result: '0-1', termination: 'checkmate',
+    started_at: '2026-11-27T10:00:00Z', ended_at: '2026-11-27T10:01:00Z', ...extra,
+  });
+  const side = (before: number, after: number) => ({ before: { rating: before, rd: 350 }, after: { rating: after, rd: 290, volatility: 0.06 } });
+  const record = (g: object, w: object | null, b: object | null) =>
+    asService(() => db.query<{ r: { duplicate: boolean } }>('select public.record_online_game($1, $2, $3) as r', [g, w, b]));
+
+  it('browsers cannot record online games', async () => {
+    await expect(as(ALICE, () => db.query('select public.record_online_game($1, $2, $3)', [game('aaaaaaaaaaaa'), side(1500, 1700), side(1500, 1300)]))).rejects.toThrow(/permission denied/);
+  });
+
+  it('records a rated game, both rating updates and history in one go', async () => {
+    const r = await record(game('onlinegame01'), side(1500, 1337.5), side(1500, 1662.5));
+    expect(r.rows[0]!.r.duplicate).toBe(false);
+    const ratings = await db.query<{ user_id: string; rating: string; games: number; peak: string }>(`select user_id, rating, games, peak from public.ratings where category = 'blitz' and user_id in ($1, $2) order by rating`, [ALICE, BOB]);
+    expect(ratings.rows.map((x) => [x.user_id, Number(x.rating), x.games])).toEqual([[ALICE, 1337.5, 1], [BOB, 1662.5, 1]]);
+    const g = await db.query<{ white_delta: number; black_delta: number; white_rating: number }>(`select white_delta, black_delta, white_rating from public.games where id = 'onlinegame01'`);
+    expect(g.rows[0]).toEqual({ white_delta: -163, black_delta: 163, white_rating: 1500 });
+    const hist = await db.query(`select 1 from public.rating_history where game_id = 'onlinegame01'`);
+    expect(hist.rows.length).toBe(2);
+  });
+
+  it('refuses updates computed from stale ratings, duplicates and self-play', async () => {
+    await expect(record(game('onlinegame02'), side(1500, 1400), side(1500, 1600))).rejects.toThrow(/rating_changed/);
+    expect((await db.query(`select 1 from public.games where id = 'onlinegame02'`)).rows.length).toBe(0); // rolled back
+    const dup = await record(game('onlinegame01'), side(1337.5, 1300), side(1662.5, 1700));
+    expect(dup.rows[0]!.r.duplicate).toBe(true);
+    const alice = await db.query<{ rating: string }>(`select rating from public.ratings where category = 'blitz' and user_id = $1`, [ALICE]);
+    expect(Number(alice.rows[0]!.rating)).toBe(1337.5); // unchanged by the duplicate
+    await expect(record(game('onlinegame03', { black_id: ALICE }), null, null)).rejects.toThrow(/two different players/);
+    await expect(record(game('onlinegame04', { source: 'bot' }), null, null)).rejects.toThrow(/invalid source/);
+  });
+
+  it('casual games are recorded without touching ratings', async () => {
+    await record(game('casualgame01', { rated: false, source: 'challenge', result: '1/2-1/2', termination: 'agreement' }), null, null);
+    const g = await db.query<{ rated: boolean; white_delta: number | null }>(`select rated, white_delta from public.games where id = 'casualgame01'`);
+    expect(g.rows[0]).toEqual({ rated: false, white_delta: null });
+    const r = await db.query<{ games: number }>(`select games from public.ratings where category = 'blitz' and user_id = $1`, [ALICE]);
+    expect(r.rows[0]!.games).toBe(1);
+  });
+});

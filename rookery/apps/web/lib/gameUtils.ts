@@ -11,8 +11,16 @@ export function perspective(g: GameRow, userId: string) {
   const opponent =
     g.source === 'bot'
       ? { name: g.bot_name ?? 'Computer', rating: g.bot_elo === 3200 ? '3000+' : g.bot_elo ? String(g.bot_elo) : undefined, href: g.bot_id && g.bot_id !== 'custom' ? `/bots?bot=${g.bot_id}` : '/bots', bot: true }
-      : { name: (side === 'white' ? g.black?.username : g.white?.username) ?? 'Deleted player', rating: undefined, href: `/u/${side === 'white' ? g.black?.username : g.white?.username}`, bot: false };
-  return { side, outcome, opponent };
+      : {
+          name: (side === 'white' ? g.black?.username : g.white?.username) ?? 'Deleted player',
+          rating: (side === 'white' ? g.black_rating : g.white_rating)?.toString(),
+          href: `/u/${side === 'white' ? g.black?.username : g.white?.username}`,
+          avatarPath: (side === 'white' ? g.black?.avatar_path : g.white?.avatar_path) ?? null,
+          bot: false,
+        };
+  /** This player's rating change, for rated games. */
+  const delta = side === 'white' ? g.white_delta : g.black_delta;
+  return { side, outcome, opponent, delta };
 }
 
 /** PGN of a stored game (moves are UCI in the database). */

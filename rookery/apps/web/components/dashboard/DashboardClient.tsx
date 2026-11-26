@@ -111,7 +111,7 @@ function Dashboard({ daily }: { daily: Sourced<PuzzleSummary> }) {
                   </div>
                 );
               })}
-              <p className="pt-2 text-xs text-fg-subtle">Ratings change only in rated online games, which arrive with live multiplayer.</p>
+              <p className="pt-2 text-xs text-fg-subtle">Ratings change after rated online games. Games against the computer don’t affect them.</p>
             </CardBody>
           </Card>
 
