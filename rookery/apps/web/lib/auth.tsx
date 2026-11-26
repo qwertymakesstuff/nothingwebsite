@@ -18,6 +18,8 @@ interface AuthCtx {
   userId: string | null;
   email: string | null;
   profile: ProfileRow | null;
+  /** Why the profile couldn't be loaded (null while loading or when fine). */
+  profileError: string | null;
   /** Re-reads the profile row (after editing it). */
   refreshProfile: () => Promise<void>;
   signOut: (scope?: 'local' | 'global') => Promise<void>;
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<Status>('loading');
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   useEffect(() => {
     const sb = supabase();
@@ -50,7 +53,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const userId = session?.user.id ?? null;
   const loadProfile = useCallback(async () => {
-    setProfile(userId ? await fetchOwnProfile(userId) : null);
+    setProfileError(null);
+    if (!userId) return setProfile(null);
+    try {
+      const p = await fetchOwnProfile(userId);
+      setProfile(p);
+      if (!p) setProfileError('Your account has no player profile.');
+    } catch (e) {
+      setProfile(null);
+      setProfileError(e instanceof Error ? e.message : 'Could not load your profile.');
+    }
   }, [userId]);
   useEffect(() => {
     void loadProfile();
@@ -62,8 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthCtx>(
-    () => ({ status, session, userId, email: session?.user.email ?? null, profile, refreshProfile: loadProfile, signOut }),
-    [status, session, userId, profile, loadProfile, signOut],
+    () => ({ status, session, userId, email: session?.user.email ?? null, profile, profileError, refreshProfile: loadProfile, signOut }),
+    [status, session, userId, profile, profileError, loadProfile, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

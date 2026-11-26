@@ -34,8 +34,14 @@ function greeting(): string {
 }
 
 function Dashboard({ daily }: { daily: Sourced<PuzzleSummary> }) {
-  const { profile } = useAuth();
+  const { profile, profileError, refreshProfile } = useAuth();
   const { state, reload } = usePlayerData(profile?.username ?? null, { gameLimit: 8 });
+  if (profileError)
+    return (
+      <ErrorState action={<button className="font-semibold text-gold-300" onClick={() => void refreshProfile()}>Try again</button>}>
+        We couldn’t load your account: {profileError}
+      </ErrorState>
+    );
   if (!profile || state.status === 'loading') return <LoadingState label="Loading your club…" />;
   if (state.status !== 'ready') return <ErrorState action={<button className="font-semibold text-gold-300" onClick={() => void reload()}>Try again</button>}>We couldn’t load your dashboard.</ErrorState>;
 
