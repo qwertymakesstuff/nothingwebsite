@@ -33,11 +33,11 @@ export function CallbackView() {
       <AuthCard title="That link didn’t work" subtitle="Verification links expire, and each can be used only once.">
         <FormMessage tone="error">{linkError ?? 'We couldn’t sign you in from this link.'}</FormMessage>
         <p className="mt-4 text-sm text-fg-muted">
-          Try{' '}
+          If you’ve already used this link, your email is verified: just{' '}
           <Link href="/login" className="font-semibold text-gold-300 hover:underline">
-            signing in
+            sign in
           </Link>
-          ; if your email isn’t verified yet you can request a new link there. Open the link in the same browser you signed up with.
+          . If it isn’t verified yet, you can request a new link there.
         </p>
       </AuthCard>
     );

@@ -24,14 +24,17 @@ const ok = (cond, msg) => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function mailLink(to, kind) {
+  // Links point at /auth/confirm (see packages/db/supabase/templates); kind is the link's `type`.
   for (let i = 0; i < 40; i++) {
     const res = await fetch(`${MAIL}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`);
     const { messages = [] } = await res.json();
     for (const m of messages) {
       const full = await (await fetch(`${MAIL}/api/v1/message/${m.ID}`)).json();
       const body = (full.HTML || '') + ' ' + (full.Text || '');
-      const link = body.match(/https?:\/\/[^\s"'<>]+\/auth\/v1\/verify\?[^\s"'<>]+/)?.[0]?.replaceAll('&amp;', '&');
-      if (link && link.includes(`type=${kind}`)) return link;
+      for (const raw of body.match(/https?:\/\/[^\s"'<>]+\/auth\/confirm\?[^\s"'<>]+/g) ?? []) {
+        const url = new URL(raw.replaceAll('&amp;', '&'));
+        if (url.searchParams.get('type') === kind) return `${SITE}${url.pathname}${url.search}`;
+      }
     }
     await sleep(500);
   }
@@ -100,7 +103,9 @@ try {
   ok(true, 'unverified account cannot sign in');
 
   // ── Email verification ───────────────────────────────────────────────────────────────
-  await page.goto(await mailLink(A.email, 'signup'));
+  const verifyLink = await mailLink(A.email, 'email');
+  await fetch(verifyLink); // an email security scanner "pre-opening" the link must not use it up
+  await page.goto(verifyLink);
   await page.waitForURL(/\/dashboard/, { timeout: 20000 });
   await page.getByText(new RegExp(A.username)).first().waitFor();
   ok(true, 'verification link signs in and opens the dashboard');

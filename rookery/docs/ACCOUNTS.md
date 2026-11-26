@@ -9,9 +9,9 @@ Worker's `/api/*` (server, secret key).
 | Area | Where | Notes |
 | --- | --- | --- |
 | Sign up | `/signup` | Unique username (live availability check), email, password ≥ 8, date of birth. Under 13 → neutral refusal, enforced again by the database trigger. |
-| Verify email | link in email → `/auth/callback` | Sign-in is refused until the address is confirmed. |
+| Verify email | link in email → `/auth/confirm` | Sign-in is refused until the address is confirmed. |
 | Sign in / out | `/login`, account menu | "Sign out everywhere" in Settings → Account revokes every session. |
-| Recover password | `/forgot-password` → email → `/auth/reset` | The response never reveals whether an address has an account. |
+| Recover password | `/forgot-password` → email → `/auth/confirm` → `/auth/reset` | The response never reveals whether an address has an account. |
 | Profile | `/u/<username>`, Settings → Profile | Display name, country, bio, avatar (cropped to 256 px WebP in the browser, ≤ 256 KB). |
 | Settings | Settings | Saved to the account when signed in (server copy wins on a new device), per device for guests. |
 | Ratings | profile, dashboard | Bullet, blitz, rapid, classical, puzzles. Start at 1500 (provisional, shown with "?"). Change only in rated online games (Stage 5). |
@@ -29,6 +29,9 @@ browser ──(user JWT)──▶ Worker /api/games ──(secret key)──▶ 
 
 - **The secret key never reaches the browser.** It is a Cloudflare Worker secret (or
   `rookery/.dev.vars` locally, git-ignored). The e2e test checks the built site doesn't contain it.
+- **Privileges are granted explicitly** (`20261127000000_explicit_grants.sql`), never via
+  Supabase's default privileges, which newer projects don't have. The database tests run without
+  default privileges too.
 - **Row Level Security is on for every table.** Players can update only their own profile and
   settings, and only specific columns (column-level grants). Private data (`user_private`:
   date of birth) and settings are readable only by their owner.
@@ -67,7 +70,14 @@ Things only you can do, in the dashboards:
    and a few emails per hour, so real players won't receive verification or reset emails until you
    add custom SMTP: Authentication → Emails → SMTP Settings. A free tier is enough to start
    (for example Resend: 3,000 emails/month; Brevo: 300/day).
-5. **Migrations** apply automatically from CI on pushes to `main` (the secrets are already set).
+5. **Email templates**: Supabase → Authentication → Emails → Templates. For **Confirm signup**,
+   **Reset password** and **Change email address**, paste the HTML from
+   `packages/db/supabase/templates/` (`confirmation.html`, `recovery.html`, `email_change.html`)
+   and set the subjects from `packages/db/supabase/config.toml`. These link to `/auth/confirm`
+   with a one-time token that the page verifies in the browser, so links work in any browser and
+   aren't used up by email scanners that pre-open links. (The default templates still work, via
+   `/auth/callback`, but only in the browser used to sign up.)
+6. **Migrations** apply automatically from CI on pushes to `main` (the secrets are already set).
 
 ## Tests
 
