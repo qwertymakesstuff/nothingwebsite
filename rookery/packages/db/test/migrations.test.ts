@@ -323,3 +323,14 @@ describe('stage 5: online games and ratings', () => {
     expect(r.rows[0]!.games).toBe(1);
   });
 });
+
+describe('special badges', () => {
+  it('the hammer badge exists, is special, and is never awarded by playing', async () => {
+    const row = await db.query<{ special: boolean; icon: string }>(`select special, icon from public.achievements where id = 'hammer'`);
+    expect(row.rows[0]).toEqual({ special: true, icon: 'hammer' });
+    await asService(() => db.query('select * from public.award_achievements($1)', [ALICE]));
+    const has = await db.query(`select 1 from public.user_achievements where user_id = $1 and achievement_id = 'hammer'`, [ALICE]);
+    expect(has.rows.length).toBe(0);
+    await expect(as(ALICE, () => db.query(`insert into public.user_achievements (user_id, achievement_id) values ($1, 'hammer')`, [ALICE]))).rejects.toThrow(/permission denied|row-level security/);
+  });
+});

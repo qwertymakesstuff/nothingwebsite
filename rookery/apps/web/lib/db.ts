@@ -75,6 +75,8 @@ export interface AchievementRow {
   tier: 'bronze' | 'silver' | 'gold';
   icon: string;
   sort: number;
+  /** Given by hand, not earned: shown only to players who have it, not counted in progress. */
+  special: boolean;
   unlocked_at: string | null;
 }
 
@@ -162,11 +164,13 @@ export async function fetchGames(userId: string, limit = 50): Promise<GameRow[]>
 
 export async function fetchAchievements(userId: string): Promise<AchievementRow[]> {
   const [catalogue, unlocks] = await Promise.all([
-    supabase().from('achievements').select('id, name, description, tier, icon, sort').order('sort'),
+    supabase().from('achievements').select('id, name, description, tier, icon, sort, special').order('sort'),
     supabase().from('user_achievements').select('achievement_id, unlocked_at').eq('user_id', userId),
   ]);
   const got = new Map((check(unlocks) ?? []).map((u) => [u.achievement_id as string, u.unlocked_at as string]));
-  return (check(catalogue) ?? []).map((a) => ({ ...(a as Omit<AchievementRow, 'unlocked_at'>), unlocked_at: got.get(a.id as string) ?? null }));
+  return (check(catalogue) ?? [])
+    .map((a) => ({ ...(a as Omit<AchievementRow, 'unlocked_at'>), unlocked_at: got.get(a.id as string) ?? null }))
+    .filter((a) => !a.special || a.unlocked_at); // special badges appear only for their holders
 }
 
 export async function fetchAchievementNames(): Promise<Map<string, string>> {

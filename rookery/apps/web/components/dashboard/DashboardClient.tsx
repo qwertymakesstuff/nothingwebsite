@@ -47,8 +47,9 @@ function Dashboard({ daily }: { daily: Sourced<PuzzleSummary> }) {
 
   const { ratings, stats, games, achievements } = state.data;
   const all = totals(stats);
-  const unlocked = achievements.filter((a) => a.unlocked_at);
-  const nextUp = achievements.filter((a) => !a.unlocked_at).slice(0, 3);
+  const earnable = achievements.filter((a) => !a.special);
+  const unlocked = earnable.filter((a) => a.unlocked_at);
+  const nextUp = earnable.filter((a) => !a.unlocked_at).slice(0, 3);
   const byCat = new Map(ratings.map((r) => [r.category, r]));
   const lastBot = games.find((g) => g.source === 'bot' && g.bot_id && g.bot_id !== 'custom');
 
@@ -128,10 +129,10 @@ function Dashboard({ daily }: { daily: Sourced<PuzzleSummary> }) {
           </Card>
 
           <Card>
-            <CardHeader title="Achievements" action={<span className="tabular text-xs text-fg-subtle">{unlocked.length}/{achievements.length}</span>} />
+            <CardHeader title="Achievements" action={<span className="tabular text-xs text-fg-subtle">{unlocked.length}/{earnable.length}</span>} />
             <CardBody>
               <div className="mb-3 h-2 overflow-hidden rounded-full bg-surface-3">
-                <div className="h-full rounded-full bg-gradient-to-r from-gold-600 to-gold-300" style={{ width: `${(unlocked.length / Math.max(1, achievements.length)) * 100}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-gold-600 to-gold-300" style={{ width: `${(unlocked.length / Math.max(1, earnable.length)) * 100}%` }} />
               </div>
               {nextUp.length > 0 && (
                 <ul className="space-y-2 text-sm">

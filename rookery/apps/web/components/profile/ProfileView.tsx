@@ -4,6 +4,7 @@ import { Bot, CalendarDays, Crown, Flame, Hourglass, Pencil, Puzzle, Shield, Swo
 import { CountryTag, PlayerAvatar } from '@/components/avatar/PlayerAvatar';
 import { GamesTable } from '@/components/games/GamesTable';
 import { Badge } from '@/components/ui/Badge';
+import { HammerIcon } from '@/components/icons/HammerIcon';
 import { ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/States';
@@ -16,7 +17,7 @@ import { winRate } from '@/lib/gameUtils';
 import { totals, usePlayerData, type PlayerData } from '@/lib/usePlayerData';
 
 const CAT_ICON = { bullet: Zap, blitz: Flame, rapid: Timer, classical: Hourglass, puzzle: Puzzle };
-const ACH_ICON: Record<string, typeof Swords> = { swords: Swords, crown: Crown, flame: Flame, puzzle: Puzzle, target: Target, shield: Shield, zap: Zap, hourglass: Hourglass };
+const ACH_ICON: Record<string, React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>> = { hammer: HammerIcon, swords: Swords, crown: Crown, flame: Flame, puzzle: Puzzle, target: Target, shield: Shield, zap: Zap, hourglass: Hourglass };
 const TIER_STYLE = {
   bronze: 'from-[#9a6a45] to-[#5e3f27] text-[#f3d9c2]',
   silver: 'from-[#a9adb4] to-[#5d6168] text-[#f1f3f5]',
@@ -50,7 +51,8 @@ function Profile({ data }: { data: PlayerData }) {
   const own = userId === profile.id;
   const all = totals(stats);
   const vsBots = totals(stats, 'bot');
-  const unlocked = achievements.filter((a) => a.unlocked_at).length;
+  const earnable = achievements.filter((a) => !a.special);
+  const unlocked = earnable.filter((a) => a.unlocked_at).length;
   const byCat = new Map(ratings.map((r) => [r.category, r]));
   const sideStats = (side: 'white' | 'black') => {
     const mine = games.filter((g) => (side === 'white' ? g.white_id === profile.id : g.black_id === profile.id));
@@ -69,6 +71,21 @@ function Profile({ data }: { data: PlayerData }) {
             <p className="flex flex-wrap items-center gap-2.5">
               <span className="font-[family-name:var(--font-display)] text-[28px] leading-tight font-semibold">{profile.username}</span>
               <CountryTag code={profile.country ?? undefined} />
+              {achievements
+                .filter((a) => a.special && a.unlocked_at)
+                .map((a) => {
+                  const Icon = ACH_ICON[a.icon] ?? Trophy;
+                  return (
+                    <span
+                      key={a.id}
+                      title={`${a.name}: ${a.description}`}
+                      aria-label={a.name}
+                      className={cn('grid size-7 place-items-center rounded-full bg-gradient-to-b shadow-[0_0_0_1px_rgb(0_0_0/0.25)]', TIER_STYLE[a.tier])}
+                    >
+                      <Icon className="size-4" aria-hidden />
+                    </span>
+                  );
+                })}
               {own && <Badge tone="gold">You</Badge>}
             </p>
             {(profile.display_name || profile.country) && (
@@ -120,7 +137,7 @@ function Profile({ data }: { data: PlayerData }) {
         <StatCard label="Games" value={all.games} hint={`${vsBots.games} vs computer`} />
         <StatCard label="Win rate" value={winRate(all.wins, all.draws, all.games)} hint="draws count as half" />
         <StatCard label="Record" value={<span><span className="text-win">{all.wins}</span>–<span className="text-draw">{all.draws}</span>–<span className="text-loss">{all.losses}</span></span>} hint="wins – draws – losses" />
-        <StatCard label="Achievements" value={`${unlocked}/${achievements.length}`} hint="unlocked" />
+        <StatCard label="Achievements" value={`${unlocked}/${earnable.length}`} hint="unlocked" />
       </div>
 
       <Card className="overflow-hidden">
@@ -178,7 +195,7 @@ function Profile({ data }: { data: PlayerData }) {
                   </div>
                 ),
             },
-            { value: 'awards', label: 'Achievements', count: unlocked, content: <AchievementGrid achievements={achievements} /> },
+            { value: 'awards', label: 'Achievements', count: achievements.filter((a) => a.unlocked_at).length, content: <AchievementGrid achievements={achievements} /> },
           ]}
         />
       </Card>
@@ -189,7 +206,8 @@ function Profile({ data }: { data: PlayerData }) {
 export function AchievementGrid({ achievements }: { achievements: AchievementRow[] }) {
   return (
     <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
-      {achievements.map((a) => {
+      {/* Special (hand-given) badges first: they're rare and only shown to their holders. */}
+      {[...achievements.filter((a) => a.special), ...achievements.filter((a) => !a.special)].map((a) => {
         const Icon = ACH_ICON[a.icon] ?? Trophy;
         return (
           <div key={a.id} className={cn('flex items-center gap-3 rounded-[12px] border border-line p-3', !a.unlocked_at && 'opacity-45')}>
@@ -197,7 +215,10 @@ export function AchievementGrid({ achievements }: { achievements: AchievementRow
               <Icon className="size-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{a.name}</p>
+              <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
+                {a.name}
+                {a.special && <span className="rounded-full bg-gold-500/15 px-1.5 text-[10px] font-semibold tracking-wide text-gold-300 uppercase">Special</span>}
+              </p>
               <p className="text-xs text-fg-subtle">{a.description}</p>
               <p className="text-[11px] text-fg-subtle">{a.unlocked_at ? `Earned ${formatDate(a.unlocked_at)}` : 'Locked'}</p>
             </div>
