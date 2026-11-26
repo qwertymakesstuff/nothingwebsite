@@ -67,6 +67,8 @@ export interface GameRow {
   white?: { username: string; avatar_path: string | null } | null;
   black?: { username: string; avatar_path: string | null } | null;
   tournament_id?: string | null;
+  /** Thinking time per move (ms), when known. */
+  move_times?: number[] | null;
 }
 
 export interface AchievementRow {

@@ -196,6 +196,8 @@ export function BotGame({ settings, onRematch, onExit }: { settings: BotGameSett
                 content: (
                   <MoveList
                     sans={g.game.line.map((p) => p.san)}
+                    times={g.moveTimes.times}
+                    thinkingMs={g.game.atEnd ? g.moveTimes.thinkingMs : null}
                     cursor={g.game.state.cursor}
                     onSelect={g.game.goTo}
                     className="min-h-40 flex-1"

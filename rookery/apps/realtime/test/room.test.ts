@@ -192,3 +192,16 @@ describe('game room: challenges', () => {
     expect(R.settle(waiting(), T0 + 2 * 60 * 60_000).state.status).toBe('expired');
   });
 });
+
+describe('game room: move times', () => {
+  it('measures each move’s thinking time on the server', () => {
+    let s = R.presence(R.presence(game(), 'white', true, T0).state, 'black', true, T0).state;
+    s = R.move(s, 'white', 'e2e4', 0, T0 + 4_000).state;
+    s = R.move(s, 'black', 'e7e5', 1, T0 + 6_500).state;
+    s = R.move(s, 'white', 'g1f3', 2, T0 + 16_500).state;
+    expect(s.moveTimes).toEqual([4_000, 2_500, 10_000]);
+    const v = R.view(s, 'white', { white: true, black: true }, T0 + 17_000);
+    expect(v.moveTimes).toEqual([4_000, 2_500, 10_000]);
+    expect(v.turnStartedAt).toBe(T0 + 16_500);
+  });
+});

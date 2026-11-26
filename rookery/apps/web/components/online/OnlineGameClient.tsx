@@ -349,7 +349,14 @@ function GameScreen({ live, game }: { live: OnlineGame; game: GameView }) {
         }
       >
         <StatusBanner game={game} live={live} you={you} turn={turn} serverNow={serverNow} />
-        <MoveList sans={line.map((p) => p.san)} cursor={cursor} onSelect={goTo} className="flex-1" empty={active ? `${turn === you ? 'Your move' : 'Waiting for your opponent’s first move'}.` : 'No moves were played.'} />
+        <MoveList
+          sans={line.map((p) => p.san)}
+          times={game.moveTimes}
+          thinkingMs={active && game.turnStartedAt != null && live.moves.length === game.moves.length ? Math.max(0, serverNow - game.turnStartedAt) : null}
+          cursor={cursor}
+          onSelect={goTo}
+          className="flex-1"
+          empty={active ? `${turn === you ? 'Your move' : 'Waiting for your opponent’s first move'}.` : 'No moves were played.'} />
         <GameChat
           lines={live.chat.lines}
           enabled={live.chat.enabled}

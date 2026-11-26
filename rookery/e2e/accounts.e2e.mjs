@@ -163,6 +163,7 @@ try {
   if (await confirm.isVisible().catch(() => false)) await confirm.click();
   else await confirm.click({ timeout: 2000 }).catch(() => {});
   await page.getByText('Saved to your profile.').waitFor({ timeout: 15000 });
+  ok((await page.locator('[title="Time taken for this move"]').count()) >= 2, 'computer game shows each move’s time');
   await page.getByText(/Achievement unlocked: First move/).waitFor();
   ok(true, 'finished bot game saved to the account; "First move" unlocked');
 

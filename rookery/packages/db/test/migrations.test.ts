@@ -490,10 +490,12 @@ describe('stage 6: reviews, tournaments, search, explorer', () => {
   it('tournaments and standings are public and server-written; tournament games are recorded', async () => {
     await expect(as(ALICE, () => db.query(`insert into public.tournaments (id, name, time_control, category, starts_at, duration_minutes) values ('tourney00001', 'Mine', '3+0', 'blitz', now(), 30)`))).rejects.toThrow(/permission denied/);
     await asService(() => db.query(`insert into public.tournaments (id, name, time_control, category, starts_at, duration_minutes, status) values ('tourney00001', 'Friday Blitz', '3+0', 'blitz', now(), 30, 'running')`));
-    const g = { id: 'tgame0000001', white_id: ALICE, black_id: BOB, source: 'tournament', tournament_id: 'tourney00001', rated: false, category: 'blitz', time_control: '3+0', initial_fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: 'e2e4 e7e5', plies: 2, result: '1-0', termination: 'resign' };
+    const g = { id: 'tgame0000001', white_id: ALICE, black_id: BOB, source: 'tournament', tournament_id: 'tourney00001', rated: false, category: 'blitz', time_control: '3+0', initial_fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', moves: 'e2e4 e7e5', plies: 2, result: '1-0', termination: 'resign', move_times: [1500, 2200] };
     await asService(() => db.query('select public.record_online_game($1, null, null)', [g]));
     await expect(asService(() => db.query('select public.record_online_game($1, null, null)', [{ ...g, id: 'tgame0000002', tournament_id: null }]))).rejects.toThrow(/tournament games need a tournament/);
     expect((await as(null, () => db.query(`select 1 from public.games where tournament_id = 'tourney00001'`))).rows.length).toBe(1);
+    const times = await db.query<{ move_times: number[] }>(`select move_times from public.games where id = 'tgame0000001'`);
+    expect(times.rows[0]!.move_times).toEqual([1500, 2200]); // stored move times
     const ach = await db.query(`select 1 from public.user_achievements where user_id = $1 and achievement_id = 'tournament-play'`, [ALICE]);
     expect(ach.rows.length).toBe(1);
     expect((await as(ALICE, () => db.query(`select 1 from public.notifications where kind = 'achievement'`))).rows.length).toBeGreaterThan(0);

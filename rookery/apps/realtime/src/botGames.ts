@@ -18,6 +18,7 @@ export interface GameRow {
   initial_fen: string;
   moves: string;
   plies: number;
+  move_times: number[] | null;
   result: string;
   termination: string;
   opening: string | null;
@@ -107,6 +108,7 @@ export function validateBotGame(sub: BotGameSubmission, userId: string, now = Da
       initial_fen: START_FEN,
       moves: sub.moves.join(' '),
       plies: sub.moves.length,
+      move_times: sub.moveTimes && sub.moveTimes.length === sub.moves.length ? sub.moveTimes : null,
       result: sub.result,
       termination: sub.termination,
       opening,

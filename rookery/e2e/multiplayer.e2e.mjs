@@ -173,7 +173,10 @@ try {
   ok(true, 'checkmate: black sees "You won", white sees "You lost"');
   await bl.page.getByText(/Rating \+\d+/).waitFor({ timeout: 15000 });
   ok(true, 'rating change shown once the result is saved');
-  const row = (await rest(`games?id=eq.${g1}&select=rated,source,result,termination,plies,moves,white_id,black_id,white_delta,black_delta,category`))[0];
+  const row = (await rest(`games?id=eq.${g1}&select=rated,source,result,termination,plies,moves,white_id,black_id,white_delta,black_delta,category,move_times`))[0];
+  ok(Array.isArray(row?.move_times) && row.move_times.length === 4 && row.move_times.every((t) => t >= 0), `server-measured move times saved (${row?.move_times?.join(', ')} ms)`);
+  const shownTimes = await bl.page.locator('[title="Time taken for this move"]').count();
+  ok(shownTimes === 4, `each move shows how long it took (${shownTimes} times in the move list)`);
   ok(row && row.rated && row.source === 'online' && row.result === '0-1' && row.termination === 'checkmate' && row.plies === 4 && row.moves === 'f2f3 e7e5 g2g4 d8h4', 'game recorded once with the server-verified result');
   ok(row.white_id === w.u.id && row.black_id === bl.u.id, 'recorded with the right players');
   const after = { w: await blitz(w.u), b: await blitz(bl.u) };
