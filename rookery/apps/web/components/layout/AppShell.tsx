@@ -7,6 +7,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Logo, LogoMark } from '@/components/Logo';
 import { cn } from '@/lib/cn';
 import { isActive, PRIMARY_NAV, SECONDARY_NAV, type NavItem } from '@/lib/nav';
+import { RestrictionBanner } from '@/components/moderation/RestrictionBanner';
+import { NotificationBell } from '@/components/social/Notifications';
 import { AccountMenu } from './AccountMenu';
 
 /**
@@ -57,10 +59,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SideLink key={item.href} item={item} active={isActive(pathname, item.href)} />
           ))}
           <div className="mt-2 border-t border-line pt-3">
-            <div className="hidden xl:block">
-              <AccountMenu align="start" side="top" />
+            <div className="hidden items-center gap-1 xl:flex">
+              <div className="min-w-0 flex-1">
+                <AccountMenu align="start" side="top" />
+              </div>
+              <NotificationBell />
             </div>
-            <div className="flex justify-center xl:hidden">
+            <div className="flex flex-col items-center gap-1 xl:hidden">
+              <NotificationBell />
               <AccountMenu compact align="start" side="top" />
             </div>
           </div>
@@ -81,7 +87,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Link href="/" aria-label="Rookery home">
           <Logo />
         </Link>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <NotificationBell />
           <AccountMenu compact />
         </div>
       </header>
@@ -118,6 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ── Content ── */}
       <div className="md:pl-[76px] xl:pl-[248px]">
         <main id="main" className="mx-auto w-full max-w-[1480px] px-4 pt-5 pb-28 sm:px-6 md:pb-10 lg:px-8 lg:pt-7">
+          <RestrictionBanner />
           {children}
         </main>
         <footer className="mx-auto hidden max-w-[1480px] items-center gap-6 border-t border-line px-8 py-6 text-[13px] text-fg-subtle md:flex">

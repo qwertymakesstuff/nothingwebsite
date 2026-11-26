@@ -46,11 +46,13 @@ export interface RoomState {
   id: string;
   version: number;
   status: GameStatus;
-  source: 'online' | 'challenge';
+  source: 'online' | 'challenge' | 'tournament';
   rated: boolean;
   tc: TimeControlSpec;
   white: PlayerInfo | null;
   black: PlayerInfo | null;
+  /** Arena tournament this game belongs to. */
+  tournamentId?: string | null;
   /** The challenger, for challenges (only they may cancel). */
   creator: Color | null;
   invited: { userId: string; username: string } | null;
@@ -120,7 +122,8 @@ export interface Step {
 
 export function createRoom(init: {
   id: string;
-  source: 'online' | 'challenge';
+  source: 'online' | 'challenge' | 'tournament';
+  tournamentId?: string | null;
   rated: boolean;
   tc: TimeControlSpec;
   white: PlayerInfo | null;
@@ -137,6 +140,7 @@ export function createRoom(init: {
     version: 1,
     status: both ? 'active' : 'waiting',
     source: init.source,
+    tournamentId: init.tournamentId ?? null,
     rated: init.rated,
     tc: init.tc,
     white: init.white,
@@ -264,6 +268,7 @@ export function draw(s: RoomState, color: Color, action: 'offer' | 'accept' | 'd
 
 export function rematch(s: RoomState, color: Color, action: 'offer' | 'accept' | 'decline'): Step {
   if (s.status !== 'ended') return { state: s, error: 'not_finished' };
+  if (s.source === 'tournament') return { state: s, error: 'not_allowed' }; // the arena pairs the next game
   if (s.rematch.gameId) return { state: s };
   const theirs = s.rematch.offeredBy === other(color);
   if (action === 'offer' && !theirs) {
@@ -371,6 +376,7 @@ export function view(s: RoomState, you: Color | 'none', connected: { white: bool
     version: s.version,
     status: s.status,
     source: s.source,
+    tournamentId: s.tournamentId ?? null,
     rated: s.rated,
     tc: s.tc,
     white: s.white,

@@ -3,7 +3,7 @@
 // Phase 0 deployment check: is the realtime Worker answering over HTTP and WebSocket, and is
 // Supabase reachable? Shown on the home page until real features replace it.
 
-import { HealthResponse, ServerMessage } from '@rookery/protocol';
+import type { HealthResponse, ServerMessage } from '@rookery/protocol';
 import { useEffect, useState } from 'react';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/lib/config';
 
@@ -16,7 +16,11 @@ export function ServerStatus() {
 
   useEffect(() => {
     fetch('/api/health', { cache: 'no-store' })
-      .then(async (r) => HealthResponse.parse(await r.json()))
+      .then(async (r) => {
+        const h = (await r.json()) as HealthResponse;
+        if (!h?.ok) throw new Error('bad health response');
+        return h;
+      })
       .then((h) => setApi({ state: 'ok', detail: `protocol v${h.protocol}` }))
       .catch(() => setApi({ state: 'down', detail: 'not reachable (expected in `next dev`)' }));
 
@@ -25,14 +29,18 @@ export function ServerStatus() {
       .catch(() => setDb({ state: 'down', detail: 'not reachable' }));
 
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const socket = new WebSocket(`${proto}://${location.host}/ws/room/status-check`);
+    const socket = new WebSocket(`${proto}://${location.host}/ws/lobby`);
     const sentAt = performance.now();
     const timer = setTimeout(() => setWs({ state: 'down', detail: 'timed out' }), 6000);
     socket.onmessage = (e) => {
-      const msg = ServerMessage.safeParse(JSON.parse(String(e.data)));
-      if (!msg.success) return;
-      if (msg.data.t === 'hello') socket.send(JSON.stringify({ t: 'ping', id: 1 }));
-      if (msg.data.t === 'pong') {
+      let msg: ServerMessage;
+      try {
+        msg = JSON.parse(String(e.data)) as ServerMessage;
+      } catch {
+        return;
+      }
+      if (msg.t === 'hello') socket.send(JSON.stringify({ t: 'ping', id: 1 }));
+      if (msg.t === 'pong') {
         clearTimeout(timer);
         setWs({ state: 'ok', detail: `${Math.round(performance.now() - sentAt)} ms round trip` });
         socket.close(1000);

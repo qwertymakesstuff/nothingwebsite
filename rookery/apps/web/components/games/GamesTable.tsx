@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Flame, Hourglass, Microscope, Timer, Zap } from 'lucide-react';
+import { Bot, Flame, Hourglass, Microscope, Timer, Zap, FlaskConical } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PlayerAvatar } from '@/components/avatar/PlayerAvatar';
@@ -34,7 +34,7 @@ export function GamesTable({ games, userId, username, compact }: { games: GameRo
             <th className="py-2.5 text-center font-medium">Result</th>
             {!compact && <th className="py-2.5 text-right font-medium">Moves</th>}
             <th className="py-2.5 text-right font-medium">Date</th>
-            <th className="w-12 py-2.5 pr-4" />
+            <th className="w-20 py-2.5 pr-4" />
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
@@ -89,15 +89,25 @@ export function GamesTable({ games, userId, username, compact }: { games: GameRo
                 {!compact && <td className="tabular py-3 text-right text-fg-muted">{Math.ceil(g.plies / 2)}</td>}
                 <td className="py-3 text-right text-xs whitespace-nowrap text-fg-subtle">{formatDate(g.ended_at)}</td>
                 <td className="py-3 pr-4 text-right">
-                  <button
-                    type="button"
-                    onClick={analyse}
-                    aria-label="Open in analysis"
-                    title="Open in analysis"
-                    className="grid size-8 place-items-center rounded-[8px] text-fg-subtle hover:bg-surface-3 hover:text-fg"
-                  >
-                    <Microscope className="size-4" />
-                  </button>
+                  <span className="flex justify-end gap-1">
+                    <Link
+                      href={`/review?id=${g.id}`}
+                      aria-label="Review with Stockfish"
+                      title="Review with Stockfish"
+                      className="grid size-8 place-items-center rounded-[8px] text-fg-subtle hover:bg-surface-3 hover:text-fg"
+                    >
+                      <Microscope className="size-4" />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={analyse}
+                      aria-label="Open in the analysis board"
+                      title="Open in the analysis board"
+                      className="hidden size-8 place-items-center rounded-[8px] text-fg-subtle hover:bg-surface-3 hover:text-fg sm:grid"
+                    >
+                      <FlaskConical className="size-4" />
+                    </button>
+                  </span>
                 </td>
               </tr>
             );

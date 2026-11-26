@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, Home, LogIn, LogOut, Settings, UserPlus, UserRound } from 'lucide-react';
+import { ChevronDown, Home, LogIn, LogOut, Settings, UserPlus, UserRound, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PlayerAvatar } from '@/components/avatar/PlayerAvatar';
@@ -8,10 +8,12 @@ import { Menu } from '@/components/ui/Dropdown';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/cn';
 import { avatarUrl } from '@/lib/db';
+import { useStaffRole } from '@/lib/platform';
 
 /** Account menu: sign-in links for guests, profile/settings/sign-out for signed-in players. */
 export function AccountMenu({ compact, align = 'end', side }: { compact?: boolean; align?: 'start' | 'end'; side?: 'top' | 'bottom' }) {
-  const { status, profile, email, signOut } = useAuth();
+  const { status, profile, email, signOut, userId } = useAuth();
+  const staff = useStaffRole(userId);
   const router = useRouter();
 
   if (status !== 'signedIn') {
@@ -49,6 +51,7 @@ export function AccountMenu({ compact, align = 'end', side }: { compact?: boolea
       items={[
         { label: 'Your profile', icon: <UserRound className="size-4" />, href: `/u/${name}` },
         { label: 'Dashboard', icon: <Home className="size-4" />, href: '/dashboard' },
+        ...(staff ? [{ label: staff === 'admin' ? 'Admin' : 'Moderation', icon: <ShieldCheck className="size-4" />, href: '/admin' }] : []),
         { label: 'Settings', icon: <Settings className="size-4" />, href: '/settings' },
         {
           label: 'Sign out',

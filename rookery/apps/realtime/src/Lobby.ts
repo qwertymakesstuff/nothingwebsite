@@ -23,11 +23,14 @@ interface Pending {
 
 const TICK_MS = 2_000;
 const CHALLENGES_PER_MINUTE = 5;
+/** Abuse prevention: this many aborted games within the window blocks new games for a while. */
+export const ABORT_LIMIT = { count: 4, windowMs: 30 * 60_000, blockMs: 15 * 60_000 };
 
 export class Lobby extends DurableObject<Env> {
   private seeks = new Map<string, Seek>();
   private pending = new Map<string, Pending>();
   private recentChallenges = new Map<string, number[]>();
+  private aborts = new Map<string, number[]>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -35,6 +38,7 @@ export class Lobby extends DurableObject<Env> {
     void ctx.blockConcurrencyWhile(async () => {
       this.seeks = new Map((await ctx.storage.get<[string, Seek][]>('seeks')) ?? []);
       this.pending = new Map((await ctx.storage.get<[string, Pending][]>('pending')) ?? []);
+      this.aborts = new Map((await ctx.storage.get<[string, number[]][]>('aborts')) ?? []);
     });
   }
 
@@ -48,6 +52,13 @@ export class Lobby extends DurableObject<Env> {
     await this.persist();
     this.sendChallenges(p.toId);
     if (status === 'declined') this.toUser(p.fromId, { t: 'challenge-declined', gameId, by: '' });
+  }
+
+  /** A game was aborted because of this player (they didn't move, or clicked abort). */
+  async recordAbort(userId: string): Promise<void> {
+    const now = Date.now();
+    this.aborts.set(userId, [...(this.aborts.get(userId) ?? []).filter((t) => now - t < ABORT_LIMIT.windowMs + ABORT_LIMIT.blockMs), now]);
+    await this.ctx.storage.put('aborts', [...this.aborts].filter(([, ts]) => ts.length));
   }
 
   // ── Sockets ──────────────────────────────────────────────────────────────────────────────
@@ -127,9 +138,23 @@ export class Lobby extends DurableObject<Env> {
     }
   }
 
+  /** Why this player may not start a game now (restriction or too many aborts), or null. */
+  private async blockedReason(userId: string): Promise<string | null> {
+    if (await this.admin().isRestricted(userId, 'no_play').catch(() => false)) return 'Your account can’t start games right now.';
+    const now = Date.now();
+    const recent = (this.aborts.get(userId) ?? []).filter((t) => now - t < ABORT_LIMIT.windowMs);
+    if (recent.length >= ABORT_LIMIT.count) {
+      const until = recent[recent.length - 1]! + ABORT_LIMIT.blockMs;
+      if (now < until) return `Too many aborted games. You can play again in ${Math.ceil((until - now) / 60_000)} minutes.`;
+    }
+    return null;
+  }
+
   private async seek(ws: WebSocket, userId: string, tcId: string, rated: boolean): Promise<void> {
     const tc = getTimeControl(tcId);
     if (!tc) return fail(ws, 'bad_message', 'Unknown time control.');
+    const blocked = await this.blockedReason(userId);
+    if (blocked) return fail(ws, 'restricted', blocked);
     const card = await this.admin().player(userId, tc.category);
     if (!card) return fail(ws, 'not_a_player', 'Your account has no player profile.');
     const seek: Seek = { userId, tc: tc.id, rated, rating: card.glicko.rating, since: Date.now() };
@@ -176,6 +201,8 @@ export class Lobby extends DurableObject<Env> {
 
     const tc = getTimeControl(msg.tc);
     if (!tc) return fail(ws, 'bad_message', 'Unknown time control.');
+    const blocked = await this.blockedReason(userId);
+    if (blocked) return fail(ws, 'restricted', blocked);
     const admin = this.admin();
     const me = await admin.player(userId, tc.category);
     if (!me) return fail(ws, 'not_a_player', 'Your account has no player profile.');
@@ -185,8 +212,8 @@ export class Lobby extends DurableObject<Env> {
       const target = await admin.playerByUsername(msg.to, tc.category);
       if (!target) return fail(ws, 'no_such_player', `There’s no player called ${msg.to}.`);
       if (target.id === userId) return fail(ws, 'not_allowed', 'You can’t challenge yourself.');
-      // Friends arrive with the social features; until then "friends only" means nobody.
-      if (target.allowChallenges !== 'all') return fail(ws, 'not_accepting', `${target.username} isn’t accepting challenges right now.`);
+      const accepts = target.allowChallenges === 'all' || (target.allowChallenges === 'friends' && (await admin.areFriends(userId, target.id).catch(() => false)));
+      if (!accepts) return fail(ws, 'not_accepting', `${target.username} isn’t accepting challenges right now.`);
       invited = { userId: target.id, username: target.username };
     }
 
@@ -265,8 +292,13 @@ export class Lobby extends DurableObject<Env> {
   }
 }
 
+/** Sends, ignoring sockets that closed meanwhile (e.g. the client left during sign-in). */
 function send(ws: WebSocket, msg: ServerMessage): void {
-  ws.send(JSON.stringify(msg));
+  try {
+    ws.send(JSON.stringify(msg));
+  } catch {
+    /* already closed */
+  }
 }
 
 function safeSend(ws: WebSocket, msg: ServerMessage): void {

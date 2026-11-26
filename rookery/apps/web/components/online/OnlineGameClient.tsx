@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlayerAvatar } from '@/components/avatar/PlayerAvatar';
+import { ReportButton } from '@/components/moderation/ReportDialog';
+import { GameChat } from './GameChat';
 import { BoardFrame } from '@/components/board/BoardFrame';
 import { ChessBoard } from '@/components/board/ChessBoard';
 import { GamePanel } from '@/components/board/GamePanel';
@@ -215,6 +217,17 @@ function GameScreen({ live, game }: { live: OnlineGame; game: GameView }) {
   };
 
   const over = game.status === 'ended' || game.status === 'aborted';
+  // Arena games: go back to the tournament automatically, so the next pairing can happen.
+  const [returnIn, setReturnIn] = useState<number | null>(null);
+  useEffect(() => {
+    if (!over || !game.tournamentId) return;
+    setReturnIn(6);
+    const t = setInterval(() => setReturnIn((n) => (n === null ? null : n - 1)), 1000);
+    return () => clearInterval(t);
+  }, [over, game.tournamentId]);
+  useEffect(() => {
+    if (returnIn === 0 && game.tournamentId) router.push(`/tournament?id=${game.tournamentId}`);
+  }, [returnIn, game.tournamentId, router]);
   const last = cursor > 0 ? line[cursor - 1] : undefined;
   const mat = material(current.fen());
 
@@ -288,7 +301,7 @@ function GameScreen({ live, game }: { live: OnlineGame; game: GameView }) {
                 onCancel={() => setPromo(null)}
               />
             )}
-            {over && !hideResult && <ResultCard game={game} onClose={() => setHideResult(true)} live={live} onAnalyse={openAnalysis} />}
+            {over && !hideResult && <ResultCard game={game} onClose={() => setHideResult(true)} live={live} onAnalyse={openAnalysis} returnIn={returnIn} />}
           </>
         }
       />
@@ -337,6 +350,18 @@ function GameScreen({ live, game }: { live: OnlineGame; game: GameView }) {
       >
         <StatusBanner game={game} live={live} you={you} turn={turn} serverNow={serverNow} />
         <MoveList sans={line.map((p) => p.san)} cursor={cursor} onSelect={goTo} className="flex-1" empty={active ? `${turn === you ? 'Your move' : 'Waiting for your opponent’s first move'}.` : 'No moves were played.'} />
+        <GameChat
+          lines={live.chat.lines}
+          enabled={live.chat.enabled}
+          you={you}
+          names={{ white: game.white?.username ?? 'White', black: game.black?.username ?? 'Black' }}
+          onSend={live.chat.send}
+        />
+        {(opp === 'white' ? game.white : game.black) && (
+          <div className="flex justify-end border-t border-line px-3 py-1.5">
+            <ReportButton targetId={(opp === 'white' ? game.white : game.black)!.id} username={(opp === 'white' ? game.white : game.black)!.username} gameId={game.status === 'ended' ? game.id : null} />
+          </div>
+        )}
       </GamePanel>
 
       <Modal
@@ -434,7 +459,7 @@ function outcomeFor(game: GameView, you: Side): { headline: string; detail: stri
   return { headline: won ? 'You won' : 'You lost', detail };
 }
 
-function ResultCard({ game, live, onClose, onAnalyse }: { game: GameView; live: OnlineGame; onClose: () => void; onAnalyse: () => void }) {
+function ResultCard({ game, live, onClose, onAnalyse, returnIn }: { game: GameView; live: OnlineGame; onClose: () => void; onAnalyse: () => void; returnIn: number | null }) {
   const you: Side = game.you === 'black' ? 'black' : 'white';
   const o = outcomeFor(game, you);
   const change = game.ratingChange?.[you];
@@ -464,6 +489,7 @@ function ResultCard({ game, live, onClose, onAnalyse }: { game: GameView; live: 
         <div className="mt-5 grid gap-2">
           <AfterGameActions game={game} live={live} you={you} onAnalyse={onAnalyse} stacked />
         </div>
+        {returnIn !== null && returnIn > 0 && <p className="mt-3 text-xs text-fg-subtle">Back to the tournament in {returnIn}s…</p>}
       </div>
     </div>
   );
@@ -471,6 +497,20 @@ function ResultCard({ game, live, onClose, onAnalyse }: { game: GameView; live: 
 
 function AfterGameActions({ game, live, you, onAnalyse, stacked }: { game: GameView; live: OnlineGame; you: Side; onAnalyse: () => void; stacked?: boolean }) {
   const opp: Side = you === 'white' ? 'black' : 'white';
+  if (game.tournamentId) {
+    return (
+      <div className={cn(stacked ? 'grid gap-2' : 'grid grid-cols-2 gap-2')}>
+        <ButtonLink href={`/tournament?id=${game.tournamentId}`} size={stacked ? 'md' : 'sm'} variant="primary">
+          Back to the tournament
+        </ButtonLink>
+        {game.recorded && (
+          <ButtonLink href={`/review?id=${game.id}`} size={stacked ? 'md' : 'sm'} variant={stacked ? 'ghost' : 'secondary'} icon={<Microscope className="size-4" />}>
+            Review
+          </ButtonLink>
+        )}
+      </div>
+    );
+  }
   const r = game.rematch;
   const rematchButton =
     game.status !== 'ended' ? null : r.offeredBy === opp ? (
@@ -493,9 +533,15 @@ function AfterGameActions({ game, live, you, onAnalyse, stacked }: { game: GameV
       <ButtonLink href={`/play?tc=${encodeURIComponent(game.tc.id)}&seek=1&rated=${game.rated ? 1 : 0}`} size={stacked ? 'md' : 'sm'} variant="secondary" className={stacked ? undefined : 'col-span-2'}>
         New opponent
       </ButtonLink>
-      <Button size={stacked ? 'md' : 'sm'} variant={stacked ? 'ghost' : 'secondary'} icon={<Microscope className="size-4" />} onClick={onAnalyse}>
-        {stacked ? 'Open in analysis' : 'Analyse'}
-      </Button>
+      {game.recorded ? (
+        <ButtonLink href={`/review?id=${game.id}`} size={stacked ? 'md' : 'sm'} variant={stacked ? 'ghost' : 'secondary'} icon={<Microscope className="size-4" />}>
+          {stacked ? 'Review with Stockfish' : 'Review'}
+        </ButtonLink>
+      ) : (
+        <Button size={stacked ? 'md' : 'sm'} variant={stacked ? 'ghost' : 'secondary'} icon={<Microscope className="size-4" />} onClick={onAnalyse}>
+          {stacked ? 'Open in analysis' : 'Analyse'}
+        </Button>
+      )}
     </div>
   );
 }

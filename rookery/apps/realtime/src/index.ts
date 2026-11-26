@@ -2,24 +2,30 @@
 // only /api/*, /ws/* and /u/* do.
 //   /ws/lobby        the Lobby Durable Object: matchmaking, challenges, notifications
 //   /ws/game/<id>    the GameRoom Durable Object that owns that game
+//   /ws/tournament/<id>  the Tournament Durable Object running that arena
 
 import { PROTOCOL_VERSION, type HealthResponse } from '@rookery/protocol';
 import { handleApi } from './api';
 import { GameRoom } from './GameRoom';
 import { Lobby } from './Lobby';
+import { handleRoutes } from './routes';
+import { Tournament } from './Tournament';
 
-export { GameRoom, Lobby };
+export { GameRoom, Lobby, Tournament };
 
 export interface Env {
   ASSETS: Fetcher;
   GAME_ROOM: DurableObjectNamespace<GameRoom>;
   LOBBY: DurableObjectNamespace<Lobby>;
+  TOURNAMENT: DurableObjectNamespace<Tournament>;
   SUPABASE_URL: string;
   /** Worker secret (Cloudflare dashboard / .dev.vars). Never sent to browsers. */
   SUPABASE_SECRET_KEY?: string;
   /** Test/local overrides (milliseconds), e.g. in .dev.vars: shorter first-move and away windows. */
   FIRST_MOVE_MS?: string;
   DISCONNECT_GRACE_MS?: string;
+  /** Local testing only: multiplies tournament start delays and lengths (e.g. 0.05). */
+  TOURNAMENT_TIME_SCALE?: string;
 }
 
 const GAME_ID = /^[A-Za-z0-9]{8,24}$/;
@@ -40,19 +46,22 @@ export default {
 
     if (url.pathname.startsWith('/ws/')) {
       const game = url.pathname.match(/^\/ws\/game\/([^/]+)$/);
-      if (url.pathname !== '/ws/lobby' && !game) return json({ error: 'not_found' }, {}, 404);
-      if (game && !GAME_ID.test(game[1]!)) return json({ error: 'bad_game_id' }, {}, 400);
+      const tournament = url.pathname.match(/^\/ws\/tournament\/([^/]+)$/);
+      if (url.pathname !== '/ws/lobby' && !game && !tournament) return json({ error: 'not_found' }, {}, 404);
+      const id = (game ?? tournament)?.[1];
+      if (id !== undefined && !GAME_ID.test(id)) return json({ error: 'bad_game_id' }, {}, 400);
       if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return json({ error: 'expected_websocket' }, {}, 426);
       // Browsers always send Origin on WebSocket upgrades: refuse pages on other sites.
       const origin = request.headers.get('Origin');
       if (origin && new URL(origin).host !== url.host) return json({ error: 'forbidden_origin' }, {}, 403);
       if (game) return env.GAME_ROOM.get(env.GAME_ROOM.idFromName(game[1]!)).fetch(request);
+      if (tournament) return env.TOURNAMENT.get(env.TOURNAMENT.idFromName(tournament[1]!)).fetch(request);
       return env.LOBBY.get(env.LOBBY.idFromName('main')).fetch(request);
     }
 
     if (url.pathname.startsWith('/api/')) {
       try {
-        const res = await handleApi(request, env);
+        const res = (await handleRoutes(request, env)) ?? (await handleApi(request, env));
         if (res) return res;
       } catch (e) {
         console.error('api error', e);

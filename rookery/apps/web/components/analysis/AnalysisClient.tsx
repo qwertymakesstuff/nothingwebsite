@@ -10,7 +10,8 @@ import { GamePanel } from '@/components/board/GamePanel';
 import { MoveList, MoveNav } from '@/components/board/MoveList';
 import { PromotionPicker, type PromotionPiece } from '@/components/board/PromotionPicker';
 import { ANALYSIS_HANDOFF_KEY, describeOutcome } from '@/components/play/PlayClient';
-import { ComingSoon } from '@/components/ui/Badge';
+import { formatEval } from '@/lib/review';
+import { useLiveAnalysis } from '@/lib/useLiveAnalysis';
 import { Button, IconButton } from '@/components/ui/Button';
 import { Menu } from '@/components/ui/Dropdown';
 import { Modal } from '@/components/ui/Modal';
@@ -27,6 +28,8 @@ export function AnalysisClient() {
   const [pendingPromo, setPendingPromo] = useState<[string, string] | null>(null);
   const [shortcuts, setShortcuts] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [engineOn, setEngineOn] = useState(false);
+  const live = useLiveAnalysis(game.view.fen, engineOn);
 
   // A finished pass-and-play game can be handed over from the Play page.
   useEffect(() => {
@@ -79,7 +82,7 @@ export function AnalysisClient() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start">
       <BoardFrame
-        evalBar={<EvalBar cp={null} orientation={orientation} />}
+        evalBar={<EvalBar cp={engineOn && live.lines[0] ? live.lines[0].cp : null} orientation={orientation} />}
         board={
           <ChessBoard
             fen={game.view.fen}
@@ -91,6 +94,7 @@ export function AnalysisClient() {
             check={game.view.check}
             onMove={onMove}
             label={`Analysis board, ${game.view.turn} to move`}
+            shapes={engineOn && live.lines[0]?.uci[0] ? [{ orig: live.lines[0].uci[0].slice(0, 2), dest: live.lines[0].uci[0].slice(2, 4), brush: 'blue' }] : undefined}
           />
         }
         overlay={
@@ -151,13 +155,28 @@ export function AnalysisClient() {
           </div>
         }
       >
-        <div className="flex items-center gap-3 border-b border-line bg-surface-2/50 px-5 py-3">
-          <Cpu className="size-4 text-fg-subtle" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-fg-muted">Engine analysis</p>
-            <p className="text-xs text-fg-subtle">Stockfish evaluation and best lines.</p>
+        <div className="border-b border-line bg-surface-2/50 px-5 py-3">
+          <div className="flex items-center gap-3">
+            <Cpu className={engineOn ? 'size-4 text-gold-300' : 'size-4 text-fg-subtle'} aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">Engine analysis</p>
+              <p className="text-xs text-fg-subtle">{engineOn ? `Stockfish · depth ${live.depth || '…'}${live.running ? ' · thinking' : ''}` : 'Stockfish’s evaluation and best moves, in your browser.'}</p>
+            </div>
+            <Button size="sm" variant={engineOn ? 'secondary' : 'primary'} aria-pressed={engineOn} onClick={() => setEngineOn((v) => !v)}>
+              {engineOn ? 'Turn off' : 'Turn on'}
+            </Button>
           </div>
-          <ComingSoon stage={3} />
+          {engineOn && (
+            <ol className="mt-2 space-y-1" aria-live="polite">
+              {live.lines.length === 0 && <li className="text-xs text-fg-subtle">{game.view.outcome ? 'The game is over in this position.' : 'Analysing…'}</li>}
+              {live.lines.map((l, i) => (
+                <li key={i} className="flex gap-2 text-xs">
+                  <span className="tabular w-12 shrink-0 font-semibold text-fg">{formatEval({ cp: l.cp, mate: l.mate, best: null, pv: [] })}</span>
+                  <span className="truncate font-[family-name:var(--font-mono)] text-fg-muted">{l.sans.join(' ')}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
         <Tabs
           label="Analysis panels"

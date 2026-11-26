@@ -82,9 +82,8 @@ queue.
 
 ## Limits and what's next
 
-- Friends lists arrive with the social features (Stage 8). Until then, the "friends only" challenge
-  setting means nobody can challenge you.
-- No premoves or spectating yet; chat arrives with the social features (13+).
+- Friends, chat and tournaments arrived in Stage 6 (see [`PLATFORM.md`](PLATFORM.md)).
+- No premoves or spectating of live games yet.
 - Network lag isn't compensated: the server charges the time between receiving moves.
 
 ## Cost

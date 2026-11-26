@@ -2,7 +2,6 @@
 
 import { ArrowRight, Bot, Microscope, Puzzle, Trophy } from 'lucide-react';
 import Link from 'next/link';
-import { MiniBoard } from '@/components/board/MiniBoard';
 import { GamesTable } from '@/components/games/GamesTable';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { QuickPlay } from '@/components/play/QuickPlay';
@@ -10,20 +9,19 @@ import { ratingLabel } from '@/components/profile/ProfileView';
 import { ServerStatus } from '@/components/ServerStatus';
 import { ButtonLink } from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { SampleNotice } from '@/components/ui/SampleNotice';
+import { DailyPuzzleCard } from '@/components/puzzles/DailyPuzzleCard';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { RequireAuth, useAuth } from '@/lib/auth';
 import { CATEGORY_ICON } from '@/lib/categoryIcons';
 import { RATING_CATEGORIES } from '@/lib/db';
 import { CATEGORY_LABEL, formatCount } from '@/lib/format';
 import { winRate } from '@/lib/gameUtils';
-import type { PuzzleSummary, Sourced } from '@/lib/types';
 import { totals, usePlayerData } from '@/lib/usePlayerData';
 
-export function DashboardClient({ daily }: { daily: Sourced<PuzzleSummary> }) {
+export function DashboardClient() {
   return (
     <RequireAuth>
-      <Dashboard daily={daily} />
+      <Dashboard />
     </RequireAuth>
   );
 }
@@ -33,7 +31,7 @@ function greeting(): string {
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
 
-function Dashboard({ daily }: { daily: Sourced<PuzzleSummary> }) {
+function Dashboard() {
   const { profile, profileError, refreshProfile } = useAuth();
   const { state, reload } = usePlayerData(profile?.username ?? null, { gameLimit: 8 });
   if (profileError)
@@ -77,7 +75,7 @@ function Dashboard({ daily }: { daily: Sourced<PuzzleSummary> }) {
                   subtitle={lastBot ? 'Your last opponent' : '15 opponents from 300 to full strength'}
                   cta="Play"
                 />
-                <Row href="/puzzles" icon={<Puzzle className="size-3.5" />} eyebrow="Puzzles" title={daily.data.title} subtitle="Today’s puzzle (sample until Stage 6)" cta="Solve" board={<MiniBoard fen={daily.data.fen} lastMove={daily.data.lastMove} />} />
+                <Row href="/puzzles?mode=daily" icon={<Puzzle className="size-3.5" />} eyebrow="Puzzles" title="Daily puzzle" subtitle="The same puzzle for everyone today" cta="Solve" board={<DailyPuzzleCard compact />} />
                 <Row href="/analysis" icon={<Microscope className="size-3.5" />} eyebrow="Study" title="Analysis board" subtitle="Paste a PGN or FEN and explore" cta="Open" />
               </ul>
             </Card>
@@ -148,12 +146,9 @@ function Dashboard({ daily }: { daily: Sourced<PuzzleSummary> }) {
           </Card>
 
           <Card>
-            <CardHeader eyebrow="Daily puzzle" title={daily.data.title} action={<SampleNotice source={daily.source} />} />
+            <CardHeader eyebrow="Daily puzzle" title="Today’s puzzle" />
             <CardBody>
-              <MiniBoard fen={daily.data.fen} lastMove={daily.data.lastMove} label="Daily puzzle position" />
-              <ButtonLink href="/puzzles" variant="primary" block className="mt-4">
-                Solve the daily puzzle
-              </ButtonLink>
+              <DailyPuzzleCard />
             </CardBody>
           </Card>
 

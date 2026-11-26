@@ -5,6 +5,9 @@ import { CountryTag, PlayerAvatar } from '@/components/avatar/PlayerAvatar';
 import { GamesTable } from '@/components/games/GamesTable';
 import { Badge } from '@/components/ui/Badge';
 import { HammerIcon } from '@/components/icons/HammerIcon';
+import { ReportButton } from '@/components/moderation/ReportDialog';
+import { FriendButton } from '@/components/social/Friends';
+import { ProfileInsights } from './ProfileInsights';
 import { ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/States';
@@ -104,9 +107,13 @@ function Profile({ data }: { data: PlayerData }) {
               Edit profile
             </ButtonLink>
           ) : (
-            <ButtonLink href={`/play?challenge=${encodeURIComponent(profile.username)}`} variant="primary" icon={<Swords className="size-4" />}>
-              Challenge
-            </ButtonLink>
+            <div className="flex flex-wrap items-start gap-2">
+              <ButtonLink href={`/play?challenge=${encodeURIComponent(profile.username)}`} variant="primary" icon={<Swords className="size-4" />}>
+                Challenge
+              </ButtonLink>
+              <FriendButton targetId={profile.id} />
+              {userId && <ReportButton targetId={profile.id} username={profile.username} size="md" />}
+            </div>
           )}
         </div>
       </Card>
@@ -151,8 +158,12 @@ function Profile({ data }: { data: PlayerData }) {
               label: 'Stats',
               content:
                 all.games === 0 ? (
-                  <EmptyState icon={<Trophy className="size-5" />} title="No statistics yet">Statistics appear after the first finished game.</EmptyState>
+                  <>
+                    <EmptyState icon={<Trophy className="size-5" />} title="No games yet">Game statistics appear after the first finished game.</EmptyState>
+                    <ProfileInsights profileId={profile.id} games={games} />
+                  </>
                 ) : (
+                  <>
                   <div className="grid gap-6 p-5 md:grid-cols-2">
                     <div>
                       <p className="mb-3 text-sm font-semibold">All games</p>
@@ -193,6 +204,8 @@ function Profile({ data }: { data: PlayerData }) {
                       </ul>
                     </div>
                   </div>
+                  <ProfileInsights profileId={profile.id} games={games} />
+                  </>
                 ),
             },
             { value: 'awards', label: 'Achievements', count: achievements.filter((a) => a.unlocked_at).length, content: <AchievementGrid achievements={achievements} /> },

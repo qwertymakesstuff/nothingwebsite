@@ -18,7 +18,7 @@ entirely in this folder. The only files it touches outside it are:
 | 3 | Computer opponents: Stockfish WASM in a Web Worker, 15 configured personas, calibrated strength | **done** |
 | 4 | Accounts and progression: sign-up (13+), email verification, password recovery, profiles + avatars, settings sync, per-format ratings, game history, statistics, achievements | **done** (see [`docs/ACCOUNTS.md`](docs/ACCOUNTS.md)) |
 | 5 | Live multiplayer: matchmaking by time control and rating, challenges and invitation links, server-authoritative games and clocks, draws, rematches, reconnection and abandonment, Glicko-2 ratings | **done** (see [`docs/MULTIPLAYER.md`](docs/MULTIPLAYER.md)) |
-| 6–11 | Puzzles, review, social (friends, chat), tournaments, launch | next: 6 |
+| 6 | Platform: daily + unlimited rated puzzles, Stockfish game review and analysis, opening explorer, arena tournaments, friends, search, notifications, statistics, chat, reports and moderation | **done** (see [`docs/PLATFORM.md`](docs/PLATFORM.md), [`docs/FINAL_REPORT.md`](docs/FINAL_REPORT.md)) |
 
 ### What works today vs. what is sample data
 
@@ -34,9 +34,12 @@ pass-and-play with clocks; the analysis board; leaderboards.
 Ratings (Glicko-2, one per format) change only after rated online games, verified and recorded by
 the server. Games against the computer count towards statistics and achievements, never ratings.
 
-**Sample data, clearly labelled with a "Sample" badge:** puzzles only (replaced in Stage 6). The
-sample content lives in `apps/web/lib/sample/` (see its README). Features that aren't built yet are
-shown disabled, with a "Stage N" badge.
+Also working: rated puzzles (daily and unlimited, generated and verified with Stockfish), game
+review and live engine analysis, an opening explorer over Rookery's own games, arena tournaments,
+friends, player search, notifications, statistics dashboards, moderated in-game chat, reports and a
+moderation area. See [`docs/PLATFORM.md`](docs/PLATFORM.md).
+
+There is no sample data left on the site.
 
 ## Layout
 
@@ -48,12 +51,12 @@ apps/web/               Next.js, fully prerendered (`output: 'export'` → apps/
   components/board/     ChessBoard (chessground), BoardFrame, PlayerStrip/Clock, MoveList, GamePanel, EvalBar, PromotionPicker
   components/<feature>/ page-level components (play, bots, puzzles, analysis, leaderboard, profile, settings, home)
   lib/                  auth, db.ts (typed Supabase queries), synced preferences, game + clock hooks
-  lib/sample/           SAMPLE DATA ONLY (puzzles)
 apps/realtime/          Worker: /api (game recording, account deletion) + GameRoom Durable Object
 packages/chess-core/    rules (chess.js wrapper), clocks, time controls: pure, no DOM, no I/O
 packages/protocol/      zod schemas for every browser ↔ server message
 packages/ai/            computer opponents: persona configs, strength model, Stockfish UCI driver (+ vendored engine)
 packages/db/            Supabase config + SQL migrations (+ tests on PGlite)
+packages/puzzles/       puzzle generator (Stockfish self-play, verified) + SQL export
 e2e/                    end-to-end tests against a real local Supabase stack
 docs/                   architecture, accounts & security, AI, licences
 ```

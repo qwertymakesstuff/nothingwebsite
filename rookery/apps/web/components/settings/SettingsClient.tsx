@@ -1,6 +1,7 @@
 'use client';
 
-import { Bell, Bot, Check, Gamepad2, LayoutGrid, Lock, MonitorCog, RotateCcw, UserRound } from 'lucide-react';
+import { Bot, Check, Gamepad2, LayoutGrid, Lock, MessagesSquare, MonitorCog, RotateCcw, UserRound } from 'lucide-react';
+import { SocialSettings } from './SocialSettings';
 import { useState } from 'react';
 import { ChessBoard } from '@/components/board/ChessBoard';
 import { ComingSoon } from '@/components/ui/Badge';
@@ -17,7 +18,7 @@ import { BACKDROPS, BOARD_THEMES, PIECE_SETS } from '@/lib/boardThemes';
 import { cn } from '@/lib/cn';
 import { usePreferences, type Preferences } from '@/lib/preferences';
 
-type Section = 'board' | 'gameplay' | 'computer' | 'interface' | 'profile' | 'account' | 'notifications';
+type Section = 'board' | 'gameplay' | 'computer' | 'interface' | 'profile' | 'account' | 'social';
 
 const SECTIONS: { id: Section; label: string; icon: typeof LayoutGrid; stage?: number }[] = [
   { id: 'board', label: 'Board & pieces', icon: LayoutGrid },
@@ -26,7 +27,7 @@ const SECTIONS: { id: Section; label: string; icon: typeof LayoutGrid; stage?: n
   { id: 'interface', label: 'Interface', icon: MonitorCog },
   { id: 'profile', label: 'Profile', icon: UserRound },
   { id: 'account', label: 'Account & privacy', icon: Lock },
-  { id: 'notifications', label: 'Notifications', icon: Bell, stage: 8 },
+  { id: 'social', label: 'Social & chat', icon: MessagesSquare },
 ];
 
 // A middlegame position with a highlighted last move, for the live preview.
@@ -37,7 +38,7 @@ export function SettingsClient() {
   const params = useSearchParams();
   const requested = params.get('section') as Section | null;
   const [section, setSection] = useState<Section>(requested && SECTIONS.some((s) => s.id === requested) ? requested : 'board');
-  const accountSection = section === 'profile' || section === 'account';
+  const accountSection = section === 'profile' || section === 'account' || section === 'social';
   const [confirmReset, setConfirmReset] = useState(false);
   const current = SECTIONS.find((s) => s.id === section)!;
 
@@ -220,14 +221,8 @@ export function SettingsClient() {
 
         {section === 'profile' && <ProfileSettings />}
         {section === 'account' && <AccountSettings />}
+        {section === 'social' && <SocialSettings />}
 
-        {current.stage && (
-          <EmptyState icon={<current.icon className="size-5" />} title={`${current.label} needs an account`}>
-            {section === 'notifications'
-              ? 'Challenge, friend and tournament notifications arrive with social features in Stage 8.'
-              : 'Sign-up opens in Stage 2. You will then be able to edit your profile, change your email and password, and download or delete your data.'}
-          </EmptyState>
-        )}
       </Card>
 
       <Modal

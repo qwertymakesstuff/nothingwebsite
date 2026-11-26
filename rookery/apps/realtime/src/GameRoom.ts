@@ -8,11 +8,14 @@
 // - Clocks are measured with this server's time only. An alarm wakes the room exactly when a flag
 //   would fall, a first move is overdue or a disconnected player's grace period ends.
 // - Finished games are written once, with the Glicko-2 rating update, by record_online_game.
+// - In-game chat is filtered (./game/chatFilter.ts), rate-limited, respects each player's chat
+//   setting and mutes, and is stored for moderators. Tournament games report back to their arena.
 // Uses the WebSocket Hibernation API: idle games cost nothing between moves.
 
 import { DurableObject } from 'cloudflare:workers';
 import { inflateRd, rateGame, type Rating, type Score } from '@rookery/chess-core';
-import { parseClientMessage, PROTOCOL_VERSION, type ClientMessage, type PlayerInfo, type ServerMessage } from '@rookery/protocol';
+import { parseClientMessage, PROTOCOL_VERSION, type ChatLine, type ClientMessage, type PlayerInfo, type ServerMessage } from '@rookery/protocol';
+import { filterChat, isPreset } from './game/chatFilter';
 import type { Env } from './index';
 import * as R from './game/room';
 import { playerInfo, randomId } from './game/players';
@@ -21,11 +24,20 @@ import { SupabaseAdmin, type StoredRating } from './supabase';
 interface Attachment {
   userId: string | null;
   color: 'white' | 'black' | null;
+  /** The player's chat setting (all | friends | presets | off) and whether they're muted. */
+  chat?: string;
+  muted?: boolean;
+}
+
+interface StoredLine extends ChatLine {
+  flagged: boolean;
+  blocked: boolean;
 }
 
 export interface RoomInit {
   id: string;
-  source: 'online' | 'challenge';
+  source: 'online' | 'challenge' | 'tournament';
+  tournamentId?: string | null;
   rated: boolean;
   tc: R.TimeControlSpec;
   white: PlayerInfo | null;
@@ -37,11 +49,17 @@ export interface RoomInit {
 const KEEP_FINISHED_MS = 7 * 24 * 60 * 60_000;
 const RECORD_RETRY_MS = 15_000;
 const MAX_MESSAGES_PER_10S = 60;
+const CHAT_KEEP = 100;
+const CHAT_PER_MINUTE = 15;
 
 export class GameRoom extends DurableObject<Env> {
   private room: R.RoomState | null = null;
   private recording = false;
   private rate = new Map<WebSocket, { n: number; since: number }>();
+  private chatTimes: Record<'white' | 'black', number[]> = { white: [], black: [] };
+  private friends: boolean | null = null;
+  /** Who caused an abort (explicit abort click); otherwise the side that failed to move. */
+  private aborter: 'white' | 'black' | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -144,7 +162,15 @@ export class GameRoom extends DurableObject<Env> {
       return ws.close(4004, 'not_found');
     }
     let color = R.seatOf(this.room, user.id);
+    if (await admin.isRestricted(user.id, 'ban').catch(() => false)) {
+      fail(ws, 'restricted', 'This account is suspended.');
+      return ws.close(4003, 'restricted');
+    }
     if (!color && this.room.status === 'waiting') {
+      if (await admin.isRestricted(user.id, 'no_play').catch(() => false)) {
+        fail(ws, 'restricted', 'Your account can’t start games right now.');
+        return ws.close(4003, 'restricted');
+      }
       const card = await admin.player(user.id, this.room.tc.category);
       if (!card) return fail(ws, 'not_a_player');
       const step = R.join(this.room, playerInfo(card), Date.now());
@@ -159,8 +185,10 @@ export class GameRoom extends DurableObject<Env> {
       fail(ws, 'not_a_player');
       return ws.close(4003, 'not_a_player');
     }
-    ws.serializeAttachment({ userId: user.id, color } satisfies Attachment);
+    const [chat, muted] = await Promise.all([admin.chatSetting(user.id).catch(() => 'all'), admin.isRestricted(user.id, 'mute').catch(() => false)]);
+    ws.serializeAttachment({ userId: user.id, color, chat, muted } satisfies Attachment);
     send(ws, { t: 'authed', userId: user.id, serverTime: Date.now() });
+    await this.sendChatHistory(ws);
     // Everyone connected right now is present (a challenger who was waiting, and this player).
     const conn = this.connected();
     for (const c of ['white', 'black'] as const) if (conn[c]) await this.apply(R.presence(this.room, c, true, Date.now()));
@@ -180,7 +208,10 @@ export class GameRoom extends DurableObject<Env> {
         break;
       case 'abort':
         step = R.abort(s, now);
+        if (!step.error) this.aborter = color;
         break;
+      case 'chat':
+        return this.chat(ws, color, msg.text);
       case 'draw':
         step = R.draw(s, color, msg.action, msg.ply, now);
         break;
@@ -205,11 +236,16 @@ export class GameRoom extends DurableObject<Env> {
   /** Stores a step's state, wakes the room at its next deadline, tells both players, and runs side effects. */
   private async apply(step: R.Step): Promise<void> {
     const changed = step.state !== this.room;
+    const wasActive = this.room?.status === 'active';
     this.room = step.state;
+    if (wasActive && this.room.status === 'aborted') await this.aborted();
     if (changed) await this.save();
     if (changed) this.broadcast();
     if (step.challengeClosed) await this.lobby().challengeClosed(this.room.id, this.room.status).catch((e) => console.error('lobby notify', e));
-    if (step.ended) await this.record();
+    if (step.ended) {
+      await this.record();
+      await this.reportToTournament();
+    }
     if (step.rematch) await this.createRematch();
   }
 
@@ -246,6 +282,7 @@ export class GameRoom extends DurableObject<Env> {
             white_id: s.white.id,
             black_id: s.black.id,
             source: s.source,
+            tournament_id: s.tournamentId ?? null,
             rated: s.rated,
             category: s.tc.category,
             time_control: s.tc.id,
@@ -290,6 +327,85 @@ export class GameRoom extends DurableObject<Env> {
       black: nextBlack ? playerInfo(nextBlack) : s.white,
     });
     await this.apply({ state: R.rematchCreated(s, id) });
+  }
+
+  // ── Chat ───────────────────────────────────────────────────────────────────────────────
+
+  private async chat(ws: WebSocket, color: 'white' | 'black', raw: string): Promise<void> {
+    const att = ws.deserializeAttachment() as Attachment;
+    if (att.muted) return fail(ws, 'muted', 'You’re muted, so you can’t chat right now.');
+    if (att.chat === 'off') return fail(ws, 'chat_off', 'Chat is off in your settings.');
+    const now = Date.now();
+    const times = (this.chatTimes[color] = this.chatTimes[color].filter((t) => now - t < 60_000));
+    if (times.length >= CHAT_PER_MINUTE || (times.length && now - times[times.length - 1]! < 1000)) return fail(ws, 'rate_limited', 'You’re sending messages too quickly.');
+    times.push(now);
+    const f = filterChat(raw);
+    if (!f) return;
+    const lines = (await this.ctx.storage.get<StoredLine[]>('chat')) ?? [];
+    const line: StoredLine = { id: (lines[lines.length - 1]?.id ?? 0) + 1, from: color, text: f.text, at: now, flagged: f.flagged, blocked: f.blocked };
+    await this.ctx.storage.put('chat', [...lines, line].slice(-CHAT_KEEP));
+    // Stored for moderators (also the blocked ones).
+    this.ctx.waitUntil(
+      this.admin()
+        .rest('POST', 'chat_messages', { game_id: this.room!.id, user_id: att.userId, body: f.text, flagged: f.flagged })
+        .catch((e) => console.error('chat store', e)),
+    );
+    if (f.blocked) return fail(ws, 'chat_blocked', 'Message not sent: it breaks the chat rules.');
+    for (const other of this.sockets()) {
+      const a = other.deserializeAttachment() as Attachment;
+      if (!a.color) continue;
+      if (a.color === color || (await this.mayReceive(a, line))) safeSend(other, { t: 'chat-line', line: publicLine(line) });
+    }
+  }
+
+  /** Whether a player's chat setting lets them see this line from their opponent. */
+  private async mayReceive(a: Attachment, line: StoredLine): Promise<boolean> {
+    if (line.blocked) return false;
+    if (line.from === a.color) return true;
+    switch (a.chat ?? 'all') {
+      case 'off':
+        return false;
+      case 'presets':
+        return isPreset(line.text);
+      case 'friends':
+        return this.areFriends();
+      default:
+        return true;
+    }
+  }
+
+  private async areFriends(): Promise<boolean> {
+    if (this.friends === null && this.room?.white && this.room.black) this.friends = await this.admin().areFriends(this.room.white.id, this.room.black.id).catch(() => false);
+    return Boolean(this.friends);
+  }
+
+  private async sendChatHistory(ws: WebSocket): Promise<void> {
+    const a = ws.deserializeAttachment() as Attachment;
+    const lines = (await this.ctx.storage.get<StoredLine[]>('chat')) ?? [];
+    const visible: ChatLine[] = [];
+    for (const l of lines) if (await this.mayReceive(a, l)) visible.push(publicLine(l));
+    safeSend(ws, { t: 'chat-history', lines: visible, enabled: a.chat !== 'off' && !a.muted });
+  }
+
+  // ── Aborts and tournaments ─────────────────────────────────────────────────────────────
+
+  /** Counts an abort against whoever caused it (abuse prevention in the lobby). */
+  private async aborted(): Promise<void> {
+    const s = this.room!;
+    const culprit = this.aborter ?? (s.moves.length % 2 === 0 ? 'white' : 'black');
+    this.aborter = null;
+    const id = (culprit === 'white' ? s.white : s.black)?.id;
+    if (id) await this.lobby().recordAbort(id).catch((e) => console.error('abort record', e));
+    if (s.tournamentId) await this.tournament(s.tournamentId)?.gameFinished(s.id, null).catch((e: unknown) => console.error('tournament notify', e));
+  }
+
+  private async reportToTournament(): Promise<void> {
+    const s = this.room!;
+    if (s.tournamentId && s.result) await this.tournament(s.tournamentId)?.gameFinished(s.id, s.result).catch((e: unknown) => console.error('tournament notify', e));
+  }
+
+  private tournament(id: string) {
+    return this.env.TOURNAMENT.get(this.env.TOURNAMENT.idFromName(id));
   }
 
   private async presenceChanged(ws: WebSocket): Promise<void> {
@@ -355,14 +471,31 @@ function effective(r: StoredRating): Rating {
   return inflateRd({ rating: r.rating, rd: r.rd, volatility: r.volatility }, idleDays);
 }
 
+/** Sends, ignoring sockets that closed meanwhile (e.g. the client left during sign-in). */
 function send(ws: WebSocket, msg: ServerMessage): void {
-  ws.send(JSON.stringify(msg));
+  try {
+    ws.send(JSON.stringify(msg));
+  } catch {
+    /* already closed */
+  }
 }
 
-function fail(ws: WebSocket, code: keyof typeof R.ERROR_TEXT | 'not_found', message?: string): void {
+function fail(ws: WebSocket, code: keyof typeof R.ERROR_TEXT | 'not_found' | 'restricted' | 'muted' | 'chat_off' | 'chat_blocked', message?: string): void {
   try {
     send(ws, { t: 'error', code, message: message ?? (R.ERROR_TEXT as Record<string, string>)[code] ?? 'Something went wrong.' });
   } catch {
     /* closed */
+  }
+}
+
+function publicLine(l: StoredLine): ChatLine {
+  return { id: l.id, from: l.from, text: l.text, at: l.at };
+}
+
+function safeSend(ws: WebSocket, msg: ServerMessage): void {
+  try {
+    send(ws, msg);
+  } catch {
+    /* closing */
   }
 }
