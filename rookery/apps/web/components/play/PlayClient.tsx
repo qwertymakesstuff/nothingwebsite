@@ -24,7 +24,8 @@ import { useChessClock } from '@/lib/useChessClock';
 import { useLocalGame } from '@/lib/useLocalGame';
 import { TimeControlPicker } from './TimeControlPicker';
 
-export const ANALYSIS_HANDOFF_KEY = 'rookery.analysis.import';
+import { ANALYSIS_HANDOFF_KEY } from '@/lib/gameUtils';
+export { ANALYSIS_HANDOFF_KEY };
 
 const REASON: Record<string, string> = {
   checkmate: 'by checkmate',

@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@rookery/ai": "*",
     "@rookery/chess-core": "*",
     "@rookery/protocol": "*"
   },

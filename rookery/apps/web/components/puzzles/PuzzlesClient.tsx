@@ -1,7 +1,10 @@
 'use client';
 
 import { CalendarDays, Flame, Lightbulb, Puzzle, RotateCcw, SkipForward, Tags, Target, Timer } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth';
+import { fetchRatings } from '@/lib/db';
+import Link from 'next/link';
 import { BoardFrame } from '@/components/board/BoardFrame';
 import { ChessBoard } from '@/components/board/ChessBoard';
 import { GamePanel } from '@/components/board/GamePanel';
@@ -16,20 +19,20 @@ export function PuzzlesClient({
   puzzles,
   daily,
   themes,
-  rating,
-  ratingHistory,
   source,
 }: {
   puzzles: PuzzleSummary[];
   daily: PuzzleSummary;
   themes: string[];
-  rating: number;
-  ratingHistory: number[];
   source: DataSource;
 }) {
   const [current, setCurrent] = useState<PuzzleSummary>(puzzles[0]!);
-  const best = Math.max(...ratingHistory);
-  const progress = Math.min(1, Math.max(0, (rating % 100) / 100));
+  const { userId } = useAuth();
+  const [puzzleRating, setPuzzleRating] = useState<{ rating: number; rd: number; games: number } | null>(null);
+  useEffect(() => {
+    if (!userId) return setPuzzleRating(null);
+    fetchRatings(userId).then((rs) => setPuzzleRating(rs.find((r) => r.category === 'puzzle') ?? null)).catch(() => setPuzzleRating(null));
+  }, [userId]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] lg:items-start">
@@ -72,23 +75,25 @@ export function PuzzlesClient({
           </div>
         }
       >
-        {/* Rating */}
+        {/* Rating (real, from your account) */}
         <div className="border-b border-line p-5">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs font-medium text-fg-subtle">Puzzle rating</p>
-              <p className="tabular font-[family-name:var(--font-display)] text-3xl font-semibold">{rating.toLocaleString('en-US')}</p>
-            </div>
-            <div className="text-right text-xs text-fg-subtle">
-              <p className="flex items-center justify-end gap-1">
-                <Flame className="size-3.5 text-gold-400" aria-hidden /> 6 in a row
+          <p className="text-xs font-medium text-fg-subtle">Puzzle rating</p>
+          {puzzleRating ? (
+            <>
+              <p className="tabular font-[family-name:var(--font-display)] text-3xl font-semibold">
+                {Math.round(puzzleRating.rating)}
+                {puzzleRating.rd > 110 ? '?' : ''}
               </p>
-              <p className="tabular">Best {best.toLocaleString('en-US')}</p>
-            </div>
-          </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-3" role="progressbar" aria-label="Progress to next level" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-            <div className="h-full rounded-full bg-gradient-to-r from-gold-600 to-gold-300" style={{ width: `${progress * 100}%` }} />
-          </div>
+              <p className="text-xs text-fg-subtle">{puzzleRating.games} rated puzzles · rated solving opens in Stage 6</p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-fg-muted">
+              <Link href="/login?next=/puzzles" className="font-semibold text-gold-300 hover:underline">
+                Sign in
+              </Link>{' '}
+              to keep a puzzle rating.
+            </p>
+          )}
         </div>
 
         {/* Current puzzle */}

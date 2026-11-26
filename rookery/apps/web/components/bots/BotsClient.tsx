@@ -17,6 +17,7 @@ import {
 } from '@rookery/ai';
 import { START_FEN, TIME_CONTROLS } from '@rookery/chess-core';
 import { Bot, ChevronDown, Cpu, History, Microscope, Shuffle, SlidersHorizontal, Swords, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { BoardFrame } from '@/components/board/BoardFrame';
@@ -31,7 +32,11 @@ import { Modal } from '@/components/ui/Modal';
 import { EmptyState } from '@/components/ui/States';
 import { Segmented, Switch } from '@/components/ui/Switch';
 import { Tabs } from '@/components/ui/Tabs';
-import { clearBotGames, outcomeOf, recordAgainst, useBotGames, type BotGameRecord } from '@/lib/botHistory';
+import { clearBotGames, outcomeOf, recordAgainst, toSubmission, useBotGames, type BotGameRecord } from '@/lib/botHistory';
+import { useAuth } from '@/lib/auth';
+import { submitBotGame } from '@/lib/db';
+import { FormMessage } from '@/components/ui/Field';
+import { CloudUpload } from 'lucide-react';
 import { replaySan } from '@/lib/chess';
 import { cn } from '@/lib/cn';
 import { formatDate } from '@/lib/format';
@@ -336,6 +341,44 @@ function OpponentCard({ persona, selected, onSelect, record }: { persona: Person
   );
 }
 
+function UploadToAccount({ games }: { games: BotGameRecord[] }) {
+  const { status, profile } = useAuth();
+  const [state, setState] = useState<{ busy: boolean; result?: string }>({ busy: false });
+  if (status !== 'signedIn' || !games.length) return null;
+  const upload = async () => {
+    setState({ busy: true });
+    let saved = 0;
+    let already = 0;
+    let rejected = 0;
+    for (const g of [...games].reverse()) {
+      const sub = toSubmission(g);
+      if (!sub) {
+        rejected++;
+        continue;
+      }
+      try {
+        const r = await submitBotGame(sub);
+        if (r.duplicate) already++;
+        else saved++;
+      } catch {
+        rejected++;
+      }
+    }
+    setState({ busy: false, result: `${saved} uploaded, ${already} already in your account${rejected ? `, ${rejected} not accepted` : ''}.` });
+  };
+  return (
+    <div className="space-y-2 border-b border-line px-5 py-3">
+      <p className="text-xs text-fg-muted">
+        New games are saved to your account automatically. These were saved on this device; upload them to <Link href={`/u/${profile?.username}`} className="text-gold-300 hover:underline">your profile</Link>.
+      </p>
+      <Button size="sm" variant="secondary" icon={<CloudUpload className="size-3.5" />} disabled={state.busy} onClick={() => void upload()}>
+        {state.busy ? 'Uploading…' : `Upload ${games.length} device games`}
+      </Button>
+      {state.result && <FormMessage tone="success">{state.result}</FormMessage>}
+    </div>
+  );
+}
+
 function HistoryPanel({ games }: { games: BotGameRecord[] }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
@@ -357,6 +400,7 @@ function HistoryPanel({ games }: { games: BotGameRecord[] }) {
   };
   return (
     <div>
+      <UploadToAccount games={games} />
       <div className="flex items-center justify-between border-b border-line px-5 py-3 text-sm">
         <span className="tabular text-fg-muted">
           {total.games} games · <span className="text-win">{total.wins}W</span> <span className="text-draw">{total.draws}D</span> <span className="text-loss">{total.losses}L</span>

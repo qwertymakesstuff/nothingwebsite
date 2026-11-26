@@ -32,7 +32,7 @@ function moveFocus(container: HTMLElement | null, dir: 1 | -1 | 'first' | 'last'
 }
 
 const panel =
-  'absolute z-50 mt-2 min-w-48 overflow-hidden rounded-[12px] border border-line-strong bg-surface-2 p-1 shadow-[var(--shadow-pop)] animate-pop-in';
+  'absolute z-50 min-w-48 overflow-hidden rounded-[12px] border border-line-strong bg-surface-2 p-1 shadow-[var(--shadow-pop)] animate-pop-in';
 const itemCls =
   'flex w-full items-center gap-2.5 rounded-[8px] px-3 py-2 text-left text-sm text-fg-muted outline-none hover:bg-surface-3 hover:text-fg focus:bg-surface-3 focus:text-fg aria-disabled:pointer-events-none aria-disabled:opacity-45';
 
@@ -50,12 +50,15 @@ export function Menu({
   trigger,
   items,
   align = 'end',
+  side = 'bottom',
   label,
   header,
 }: {
   trigger: (props: { open: boolean }) => ReactNode;
   items: MenuItem[];
   align?: 'start' | 'end';
+  /** Open above the trigger (for triggers near the bottom of the screen). */
+  side?: 'top' | 'bottom';
   label: string;
   header?: ReactNode;
 }) {
@@ -107,7 +110,7 @@ export function Menu({
         {trigger({ open })}
       </button>
       {open && (
-        <div ref={list} id={id} role="menu" aria-label={label} className={cn(panel, align === 'end' ? 'right-0' : 'left-0')}>
+        <div ref={list} id={id} role="menu" aria-label={label} className={cn(panel, side === 'top' ? 'bottom-full mb-2' : 'top-full mt-2', align === 'end' ? 'right-0' : 'left-0')}>
           {header}
           {items.map((it, i) => {
             const content = (
@@ -217,7 +220,7 @@ export function Select<T extends string>({
         <ChevronDown className={cn('size-4 text-fg-subtle transition-transform', open && 'rotate-180')} aria-hidden />
       </button>
       {open && (
-        <div ref={list} id={id} role="listbox" aria-label={label} className={cn(panel, 'left-0 w-full')}>
+        <div ref={list} id={id} role="listbox" aria-label={label} className={cn(panel, 'top-full mt-2 left-0 w-full')}>
           {options.map((o) => (
             <button
               key={o.value}

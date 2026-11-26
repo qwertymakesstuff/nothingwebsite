@@ -4,7 +4,9 @@ import { displayRating, getOpening } from '@rookery/ai';
 import type { Outcome } from '@rookery/chess-core';
 import { ArrowLeft, Flag, FlipVertical2, Handshake, ListTree, MessageSquare, Microscope, RefreshCw, RotateCcw, Undo2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { fetchAchievementNames } from '@/lib/db';
 import { BoardFrame } from '@/components/board/BoardFrame';
 import { ChessBoard } from '@/components/board/ChessBoard';
 import { GamePanel } from '@/components/board/GamePanel';
@@ -20,7 +22,7 @@ import { cn } from '@/lib/cn';
 import { material } from '@/lib/material';
 import { usePreferences } from '@/lib/preferences';
 import type { Side } from '@/lib/types';
-import { useBotGame, type BotGameSettings } from '@/lib/useBotGame';
+import { useBotGame, type BotGameSettings, type SaveState } from '@/lib/useBotGame';
 import { PersonaPortrait, SpeechBubble, ThinkingIndicator } from './BotBits';
 
 export function BotGame({ settings, onRematch, onExit }: { settings: BotGameSettings; onRematch: () => void; onExit: () => void }) {
@@ -118,7 +120,7 @@ export function BotGame({ settings, onRematch, onExit }: { settings: BotGameSett
                 onCancel={() => setPromo(null)}
               />
             )}
-            {g.outcome && <ResultCard outcome={g.outcome} playerColor={playerColor} personaName={persona.name} onRematch={onRematch} onExit={onExit} onAnalyse={analyse} />}
+            {g.outcome && <ResultCard outcome={g.outcome} playerColor={playerColor} personaName={persona.name} onRematch={onRematch} onExit={onExit} onAnalyse={analyse} save={g.saveState} />}
           </>
         }
       />
@@ -258,7 +260,9 @@ function ResultCard({
   onRematch,
   onExit,
   onAnalyse,
+  save,
 }: {
+  save: SaveState;
   outcome: Outcome;
   playerColor: Side;
   personaName: string;
@@ -276,6 +280,7 @@ function ResultCard({
         </p>
         <p className="mt-1 font-[family-name:var(--font-display)] text-3xl font-semibold">{d.headline}</p>
         <p className="mt-1 text-sm text-fg-muted">{d.detail}</p>
+        <SaveLine save={save} />
         <div className="mt-5 grid gap-2">
           <Button variant="primary" icon={<RotateCcw className="size-4" />} onClick={onRematch}>
             Rematch
@@ -290,6 +295,36 @@ function ResultCard({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SaveLine({ save }: { save: SaveState }) {
+  const [names, setNames] = useState<Map<string, string> | null>(null);
+  const unlocked = save.status === 'saved' ? save.achievements : [];
+  useEffect(() => {
+    if (unlocked.length) fetchAchievementNames().then(setNames).catch(() => undefined);
+  }, [unlocked.length]);
+  if (save.status === 'idle') return null;
+  return (
+    <div className="mt-3 space-y-2 text-xs" role="status">
+      {save.status === 'saving' && <p className="text-fg-subtle">Saving to your profile…</p>}
+      {save.status === 'saved' && <p className="text-win">Saved to your profile.</p>}
+      {save.status === 'error' && <p className="text-loss">Not saved: {save.message}</p>}
+      {save.status === 'guest' && (
+        <p className="text-fg-subtle">
+          Saved on this device.{' '}
+          <Link href="/signup" className="font-semibold text-gold-300 hover:underline">
+            Create an account
+          </Link>{' '}
+          to keep your games and earn achievements.
+        </p>
+      )}
+      {unlocked.length > 0 && (
+        <p className="rounded-[10px] bg-gold-500/12 px-3 py-2 font-semibold text-gold-200">
+          Achievement unlocked: {unlocked.map((id) => names?.get(id) ?? id).join(', ')}
+        </p>
+      )}
     </div>
   );
 }

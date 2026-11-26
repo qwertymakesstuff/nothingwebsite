@@ -3,6 +3,9 @@
 // Games played against computer opponents, kept in this browser (real data, not sample).
 // When accounts arrive (Stage 2) these are uploaded to the `games` table with source 'bot'.
 
+import type { BotGameSubmission } from '@rookery/protocol';
+import { START_FEN } from '@rookery/chess-core';
+import { Chess } from 'chess.js';
 import { useCallback, useEffect, useState } from 'react';
 import type { GameResult, Side } from './types';
 
@@ -18,6 +21,8 @@ export interface BotGameRecord {
   plies: number;
   timeControl: string; // "none" or e.g. "10+0"
   opening?: string;
+  /** Catalogue id of the starting opening, when one was chosen (needed to upload the game). */
+  openingId?: string;
   playedAt: string; // ISO
 }
 
@@ -92,4 +97,29 @@ export function useBotGames(): BotGameRecord[] {
     };
   }, [refresh]);
   return games;
+}
+
+/** Rebuilds the server submission for a game saved on this device (for "upload to my account"). */
+export function toSubmission(g: BotGameRecord): BotGameSubmission | null {
+  try {
+    const chess = new Chess();
+    chess.loadPgn(g.pgn);
+    const moves = chess.history({ verbose: true }).map((m) => m.from + m.to + (m.promotion ?? ''));
+    const custom = g.botId === 'custom';
+    return {
+      clientRef: g.id.replace(/[^A-Za-z0-9-]/g, '').slice(0, 64).padEnd(6, '0'),
+      botId: g.botId,
+      ...(custom ? { customElo: g.botRating === '3000+' ? ('max' as const) : Number(g.botRating) } : {}),
+      playerColor: g.playerColor,
+      timeControl: g.timeControl,
+      initialFen: START_FEN,
+      moves,
+      result: g.result,
+      termination: g.termination as BotGameSubmission['termination'],
+      ...(g.openingId ? { openingId: g.openingId } : {}),
+      endedAt: g.playedAt,
+    };
+  } catch {
+    return null;
+  }
 }

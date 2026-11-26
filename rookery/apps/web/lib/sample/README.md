@@ -1,14 +1,10 @@
 # Sample data
 
-Everything in this folder is **made up** and exists only so the interface can be designed and
-reviewed before the real backend exists. Here's how it's kept separate:
+Only **puzzles** are still sample content (Stage 6 replaces them with the Lichess CC0 puzzle
+database). The UI labels them with a `<SampleNotice>`. Everything else (players, ratings, games,
+statistics, achievements, leaderboards and settings) is real data from Supabase, read through
+`lib/db.ts`.
 
-- Pages never import from `lib/sample/` directly. They call `lib/data/`, which returns
-  `{ data, source }`. Today `source` is `'sample'`. Each stage swaps one function to real data
-  (Supabase, the realtime server, the engine) and the source becomes `'live'`.
-- Whenever `source === 'sample'`, the UI shows a `<SampleNotice>` badge or banner.
-- Players, bots and ratings are fictional. The sample games are legal move sequences. Two of
-  them reuse public-domain historical games (Morphy's "Opera Game" of 1858 and Anderssen's
-  "Immortal Game" of 1851) with fictional players attached.
-
-When a stage replaces a function in `lib/data/`, delete the sample data it no longer uses.
+The puzzle positions are taken from two public-domain historical games (Morphy's "Opera Game",
+1858, and Anderssen's "Immortal Game", 1851). Their solutions are genuine; ratings and solve counts
+are made up.

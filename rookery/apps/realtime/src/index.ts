@@ -1,7 +1,8 @@
 // Rookery realtime Worker. Static pages never reach this code (see wrangler.jsonc run_worker_first);
-// only /api/* and /ws/* do. Live games will each run in their own GameRoom Durable Object.
+// only /api/*, /ws/* and /u/* do. Live games will each run in their own GameRoom Durable Object.
 
 import { PROTOCOL_VERSION, type HealthResponse } from '@rookery/protocol';
+import { handleApi } from './api';
 import { GameRoom } from './GameRoom';
 
 export { GameRoom };
@@ -10,6 +11,8 @@ export interface Env {
   ASSETS: Fetcher;
   GAME_ROOM: DurableObjectNamespace<GameRoom>;
   SUPABASE_URL: string;
+  /** Worker secret (Cloudflare dashboard / .dev.vars). Never sent to browsers. */
+  SUPABASE_SECRET_KEY?: string;
 }
 
 const ROOM_ID = /^[A-Za-z0-9_-]{1,32}$/;
@@ -38,6 +41,23 @@ export default {
       }
       const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(roomId));
       return stub.fetch(request);
+    }
+
+    if (url.pathname.startsWith('/api/')) {
+      try {
+        const res = await handleApi(request, env);
+        if (res) return res;
+      } catch (e) {
+        console.error('api error', e);
+        return json({ error: 'server_error', message: 'Something went wrong on our side.' }, {}, 500);
+      }
+    }
+
+    // Profiles: /u/<username>[...] is one prerendered page (/u/_), filled in by the browser.
+    const profile = url.pathname.match(/^\/u\/([^/]+?)(\.txt|\.html)?(\/.*)?$/);
+    if (profile && profile[1] !== '_') {
+      const rewritten = new URL(`/u/_${profile[2] ?? ''}${profile[3] ?? ''}${url.search}`, url);
+      return env.ASSETS.fetch(new Request(rewritten, request));
     }
 
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) {

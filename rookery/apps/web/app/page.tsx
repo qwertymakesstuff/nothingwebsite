@@ -128,13 +128,13 @@ export default function HomePage() {
       {/* ── Closing call to action ── */}
       <section className="relative overflow-hidden rounded-[22px] border border-gold-500/20 bg-[linear-gradient(135deg,rgb(193_154_82/0.16),rgb(193_154_82/0.03)_60%)] px-6 py-12 text-center sm:px-12">
         <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-[-0.01em] sm:text-4xl">Your move.</h2>
-        <p className="mx-auto mt-3 max-w-md text-fg-muted">Set up a board in seconds: pass and play with a friend now, with more modes on the way.</p>
+        <p className="mx-auto mt-3 max-w-md text-fg-muted">Play the computer or a friend in seconds. Create a free account to keep your games, ratings and achievements.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <ButtonLink href="/play" variant="primary" size="lg">
             Start a game
           </ButtonLink>
-          <ButtonLink href="/dashboard" variant="ghost" size="lg">
-            Preview the dashboard
+          <ButtonLink href="/signup" variant="ghost" size="lg">
+            Create a free account
           </ButtonLink>
         </div>
       </section>
