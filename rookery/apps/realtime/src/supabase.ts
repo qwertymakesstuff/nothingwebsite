@@ -176,7 +176,7 @@ interface RawProfile {
 }
 
 function toRating(r: RawRating | undefined): StoredRating {
-  if (!r) return { rating: 1500, rd: 350, volatility: 0.06, updatedAt: Date.now() };
+  if (!r) return { rating: 500, rd: 350, volatility: 0.06, updatedAt: Date.now() };
   return { rating: Number(r.rating), rd: Number(r.rd), volatility: Number(r.volatility), updatedAt: Date.parse(r.updated_at) };
 }
 

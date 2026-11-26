@@ -205,7 +205,7 @@ describe('stage 4: ratings, games and achievements are server-only', () => {
   it('every new player gets a provisional rating in each category', async () => {
     const { rows } = await db.query<{ category: string; rating: string }>('select category, rating from public.ratings where user_id = $1 order by category', [ALICE]);
     expect(rows.map((r) => r.category)).toEqual(['blitz', 'bullet', 'classical', 'puzzle', 'rapid']);
-    expect(rows.every((r) => Number(r.rating) === 1500)).toBe(true);
+    expect(rows.every((r) => Number(r.rating) === 500)).toBe(true);
   });
 
   it('browsers cannot change ratings, write history, record games or award achievements', async () => {
@@ -290,27 +290,27 @@ describe('stage 5: online games and ratings', () => {
     asService(() => db.query<{ r: { duplicate: boolean } }>('select public.record_online_game($1, $2, $3) as r', [g, w, b]));
 
   it('browsers cannot record online games', async () => {
-    await expect(as(ALICE, () => db.query('select public.record_online_game($1, $2, $3)', [game('aaaaaaaaaaaa'), side(1500, 1700), side(1500, 1300)]))).rejects.toThrow(/permission denied/);
+    await expect(as(ALICE, () => db.query('select public.record_online_game($1, $2, $3)', [game('aaaaaaaaaaaa'), side(500, 700), side(1500, 1300)]))).rejects.toThrow(/permission denied/);
   });
 
   it('records a rated game, both rating updates and history in one go', async () => {
-    const r = await record(game('onlinegame01'), side(1500, 1337.5), side(1500, 1662.5));
+    const r = await record(game('onlinegame01'), side(500, 337.5), side(500, 662.5));
     expect(r.rows[0]!.r.duplicate).toBe(false);
     const ratings = await db.query<{ user_id: string; rating: string; games: number; peak: string }>(`select user_id, rating, games, peak from public.ratings where category = 'blitz' and user_id in ($1, $2) order by rating`, [ALICE, BOB]);
-    expect(ratings.rows.map((x) => [x.user_id, Number(x.rating), x.games])).toEqual([[ALICE, 1337.5, 1], [BOB, 1662.5, 1]]);
+    expect(ratings.rows.map((x) => [x.user_id, Number(x.rating), x.games])).toEqual([[ALICE, 337.5, 1], [BOB, 662.5, 1]]);
     const g = await db.query<{ white_delta: number; black_delta: number; white_rating: number }>(`select white_delta, black_delta, white_rating from public.games where id = 'onlinegame01'`);
-    expect(g.rows[0]).toEqual({ white_delta: -163, black_delta: 163, white_rating: 1500 });
+    expect(g.rows[0]).toEqual({ white_delta: -163, black_delta: 163, white_rating: 500 });
     const hist = await db.query(`select 1 from public.rating_history where game_id = 'onlinegame01'`);
     expect(hist.rows.length).toBe(2);
   });
 
   it('refuses updates computed from stale ratings, duplicates and self-play', async () => {
-    await expect(record(game('onlinegame02'), side(1500, 1400), side(1500, 1600))).rejects.toThrow(/rating_changed/);
+    await expect(record(game('onlinegame02'), side(500, 400), side(500, 600))).rejects.toThrow(/rating_changed/);
     expect((await db.query(`select 1 from public.games where id = 'onlinegame02'`)).rows.length).toBe(0); // rolled back
-    const dup = await record(game('onlinegame01'), side(1337.5, 1300), side(1662.5, 1700));
+    const dup = await record(game('onlinegame01'), side(337.5, 300), side(662.5, 700));
     expect(dup.rows[0]!.r.duplicate).toBe(true);
     const alice = await db.query<{ rating: string }>(`select rating from public.ratings where category = 'blitz' and user_id = $1`, [ALICE]);
-    expect(Number(alice.rows[0]!.rating)).toBe(1337.5); // unchanged by the duplicate
+    expect(Number(alice.rows[0]!.rating)).toBe(337.5); // unchanged by the duplicate
     await expect(record(game('onlinegame03', { black_id: ALICE }), null, null)).rejects.toThrow(/two different players/);
     await expect(record(game('onlinegame04', { source: 'bot' }), null, null)).rejects.toThrow(/invalid source/);
   });
@@ -332,5 +332,15 @@ describe('special badges', () => {
     const has = await db.query(`select 1 from public.user_achievements where user_id = $1 and achievement_id = 'hammer'`, [ALICE]);
     expect(has.rows.length).toBe(0);
     await expect(as(ALICE, () => db.query(`insert into public.user_achievements (user_id, achievement_id) values ($1, 'hammer')`, [ALICE]))).rejects.toThrow(/permission denied|row-level security/);
+  });
+});
+
+describe('500 starting rating', () => {
+  it('new players start at 500 in every category', async () => {
+    const DAN = '00000000-0000-0000-0000-00000000000d';
+    await signUp(DAN, { username: 'dan_500', birth_date: yearsAgo(25) });
+    const r = await db.query<{ rating: string }>('select rating from public.ratings where user_id = $1', [DAN]);
+    expect(r.rows.length).toBe(5);
+    expect(r.rows.every((x) => Number(x.rating) === 500)).toBe(true);
   });
 });

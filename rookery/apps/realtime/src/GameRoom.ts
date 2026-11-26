@@ -161,7 +161,9 @@ export class GameRoom extends DurableObject<Env> {
     }
     ws.serializeAttachment({ userId: user.id, color } satisfies Attachment);
     send(ws, { t: 'authed', userId: user.id, serverTime: Date.now() });
-    await this.apply(R.presence(this.room, color, true, Date.now()));
+    // Everyone connected right now is present (a challenger who was waiting, and this player).
+    const conn = this.connected();
+    for (const c of ['white', 'black'] as const) if (conn[c]) await this.apply(R.presence(this.room, c, true, Date.now()));
     this.sendState(ws); // in case presence didn't change anything
   }
 

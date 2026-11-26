@@ -52,30 +52,51 @@ describe('game room: moves', () => {
 });
 
 describe('game room: clocks are the server’s', () => {
-  it('starts clocks after both first moves, charges real elapsed time and adds the increment', () => {
+  /** Both players open the game at `at`: White's turn (and clock) starts. */
+  const ready = (s: R.RoomState, at: number) => R.presence(R.presence(s, 'white', true, at).state, 'black', true, at).state;
+
+  it('White’s clock starts when both players are in; Black’s when White moves', () => {
     let s = game();
-    s = R.move(s, 'white', 'e2e4', 0, T0 + 10_000).state;
-    s = R.move(s, 'black', 'e7e5', 1, T0 + 20_000).state;
+    expect(R.presence(s, 'white', true, T0).state.clock.running).toBeNull(); // waiting for Black
+    s = ready(s, T0 + 2_000);
     expect(s.clock.running).toBe('white');
-    expect(s.clock.whiteMs).toBe(180_000); // no time used for first moves
-    s = R.move(s, 'white', 'g1f3', 2, T0 + 32_000).state; // white thought 12 s
-    expect(s.clock.whiteMs).toBe(180_000 - 12_000 + 2_000);
+    s = R.move(s, 'white', 'e2e4', 0, T0 + 12_000).state; // White's first move took 10 s
+    expect(s.clock.whiteMs).toBe(180_000 - 10_000 + 2_000);
+    expect(s.clock.running).toBe('black');
+    s = R.move(s, 'black', 'e7e5', 1, T0 + 20_000).state; // Black's first move took 8 s
+    expect(s.clock.blackMs).toBe(180_000 - 8_000 + 2_000);
+    s = R.move(s, 'white', 'g1f3', 2, T0 + 32_000).state; // then 12 s
+    expect(s.clock.whiteMs).toBe(172_000 - 12_000 + 2_000);
     const v = R.view(s, 'black', { white: true, black: true }, T0 + 35_000);
-    expect(v.clock.blackMs).toBe(180_000 - 3_000);
+    expect(v.clock.blackMs).toBe(174_000 - 3_000);
+  });
+
+  it('if White moves before Black has connected, Black’s clock starts from that move', () => {
+    let s = R.presence(game(), 'white', true, T0).state;
+    s = R.move(s, 'white', 'e2e4', 0, T0 + 1_000).state;
+    expect(s.clock.whiteMs).toBe(180_000);
+    expect(s.clock.running).toBe('black');
   });
 
   it('a flag falls on the server even if nobody sends anything', () => {
-    const { s, now } = play(game(), ['e2e4', 'e7e5', 'g1f3']);
-    expect(R.nextDeadline(s)).toBe(now + 180_000);
-    const flagged = R.settle(s, now + 180_000);
+    let s = ready(game(), T0);
+    s = R.move(s, 'white', 'e2e4', 0, T0 + 1_000).state;
+    s = R.move(s, 'black', 'e7e5', 1, T0 + 2_000).state;
+    s = R.move(s, 'white', 'g1f3', 2, T0 + 3_000).state;
+    const black = s.clock.blackMs;
+    expect(R.nextDeadline(s)).toBe(T0 + 3_000 + black);
+    const flagged = R.settle(s, T0 + 3_000 + black);
     expect(flagged.ended).toBe(true);
     expect(flagged.state.result).toBe('1-0');
     expect(flagged.state.termination).toBe('timeout');
   });
 
   it('a move that arrives after the flag loses on time instead of being played', () => {
-    const { s, now } = play(game(), ['e2e4', 'e7e5', 'g1f3']);
-    const late = R.move(s, 'black', 'b8c6', 3, now + 181_000);
+    let s = ready(game(), T0);
+    s = R.move(s, 'white', 'e2e4', 0, T0 + 1_000).state;
+    s = R.move(s, 'black', 'e7e5', 1, T0 + 2_000).state;
+    s = R.move(s, 'white', 'g1f3', 2, T0 + 3_000).state;
+    const late = R.move(s, 'black', 'b8c6', 3, T0 + 3_000 + s.clock.blackMs + 1_000);
     expect(late.state.termination).toBe('timeout');
     expect(late.state.moves.length).toBe(3);
   });
@@ -83,7 +104,7 @@ describe('game room: clocks are the server’s', () => {
 
 describe('game room: first moves, aborts and abandonment', () => {
   it('aborts when a player never makes a first move', () => {
-    const s = game();
+    const s = game(); // (first-move window from creation until both players are in)
     expect(R.settle(s, T0 + 29_999).state.status).toBe('active');
     expect(R.settle(s, T0 + 30_000).state.status).toBe('aborted');
     const one = R.move(s, 'white', 'e2e4', 0, T0 + 5_000).state;

@@ -17,14 +17,24 @@ describe('Glicko-2', () => {
     expect(r.volatility).toBeCloseTo(0.05999, 4);
   });
 
-  it('is symmetric for equal players and conserves direction', () => {
+  it('new players start at 500; equal players move symmetrically', () => {
+    expect(DEFAULT_RATING.rating).toBe(500);
     const { white, black } = rateGame(DEFAULT_RATING, DEFAULT_RATING, 1);
-    expect(white.rating).toBeGreaterThan(1500);
-    expect(black.rating).toBeLessThan(1500);
-    expect(white.rating - 1500).toBeCloseTo(1500 - black.rating, 6);
+    expect(white.rating).toBeGreaterThan(500);
+    expect(black.rating).toBeLessThan(500);
+    expect(white.rating - 500).toBeCloseTo(500 - black.rating, 6);
     expect(white.rd).toBeLessThan(350);
     const draw = rateGame(DEFAULT_RATING, DEFAULT_RATING, 0.5);
-    expect(draw.white.rating).toBeCloseTo(1500, 6);
+    expect(draw.white.rating).toBeCloseTo(500, 6);
+  });
+
+  it('only rating differences matter (so shifting everyone to a 500 start changes nothing)', () => {
+    const a = { rating: 1700, rd: 120, volatility: 0.06 };
+    const b = { rating: 1550, rd: 80, volatility: 0.06 };
+    const high = rate(a, b, 0);
+    const low = rate({ ...a, rating: 700 }, { ...b, rating: 550 }, 0);
+    expect(high.rating - 1000).toBeCloseTo(low.rating, 6);
+    expect(high.rd).toBeCloseTo(low.rd, 6);
   });
 
   it('rewards upsets more than expected wins, and settles with experience', () => {
@@ -33,7 +43,7 @@ describe('Glicko-2', () => {
     const expectedWin = rate(strong, weak, 1).rating - strong.rating;
     const upset = rate(weak, strong, 1).rating - weak.rating;
     expect(upset).toBeGreaterThan(expectedWin * 5);
-    const newcomer = rate(DEFAULT_RATING, DEFAULT_RATING, 1).rating - 1500;
+    const newcomer = rate(DEFAULT_RATING, DEFAULT_RATING, 1).rating - 500;
     const veteran = rate({ rating: 1500, rd: 60, volatility: 0.06 }, { rating: 1500, rd: 60, volatility: 0.06 }, 1).rating - 1500;
     expect(newcomer).toBeGreaterThan(veteran * 3);
   });

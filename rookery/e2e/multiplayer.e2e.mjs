@@ -160,6 +160,12 @@ try {
   ok(w !== bl && w.color === 'white' && bl.color === 'black', `colours assigned: ${w.u.username} white, ${bl.u.username} black`);
   ok((await w.page.getByText('Live').count()) > 0, 'connection indicator shows Live');
 
+  // White's clock runs from the start of White's first turn; Black's hasn't started.
+  await sleep(2500);
+  const ownClock = async (p) => (await p.page.locator('[role="timer"]').last().textContent())?.trim();
+  const wClock = await ownClock(w);
+  const bClock = await ownClock(bl);
+  ok(wClock !== '3:00' && bClock === '3:00', `White's clock starts with White's first turn (white ${wClock}, black ${bClock})`);
   const before = { w: await blitz(w.u), b: await blitz(bl.u) };
   await line(w, bl, ['f2f3', 'e7e5', 'g2g4', 'd8h4']);
   await bl.page.getByText('You won').waitFor({ timeout: 10000 });

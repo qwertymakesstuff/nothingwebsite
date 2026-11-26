@@ -187,7 +187,7 @@ user_settings (
 ratings (
   user_id uuid → profiles, category text CHECK (category IN
     ('bullet','blitz','rapid','classical','daily','puzzle')),
-  rating numeric(7,2) default 1500, rd numeric(6,2) default 350,
+  rating numeric(7,2) default 500, rd numeric(6,2) default 350,
   volatility numeric(8,6) default 0.06, games int default 0,
   peak numeric(7,2), updated_at timestamptz,
   PRIMARY KEY (user_id, category)
