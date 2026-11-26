@@ -8,6 +8,8 @@ import { AppShell } from '@/components/layout/AppShell';
 import { SITE_URL } from '@/lib/config';
 import { AuthProvider } from '@/lib/auth';
 import { PreferencesProvider } from '@/lib/preferences';
+import { LobbyProvider } from '@/lib/realtime/lobby';
+import { Notifications } from '@/components/realtime/Notifications';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -29,7 +31,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <AuthProvider>
           <PreferencesProvider>
-            <AppShell>{children}</AppShell>
+            <LobbyProvider>
+              <AppShell>{children}</AppShell>
+              <Notifications />
+            </LobbyProvider>
           </PreferencesProvider>
         </AuthProvider>
       </body>

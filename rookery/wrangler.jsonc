@@ -2,7 +2,8 @@
   // Cloudflare Worker "rookery" (chess.missing.website).
   //  - The website is a prerendered Next.js export, served as static assets from apps/web/out
   //    (static asset requests are free and don't count toward Worker request limits).
-  //  - Only /api/* and /ws/* run Worker code: apps/realtime (live games on Durable Objects).
+  //  - Only /api/*, /ws/* and /u/* run Worker code: apps/realtime. Live games run on Durable Objects:
+//    one Lobby (matchmaking, challenges) and one GameRoom per game.
   // In Cloudflare (Workers & Pages > your worker > Settings > Build):
   //   Root directory = rookery, Build command = npm ci && npm run build, Deploy command = npx wrangler deploy
   // The Worker's name in Cloudflare must match the name below.
@@ -16,15 +17,21 @@
     "run_worker_first": ["/api/*", "/ws/*", "/u/*"]
   },
   "durable_objects": {
-    "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }]
+    "bindings": [
+      { "name": "GAME_ROOM", "class_name": "GameRoom" },
+      { "name": "LOBBY", "class_name": "Lobby" }
+    ]
   },
   // SQLite-backed Durable Objects are the ones available on the Workers Free plan.
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
+    { "tag": "v2", "new_sqlite_classes": ["Lobby"] }
+  ],
   "vars": {
     "SUPABASE_URL": "https://fazzxshhvfecpfypqusz.supabase.co"
   },
   // Secrets (Cloudflare dashboard → Worker → Settings → Variables and Secrets; never in this file):
-  //   SUPABASE_SECRET_KEY  the project's secret API key (sb_secret_…), used only by /api/*.
+  //   SUPABASE_SECRET_KEY  the project's secret API key (sb_secret_…), used by /api/* and live games.
   "workers_dev": false,
   "preview_urls": false,
   // Attach the custom domain on deploy (Cloudflare creates the DNS record and certificate).

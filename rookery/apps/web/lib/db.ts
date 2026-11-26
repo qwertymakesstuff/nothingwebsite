@@ -59,8 +59,13 @@ export interface GameRow {
   termination: string;
   opening: string | null;
   ended_at: string;
-  white?: { username: string } | null;
-  black?: { username: string } | null;
+  /** Ratings before the game, and the change, for rated games between people. */
+  white_rating: number | null;
+  black_rating: number | null;
+  white_delta: number | null;
+  black_delta: number | null;
+  white?: { username: string; avatar_path: string | null } | null;
+  black?: { username: string; avatar_path: string | null } | null;
 }
 
 export interface AchievementRow {
@@ -70,6 +75,8 @@ export interface AchievementRow {
   tier: 'bronze' | 'silver' | 'gold';
   icon: string;
   sort: number;
+  /** Given by hand, not earned: shown only to players who have it, not counted in progress. */
+  special: boolean;
   unlocked_at: string | null;
 }
 
@@ -147,7 +154,7 @@ export async function fetchGames(userId: string, limit = 50): Promise<GameRow[]>
     check(
       await supabase()
         .from('games')
-        .select('id, white_id, black_id, bot_id, bot_name, bot_elo, source, rated, category, time_control, initial_fen, moves, plies, result, termination, opening, ended_at, white:profiles!games_white_id_fkey(username), black:profiles!games_black_id_fkey(username)')
+        .select('id, white_id, black_id, bot_id, bot_name, bot_elo, source, rated, category, time_control, initial_fen, moves, plies, result, termination, opening, ended_at, white_rating, black_rating, white_delta, black_delta, white:profiles!games_white_id_fkey(username, avatar_path), black:profiles!games_black_id_fkey(username, avatar_path)')
         .or(`white_id.eq.${userId},black_id.eq.${userId}`)
         .order('ended_at', { ascending: false })
         .limit(limit),
@@ -157,11 +164,13 @@ export async function fetchGames(userId: string, limit = 50): Promise<GameRow[]>
 
 export async function fetchAchievements(userId: string): Promise<AchievementRow[]> {
   const [catalogue, unlocks] = await Promise.all([
-    supabase().from('achievements').select('id, name, description, tier, icon, sort').order('sort'),
+    supabase().from('achievements').select('id, name, description, tier, icon, sort, special').order('sort'),
     supabase().from('user_achievements').select('achievement_id, unlocked_at').eq('user_id', userId),
   ]);
   const got = new Map((check(unlocks) ?? []).map((u) => [u.achievement_id as string, u.unlocked_at as string]));
-  return (check(catalogue) ?? []).map((a) => ({ ...(a as Omit<AchievementRow, 'unlocked_at'>), unlocked_at: got.get(a.id as string) ?? null }));
+  return (check(catalogue) ?? [])
+    .map((a) => ({ ...(a as Omit<AchievementRow, 'unlocked_at'>), unlocked_at: got.get(a.id as string) ?? null }))
+    .filter((a) => !a.special || a.unlocked_at); // special badges appear only for their holders
 }
 
 export async function fetchAchievementNames(): Promise<Map<string, string>> {

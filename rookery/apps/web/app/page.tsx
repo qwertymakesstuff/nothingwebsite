@@ -56,7 +56,7 @@ export default function HomePage() {
       <section aria-labelledby="ways">
         <SectionTitle id="ways" eyebrow="Everything in one place" title="Four ways to get better" />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Feature href="/play" icon={<Globe2 />} title="Play online" stage={4}>
+          <Feature href="/play" icon={<Globe2 />} title="Play online">
             Bullet to classical. Fair pairings by rating, and clocks that run on our servers.
           </Feature>
           <Feature href="/bots" icon={<Bot />} title="Computer opponents">

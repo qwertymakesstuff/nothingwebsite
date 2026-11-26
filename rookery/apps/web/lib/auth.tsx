@@ -96,7 +96,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   useEffect(() => {
-    if (status === 'signedOut') router.replace(`/login?next=${encodeURIComponent(pathname ?? '/dashboard')}`);
+    // Keep the query string too (e.g. /game?id=…), so sign-in brings the player back to it.
+    const here = typeof window !== 'undefined' ? `${location.pathname}${location.search}` : (pathname ?? '/dashboard');
+    if (status === 'signedOut') router.replace(`/login?next=${encodeURIComponent(here)}`);
   }, [status, router, pathname]);
   if (status !== 'signedIn') return <LoadingState label={status === 'loading' ? 'Checking your session…' : 'Redirecting to sign in…'} />;
   return <>{children}</>;
