@@ -12,6 +12,7 @@ import type { BotGameSubmission } from '@rookery/protocol';
 import { useAuth } from './auth';
 import { saveBotGame } from './botHistory';
 import { ApiFailure, submitBotGame } from './db';
+import { useMoveTimes } from './useMoveTimes';
 import { getEngine, resetEngine } from './engine/browserEngine';
 import { BOT_DELAY_FACTOR, usePreferences } from './preferences';
 import type { Side } from './types';
@@ -56,6 +57,7 @@ export function useBotGame(settings: BotGameSettings) {
   const [saveState, setSaveState] = useState<SaveState>({ status: 'idle' });
   const { status: authStatus } = useAuth();
   const startedAt = useRef(new Date().toISOString());
+  const [gameKey, setGameKey] = useState(0);
 
   const brain = useMemo(() => new BotBrain(persona, getEngine()), [persona]);
   const token = useRef(0); // bumping it cancels any in-flight bot move
@@ -81,6 +83,7 @@ export function useBotGame(settings: BotGameSettings) {
   }, [game.endFen, game.line.length]);
   const outcome: Outcome | null = ended;
   const over = outcome !== null;
+  const moveTimes = useMoveTimes(game.state.moves.length, !over && game.state.moves.length > 0, gameKey);
 
   const finish = useCallback(
     (o: Outcome) => {
@@ -103,6 +106,7 @@ export function useBotGame(settings: BotGameSettings) {
     setChat([]);
     setSaveState({ status: 'idle' });
     startedAt.current = new Date().toISOString();
+    setGameKey((k) => k + 1);
     const opening = settings.openingId ? getOpening(settings.openingId) : undefined;
     game.start(START_FEN, opening ? opening.moves.split(' ') : []);
     clock.resetClock(tc?.initialMs ?? 0, tc?.incrementMs ?? 0);
@@ -162,6 +166,7 @@ export function useBotGame(settings: BotGameSettings) {
           timeControl: settings.timeControl,
           initialFen: game.state.initialFen,
           moves: game.state.moves,
+          ...(moveTimes.times.length === game.state.moves.length ? { moveTimes: moveTimes.times.map((t) => Math.round(t)) } : {}),
           result: ended.result,
           termination: ended.termination,
           ...(settings.openingId ? { openingId: settings.openingId } : {}),
@@ -297,6 +302,7 @@ export function useBotGame(settings: BotGameSettings) {
 
   return {
     game,
+    moveTimes,
     turn,
     botColor,
     thinking,

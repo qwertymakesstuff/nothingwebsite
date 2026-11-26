@@ -76,6 +76,10 @@ export const GameView = z.object({
   /** Who may take the empty seat of a waiting challenge (null: anyone with the link). */
   invited: z.object({ username: z.string() }).nullable(),
   moves: z.array(Uci),
+  /** Server-measured thinking time per move (ms). */
+  moveTimes: z.array(z.number()).optional(),
+  /** When the side to move's turn began (server time), for a live "thinking" timer. */
+  turnStartedAt: z.number().nullable().optional(),
   clock: z.object({
     whiteMs: z.number(),
     blackMs: z.number(),
@@ -213,6 +217,8 @@ export const BotGameSubmission = z.object({
   timeControl: z.string().regex(/^(none|\d{1,3}\+\d{1,3})$/),
   initialFen: z.string().max(100),
   moves: z.array(Uci).max(1000),
+  /** Thinking time per move in ms, measured in the browser (display only). */
+  moveTimes: z.array(z.number().int().min(0).max(86_400_000)).max(1000).optional(),
   result: z.enum(['1-0', '0-1', '1/2-1/2']),
   termination: z.enum(['checkmate', 'stalemate', 'insufficient', 'repetition', 'fifty-move', 'resign', 'timeout', 'agreement', 'abandon']),
   openingId: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),

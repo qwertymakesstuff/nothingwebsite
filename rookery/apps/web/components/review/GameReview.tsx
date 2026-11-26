@@ -14,7 +14,7 @@ import { BoardFrame } from '@/components/board/BoardFrame';
 import { ChessBoard } from '@/components/board/ChessBoard';
 import { EvalBar } from '@/components/board/EvalBar';
 import { GamePanel } from '@/components/board/GamePanel';
-import { MoveNav } from '@/components/board/MoveList';
+import { formatMoveTime, MoveNav } from '@/components/board/MoveList';
 import { PlayerStrip } from '@/components/board/PlayerStrip';
 import { EvalGraph } from '@/components/charts/EvalGraph';
 import { Button } from '@/components/ui/Button';
@@ -317,6 +317,11 @@ export function GameReview() {
                     {review?.moves[i]?.san ?? sanAt(game.initial_fen, uci, i)}
                     {review && review.moves[i] && JUDGE[review.moves[i]!.judgement].symbol && review.moves[i]!.judgement !== 'best' && (
                       <span className={cn('text-[11px] font-bold', JUDGE[review.moves[i]!.judgement].className)}>{JUDGE[review.moves[i]!.judgement].symbol}</span>
+                    )}
+                    {game.move_times?.[i] != null && (
+                      <span className="tabular ml-auto text-[11px] font-normal text-fg-subtle" title="Time taken for this move">
+                        {formatMoveTime(game.move_times[i]!)}
+                      </span>
                     )}
                   </button>
                 ) : (

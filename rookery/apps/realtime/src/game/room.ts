@@ -57,6 +57,10 @@ export interface RoomState {
   creator: Color | null;
   invited: { userId: string; username: string } | null;
   moves: string[];
+  /** Server-measured thinking time of each move (ms), parallel to `moves`. */
+  moveTimes?: number[];
+  /** When the last move was made (server time). */
+  lastMoveAt?: number | null;
   clock: ClockState;
   firstMoveDeadline: number | null;
   away: { white: number | null; black: number | null };
@@ -148,6 +152,8 @@ export function createRoom(init: {
     creator: init.creator ?? null,
     invited: init.invited ?? null,
     moves: [],
+    moveTimes: [],
+    lastMoveAt: null,
     clock: createClock(init.tc.initialMs, init.tc.incrementMs),
     firstMoveDeadline: both ? init.now + timing.firstMoveMs : null,
     away: { white: null, black: null },
@@ -216,9 +222,13 @@ export function move(s: RoomState, color: Color, uci: string, ply: number, now: 
     // White moved before the clocks started (the opponent hadn't connected yet): start Black's.
     clock = start(clock, other(color), now);
   }
+  // Thinking time: since the previous move, or (first move) since this side's turn began.
+  const turnBegan = s.lastMoveAt ?? s.clock.startedAt ?? s.startedAt ?? now;
   const next: RoomState = {
     ...s,
     moves: [...s.moves, uci],
+    moveTimes: [...(s.moveTimes ?? []), Math.max(0, now - turnBegan)],
+    lastMoveAt: now,
     clock,
     firstMoveDeadline,
     // Moving instead of answering declines the opponent's offer; your own offer stands.
@@ -383,6 +393,8 @@ export function view(s: RoomState, you: Color | 'none', connected: { white: bool
     black: s.black,
     invited: s.invited ? { username: s.invited.username } : null,
     moves: s.moves,
+    moveTimes: s.moveTimes ?? [],
+    turnStartedAt: s.status === 'active' ? (s.lastMoveAt ?? s.clock.startedAt ?? null) : null,
     clock: { whiteMs: remaining(s.clock, 'white', now), blackMs: remaining(s.clock, 'black', now), running: s.clock.running, at: now },
     firstMoveDeadline: s.firstMoveDeadline,
     connected,

@@ -288,6 +288,7 @@ export class GameRoom extends DurableObject<Env> {
             time_control: s.tc.id,
             initial_fen: R.START_FEN,
             moves: s.moves.join(' '),
+            move_times: s.moveTimes?.length === s.moves.length ? s.moveTimes.map((t) => Math.round(t)) : null,
             plies: s.moves.length,
             result: s.result,
             termination: s.termination,

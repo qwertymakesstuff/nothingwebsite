@@ -166,7 +166,7 @@ export async function fetchGame(id: string): Promise<GameRow | null> {
   return check(
     await supabase()
       .from('games')
-      .select('id, white_id, black_id, bot_id, bot_name, bot_elo, source, rated, category, time_control, initial_fen, moves, plies, result, termination, opening, ended_at, white_rating, black_rating, white_delta, black_delta, tournament_id, white:profiles!games_white_id_fkey(username, avatar_path), black:profiles!games_black_id_fkey(username, avatar_path)')
+      .select('id, white_id, black_id, bot_id, bot_name, bot_elo, source, rated, category, time_control, initial_fen, moves, plies, result, termination, opening, ended_at, white_rating, black_rating, white_delta, black_delta, tournament_id, move_times, white:profiles!games_white_id_fkey(username, avatar_path), black:profiles!games_black_id_fkey(username, avatar_path)')
       .eq('id', id)
       .maybeSingle(),
   ) as unknown as GameRow | null;

@@ -17,8 +17,14 @@ export function MoveList({
   firstMoveNumber = 1,
   className,
   empty = 'No moves yet.',
+  times,
+  thinkingMs,
 }: {
   sans: string[];
+  /** Thinking time of each move (ms), parallel to `sans`; shown beside each move. */
+  times?: (number | null | undefined)[];
+  /** The side to move's time so far on the move in progress (shown in the next cell). */
+  thinkingMs?: number | null;
   cursor: number;
   onSelect?: (ply: number) => void;
   startsWithBlack?: boolean;
@@ -26,22 +32,35 @@ export function MoveList({
   className?: string;
   empty?: string;
 }) {
+  // Pad so that index 0 is always White's move (also for times).
+  const timeCells: (number | null | undefined)[] | undefined = times ? (startsWithBlack ? [null, ...times] : [...times]) : undefined;
   const active = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     active.current?.scrollIntoView({ block: 'nearest' });
   }, [cursor]);
 
-  if (!sans.length) return <p className={cn('px-4 py-6 text-center text-sm text-fg-subtle', className)}>{empty}</p>;
+  if (!sans.length && thinkingMs == null) return <p className={cn('px-4 py-6 text-center text-sm text-fg-subtle', className)}>{empty}</p>;
 
   // Pad so that index 0 is always White's move.
   const cells: (string | null)[] = startsWithBlack ? [null, ...sans] : [...sans];
   const rows: { n: number; w: number; b: number }[] = [];
-  for (let i = 0; i < cells.length; i += 2) rows.push({ n: firstMoveNumber + i / 2, w: i, b: i + 1 });
+  const total = cells.length + (thinkingMs != null ? 1 : 0);
+  for (let i = 0; i < total; i += 2) rows.push({ n: firstMoveNumber + i / 2, w: i, b: i + 1 });
   const offset = startsWithBlack ? 1 : 0;
 
   const cell = (idx: number) => {
     const san = cells[idx];
-    if (san === undefined) return <span />;
+    if (san === undefined) {
+      // The move being thought about right now: a live timer in its future cell.
+      if (thinkingMs != null && idx === cells.length) {
+        return (
+          <span className="flex items-center justify-end px-2 py-1" aria-label="Time on this move so far">
+            <MoveTime ms={thinkingMs} live />
+          </span>
+        );
+      }
+      return <span />;
+    }
     if (san === null) return <span className="px-2 text-fg-subtle">…</span>;
     const ply = idx - offset + 1;
     const isActive = ply === cursor;
@@ -55,7 +74,10 @@ export function MoveList({
           isActive ? 'bg-gold-500/20 font-semibold text-gold-200' : 'text-fg hover:bg-surface-3',
         )}
       >
-        {san}
+        <span className="flex items-center justify-between gap-2">
+          <span>{san}</span>
+          {timeCells?.[idx] != null && <MoveTime ms={timeCells[idx]!} />}
+        </span>
       </button>
     );
   };
@@ -100,5 +122,22 @@ export function MoveNav({
         <ChevronLast className="size-4" />
       </IconButton>
     </div>
+  );
+}
+
+/** "3.2s", "24s", "1:05": how long a move took. */
+export function formatMoveTime(ms: number): string {
+  const s = Math.max(0, ms) / 1000;
+  if (s < 10) return `${s.toFixed(1)}s`;
+  if (s < 60) return `${Math.floor(s)}s`;
+  const m = Math.floor(s / 60);
+  return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+}
+
+function MoveTime({ ms, live }: { ms: number; live?: boolean }) {
+  return (
+    <span className={cn('tabular shrink-0 font-[family-name:var(--font-mono)] text-[11px] font-normal', live ? 'text-gold-300' : 'text-fg-subtle')} title={live ? 'Thinking…' : 'Time taken for this move'}>
+      {formatMoveTime(ms)}
+    </span>
   );
 }

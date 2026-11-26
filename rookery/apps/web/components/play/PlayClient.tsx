@@ -22,6 +22,7 @@ import { usePreferences } from '@/lib/preferences';
 import type { Side } from '@/lib/types';
 import { useChessClock } from '@/lib/useChessClock';
 import { useLocalGame } from '@/lib/useLocalGame';
+import { useMoveTimes } from '@/lib/useMoveTimes';
 import { OnlinePlay } from '@/components/online/OnlinePlay';
 import { TimeControlPicker } from './TimeControlPicker';
 
@@ -66,6 +67,8 @@ export function PlayClient() {
   const outcome = ended ?? (game.atEnd ? game.view.outcome : null);
   const playing = phase === 'playing';
   const over = playing && outcome !== null;
+  const [gameKey, setGameKey] = useState(0);
+  const moveTimes = useMoveTimes(game.line.length, playing && !over, gameKey);
 
   // Board-based endings stop the clocks.
   useEffect(() => {
@@ -73,6 +76,7 @@ export function PlayClient() {
   }, [game.view.outcome, game.atEnd, clock]);
 
   const start = useCallback(() => {
+    setGameKey((k) => k + 1);
     game.reset();
     clock.resetClock(tc.initialMs, tc.incrementMs);
     setEnded(null);
@@ -230,7 +234,15 @@ export function PlayClient() {
               <p className="text-sm text-fg-muted">{describeOutcome(outcome).detail}</p>
             </div>
           )}
-          <MoveList sans={game.line.map((p) => p.san)} cursor={game.state.cursor} onSelect={game.goTo} className="flex-1" empty="White to move. Make the first move on the board." />
+          <MoveList
+            sans={game.line.map((p) => p.san)}
+            times={moveTimes.times}
+            thinkingMs={game.atEnd ? moveTimes.thinkingMs : null}
+            cursor={game.state.cursor}
+            onSelect={game.goTo}
+            className="flex-1"
+            empty="White to move. Make the first move on the board."
+          />
           <div className="border-t border-line px-5 py-1">
             <Switch checked={autoFlip} onChange={setAutoFlip} label="Flip the board after each move" />
           </div>
