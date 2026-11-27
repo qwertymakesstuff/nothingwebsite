@@ -1,0 +1,81 @@
+// Threadit communities. Each has its own culture, rules, moderators and in-jokes.
+export const COMMUNITIES = {
+  askanything: {
+    title: 'Ask Anything', created: '2006-01-09', members: 2410332, color: '#2d7d5a', icon: '?',
+    tagline: 'Ask. Anything. (Within the rules.)',
+    about: 'The biggest community on Threadit. Questions only, answers in the comments. No medical or legal advice, no "for a friend" questions that are obviously about you (we allow them, we just judge you).',
+    rules: ['Your title must be a question.', 'No personal information. Ever.', 'No medical or legal advice. See a professional.', 'Be civil. Disagree with ideas, not people.', 'No "what\'s your opinion on [current drama]". That\'s c/vidderdrama.'],
+    mods: ['cornflakes_mod', 'helpfulhank'], flair: ['Serious', 'Lighthearted'],
+  },
+  lostmedia: {
+    title: 'Lost Media', created: '2008-10-30', members: 61203, color: '#4a3d6b', icon: '◐',
+    tagline: 'Finding what the internet forgot.',
+    about: 'We search for lost, deleted and unreleased media: videos, games, broadcasts, websites. Evidence first, speculation second. The Lantern Tape megathread is pinned. Please do not open new threads about it.',
+    rules: ['Sources or it didn\'t happen. Link what you have.', 'Do not harass uploaders, owners or their families. Instant ban.', 'Lantern Tape discussion goes in the megathread.', 'No creepypasta. If you wrote it, it isn\'t lost.', 'Mark found media as [FOUND] only after a mod confirms.'],
+    mods: ['grumbletoes'], flair: ['Searching', 'Partially Found', 'FOUND', 'Unverified'],
+  },
+  rigbuilders: {
+    title: 'Rig Builders', created: '2009-03-18', members: 402119, color: '#1f5f8a', icon: '⚙',
+    tagline: 'Build it. Post it. Cable-manage it.',
+    about: 'PC building help, build logs and battlestations. Beginners welcome. Brand wars are not. If your build doesn\'t post, check the 8-pin.',
+    rules: ['Include full part list and budget in help threads.', 'No brand flame wars.', 'No sales or referral links.', 'Show us the cable management.'],
+    mods: ['rigdoctor', 'marcus_webb'], flair: ['Help', 'Build Log', 'Battlestation', 'Discussion'],
+  },
+  kitchencrimes: {
+    title: 'Kitchen Crimes', created: '2011-06-01', members: 188330, color: '#b5482c', icon: '🍳',
+    tagline: 'Culinary atrocities, lovingly documented.',
+    about: 'Post food that should not exist. Cursed recipes, cooking fails, restaurants that serve food on shovels. Danny Cooks Poorly is our patron saint. Real cooking advice welcome in the comments.',
+    rules: ['Food must be real. No photoshops.', 'Roast the food, not the cook.', 'Carbonara arguments are limited to Carbonara Sunday.'],
+    mods: ['carbonara_kid'], flair: ['Crime', 'Misdemeanor', 'Redemption', 'Carbonara Sunday'],
+  },
+  vidderdrama: {
+    title: 'Vidder Drama', created: '2010-12-12', members: 520110, color: '#8a2d5c', icon: '🍿',
+    tagline: 'Creator drama, with receipts.',
+    about: 'Discussion of drama involving Vidder creators. Receipts required for claims. We are a gossip forum, not a harassment forum. Brigading a creator\'s comments will get you banned.',
+    rules: ['Claims need receipts (links, screenshots, archived pages).', 'No brigading. Do not tell people to go comment on anything.', 'No doxxing, no family members, no minors.', 'Megathreads for major ongoing drama.'],
+    mods: ['cornflakes_mod'], flair: ['Receipts', 'Speculation', 'Update', 'Megathread'],
+  },
+  handhelds: {
+    title: 'Handhelds', created: '2009-08-08', members: 74022, color: '#6b5a2d', icon: '▣',
+    tagline: 'Portable gaming, past and present.',
+    about: 'Pocketeer, Pocketeer Color, the Gameling, and everything since. Collections, repairs, mods and hunts. Pricing questions go in the weekly thread.',
+    rules: ['Price checks in the weekly thread only.', 'State condition honestly (box/manual/cart).', 'Reshells and repros must be labelled.'],
+    mods: ['retrorandy'], flair: ['Collection', 'Repair', 'Hunt', 'Question'],
+  },
+  musicmakers: {
+    title: 'Music Makers', created: '2010-02-20', members: 96330, color: '#2d3f8a', icon: '♫',
+    tagline: 'Make music. Share music. Critique gently.',
+    about: 'For producers, songwriters and bedroom musicians. Feedback threads must give feedback to get feedback.',
+    rules: ['Give two critiques for every track you post.', 'No "check out my mixtape" spam.', 'Gear questions welcome, gear snobbery not.'],
+    mods: ['mossgarden'], flair: ['Feedback', 'Gear', 'Release', 'Question'],
+  },
+  portwexley: {
+    title: 'Port Wexley', created: '2008-05-05', members: 18330, color: '#2d6b8a', icon: '⚓',
+    tagline: 'Gulls, fog and the 14 bus.',
+    about: 'The community for Port Wexley, its harbour, its eastside and its endless roadworks. Lost pets, local news, recommendations and arguments about the council.',
+    rules: ['Local topics only.', 'Lost and found pets always allowed.', 'Be nice about Gull Point people. They can\'t help it.'],
+    mods: ['wexley_native'], flair: ['News', 'Question', 'Lost Pet', 'Rant'],
+  },
+  tinyapartments: {
+    title: 'Tiny Apartments', created: '2011-01-11', members: 140220, color: '#6b8a2d', icon: '⌂',
+    tagline: 'Big ideas for small spaces.',
+    about: 'Living in small spaces: layouts, storage, furniture that turns into other furniture. Studio dwellers, micro-flat survivors and van lifers welcome.',
+    rules: ['Include square footage.', 'No "just move" comments.', 'Credit the original photographer.'],
+    mods: ['marisol_b'], flair: ['Tour', 'Help', 'Hack'],
+  },
+  oldinternet: {
+    title: 'Old Internet', created: '2010-07-07', members: 220330, color: '#5a5a5a', icon: '☏',
+    tagline: 'Remember when the internet was weird?',
+    about: 'Nostalgia for the internet as it was: MyPlace profiles, Gabber away messages, guestbooks, webrings and the dial-up handshake. Screenshots and stories welcome.',
+    rules: ['Things must be at least five years old.', 'No "everything was better" without at least one example.'],
+    mods: ['dialtone_dana', 'lurkmore2009'], flair: ['MyPlace', 'Gabber', 'Screenshot', 'Story'],
+  },
+  meta: {
+    title: 'Threadit Meta', created: '2005-11-02', members: 41022, color: '#2d7d5a', icon: '⟲',
+    tagline: 'Talk about Threadit, on Threadit.',
+    about: 'Site announcements, bug reports and suggestions. Admins read this. Sometimes.',
+    rules: ['Bug reports need steps to reproduce.', 'No witch hunts against specific moderators.'],
+    mods: ['cornflakes_mod'], flair: ['Announcement', 'Bug', 'Suggestion'],
+  },
+};
+export const COMMUNITY_IDS = Object.keys(COMMUNITIES);

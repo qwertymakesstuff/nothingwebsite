@@ -251,5 +251,12 @@
     "url": "https://missing.website/zero-day/",
     "description": "Underground hacking simulator: take contracts, crack 34 fictional targets through eight puzzle minigames, dodge a detection meter and climb from script kiddie to elite. Entirely make-believe — no real systems.",
     "group": "sims"
+  },
+  {
+    "name": "FAKEOS",
+    "image": "banners/fakeos.svg",
+    "url": "https://missing.website/fakeos/",
+    "description": "A computer from 2013 and the internet that comes with it: search Findr, watch Vidder, lurk on Threadit and follow people on Blink. Feuds, memes, lost media and a few things that don't add up.",
+    "group": "sims"
   }
 ]
