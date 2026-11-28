@@ -1,0 +1,96 @@
+/* Blink: purple bar, lavender page, rounded white cards, Trebuchet type. */
+.site-blink { background: #efedf5; }
+.bk { --bk-t: #7a4fd1; min-height: 100%; display: flex; flex-direction: column; font: 13px/1.45 "Trebuchet MS", "Lucida Grande", sans-serif; color: #2a2438; }
+.bk a { color: #5b36b0; text-decoration: none; } .bk a:hover { text-decoration: underline; }
+.bk-top { background: linear-gradient(#8a5fe0, #6a3fc4); border-bottom: 1px solid #4a2a94; box-shadow: 0 1px 4px rgba(0, 0, 0, .2); position: sticky; top: 0; z-index: 10; }
+.bk-topin { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 16px; padding: 7px 14px; }
+.bk-logo { display: flex; align-items: center; gap: 6px; color: #fff !important; font: 700 24px/1 "Trebuchet MS", sans-serif; letter-spacing: -.5px; text-decoration: none !important; }
+.bk-logo.big { font-size: 44px; color: #6a3fc4 !important; }
+.bk-eye { width: 26px; height: 16px; border-radius: 50%; background: #fff; position: relative; display: inline-block; }
+.bk-eye::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #6a3fc4; }
+.bk-logo.big .bk-eye { width: 46px; height: 28px; background: #6a3fc4; } .bk-logo.big .bk-eye::after { background: #fff; width: 12px; height: 12px; margin: -6px; }
+.bk-q { width: 260px; padding: 4px 10px; border: 1px solid #4a2a94; border-radius: 12px; font: inherit; outline: none; }
+.bk-nav { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+.bk-nav a { color: #fff !important; padding: 4px 10px; border-radius: 3px; font-weight: 700; } .bk-nav a:hover { background: rgba(255, 255, 255, .15); text-decoration: none !important; }
+.bk-bell { position: relative; } .bk-badge { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; border-radius: 8px; background: #f0b43a; color: #2a2438; font-size: 10px; text-align: center; line-height: 16px; }
+.bk-mechip { display: flex !important; align-items: center; gap: 6px; }
+.bk-cols { max-width: 1000px; width: 100%; margin: 0 auto; display: flex; gap: 16px; padding: 16px 14px; flex: 1; }
+.bk-cols.single { max-width: 760px; }
+.bk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; } .bk-main > div { display: flex; flex-direction: column; gap: 12px; }
+.bk-side { width: 280px; flex: none; } .bk-side > div { display: flex; flex-direction: column; gap: 12px; }
+.bk-box, .bk-post, .bk-composer { background: #fff; border: 1px solid #ddd6ea; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(60, 30, 120, .06); }
+.bk-box h3 { margin: 0 0 8px; font-size: 13px; color: #6a5a8a; text-transform: uppercase; letter-spacing: .03em; }
+.bk-box h2 { margin: 0 0 8px; font-size: 18px; }
+.bk-h { margin: 6px 0 0; font-size: 14px; color: #6a5a8a; text-transform: uppercase; }
+.av.round { border-radius: 50%; } .av.ring { box-shadow: 0 0 0 3px #fff, 0 0 0 4px #ddd6ea; } .bk img.av { display: block; object-fit: cover; }
+.bk-pname { font-weight: 700; color: #2a2438 !important; }
+.bk-phead { display: flex; gap: 10px; align-items: center; }
+.bk-ptime { display: block; color: #9a90ad !important; font-size: 11px; }
+.bk-del { margin-left: auto; border: 0; background: none; font-size: 18px; color: #bbb; cursor: pointer; } .bk-del:hover { color: #d14f3b; }
+.bk-ptext { margin: 10px 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bk-photo { display: block; margin: 0 -14px 8px; } .bk-photo img { width: 100%; display: block; max-height: 420px; object-fit: cover; }
+.bk-pbar { display: flex; gap: 14px; align-items: center; padding-top: 8px; border-top: 1px solid #eee9f5; font-size: 12px; }
+.bk-pbar a { color: #6a5a8a !important; font-weight: 700; }
+.bk-like { border: 0; background: none; color: #6a5a8a; font: 700 12px "Trebuchet MS", sans-serif; cursor: pointer; padding: 0; } .bk-like.on { color: #d14f9a; }
+.bk-lcount { margin-left: auto; color: #9a90ad; } .bk-lnames { color: #9a90ad; }
+.bk-cmts { margin: 8px -14px -12px; padding: 8px 14px; background: #f7f5fb; border-top: 1px solid #eee9f5; border-radius: 0 0 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+.bk-allc { font-size: 12px; }
+.bk-cmt { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; } .bk-cname { font-weight: 700; color: #2a2438 !important; }
+.bk-composer { display: flex; flex-direction: column; gap: 8px; }
+.bk-crow { display: flex; gap: 10px; align-items: flex-start; } .bk-crow.end { justify-content: flex-end; align-items: center; }
+.bk-compose { flex: 1; min-height: 56px; resize: vertical; padding: 8px 10px; border: 1px solid #ddd6ea; border-radius: 6px; font: 14px "Trebuchet MS", sans-serif; outline: none; }
+.bk-compose:focus { border-color: #8a5fe0; }
+.bk-sel { font: inherit; padding: 3px; border: 1px solid #ddd6ea; border-radius: 4px; }
+.bk-btn { display: inline-block; padding: 5px 14px; border: 1px solid #c8bde0; border-radius: 4px; background: linear-gradient(#fff, #f0ebf8); color: #4a2a94 !important; font: 700 12px "Trebuchet MS", sans-serif; cursor: pointer; white-space: nowrap; }
+.bk-btn:hover { border-color: #8a5fe0; text-decoration: none !important; }
+.bk-btn.primary { background: linear-gradient(#8a5fe0, #6a3fc4); border-color: #4a2a94; color: #fff !important; }
+.bk-btn.on { background: #ece4fa; } .bk-btn.small { padding: 3px 8px; font-size: 11px; }
+.bk-sug { display: flex; align-items: center; gap: 8px; margin: 8px 0; } .bk-sug > div { flex: 1; min-width: 0; } .bk-sug small { display: block; color: #9a90ad; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bk-more { font-size: 12px; font-weight: 700; }
+.bk-mebox { position: relative; padding-top: 50px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; overflow: hidden; }
+.bk-mecover { position: absolute; left: 0; right: 0; top: 0; height: 60px; background: linear-gradient(120deg, var(--bk-t), #2a2438); }
+.bk-mebox .av { position: relative; } .bk-mebox small { color: #9a90ad; }
+.bk-mestats { display: flex; gap: 12px; font-size: 11px; color: #6a5a8a; margin-top: 6px; } .bk-mestats b { color: #2a2438; }
+.bk-emptyfeed p { color: #6a5a8a; }
+.bk-profile { gap: 0 !important; background: #fff; border: 1px solid #ddd6ea; border-radius: 8px; overflow: hidden; }
+.bk-profile > .bk-post, .bk-profile > div > .bk-post, .bk-profile > .bk-box { margin: 0 14px 12px; }
+.bk-profile > div:last-child { padding-bottom: 6px; }
+.bk-cover { height: 150px; background: linear-gradient(120deg, var(--bk-t), color-mix(in srgb, var(--bk-t) 30%, #1a1428)); }
+.bk-phero { display: flex; align-items: flex-end; gap: 16px; padding: 0 18px; margin-top: -54px; }
+.bk-phero .av.big { width: 128px; height: 128px; box-shadow: 0 0 0 4px #fff, 0 2px 8px rgba(0, 0, 0, .2); }
+.bk-pinfo { flex: 1; padding-bottom: 6px; } .bk-pinfo h1 { margin: 0; font-size: 24px; text-shadow: 0 0 6px #fff; } .bk-pinfo p { margin: 2px 0; color: #6a5a8a; }
+.bk-counts b { color: #2a2438; }
+.bk-phero .bk-btn { margin-bottom: 10px; }
+.bk-tabs { display: flex; gap: 2px; padding: 0 18px; margin: 12px 0; border-bottom: 1px solid #eee9f5; }
+.bk-tabs a { padding: 8px 12px; color: #6a5a8a !important; font-weight: 700; border-bottom: 3px solid transparent; } .bk-tabs a.on { color: var(--bk-t) !important; border-color: var(--bk-t); } .bk-tabs a:hover { text-decoration: none !important; }
+.bk-about { margin: 0 14px 14px !important; } .bk-about p { margin: 4px 0 8px; }
+.bk-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 14px; padding: 0 18px 18px; }
+.bk-person { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; font-size: 12px; } .bk-person img { border-radius: 6px; }
+.bk-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; padding: 0 18px 18px; } .bk-photos img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; border-radius: 4px; }
+.bk-mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; } .bk-mini img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border-radius: 3px; }
+.bk-small { font-size: 12px; } .bk-empty { color: #9a90ad; padding: 10px 18px; }
+.bk-settings h2 { margin-bottom: 14px; } .bk-setgrid { display: grid; grid-template-columns: 200px 1fr; gap: 24px; }
+.bk-setgrid > div:first-child { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.bk-setgrid label { display: block; font-weight: 700; color: #6a5a8a; margin: 10px 0 3px; font-size: 12px; }
+.bk-in { width: 100%; padding: 6px 9px; border: 1px solid #ddd6ea; border-radius: 5px; font: 13px "Trebuchet MS", sans-serif; outline: none; } .bk-in:focus { border-color: #8a5fe0; }
+textarea.bk-in { min-height: 60px; resize: vertical; } .bk-in.small { width: 180px; }
+.bk-chips { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; } .bk-chips button { padding: 2px 8px; border: 1px solid #ddd6ea; border-radius: 10px; background: #fff; cursor: pointer; font-size: 11px; } .bk-chips button.on { background: #6a3fc4; color: #fff; border-color: #6a3fc4; }
+.bk-swatches { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; } .bk-setgrid > div:last-child .bk-swatches { justify-content: flex-start; }
+.bk-swatches button { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #ccc; cursor: pointer; } .bk-swatches button.on { box-shadow: 0 0 0 2px #2a2438; }
+.bk-saved { color: #2fa66a; font-weight: 700; }
+.bk-notif { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 6px; color: #2a2438 !important; } .bk-notif:hover { background: #f7f5fb; text-decoration: none !important; }
+.bk-notif.new { background: #f1ebfc; } .bk-notif small { display: block; color: #9a90ad; font-size: 11px; }
+.bk-nicon { width: 40px; height: 40px; flex: none; } .bk-nicon svg { width: 100%; height: 100%; }
+.bk-findlist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bk-findrow { display: flex; align-items: center; gap: 10px; } .bk-findrow > div { flex: 1; min-width: 0; } .bk-findrow small { display: block; color: #9a90ad; font-size: 11px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bk-welcome { background: linear-gradient(120deg, #f1ebfc, #fff); border-color: #c8bde0; }
+.bk-landing { background: linear-gradient(160deg, #f4f0fb, #e2d9f5); }
+.bk-hero { max-width: 900px; margin: 0 auto; display: flex; gap: 40px; align-items: center; padding: 60px 24px; }
+.bk-pitch { flex: 1; } .bk-pitch h1 { font-size: 30px; margin: 18px 0 8px; color: #2a2438; } .bk-pitch p { font-size: 15px; color: #5a4a7a; }
+.bk-faces { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; }
+.bk-form { width: 330px; background: #fff; border: 1px solid #ddd6ea; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 6px 20px rgba(60, 30, 120, .12); }
+.bk-form h2 { margin: 0; font-size: 22px; } .bk-form p { margin: 0; color: #6a5a8a; }
+.bk-big { padding: 9px; border: 1px solid #2a7a4a; border-radius: 5px; background: linear-gradient(#5ac46a, #2f9a4a); color: #fff; font: 700 15px "Trebuchet MS", sans-serif; cursor: pointer; } .bk-big:hover { filter: brightness(1.07); }
+.bk-fine { font-size: 11px; color: #9a90ad !important; }
+.bk-404 { text-align: center; padding: 40px !important; }
+.bk-foot { text-align: center; color: #9a90ad; font-size: 11px; padding: 14px; }
