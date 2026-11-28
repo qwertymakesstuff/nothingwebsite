@@ -13,15 +13,28 @@ import './apps/notepad.js';
 import './apps/personalize.js';
 import './apps/welcome.js';
 import './sites/index.js';
+import { loadMedia, mediaVideo, videoIds } from './lib/media.js';
+import { VIDEO } from './content/index.js';
+import { dur } from './lib/time.js';
 
 const app = document.getElementById('os');
 const screen = document.getElementById('screen');
 
 async function boot() {
-  const firstTime = await loadSave();
+  const [firstTime] = await Promise.all([loadSave(), loadMedia().then(applyVideoMedia)]);
   await bootScreen();
   await logon(firstTime);
   startDesktop(firstTime);
+}
+
+// A generated clip that is the whole video replaces its runtime and captions with the clip's own.
+function applyVideoMedia() {
+  for (const id of videoIds()) {
+    const v = VIDEO[id], m = mediaVideo(id);
+    if (!v || m.mode !== 'full' || !m.duration) continue;
+    v.seconds = m.duration; v.dur = dur(m.duration);
+    if (m.caps?.length) v.caps = m.caps;
+  }
 }
 
 function bootScreen() {

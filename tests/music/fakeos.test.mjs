@@ -82,3 +82,31 @@ test('old saves gain new fields without losing data', () => {
   assert.equal(m.browser.bookmarks.length, 1); assert.deepEqual(m.vidder.subs, {}); assert.deepEqual(m.blink.posts, []);
   assert.deepEqual(migrate(null).settings, freshSave().settings);
 });
+
+test('the media catalogue covers the game and only names things that exist', async () => {
+  const A = await import(new URL('../../tools/fakeos-media/assets.mjs', import.meta.url));
+  const { imageJobs } = await import(new URL('../../tools/fakeos-media/lib.mjs', import.meta.url));
+  const { VIDEO, POST, THREADS, USERS: U } = await load('content/index.js');
+  const authors = new Set([...THREADS.map(t => t.u), ...Object.keys(U)]);
+  const skip = new Set(['hollowfrequency', 'q_mardell', 'vidder']);
+  for (const id of Object.keys(U)) if (!skip.has(id)) assert.ok(A.PEOPLE[id], `no avatar prompt for ${id}`);
+  for (const id of Object.keys(A.PEOPLE)) assert.ok(authors.has(id), `avatar prompt for unknown person ${id}`);
+  for (const p of POSTS) if (p.photo?.kind) assert.ok(A.PHOTOS[p.id], `no photo prompt for post ${p.id}`);
+  for (const id of Object.keys(A.PHOTOS)) assert.ok(POST[id]?.photo, `photo prompt for post without a photo: ${id}`);
+  for (const v of VIDEOS) assert.ok(A.THUMBS[v.id], `no thumbnail prompt for ${v.id}`);
+  for (const id of [...Object.keys(A.THUMBS), ...Object.keys(A.VIDEO_JOBS)]) assert.ok(VIDEO[id], `media for unknown video ${id}`);
+  for (const [id, j] of Object.entries(A.VIDEO_JOBS)) { assert.ok(['full', 'loop'].includes(j.mode), id); if (j.who) assert.ok(A.PEOPLE[j.who], `${id} features unknown ${j.who}`); }
+  for (const id of Object.keys(A.BANNERS)) assert.ok(U[id]?.on.includes('vidder'), `banner for non-channel ${id}`);
+  const files = imageJobs().map(j => j.file);
+  assert.equal(new Set(files).size, files.length, 'duplicate image file names');
+  for (const j of imageJobs()) assert.match(j.prompt, /--ar \d+:\d+/, j.file);
+});
+
+test('the media list the game reads is valid', () => {
+  const m = JSON.parse(fs.readFileSync(new URL('../../fakeos/media/manifest.json', import.meta.url), 'utf8'));
+  for (const k of ['avatars', 'photos', 'thumbs', 'banners', 'wallpapers', 'videos']) assert.equal(typeof m[k], 'object', k);
+  for (const [kind, list] of Object.entries(m)) if (typeof list === 'object') for (const v of Object.values(list)) {
+    const f = typeof v === 'string' ? v : v.file;
+    assert.ok(fs.existsSync(new URL('../../fakeos/media/' + f, import.meta.url)), `manifest lists missing ${kind} file ${f}`);
+  }
+});

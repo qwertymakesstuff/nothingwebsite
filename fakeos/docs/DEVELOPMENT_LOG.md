@@ -31,3 +31,10 @@ Request: make FAKEOS a playable game on missing.website without changing anythin
 - Non-music videos are silent (captions carry the dialogue).
 - Desktop-only: screens under 900 px wide get a message instead of the OS.
 - Built without React/Vite/TypeScript to fit the site's no-build static hosting (see TECHNICAL_ARCHITECTURE.md).
+
+## Build 1.1 — media pipeline (between phases)
+- `tools/fakeos-media/`: asset catalogue (129 image prompts: 48 avatars, 2 character references, 20 Blink photos, 37 thumbnails, 15 channel banners, 7 wallpapers; 36 video jobs in 3 tiers), prompt-sheet builder (`fakeos/docs/ASSET_PROMPTS.md`), image importer (WebP conversion, Midjourney file-name matching), media indexer, and an unattended video generator (Replicate / Gemini / free `test` provider; shot planning from captions; resumable cache; spending cap; ffmpeg stitching and 2012-camera degradation).
+- Game: `js/lib/media.js` loads `fakeos/media/manifest.json` at boot. Real avatars, photos, thumbnails, banners and wallpapers replace drawn ones. Thumbnail text and meme captions are drawn over real images. The player plays `full` clips (own length, sound, captions) and `loop` clips (silent, looped under the original runtime). The drawn version is used for anything without a file.
+- Tests: catalogue coverage (every person, photo post and video has a prompt; nothing references missing content; no duplicate file names) and media-list validity. Repo suite 748/748.
+- Verified end to end with generated test images and test footage in the browser. All test media was removed before committing; `fakeos/media/` ships empty.
+- Limitation: seeking inside looping clips needs a server that supports range requests (Cloudflare does; Python's simple test server doesn't).

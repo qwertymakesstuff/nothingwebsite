@@ -1,6 +1,7 @@
 // Procedural pictures: avatars, video thumbnails and photo posts are drawn on a canvas from a
 // seed, so the internet has thousands of distinct images without shipping image files.
 import { rng, pick } from './rng.js';
+import { media } from './media.js';
 
 const cache = new Map();
 function cached(key, w, hgt, draw) {
@@ -21,6 +22,7 @@ const HAIR = ['#1c1410', '#3b2518', '#6b4423', '#a8743a', '#d9b56b', '#b3401f', 
 const BG = ['#7fa8d1', '#b9d17f', '#d18f7f', '#c7a3d6', '#f2d16b', '#7fd1c1', '#9aa0a6', '#e8a0bf', '#5d7fa3', '#d9d2c5', '#4f6b52', '#f29c50'];
 
 export function avatar(seed, spec = {}) {
+  const real = media('avatars', seed); if (real) return real;
   const key = 'av:' + seed + ':' + JSON.stringify(spec);
   return cached(key, 96, 96, (g, w, hh) => drawAvatar(g, w, hh, seed, spec));
 }
@@ -130,6 +132,7 @@ export function round(g, x, y, w, hh, rad) { g.beginPath(); g.moveTo(x + rad, y)
 
 // --- photo posts (Blink) ---------------------------------------------------------------
 export function photo(seed, kind = 'landscape', caption) {
+  const real = media('photos', seed); if (real) return real;
   return cached('ph:' + seed + kind, 480, 360, (g, w, hh) => drawPhoto(g, w, hh, seed, kind, caption));
 }
 function drawPhoto(g, w, hh, seed, kind, caption) {
@@ -190,6 +193,7 @@ function drawPhoto(g, w, hh, seed, kind, caption) {
 
 // --- video thumbnails ------------------------------------------------------------------
 export function thumb(video) {
+  const real = media('thumbs', video.id); if (real) return real;
   return cached('th:' + video.id, 320, 180, (g, w, hh) => { drawScene(g, w, hh, video, video.thumbAt ?? 0.37, 'thumb'); });
 }
 
@@ -304,6 +308,7 @@ function wrap(g, text, x, y, maxW, lh) {
 
 // Wallpapers are drawn once at screen size.
 export function wallpaper(name, w, hh) {
+  const real = media('wallpapers', name); if (real) return real;
   return cached('wp:' + name + w + 'x' + hh, w, hh, (g) => {
     const r = rng(name);
     if (name === 'aurora') {

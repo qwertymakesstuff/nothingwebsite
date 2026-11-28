@@ -94,3 +94,5 @@ textarea.bk-in { min-height: 60px; resize: vertical; } .bk-in.small { width: 180
 .bk-fine { font-size: 11px; color: #9a90ad !important; }
 .bk-404 { text-align: center; padding: 40px !important; }
 .bk-foot { text-align: center; color: #9a90ad; font-size: 11px; padding: 14px; }
+.bk-photo { position: relative; }
+.bk-meme { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font: 700 32px/1.1 Impact, "Arial Black", sans-serif; text-transform: uppercase; color: #fff; -webkit-text-stroke: 2px #000; pointer-events: none; }

@@ -1,0 +1,5 @@
+# working files for the media tools; only the small files in fakeos/media/ are published
+inbox/
+originals/
+.work/
+config.json

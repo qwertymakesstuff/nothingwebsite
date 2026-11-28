@@ -1,0 +1,11 @@
+{
+  "provider": "replicate",
+  "model": "PUT-OWNER/MODEL-NAME-HERE",
+  "pricePerSecond": 0.15,
+  "maxSpendPerRun": 15,
+  "maxShotSeconds": 8,
+  "minShotSeconds": 4,
+  "loopShots": 3,
+  "replicateInput": { "prompt": "{prompt}", "duration": "{seconds}", "aspect_ratio": "16:9", "start_image": "{image}" },
+  "geminiParameters": { "aspectRatio": "16:9" }
+}

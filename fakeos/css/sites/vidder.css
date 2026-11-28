@@ -135,3 +135,4 @@
 .vp-endgrid span { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 5px; background: rgba(0, 0, 0, .7); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .vp-replay { border: 0; background: none; color: #fff; font-size: 14px; cursor: pointer; }
 .vp-next { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #fff; } .vp-next img { width: 220px; } .vp-next span { max-width: 300px; text-align: center; }
+.vd-ttext { position: absolute; left: 6%; bottom: 8%; font: 700 clamp(14px, 2.2vw, 26px)/1 Impact, "Arial Black", sans-serif; color: #ffef3a; -webkit-text-stroke: 1.5px #000; text-shadow: 0 2px 3px #000; letter-spacing: .5px; pointer-events: none; }

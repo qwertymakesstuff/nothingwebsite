@@ -5,12 +5,19 @@ import { drawScene } from '../lib/art.js';
 import { dur } from '../lib/time.js';
 import { rng } from '../lib/rng.js';
 import { audioCtx } from '../os/sound.js';
+import { mediaVideo } from '../lib/media.js';
 
 let volumeMemory = 0.7, mutedMemory = false, ccMemory = true;
 
 export function createPlayer(video, { autoplay = true, isVisible = () => true, onEnded, onPlay } = {}) {
-  const canvas = h('canvas', { class: 'vp-canvas', width: 640, height: 360 });
-  const g = canvas.getContext('2d');
+  // A generated clip replaces the drawn picture. 'full' clips are the whole video (own length and
+  // sound); 'loop' clips repeat silently under the original runtime and captions.
+  const real = mediaVideo(video.id);
+  const vid = real ? h('video', { class: 'vp-canvas', src: real.url, preload: 'auto', playsinline: true, loop: real.mode === 'loop', muted: real.mode === 'loop' }) : null;
+  if (vid) vid.muted = real.mode === 'loop';
+  const full = real?.mode === 'full';
+  const canvas = vid || h('canvas', { class: 'vp-canvas', width: 640, height: 360 });
+  const g = vid ? null : canvas.getContext('2d');
   const cap = h('div', { class: 'vp-cap' });
   const big = h('button', { class: 'vp-big', type: 'button', 'aria-label': 'Play' }, '▶');
   const fill = h('div', { class: 'vp-fill' }), buf = h('div', { class: 'vp-buf' }), knob = h('div', { class: 'vp-knob' });
@@ -26,7 +33,7 @@ export function createPlayer(video, { autoplay = true, isVisible = () => true, o
   const controls = h('div', { class: 'vp-controls' }, seek, h('div', { class: 'vp-row' }, playBtn, muteBtn, vol, time, h('span', { class: 'vp-spacer' }), ccBtn, wideBtn, fsBtn));
   const el = h('div', { class: 'vp', tabindex: 0 }, canvas, cap, big, end, controls);
 
-  const total = video.seconds || 60;
+  const total = (full && real.duration) || video.seconds || 60;
   let t = 0, playing = false, last = 0, raf = 0, buffered = 0.05, ended = false, alive = true;
   const synth = video.music ? makeSynth(video.music) : null;
 
@@ -35,7 +42,10 @@ export function createPlayer(video, { autoplay = true, isVisible = () => true, o
     if (!alive) return;
     raf = requestAnimationFrame(frame);
     if (!isVisible()) { if (playing) pause(true); return; }
-    if (playing) {
+    if (playing && full) {
+      t = Math.min(total, vid.currentTime);
+      if (vid.buffered.length) buffered = vid.buffered.end(vid.buffered.length - 1) / total;
+    } else if (playing) {
       const dt = Math.min(.25, (ts - (last || ts)) / 1000); last = ts;
       t = Math.min(total, t + dt);
       buffered = Math.min(1, buffered + dt / total * 3 + .0005);
@@ -45,10 +55,12 @@ export function createPlayer(video, { autoplay = true, isVisible = () => true, o
     draw();
   }
   function draw() {
-    const w = canvas.clientWidth || 640, hh = canvas.clientHeight || 360;
-    if (canvas.width !== w * 1 || canvas.height !== hh) { canvas.width = w; canvas.height = hh; }
     const line = capAt(t);
-    drawScene(g, canvas.width, canvas.height, video, total ? t / total : 0, 'play', playing && line && !line.startsWith('['));
+    if (!vid) {
+      const w = canvas.clientWidth || 640, hh = canvas.clientHeight || 360;
+      if (canvas.width !== w || canvas.height !== hh) { canvas.width = w; canvas.height = hh; }
+      drawScene(g, canvas.width, canvas.height, video, total ? t / total : 0, 'play', playing && line && !line.startsWith('['));
+    }
     cap.textContent = ccMemory ? line : '';
     cap.classList.toggle('on', ccMemory && !!line);
     const p = total ? t / total : 0;
@@ -56,16 +68,18 @@ export function createPlayer(video, { autoplay = true, isVisible = () => true, o
     time.textContent = dur(t) + ' / ' + video.dur;
   }
   function play() {
-    if (ended) { t = 0; ended = false; end.classList.remove('on'); }
+    if (ended) { t = 0; ended = false; end.classList.remove('on'); if (vid) vid.currentTime = 0; }
     playing = true; last = 0; el.classList.add('playing'); el.classList.remove('paused');
     playBtn.textContent = '❚❚'; playBtn.setAttribute('aria-label', 'Pause'); big.classList.add('gone');
     synth?.start(t, mutedMemory ? 0 : volumeMemory);
+    if (vid) { if (full) { vid.volume = volumeMemory; vid.muted = mutedMemory; } vid.play().catch(() => {}); }
     onPlay?.();
   }
   function pause(silent) {
     playing = false; el.classList.remove('playing'); if (!silent) el.classList.add('paused');
     playBtn.textContent = '▶'; playBtn.setAttribute('aria-label', 'Play');
     synth?.stop();
+    vid?.pause();
   }
   function finish() {
     pause(true); ended = true; t = total; draw();
@@ -73,7 +87,7 @@ export function createPlayer(video, { autoplay = true, isVisible = () => true, o
     onEnded?.(end);
   }
   const toggle = () => (playing ? pause() : play());
-  function seekTo(s) { t = Math.max(0, Math.min(total - .01, s)); if (ended) { ended = false; end.classList.remove('on'); } buffered = Math.max(buffered, t / total); synth?.seek(t); draw(); }
+  function seekTo(s) { t = Math.max(0, Math.min(total - .01, s)); if (vid) { if (full) vid.currentTime = t; else if (vid.duration) vid.currentTime = t % vid.duration; } if (ended) { ended = false; end.classList.remove('on'); } buffered = Math.max(buffered, t / total); synth?.seek(t); draw(); }
   const paintMute = () => { const m = mutedMemory || volumeMemory === 0; muteBtn.textContent = m ? '🔇' : volumeMemory < .4 ? '🔈' : '🔊'; };
 
   canvas.addEventListener('click', toggle);
@@ -88,8 +102,8 @@ export function createPlayer(video, { autoplay = true, isVisible = () => true, o
     seek.addEventListener('pointermove', mv); seek.addEventListener('pointerup', up);
   });
   seek.addEventListener('mousemove', e => { const r = seek.getBoundingClientRect(); seek.title = dur(Math.max(0, (e.clientX - r.left) / r.width) * total); });
-  vol.addEventListener('input', () => { volumeMemory = +vol.value; mutedMemory = volumeMemory === 0; synth?.volume(volumeMemory); paintMute(); });
-  muteBtn.addEventListener('click', () => { mutedMemory = !mutedMemory; vol.value = mutedMemory ? 0 : volumeMemory || .7; if (!mutedMemory && !volumeMemory) volumeMemory = .7; synth?.volume(mutedMemory ? 0 : volumeMemory); paintMute(); });
+  vol.addEventListener('input', () => { volumeMemory = +vol.value; mutedMemory = volumeMemory === 0; synth?.volume(volumeMemory); if (full) { vid.volume = volumeMemory; vid.muted = mutedMemory; } paintMute(); });
+  muteBtn.addEventListener('click', () => { mutedMemory = !mutedMemory; vol.value = mutedMemory ? 0 : volumeMemory || .7; if (!mutedMemory && !volumeMemory) volumeMemory = .7; synth?.volume(mutedMemory ? 0 : volumeMemory); if (full) vid.muted = mutedMemory; paintMute(); });
   ccBtn.addEventListener('click', () => { ccMemory = !ccMemory; ccBtn.classList.toggle('on', ccMemory); draw(); });
   wideBtn.addEventListener('click', () => el.dispatchEvent(new CustomEvent('theatre', { bubbles: true })));
   const fs = () => { if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen?.().catch(() => {}); };
@@ -107,7 +121,9 @@ export function createPlayer(video, { autoplay = true, isVisible = () => true, o
   raf = requestAnimationFrame(frame);
   requestAnimationFrame(() => { draw(); if (autoplay) play(); });
 
-  return { el, play, pause, seek: seekTo, destroy() { alive = false; cancelAnimationFrame(raf); synth?.stop(); }, get time() { return t; } };
+  if (full) vid.addEventListener('ended', () => { if (playing) finish(); });
+
+  return { el, play, pause, seek: seekTo, destroy() { alive = false; cancelAnimationFrame(raf); synth?.stop(); if (vid) { vid.pause(); vid.removeAttribute('src'); vid.load(); } }, get time() { return t; } };
 }
 
 // A deterministic little band: pad chords, bass, a soft melody and brushed drums.

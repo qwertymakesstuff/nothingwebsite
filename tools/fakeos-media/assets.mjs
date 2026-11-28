@@ -1,0 +1,217 @@
+// FAKEOS media catalogue: every image the game can use, and every video it can generate.
+// build-prompts.mjs turns this into the Midjourney prompt sheet; make-videos.mjs turns the video
+// jobs into real clips. Ids match the game's content (users.js, posts.js, videos.js).
+
+// Shared visual language: amateur, early-2010s, slightly bad cameras. Never glossy.
+export const STYLE = {
+  avatarObject: 'square photo used as a 2012 forum or social profile picture, amateur, unretouched, realistic',
+  avatar: 'candid amateur profile picture, early 2010s, shot on a 2011 phone front camera, slightly soft focus, mixed indoor light, unretouched, realistic',
+  photo: 'early 2010s smartphone photo, iPhone 4 quality, slight motion blur, on-camera flash or harsh window light, unretouched, realistic, posted to a social network in 2013',
+  thumb: 'video thumbnail frame, 2012 video site, slightly compressed, saturated, realistic, no text',
+  banner: 'wide channel banner, early 2010s web design, no text, no logo',
+  wallpaper: 'desktop wallpaper, 2011 operating system default wallpaper style, clean, no text, no logo, no people',
+  video: 'grainy 2012 consumer camera footage, 480p, slightly compressed, realistic, natural imperfect lighting',
+};
+export const PARAMS = { avatar: '--ar 1:1 --style raw', photo: '--ar 4:3 --style raw', thumb: '--ar 16:9 --style raw', banner: '--ar 6:1 --style raw', wallpaper: '--ar 16:10', still: '--ar 16:9 --style raw' };
+
+// People: `look` describes them (reused for thumbnails, photos and video so they stay recognisable);
+// `avatar` is the profile picture. `obj: true` (or no `look`) means the avatar is an object or logo, not the person.
+// Anomaly accounts (hollowfrequency, q_mardell) and brand marks (vidder) keep the game's drawn icon on purpose.
+export const PEOPLE = {
+  maxplaysstuff: { look: '22-year-old man, messy black hair under a backwards red baseball cap, big toothy grin, navy hoodie, gaming headset around his neck', avatar: 'in a dim bedroom lit by a glowing keyboard, mid-laugh, pointing at the camera' },
+  pruittreviews: { obj: true, look: '58-year-old man, neat grey side-parted hair, wire-rimmed glasses, pale blue short-sleeve button-up shirt with a pen in the pocket, serious but kind face', avatar: 'a brushed-steel four-slice toaster alone on a beige kitchen counter, centered, flash photo, plain and earnest' },
+  kaylakreates: { look: '24-year-old East Asian woman, long dark-brown wavy hair, soft pink cardigan, warm smile', avatar: 'ring-light glow, white bedroom with fairy lights behind her' },
+  glittergrrl: { look: 'late-20s woman, platinum blonde blowout, sharp winged eyeliner, glossy lips, purple satin top, unimpressed expression', avatar: 'glamorous selfie in front of a vanity mirror ringed with bulbs' },
+  dannycookspoorly: { look: '30-year-old Latino man, short black hair, trimmed beard, orange apron over a grey t-shirt, cheerful', avatar: 'in a small cluttered apartment kitchen holding up a wooden spoon, laughing' },
+  w_haskins: { look: '60-year-old man, thinning grey hair, rectangular glasses, grey windbreaker, tired neutral expression', avatar: 'unflattering webcam photo, wood-panelled den, looks slightly annoyed' },
+  dougtheunbothered: { look: 'a plump grey short-haired cat with a flat, completely unimpressed expression', avatar: 'the grey cat sitting on a beige carpet staring straight into the lens, totally unbothered' },
+  rigdoctor: { look: '35-year-old Black man, short hair, black-rimmed glasses, green polo shirt, calm and focused', avatar: 'at a workbench with an open PC tower and tools behind him' },
+  pedalpush: { look: '28-year-old woman, red hair in a ponytail, freckles, teal cycling jacket', avatar: 'on a coastal road beside a road bike, helmet hanging from the handlebar, windswept' },
+  beatsbynobody: { obj: true, look: 'a pair of hands on a small MIDI keyboard in a dark room lit only by a laptop screen, face never shown', avatar: 'a single eighth-note symbol painted in pale blue on a dark navy brick wall at night, slightly out of focus' },
+  wexleynews9: { obj: true, look: 'a local TV news anchor, middle-aged man in a grey suit and red tie, behind a blue news desk', avatar: 'a 1990s local TV station logo: a bold red number 9 inside a silver ring on a navy background, glossy bevel, small-market television' },
+  tylerdoesvlogs: { look: '14-year-old boy, light-brown messy hair, braces, oversized blue t-shirt, huge enthusiastic smile', avatar: 'webcam photo in a small bedroom with a video game poster on the wall' },
+  retrorandy: { look: '45-year-old man, brown hair, full beard, thick glasses, black band t-shirt', avatar: 'in front of shelves packed with boxed handheld video game cartridges' },
+  sadkeyboard: { look: 'early-20s Korean man, black hair with a fringe, plain white t-shirt, shy expression', avatar: 'seated at a digital piano, soft window light, looking slightly away from the camera' },
+  grumbletoes: { avatar: 'a vintage VHS tape with a faded handwritten label lying on a desk among archive boxes, desk lamp light' },
+  cornflakes_mod: { avatar: 'overhead flash photo of a bowl of cornflakes with a tiny folded paper sign stuck in it, kitchen table' },
+  actually_its_pronounced: { look: '40-year-old man, glasses, neat grey cardigan, slightly smug half-smile', avatar: 'in front of a full bookshelf, chin slightly raised' },
+  xXDeathGripXx: { avatar: 'a crude flaming skull graphic, 2008 gamer forum avatar, low resolution, oversaturated' },
+  helpfulhank: { look: '67-year-old man, white hair, glasses, red flannel shirt, warm smile, weathered hands', avatar: 'sitting on a wooden back porch holding a fishing rod' },
+  marisol_b: { look: '30-year-old Latina woman, long black hair, teal top, relaxed smile', avatar: 'in a tiny bright studio apartment full of hanging plants' },
+  tapewormtheory: { avatar: 'extreme close-up of a human eye reflected in the dark glass of an old CRT television' },
+  bigdaveontheroad: { look: '50-year-old trucker, brown beard, navy trucker cap, red flannel shirt', avatar: 'selfie in the cab of a semi truck, sunglasses perched on his cap' },
+  pickledpete: { avatar: 'a single dill pickle with tiny googly eyes on a white plate, flash photo' },
+  ostrichmom: { look: '38-year-old woman, sandy blonde hair, pink t-shirt, laughing', avatar: 'standing next to a large ostrich in a suburban backyard' },
+  lurkmore2009: { avatar: 'a dusty beige 2000s CRT computer monitor glowing in a dark room, forum page on screen, unreadable' },
+  neon_viking: { look: '26-year-old man, blond hair, short beard, black t-shirt, gaming headset, intense stare', avatar: 'lit by blue and red LAN-party lights' },
+  wexley_native: { look: '35-year-old Black man, short hair, navy jacket, deadpan expression', avatar: 'on a harbour pier with seagulls behind him, overcast' },
+  ellie_draws: { look: '25-year-old woman, long purple-dyed hair, round glasses, beige sweater, gentle smile', avatar: 'holding a pencil, sketchbook pages pinned to the wall behind her' },
+  notacop_seriously: { avatar: 'a man in mirrored sunglasses, navy baseball cap and an obviously fake moustache, trying too hard to look casual' },
+  fernweh_: { avatar: 'view through an airplane window over clouds at sunset, the wing visible' },
+  kit_halloran: { look: '32-year-old woman, brown hair in a messy bun, teal nurse scrubs, tired eyes', avatar: 'in a hospital break room at night lit by a vending machine' },
+  boltbrigadefan99: { avatar: 'an orange cartoon soldier helmet emblem, generic 2010 video game clan logo, low resolution' },
+  mossgarden: { avatar: 'macro photo of a vintage analog synthesizer with moss growing over its knobs' },
+  carbonara_kid: { look: '28-year-old man, black hair, green t-shirt, stern face', avatar: 'holding up a fork twirled with spaghetti, frowning at it' },
+  dialtone_dana: { look: '34-year-old woman, teal-dyed hair with a side fringe, black hoodie', avatar: '2006-style high-angle mirror selfie holding a flip phone, emo era' },
+  harlan_ostby: { avatar: 'a blurry photo of an empty living room at night lit by a single lamp, nobody in it' },
+  megan_oduya: { look: '21-year-old Black woman, natural curly hair, pink cardigan, big grin', avatar: 'in a college dorm room making a peace sign' },
+  carl_brennan: { look: '55-year-old white man, grey hair, glasses, blue polo shirt, big proud grin', avatar: 'at a backyard grill holding tongs, thumbs up' },
+  jess_whitlock: { look: '30-year-old woman, blonde bob, black-rimmed glasses, black top, wry smile', avatar: 'with a ginger cat draped over her shoulder' },
+  corwinvance: { look: '29-year-old man, short brown hair, grey crewneck sweater, awkward neutral expression', avatar: 'corporate headshot against a plain purple backdrop, stiff smile' },
+  aunt_deb: { look: '60-year-old woman, curly auburn hair, glasses, orange cardigan, small cross necklace, sweet smile', avatar: 'in a church hall with folding tables behind her' },
+  josh_tan: { look: '14-year-old Asian boy, black hair, black hoodie, deadpan expression', avatar: 'holding a skateboard, unimpressed' },
+  sophia_reyes: { look: '27-year-old Latina woman, long black hair in a ponytail, green running jacket, amused smirk', avatar: 'after a run on a seaside path' },
+  priya_raman: { look: '31-year-old South Asian woman, black hair, glasses, lilac sweater, deadpan', avatar: 'holding a plump grey cat who stares at the camera with total indifference' },
+  marcus_webb: { look: '38-year-old man, brown hair, scruffy beard, black t-shirt, tired', avatar: 'in a server room lit by blue LEDs' },
+  hannah_lu: { look: '29-year-old Chinese-American woman, long black hair, light blue top, enthusiastic smile', avatar: 'in a classroom in front of a chalkboard' },
+  derek_osei: { look: '28-year-old Black man, athletic build, red tank top, confident', avatar: 'gym mirror selfie, flexing' },
+  ruth_ambrose: { look: '62-year-old woman, grey hair in a loose bun, glasses, green gardening jacket', avatar: 'in a vegetable garden holding a handful of tomatoes' },
+};
+
+// Blink photo posts (post id → what the photo shows). `who` adds that person's look.
+export const PHOTOS = {
+  b001: { scene: 'a large open-plan tech office, staff applauding in front of a big wall screen showing a purple eye-shaped logo and a huge counter' },
+  b002: { scene: 'a computer monitor in a dark bedroom showing a dark rocky cave in a survival video game, a wooden door at the end of the cave, photographed with a phone', who: null },
+  b007: { scene: 'an enormous dented steel stockpot of chili on a church hall kitchen counter, empty paper bowls stacked beside it', who: null },
+  b009: { scene: 'a misty harbour town at sunrise seen from a hilltop, fishing boats, soft golden light' },
+  b010: { scene: 'an old wooden stick lying on grass in front of a tree swing, nostalgic, faded colours' },
+  b011: { scene: 'fourteen burgers on a backyard charcoal grill, smoke, paper plates on a picnic table' },
+  b014: { scene: 'a coastal road at sunrise with a lighthouse on a point, a road bike leaning on a guardrail in the foreground' },
+  b016: { scene: 'a plump grey cat lying on a kitchen floor, staring blankly at a wall calendar', who: 'dougtheunbothered' },
+  b017: { scene: 'a plump grey cat wearing a tiny knitted party hat, expression of total indifference', who: 'dougtheunbothered' },
+  b023: { scene: 'a gym mirror selfie at 5am, fluorescent light, empty gym behind him', who: 'derek_osei' },
+  b028: { scene: 'a seagull flying off with a red-and-white striped hot dog cart umbrella over a harbour festival crowd' },
+  b030: { scene: 'an oil painting in Renaissance portrait style of a plump grey cat with an indifferent expression, in a gilt frame, photographed on an easel' },
+  b031: { scene: 'a tiny studio apartment with a loft bed, a desk tucked underneath, two glowing mason jar lamps, plants' },
+  b032: { scene: 'a homemade meatloaf with a dark glossy glaze on a white plate, kitchen table, a single fork' },
+  b033: { scene: 'a large ostrich standing at the counter of a small seaside coffee shop eating a muffin, staff laughing' },
+  b034: { scene: 'a handful of green tomatoes on a frosty garden bed, early morning' },
+  b036: { scene: 'two 14-year-old boys taking a selfie in a shopping mall food court, one grinning, one deadpan', who: 'tylerdoesvlogs' },
+  b038: { scene: 'close-up of a warm copper and orange autumn eye makeup look', who: 'kaylakreates' },
+  b040: { scene: 'a glazed meatloaf on a TV-show kitchen counter with a hand-written card propped beside it' },
+  b045: { scene: 'a coastal road disappearing into thick fog, a lighthouse barely visible' },
+};
+
+// Vidder thumbnails (video id → the frame). The game draws any big thumbnail text on top.
+export const THUMBS = {
+  mXq7Rt2Lk9a: 'blocky sandbox video game screenshot, a small wooden house on fire under a blue sky, a sheep nearby, inset of the gamer\'s shocked face in the corner, red arrow',
+  mXvR9shT3qe: 'the young man holding up six brightly coloured energy drink cans with lightning bolts, exaggerated excited face',
+  mXa1ddrSs00: 'the young man without his cap sitting on his bed in a plain bedroom, serious, muted colours',
+  mXc4vEcr47b: 'dark survival video game screenshot, a torchlit rocky cave, a dog companion, a wooden door at the end of the tunnel',
+  prT0aSt400h: 'a brushed-steel four-slice toaster on a beige kitchen counter, two golden slices of toast, plain product shot',
+  prBreadmst2: 'a cheap red two-slice toaster with one slot glowing alarmingly bright orange and smoking, kitchen counter',
+  prRemixMsg1: 'the older man seated in a wood-panelled living room armchair, hands folded, sincere',
+  prCompare13: 'six different toasters lined up on a long kitchen counter, a single everything bagel in the foreground',
+  kKfallEye13: 'close-up of warm copper autumn eye makeup, a pumpkin and fall leaves at the edge of the frame',
+  kKmasonLamp: 'a mason jar lamp glowing warmly on a wooden craft table, drill and lamp cord beside it',
+  kKaboutBree: 'the young woman on her bed in a grey hoodie, no makeup, serious expression, soft daylight',
+  gGlumPalet1: 'the glamorous woman holding up a purple twelve-shade eyeshadow palette, mouth open in excitement',
+  gGresponse1: 'the glamorous woman at her vanity, arms folded, cold flat stare',
+  dCmicroLas1: 'a sad sunken lasagna inside an open microwave, a small spark, cluttered kitchen',
+  dCpancakeHk: 'pink-tinted pancakes in a frying pan next to a red squeeze bottle',
+  dCchili40pp: 'the cook standing next to an enormous dented stockpot of chili in a church kitchen, both arms out',
+  gBforlater0: 'a rainy supermarket parking lot at dusk, a man in a grey windbreaker standing still holding a white porcelain gravy boat',
+  gBclarify11: 'the older man at a webcam in a wood-panelled den, a shelf of white gravy boats behind him',
+  dGvacuum012: 'a plump grey cat sitting completely still on a carpet as an upright vacuum cleaner nudges against it',
+  dGcucumber3: 'a plump grey cat calmly eating a cucumber on a kitchen floor',
+  dGbday5th00: 'a plump grey cat sitting beside a fish-shaped birthday cake, party streamers, total indifference',
+  rDbuild2013: 'an open gaming PC case on a workbench, hands holding a CPU above a motherboard',
+  rDcoilWhine: 'macro shot of a graphics card circuit board and its inductors, shallow depth of field',
+  pPcoastRd01: 'handlebar view of a road bike on a coastal road at sunrise, a lighthouse ahead',
+  pPdooredPSA: 'a road bike with a badly bent front wheel lying on a city street next to an open car door',
+  bNrainTues1: 'rain running down a window at night, blurred blue city lights behind',
+  bNlastBus02: 'the inside of an empty city bus at night, fluorescent lights, rain-streaked windows',
+  bN417am0003: 'a dark bedroom, a digital alarm clock glowing red on a bedside table, curtains slightly open',
+  wNseagull01: 'a seagull flying off with a striped hot dog cart umbrella above a harbour festival',
+  wNpowerCut1: 'a suburban street at night with every house dark, an electrical substation behind a chain-link fence',
+  hF20140309x: 'analog TV static with a faint dark upright shape in the middle, VHS tracking lines',
+  hFhallway07: 'a long dim corridor in an old building, a single bare bulb, a closed door at the far end, grainy',
+  vDnew2013ab: 'a clean red and white abstract graphic of a play button made of soft shapes, bright and corporate',
+  tYfirstVlog: 'the 14-year-old boy waving at a webcam in his small bedroom, game poster behind him, overexposed',
+  tYmallJosh2: 'two 14-year-old boys filming themselves by a shopping mall fountain, one grinning, one unimpressed',
+  rRcollect21: 'shelves packed floor to ceiling with boxed handheld video game cartridges, two empty slots',
+  sKskyfortPn: 'hands on a digital piano keyboard, soft warm window light',
+};
+// Which person appears in each thumbnail (adds their look and lets you use their avatar as a character reference).
+export const THUMB_WHO = { mXvR9shT3qe: 'maxplaysstuff', mXa1ddrSs00: 'maxplaysstuff', mXq7Rt2Lk9a: 'maxplaysstuff', prRemixMsg1: 'pruittreviews', kKfallEye13: 'kaylakreates', kKaboutBree: 'kaylakreates', gGlumPalet1: 'glittergrrl', gGresponse1: 'glittergrrl', dCchili40pp: 'dannycookspoorly', gBforlater0: 'w_haskins', gBclarify11: 'w_haskins', dGvacuum012: 'dougtheunbothered', dGcucumber3: 'dougtheunbothered', dGbday5th00: 'dougtheunbothered', tYfirstVlog: 'tylerdoesvlogs', tYmallJosh2: 'tylerdoesvlogs' };
+
+// Channel banners (Vidder channel pages).
+export const BANNERS = {
+  maxplaysstuff: 'a blocky sandbox game landscape at sunset, bold red and black colour scheme, energetic',
+  pruittreviews: 'a neat row of toasters on a long beige kitchen counter, warm modest lighting',
+  kaylakreates: 'soft pink flat-lay of makeup brushes, dried flowers and a mason jar lamp',
+  glittergrrl: 'purple glitter and makeup palettes on a marble vanity, glamorous',
+  dannycookspoorly: 'a messy home kitchen counter covered in pans, flour and ingredients, orange tones',
+  w_haskins: 'a rainy grey parking lot at dusk, empty, wet asphalt reflections',
+  dougtheunbothered: 'a beige living room carpet with a single grey cat far to one side, lots of empty space',
+  rigdoctor: 'a workbench with PC parts, screwdrivers and an anti-static mat, green accent light',
+  pedalpush: 'a coastal road winding past a lighthouse at sunrise',
+  beatsbynobody: 'a city at night seen through a rainy bus window, deep navy and soft lights',
+  wexleynews9: 'a small coastal city skyline and harbour at dusk, local TV news style, navy and red',
+  tylerdoesvlogs: 'a suburban street and skate park on a sunny day, slightly overexposed',
+  retrorandy: 'shelves of boxed handheld game cartridges, dark and orderly',
+  sadkeyboard: 'piano keys in soft blue light, calm',
+  hollowfrequency: 'almost black, faint analog TV static, a barely visible hallway light far away',
+};
+
+export const WALLPAPERS = {
+  aurora: 'flowing teal and blue aurora ribbons over a deep navy sky, soft glow, abstract',
+  meadow: 'rolling green hills under a bright blue sky with a pale sun, calm',
+  dusk: 'layered purple mountains at dusk with an orange sky and a low sun',
+  night: 'starry night sky over dark hills, a pale moon, deep blue and indigo',
+  bubbles: 'translucent soap bubbles floating on a bright blue gradient background',
+  carbon: 'dark carbon-fibre texture with a soft blue glow in the centre',
+  petals: 'soft pink and lavender cherry blossom petals drifting on a pastel gradient',
+};
+
+// ---- videos --------------------------------------------------------------------------------
+// mode 'full': the clip IS the video. One shot per caption line (or the shots given); the game
+//   uses the clip's real length and plays its sound.
+// mode 'loop': footage loops silently under the original captions and runtime, so long videos
+//   and timestamps people mention in comments still line up. Music videos keep their music.
+// Videos not listed here (vDnew2013ab) keep the game's drawn version.
+// tier: 1 = most impact, make first.
+export const VIDEO_JOBS = {
+  gBforlater0: { tier: 1, mode: 'full', who: 'w_haskins', setting: 'a rainy supermarket parking lot at dusk, filmed on a cheap handheld camcorder by someone standing a few metres away',
+    shots: [
+      { seconds: 5, cap: '[man standing in parking lot holding a gravy boat]', prompt: 'the man stands perfectly still in the rain holding a white porcelain gravy boat in both hands, rain hissing' },
+      { seconds: 4, prompt: 'the camera wobbles closer; an off-camera man\'s voice asks', say: 'What\'s that for?', speaker: 'off-camera man' },
+      { seconds: 4, prompt: 'the man looks straight into the camera, completely serious', say: 'It\'s for later.' },
+      { seconds: 6, cap: '[he walks away]', prompt: 'he turns and walks away across the wet parking lot carrying the gravy boat, rain' },
+    ] },
+  gBclarify11: { tier: 1, mode: 'full', who: 'w_haskins', setting: 'a wood-panelled den, webcam on top of a monitor, a shelf of white porcelain gravy boats behind him' },
+  dGvacuum012: { tier: 1, mode: 'full', who: 'dougtheunbothered', setting: 'a beige living room, camera handheld by the owner, an upright vacuum cleaner running' },
+  hFhallway07: { tier: 1, mode: 'loop', setting: 'a long dim corridor in an old building, one bare bulb hanging from the ceiling and flickering slightly, a closed door at the far end, completely static camera, nobody in frame, grainy 2007 camcorder footage, faint distant footsteps' },
+  hF20140309x: { tier: 1, mode: 'loop', setting: 'analog TV static filling the frame; in the middle a faint dark upright shape that is barely visible and does not move; VHS tracking lines roll slowly; no people, no faces' },
+  wNseagull01: { tier: 1, mode: 'full', who: 'wexleynews9', setting: 'a small-market local TV news broadcast: the anchor at a blue news desk, cutting to shaky handheld footage of a harbour festival' },
+  dGcucumber3: { tier: 2, mode: 'full', who: 'dougtheunbothered', setting: 'a kitchen floor, camera handheld by the owner, a cucumber placed behind the cat' },
+  dGbday5th00: { tier: 2, mode: 'full', who: 'dougtheunbothered', setting: 'a small apartment birthday party for a cat: streamers, a fish-shaped cake on a low table' },
+  wNpowerCut1: { tier: 2, mode: 'full', who: 'wexleynews9', setting: 'a local TV news report: the anchor at a blue desk, then night footage of dark suburban streets and an electrical substation behind a chain-link fence' },
+  prRemixMsg1: { tier: 2, mode: 'full', who: 'pruittreviews', setting: 'a wood-panelled living room, seated in an armchair, camcorder on a tripod' },
+  gGresponse1: { tier: 2, mode: 'full', who: 'glittergrrl', setting: 'at her vanity with mirror bulbs, arms folded, cold and brief' },
+  tYfirstVlog: { tier: 2, mode: 'full', who: 'tylerdoesvlogs', setting: 'his small bedroom with a game poster, overexposed webcam, talking fast and excited' },
+  bNrainTues1: { tier: 2, mode: 'loop', setting: 'rain running down a window at night, blurred city lights behind, slow and calm' },
+  bNlastBus02: { tier: 2, mode: 'loop', setting: 'the inside of an empty city bus at night seen from the back seat, fluorescent lights, rain on the windows, gentle swaying' },
+  bN417am0003: { tier: 2, mode: 'loop', setting: 'a dark bedroom at night, a digital alarm clock glowing red on the bedside table, a curtain moving very slightly' },
+  sKskyfortPn: { tier: 2, mode: 'loop', who: 'sadkeyboard', setting: 'close-up of his hands playing a digital piano, soft window light' },
+  mXq7Rt2Lk9a: { tier: 3, mode: 'loop', setting: 'first-person footage of a bright blocky sandbox building video game: placing grass and stone blocks under a blue sky, a sheep wandering nearby, 2012 PC game graphics' },
+  mXvR9shT3qe: { tier: 3, mode: 'loop', who: 'maxplaysstuff', setting: 'at a desk in a dim bedroom, tasting cans of blue energy drink with lightning bolts and overacting delight, webcam footage' },
+  mXa1ddrSs00: { tier: 3, mode: 'loop', who: 'maxplaysstuff', setting: 'without his cap, sitting very still on his bed in a plain bedroom, talking quietly and sincerely to the webcam' },
+  mXc4vEcr47b: { tier: 3, mode: 'loop', setting: 'footage of a dark survival video game: torchlight in a rocky cave, a dog companion walking ahead, a wooden door set into the cave wall at the end of the tunnel' },
+  prT0aSt400h: { tier: 3, mode: 'loop', who: 'pruittreviews', setting: 'at a beige kitchen counter beside a brushed-steel four-slice toaster, lowering a slice of bread, gesturing calmly, camcorder on a tripod' },
+  prBreadmst2: { tier: 3, mode: 'loop', who: 'pruittreviews', setting: 'at a kitchen counter next to a cheap red two-slice toaster whose right slot glows alarmingly bright orange; he looks at the camera, unimpressed' },
+  prCompare13: { tier: 3, mode: 'loop', setting: 'six different toasters lined up on a long beige kitchen counter, one by one popping up toasted bagel halves, static tripod camera' },
+  kKfallEye13: { tier: 3, mode: 'loop', who: 'kaylakreates', setting: 'in front of a ring light applying copper eyeshadow, cozy autumn bedroom' },
+  kKmasonLamp: { tier: 3, mode: 'loop', setting: 'close-up of hands threading a lamp cord through a mason jar lid on a craft table, then the jar lamp glowing warmly' },
+  kKaboutBree: { tier: 3, mode: 'loop', who: 'kaylakreates', setting: 'sitting cross-legged on her bed in a grey hoodie with no makeup, talking seriously to the camera' },
+  gGlumPalet1: { tier: 3, mode: 'loop', who: 'glittergrrl', setting: 'excitedly holding up a purple eyeshadow palette to the camera at a vanity with bulbs' },
+  dCmicroLas1: { tier: 3, mode: 'loop', who: 'dannycookspoorly', setting: 'in a cramped apartment kitchen opening a microwave to reveal a sad lasagna, a small spark flashes inside' },
+  dCpancakeHk: { tier: 3, mode: 'loop', who: 'dannycookspoorly', setting: 'squeezing pancake batter from a red squeeze bottle into a frying pan; the batter comes out pink' },
+  dCchili40pp: { tier: 3, mode: 'loop', who: 'dannycookspoorly', setting: 'stirring an enormous dented steel stockpot of chili in a church hall kitchen' },
+  rDbuild2013: { tier: 3, mode: 'loop', setting: 'close-up tutorial footage of hands installing a CPU and RAM into a motherboard on an anti-static mat on a workbench' },
+  rDcoilWhine: { tier: 3, mode: 'loop', setting: 'slow macro camera slide across a graphics card circuit board, inductors and capacitors, shallow depth of field' },
+  pPcoastRd01: { tier: 3, mode: 'loop', setting: 'handlebar-mounted action camera footage of a road bike riding a coastal road at sunrise past a lighthouse' },
+  pPdooredPSA: { tier: 3, mode: 'loop', who: 'pedalpush', setting: 'sitting on her apartment floor next to a bike with a bent front wheel, a bandage on her elbow, talking to the camera' },
+  tYmallJosh2: { tier: 3, mode: 'loop', who: 'tylerdoesvlogs', setting: 'handheld footage with his deadpan friend (14-year-old Asian boy in a black hoodie) by a shopping mall fountain, 2013' },
+  rRcollect21: { tier: 3, mode: 'loop', who: 'retrorandy', setting: 'in a room lined with shelves of boxed handheld game cartridges, carefully lifting one box toward the camera' },
+};

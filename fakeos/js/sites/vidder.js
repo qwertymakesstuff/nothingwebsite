@@ -10,6 +10,7 @@ import { compact, fmtNum, longDate, toMs, shortDate } from '../lib/time.js';
 import { search, tokens } from '../net/search.js';
 import { rng } from '../lib/rng.js';
 import { createPlayer } from './player.js';
+import { media } from '../lib/media.js';
 
 const FAV = '<svg viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="3" fill="#d1252a"/><path d="M6.5 5.5l4 2.5-4 2.5z" fill="#fff"/></svg>';
 export const vidder = { id: 'vidder', host: 'vidder.tv', name: 'Vidder', favicon: FAV, server: 'vidder-frontend', render };
@@ -58,7 +59,7 @@ function shell(ctx, main, { query = '', active = '', wide = false } = {}) {
 function card(v, opts = {}) {
   const w = save.get().vidder.watched[v.id];
   return h('div', { class: 'vd-card' + (opts.row ? ' row' : '') },
-    h('a', { href: '/watch?v=' + v.id + (opts.list ? '&list=' + opts.list : ''), class: 'vd-thumb' }, h('img', { src: thumb(v), alt: '' }), h('span', { class: 'vd-dur' }, v.dur), w ? h('span', { class: 'vd-watched' }, 'WATCHED') : null),
+    h('a', { href: '/watch?v=' + v.id + (opts.list ? '&list=' + opts.list : ''), class: 'vd-thumb' }, h('img', { src: thumb(v), alt: '' }), v.scene?.text && media('thumbs', v.id) ? h('span', { class: 'vd-ttext' }, v.scene.text) : null, h('span', { class: 'vd-dur' }, v.dur), w ? h('span', { class: 'vd-watched' }, 'WATCHED') : null),
     h('div', { class: 'vd-cinfo' },
       h('a', { href: '/watch?v=' + v.id + (opts.list ? '&list=' + opts.list : ''), class: 'vd-ctitle', title: v.title }, v.title),
       opts.noCh ? null : h('a', { href: '/channel/' + v.ch, class: 'vd-cch' }, chName(v.ch)),
@@ -250,7 +251,7 @@ function channel(id, tab, ctx, sort) {
   } else body = vids.length ? [h('div', { class: 'vd-chips' }, h('a', { href: '/channel/' + id + '/videos', class: sort !== 'popular' ? 'on' : '' }, 'Newest'), h('a', { href: '/channel/' + id + '/videos?sort=popular', class: sort === 'popular' ? 'on' : '' }, 'Most popular')), grid(vids, { noCh: true })] : h('p', { class: 'vd-empty' }, 'This channel has no videos.');
   const featured = vids[0] && tab === 'videos' && sort !== 'popular' && id !== 'hollowfrequency' ? h('div', { class: 'vd-feat' }, card(vids.slice().sort((a, b) => views(b) - views(a))[0], { row: true, desc: true, noCh: true })) : null;
   const main = h('div', { class: 'vd-chan' },
-    h('div', { class: 'vd-chbanner', style: { background: `linear-gradient(120deg, ${u.vidder.banner}, #111)` } }, h('span', null, u.vidder.channel)),
+    h('div', { class: 'vd-chbanner', style: { background: media('banners', id) ? `center / cover url("${media('banners', id)}")` : `linear-gradient(120deg, ${u.vidder.banner}, #111)` } }, h('span', null, u.vidder.channel)),
     h('div', { class: 'vd-chhead' }, avatarImg(id, 80, 'round'), h('div', null, h('h1', null, u.vidder.channel), h('span', { class: 'vd-cmeta' }, fmtNum(subsOf(id)) + ' subscribers · ' + vids.length + ' videos')), subButton(id, ctx)),
     h('div', { class: 'vd-tabs' }, tabs.map(t => h('a', { href: '/channel/' + id + '/' + t, class: t === tab ? 'on' : '' }, t[0].toUpperCase() + t.slice(1)))),
     featured, body);

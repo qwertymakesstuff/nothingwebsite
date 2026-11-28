@@ -9,6 +9,7 @@ import { inline } from '../lib/rich.js';
 import { toMs, fmtNum, longDate, compact } from '../lib/time.js';
 import { rng, hash } from '../lib/rng.js';
 import { confirmBox } from '../os/dialog.js';
+import { media } from '../lib/media.js';
 
 const FAV = '<svg viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="4" fill="#7a4fd1"/><path d="M3.5 8.5c1.6-3 7.4-3 9 0-1.6 3-7.4 3-9 0z" fill="#fff"/><circle cx="8" cy="8.5" r="1.6" fill="#7a4fd1"/></svg>';
 export const blink = { id: 'blink', host: 'blink.social', name: 'Blink', favicon: FAV, server: 'BlinkServer', render };
@@ -121,7 +122,7 @@ function postCard(p, ctx, { full } = {}) {
     h('div', { class: 'bk-phead' }, h('a', { href: profileUrl(p.u) }, av(p.u, 44, 'round')), h('div', null, h('a', { href: profileUrl(p.u), class: 'bk-pname' }, nameOf(p.u)), h('a', { href: '/post/' + p.id, class: 'bk-ptime' }, when(p.date))),
       p.mine ? h('button', { type: 'button', class: 'bk-del', title: 'Delete post', onclick: async () => { if (await confirmBox('Delete this post?', 'Blink', 'Delete')) { patch('blink', s => ({ posts: s.posts.filter(x => x.id !== p.id) })); ctx.reload(); } } }, '×') : null),
     h('div', { class: 'bk-ptext' }, inline(p.text)),
-    p.photo?.kind ? h('a', { href: '/post/' + p.id, class: 'bk-photo' }, h('img', { src: photo(p.id, p.photo.kind, p.photo.caption), alt: p.photo.caption || 'photo' })) : null,
+    p.photo?.kind ? h('a', { href: '/post/' + p.id, class: 'bk-photo' }, h('img', { src: photo(p.id, p.photo.kind, p.photo.caption), alt: p.photo.caption || 'photo' }), p.photo.caption && media('photos', p.id) ? h('span', { class: 'bk-meme' }, p.photo.caption) : null) : null,
     h('div', { class: 'bk-pbar' }, p.mine ? h('span', { class: 'bk-lnames' }, theirLikes.length ? theirLikes.map(nameOf).slice(0, 3).join(', ') + (theirLikes.length > 3 ? ' and others' : '') + ' liked this' : 'No likes yet') : likeBtn, h('a', { href: '/post/' + p.id }, '💬 Comment'), count),
     cmts.length ? h('div', { class: 'bk-cmts' },
       !full && cmts.length > 2 ? h('a', { href: '/post/' + p.id, class: 'bk-allc' }, `View all ${cmts.length} comments`) : null,
